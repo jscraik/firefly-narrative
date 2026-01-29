@@ -47,7 +47,7 @@ use sqlx::{Row, SqlitePool};
 ///
 /// Build Plan Epic 2 Story 2.2.
 /// Build Plan "Concurrent Import Handling" section defines upsert pattern.
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub async fn create_or_update_session_link(
     pool: tauri::State<'_, SqlitePool>,
     repo_id: i64,
@@ -112,7 +112,7 @@ pub async fn create_or_update_session_link(
 /// # Evidence
 ///
 /// Build Plan Epic 2 Story 2.2.
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub async fn get_session_links_for_repo(
     pool: tauri::State<'_, SqlitePool>,
     repo_id: i64,
@@ -164,7 +164,7 @@ pub async fn get_session_links_for_repo(
 /// # Evidence
 ///
 /// Build Plan Epic 2 Story 2.2.
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub async fn get_session_links_for_commit(
     pool: tauri::State<'_, SqlitePool>,
     repo_id: i64,
@@ -221,7 +221,7 @@ pub async fn get_session_links_for_commit(
 /// # Evidence
 ///
 /// Build Plan Epic 2 Story 2.2.
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub async fn delete_session_link(
     pool: tauri::State<'_, SqlitePool>,
     repo_id: i64,

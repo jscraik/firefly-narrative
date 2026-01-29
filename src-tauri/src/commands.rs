@@ -32,7 +32,7 @@ fn validate_rel(rel: &str) -> Result<PathBuf, String> {
   Ok(p)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub fn ensure_narrative_dirs(repo_root: String) -> Result<(), String> {
   let base = narrative_base(&repo_root)?;
   fs::create_dir_all(base.join("meta/commits")).map_err(|e| e.to_string())?;
@@ -41,7 +41,7 @@ pub fn ensure_narrative_dirs(repo_root: String) -> Result<(), String> {
   Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub fn write_narrative_file(
   repo_root: String,
   relative_path: String,
@@ -59,7 +59,7 @@ pub fn write_narrative_file(
   Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub fn read_narrative_file(repo_root: String, relative_path: String) -> Result<String, String> {
   let base = narrative_base(&repo_root)?;
   let rel = validate_rel(&relative_path)?;
@@ -86,7 +86,7 @@ fn walk_files(dir: &Path, base: &Path, out: &mut Vec<String>) -> Result<(), Stri
   Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub fn list_narrative_files(repo_root: String, relative_dir: String) -> Result<Vec<String>, String> {
   let base = narrative_base(&repo_root)?;
   let rel = validate_rel(&relative_dir)?;

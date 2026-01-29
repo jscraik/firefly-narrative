@@ -196,7 +196,7 @@ async fn query_commits_in_window(
 ///
 /// Build Plan Epic 3 Story 3.4.
 /// Build Plan Data + Contracts: `link_session_to_commit(repo_id, session_id, ...)`
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub async fn link_session_to_commit(
     pool: tauri::State<'_, SqlitePool>,
     repo_id: i64,
@@ -278,7 +278,7 @@ pub async fn link_session_to_commit(
 ///
 /// Build Plan Epic 3 Story 3.4.
 /// Build Plan Epic 7 Story 7.1: Security test for path traversal.
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub async fn import_session_file(
     pool: tauri::State<'_, SqlitePool>,
     repo_id: i64,
