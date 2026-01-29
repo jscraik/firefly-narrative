@@ -1,0 +1,11 @@
+{
+  "id": "repo_medium_3",
+  "name": "medium-repo-4",
+  "size": "medium",
+  "commitCount": 833,
+  "sessionCount": 10,
+  "groundTruthCount": 10,
+  "edgeCases": [
+    "Multi-session commit: two sessions linked to same commit"
+  ]
+}

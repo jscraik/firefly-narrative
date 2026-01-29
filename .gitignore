@@ -1,0 +1,23 @@
+# Node
+node_modules
+dist
+.DS_Store
+
+# Tauri / Rust
+src-tauri/target
+src-tauri/gen
+src-tauri/.cargo
+
+# Logs
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env
+.env
+.env.*.local
+
+# IDE
+.idea
+.vscode
