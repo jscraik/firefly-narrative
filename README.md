@@ -24,6 +24,28 @@ Includes:
 
 ---
 
+## Quick Start
+
+1. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
+
+2. **Run the app**:
+   ```bash
+   pnpm tauri dev
+   ```
+
+3. **Open a repository**:
+   - Click "Open repo..." and select a git repository
+   - Navigate commits and see files changed
+
+4. **Import a session** (optional):
+   - Click "Import session..." and select a JSON session file
+   - See session excerpts in the right panel
+
+---
+
 ## Run (dev)
 
 ```bash
