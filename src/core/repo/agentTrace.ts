@@ -345,6 +345,7 @@ export async function scanAgentTraceRecords(
   repoId: number,
   commitShas: string[]
 ): Promise<TraceScanResult> {
+  const { invoke } = await import('@tauri-apps/api/core');
   const files = await listNarrativeFiles(repoRoot, TRACE_DIR);
   const traceFiles = files.filter((p) => p.endsWith(TRACE_EXTENSION));
 
@@ -361,15 +362,23 @@ export async function scanAgentTraceRecords(
     }
   }
 
+  // Use the Rust command to get trace summaries
+  // This uses the sqlx pool which has the correct migrations and data
+  const summariesResult = await invoke('get_trace_summaries_for_commits', {
+    repoId,
+    commitShas
+  }) as Record<string, {
+    commit: TraceCommitSummary;
+    files: Record<string, TraceFileSummary>;
+    totals: { conversations: number; ranges: number };
+  }>;
+
   const byCommit: Record<string, TraceCommitSummary> = {};
   const byFileByCommit: Record<string, Record<string, TraceFileSummary>> = {};
   let totalConversations = 0;
   let totalRanges = 0;
 
-  for (const sha of commitShas) {
-    const summary = await getTraceSummaryForCommit(repoId, sha);
-    if (!summary) continue;
-
+  for (const [sha, summary] of Object.entries(summariesResult)) {
     byCommit[sha] = summary.commit;
     byFileByCommit[sha] = summary.files;
     totalConversations += summary.totals.conversations;
@@ -416,27 +425,28 @@ export async function getTraceRangesForCommitFile(
   commitSha: string,
   filePath: string
 ): Promise<TraceRange[]> {
-  const db = await getDb();
-  const rows = await db.select<
-    Array<{ start_line: number; end_line: number; content_hash: string | null; contributor_type: string; model_id: string | null }>
-  >(
-    `SELECT tr.start_line, tr.end_line, tr.content_hash, tr.contributor_type, tr.model_id
-     FROM trace_records r
-     JOIN trace_files tf ON tf.record_id = r.id
-     JOIN trace_conversations tc ON tc.file_id = tf.id
-     JOIN trace_ranges tr ON tr.conversation_id = tc.id
-     WHERE r.repo_id = $1 AND r.revision = $2 AND tf.path = $3
-     ORDER BY tr.start_line ASC`,
-    [repoId, commitSha, filePath]
-  );
+  const { invoke } = await import('@tauri-apps/api/core');
 
-  return rows.map((row) => ({
+  // Use the Rust command to get trace ranges
+  // This uses the sqlx pool which has the correct migrations and data
+  const ranges = await invoke('get_trace_ranges_for_commit_file', {
+    repoId,
+    commitSha,
+    filePath
+  }) as Array<{
+    start_line: number;
+    end_line: number;
+    content_hash: string | null;
+    contributor: { contributor_type: string; model_id: string | null };
+  }>;
+
+  return ranges.map((row) => ({
     startLine: row.start_line,
     endLine: row.end_line,
     contentHash: row.content_hash ?? undefined,
     contributor: {
-      type: normalizeContributorType(row.contributor_type),
-      modelId: row.model_id ?? undefined
+      type: normalizeContributorType(row.contributor.contributor_type),
+      modelId: row.contributor.model_id ?? undefined
     }
   }));
 }

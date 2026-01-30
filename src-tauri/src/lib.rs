@@ -9,6 +9,7 @@ mod models;
 mod otlp_receiver;
 mod session_hash;
 mod session_links;
+mod trace_commands;
 
 use notify::RecommendedWatcher;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
@@ -126,6 +127,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             otlp_receiver::set_active_repo_root,
             otlp_receiver::set_otlp_receiver_enabled,
             otlp_receiver::run_otlp_smoke_test,
+            // Trace commands
+            trace_commands::get_trace_summary_for_commit,
+            trace_commands::get_trace_summaries_for_commits,
+            trace_commands::get_trace_ranges_for_commit_file,
             // File watcher commands
             start_file_watcher,
         ])

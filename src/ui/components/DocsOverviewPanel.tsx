@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FileText, BookOpen, X, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
-import { invoke } from '@tauri-apps/api/core';
+import { listNarrativeFiles, readNarrativeFile } from '../../core/tauri/narrativeFs';
 import { MermaidDiagram } from './MermaidDiagram';
 
 interface DocFile {
@@ -52,11 +52,8 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
       }
 
       try {
-        // Call Tauri to list files in .narrative/
-        const files: string[] = await invoke('listNarrativeFiles', {
-          repoRoot,
-          relativeDir: '',
-        });
+        // Call Tauri to list files in .narrative/ using the wrapper
+        const files = await listNarrativeFiles(repoRoot, '');
 
         // Filter to .md files and load their content to get titles
         const mdFiles = files.filter((f) => f.endsWith('.md'));
@@ -64,10 +61,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
         const docList: DocFile[] = await Promise.all(
           mdFiles.map(async (filename) => {
             try {
-              const content: string = await invoke('readNarrativeFile', {
-                repoRoot,
-                relativePath: filename,
-              });
+              const content = await readNarrativeFile(repoRoot, filename);
               return {
                 name: filename,
                 path: filename,
@@ -88,8 +82,9 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
         setError('');
       } catch (err) {
         console.error('Failed to list docs:', err);
-        setError('Failed to load documentation list');
+        // Don't show error for empty/no directory - just empty list
         setDocs([]);
+        setError('');
       }
     };
 
@@ -106,10 +101,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
     const loadDoc = async () => {
       setLoading(true);
       try {
-        const fileContent: string = await invoke('readNarrativeFile', {
-          repoRoot,
-          relativePath: selectedDoc.path,
-        });
+        const fileContent = await readNarrativeFile(repoRoot, selectedDoc.path);
         setContent(fileContent);
         setError('');
       } catch (err) {
@@ -142,84 +134,9 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
     },
   };
 
-  // Show error state
-  if (error && !selectedDoc) {
-    return (
-      <div className="card p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-sky-600" />
-            <h2 className="text-sm font-semibold text-stone-800">Documentation</h2>
-          </div>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <p className="font-medium">Error Loading Docs</p>
-          <p className="mt-1">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (selectedDoc) {
-    return (
-      <div className="card flex flex-col h-full">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-stone-200">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSelectedDoc(null)}
-              className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500"
-            >
-              <ChevronRight className="w-5 h-5 rotate-180" />
-            </button>
-            <BookOpen className="w-5 h-5 text-sky-600" />
-            <div>
-              <h2 className="text-sm font-semibold text-stone-800">{selectedDoc.title}</h2>
-              <p className="text-xs text-stone-500">{selectedDoc.name}</p>
-            </div>
-          </div>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="text-sm text-stone-500">Loading...</div>
-            </div>
-          ) : (
-            <div className="prose prose-sm max-w-none prose-stone">
-              <ReactMarkdown rehypePlugins={[rehypeRaw]} components={components}>
-                {content}
-              </ReactMarkdown>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   // Document list view
   return (
-    <div className="card p-4">
+    <div className="card p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-sky-600" />
@@ -237,18 +154,50 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
       </div>
 
       {!repoRoot ? (
-        <div className="text-center py-8 text-stone-500">
+        <div className="text-center py-8 text-stone-500 flex-1">
           <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p className="text-sm">Open a repository to view documentation</p>
         </div>
+      ) : selectedDoc ? (
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-4 pb-3 border-b border-stone-200">
+            <button
+              type="button"
+              onClick={() => setSelectedDoc(null)}
+              className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500"
+            >
+              <ChevronRight className="w-5 h-5 rotate-180" />
+            </button>
+            <div>
+              <h3 className="text-sm font-semibold text-stone-800">{selectedDoc.title}</h3>
+              <p className="text-xs text-stone-500">{selectedDoc.name}</p>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-sm text-stone-500">Loading...</div>
+              </div>
+            ) : (
+              <div className="prose prose-sm max-w-none prose-stone">
+                <ReactMarkdown rehypePlugins={[rehypeRaw]} components={components}>
+                  {content}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        </div>
       ) : docs.length === 0 ? (
-        <div className="text-center py-8 text-stone-500">
+        <div className="text-center py-8 text-stone-500 flex-1">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p className="text-sm">No documentation files found</p>
           <p className="text-xs mt-1">Add .md files to .narrative/ directory</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 flex-1 overflow-y-auto">
           {docs.map((doc) => (
             <button
               key={doc.path}
