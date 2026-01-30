@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FileText, BookOpen, X, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+import { invoke } from '@tauri-apps/api/core';
 import { MermaidDiagram } from './MermaidDiagram';
 
 interface DocFile {
@@ -16,45 +17,88 @@ interface DocsOverviewPanelProps {
 }
 
 /**
+ * Extract title from markdown content (first # heading)
+ */
+function extractTitle(content: string, filename: string): string {
+  // Look for # Title
+  const match = content.match(/^#\s+(.+)$/m);
+  if (match) {
+    return match[1].trim();
+  }
+  // Fallback to filename without extension
+  return filename.replace(/\.md$/i, '').replace(/-/g, ' ');
+}
+
+/**
  * Component to render markdown documentation files from .narrative/
  * with Mermaid diagram support.
+ * 
+ * Syncs with the opened repo - scans .narrative/ for .md files
+ * and renders them with live Mermaid diagrams.
  */
 export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps) {
   const [docs, setDocs] = useState<DocFile[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<DocFile | null>(null);
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
-  // List available documentation files
+  // List available documentation files from .narrative/
   useEffect(() => {
     const listDocs = async () => {
+      if (!repoRoot) {
+        setDocs([]);
+        return;
+      }
+
       try {
-        // In a real implementation, this would call a Tauri command
-        // For now, we'll use the known files
-        const knownDocs: DocFile[] = [
-          {
-            name: 'CONVERSATIONS-COMMITS-CODE-MAP.md',
-            path: 'CONVERSATIONS-COMMITS-CODE-MAP.md',
-            title: 'Architecture Overview',
-          },
-          {
-            name: 'NARRATIVE-ATTRIBUTION-MAP.md',
-            path: 'NARRATIVE-ATTRIBUTION-MAP.md',
-            title: 'Attribution System',
-          },
-        ];
-        setDocs(knownDocs);
-      } catch (error) {
-        console.error('Failed to list docs:', error);
+        // Call Tauri to list files in .narrative/
+        const files: string[] = await invoke('listNarrativeFiles', {
+          repoRoot,
+          relativeDir: '',
+        });
+
+        // Filter to .md files and load their content to get titles
+        const mdFiles = files.filter((f) => f.endsWith('.md'));
+        
+        const docList: DocFile[] = await Promise.all(
+          mdFiles.map(async (filename) => {
+            try {
+              const content: string = await invoke('readNarrativeFile', {
+                repoRoot,
+                relativePath: filename,
+              });
+              return {
+                name: filename,
+                path: filename,
+                title: extractTitle(content, filename),
+              };
+            } catch {
+              // If we can't read it, just use the filename
+              return {
+                name: filename,
+                path: filename,
+                title: extractTitle('', filename),
+              };
+            }
+          })
+        );
+
+        setDocs(docList);
+        setError('');
+      } catch (err) {
+        console.error('Failed to list docs:', err);
+        setError('Failed to load documentation list');
+        setDocs([]);
       }
     };
 
     listDocs();
   }, [repoRoot]);
 
-  // Load selected document
+  // Load selected document content
   useEffect(() => {
-    if (!selectedDoc) {
+    if (!selectedDoc || !repoRoot) {
       setContent('');
       return;
     }
@@ -62,24 +106,23 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
     const loadDoc = async () => {
       setLoading(true);
       try {
-        // This would call read_narrative_file in real implementation
-        // For now, we'll show a placeholder
-        const response = await fetch(`/.narrative/${selectedDoc.path}`);
-        if (response.ok) {
-          const text = await response.text();
-          setContent(text);
-        } else {
-          setContent(`# ${selectedDoc.title}\n\nThis documentation file provides an overview of the Narrative system architecture.`);
-        }
-      } catch (error) {
-        setContent(`# ${selectedDoc.title}\n\nFailed to load document.\n\nError: ${error}`);
+        const fileContent: string = await invoke('readNarrativeFile', {
+          repoRoot,
+          relativePath: selectedDoc.path,
+        });
+        setContent(fileContent);
+        setError('');
+      } catch (err) {
+        console.error('Failed to load doc:', err);
+        setContent(`# Error\n\nFailed to load ${selectedDoc.name}`);
+        setError(String(err));
       } finally {
         setLoading(false);
       }
     };
 
     loadDoc();
-  }, [selectedDoc]);
+  }, [selectedDoc, repoRoot]);
 
   // Custom components for ReactMarkdown
   const components = {
@@ -98,6 +141,33 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
       );
     },
   };
+
+  // Show error state
+  if (error && !selectedDoc) {
+    return (
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-sky-600" />
+            <h2 className="text-sm font-semibold text-stone-800">Documentation</h2>
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="font-medium">Error Loading Docs</p>
+          <p className="mt-1">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (selectedDoc) {
     return (
@@ -166,7 +236,12 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
         )}
       </div>
 
-      {docs.length === 0 ? (
+      {!repoRoot ? (
+        <div className="text-center py-8 text-stone-500">
+          <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p className="text-sm">Open a repository to view documentation</p>
+        </div>
+      ) : docs.length === 0 ? (
         <div className="text-center py-8 text-stone-500">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p className="text-sm">No documentation files found</p>
