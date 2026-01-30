@@ -1,141 +1,152 @@
-import { useCallback, useEffect, useState } from 'react';
-import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater';
+import { useEffect, useState, useCallback } from 'react';
+import { check, type Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { ask, message } from '@tauri-apps/plugin-dialog';
 
-export type UpdateStatus =
-  | 'idle'
-  | 'checking'
-  | 'available'
-  | 'downloading'
-  | 'installing'
-  | 'up-to-date'
-  | 'error';
+export type UpdateStatus = 
+  | { type: 'checking' }
+  | { type: 'no_update' }
+  | { type: 'available'; update: Update }
+  | { type: 'downloading'; progress: number }
+  | { type: 'ready'; update: Update }
+  | { type: 'error'; error: string };
 
-export type UpdateProgress = {
-  downloaded: number;
-  total?: number;
-  percent?: number;
-};
+interface UseUpdaterOptions {
+  /** Check on mount */
+  checkOnMount?: boolean;
+  /** Check interval in minutes (0 = no polling) */
+  pollIntervalMinutes?: number;
+}
 
-export type UpdateState = {
-  status: UpdateStatus;
-  update?: Update;
-  progress?: UpdateProgress;
-  error?: string;
-};
+interface UseUpdaterReturn {
+  status: UpdateStatus | null;
+  checkForUpdates: () => Promise<void>;
+  downloadAndInstall: () => Promise<void>;
+  dismiss: () => void;
+}
 
-const MAX_PERCENT = 100;
+/**
+ * Hook for checking and installing Tauri app updates.
+ * 
+ * Usage:
+ * ```tsx
+ * function App() {
+ *   const { status, checkForUpdates, downloadAndInstall } = useUpdater({ checkOnMount: true });
+ *   
+ *   if (status?.type === 'available') {
+ *     return <UpdatePrompt onUpdate={downloadAndInstall} />;
+ *   }
+ *   
+ *   return <MainApp />;
+ * }
+ * ```
+ */
+export function useUpdater(options: UseUpdaterOptions = {}): UseUpdaterReturn {
+  const { checkOnMount = false, pollIntervalMinutes = 0 } = options;
+  const [status, setStatus] = useState<UpdateStatus | null>(null);
 
-export function useUpdater() {
-  const [state, setState] = useState<UpdateState>({ status: 'idle' });
-
-  const reset = useCallback(() => {
-    setState({ status: 'idle' });
+  const checkForUpdates = useCallback(async () => {
+    try {
+      setStatus({ type: 'checking' });
+      
+      const update = await check();
+      
+      if (update) {
+        setStatus({ type: 'available', update });
+      } else {
+        setStatus({ type: 'no_update' });
+      }
+    } catch (error) {
+      console.error('Failed to check for updates:', error);
+      setStatus({ 
+        type: 'error', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
   }, []);
 
-  const checkForUpdates = useCallback(
-    async (silent = false): Promise<Update | null> => {
-      setState({ status: 'checking' });
-      try {
-        const update = await check();
-        if (update) {
-          setState({ status: 'available', update });
-          return update;
-        }
-        if (silent) {
-          setState({ status: 'idle' });
-        } else {
-          setState({ status: 'up-to-date' });
-        }
-        return null;
-      } catch (error) {
-        if (silent) {
-          setState({ status: 'idle' });
-        } else {
-          setState({
-            status: 'error',
-            error: error instanceof Error ? error.message : String(error)
-          });
-        }
-        return null;
-      }
-    },
-    []
-  );
+  const downloadAndInstall = useCallback(async () => {
+    if (status?.type !== 'available') return;
 
-  const installUpdate = useCallback(async () => {
-    const update = state.update;
-    if (!update || state.status !== 'available') return;
-
-    let downloaded = 0;
-    let total: number | undefined;
-
-    setState((prev) => ({ ...prev, status: 'downloading', progress: { downloaded: 0, total, percent: 0 } }));
-
-    const handleDownloadEvent = (event: DownloadEvent) => {
-      if (event.event === 'Started') {
-        total = event.data.contentLength;
-        setState((prev) => ({
-          ...prev,
-          status: 'downloading',
-          progress: {
-            downloaded: 0,
-            total,
-            percent: total ? 0 : undefined
-          }
-        }));
-      }
-
-      if (event.event === 'Progress') {
-        downloaded += event.data.chunkLength;
-        const percent = total ? Math.min(MAX_PERCENT, Math.round((downloaded / total) * MAX_PERCENT)) : undefined;
-        setState((prev) => ({
-          ...prev,
-          status: 'downloading',
-          progress: {
-            downloaded,
-            total,
-            percent
-          }
-        }));
-      }
-
-      if (event.event === 'Finished') {
-        setState((prev) => ({
-          ...prev,
-          status: 'installing'
-        }));
-      }
-    };
+    const { update } = status;
 
     try {
-      await update.downloadAndInstall(handleDownloadEvent);
-      await relaunch();
+      let downloaded = 0;
+      let contentLength = 0;
+
+      await update.downloadAndInstall((event) => {
+        switch (event.event) {
+          case 'Started':
+            contentLength = event.data.contentLength ?? 0;
+            setStatus({ type: 'downloading', progress: 0 });
+            break;
+          case 'Progress':
+            downloaded += event.data.chunkLength;
+            const progress = contentLength > 0 
+              ? Math.round((downloaded / contentLength) * 100)
+              : 0;
+            setStatus({ type: 'downloading', progress });
+            break;
+          case 'Finished':
+            setStatus({ type: 'ready', update });
+            break;
+        }
+      });
+
+      // Update installed, ask to restart
+      const shouldRestart = await ask(
+        'Update installed successfully. Restart now to apply changes?',
+        { 
+          title: 'Update Ready',
+          kind: 'info',
+          okLabel: 'Restart',
+          cancelLabel: 'Later'
+        }
+      );
+
+      if (shouldRestart) {
+        await relaunch();
+      }
     } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        status: 'error',
-        error: error instanceof Error ? error.message : String(error)
-      }));
+      console.error('Failed to install update:', error);
+      await message(
+        `Failed to install update: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { title: 'Update Error', kind: 'error' }
+      );
+      setStatus({ 
+        type: 'error', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
-  }, [state.update, state.status]);
+  }, [status]);
 
-  useEffect(() => {
-    void checkForUpdates(true);
-  }, [checkForUpdates]);
+  const dismiss = useCallback(() => {
+    setStatus(null);
+  }, []);
 
+  // Check on mount if enabled
   useEffect(() => {
-    if (state.status !== 'up-to-date' && state.status !== 'error') return;
-    const timer = window.setTimeout(() => {
-      setState({ status: 'idle' });
-    }, 3500);
-    return () => window.clearTimeout(timer);
-  }, [state.status]);
+    if (checkOnMount) {
+      // Delay slightly to not block app startup
+      const timer = setTimeout(checkForUpdates, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [checkOnMount, checkForUpdates]);
+
+  // Set up polling if enabled
+  useEffect(() => {
+    if (pollIntervalMinutes <= 0) return;
+
+    const intervalMs = pollIntervalMinutes * 60 * 1000;
+    const interval = setInterval(checkForUpdates, intervalMs);
+
+    return () => clearInterval(interval);
+  }, [pollIntervalMinutes, checkForUpdates]);
 
   return {
-    updateState: state,
+    status,
     checkForUpdates,
-    installUpdate,
-    resetUpdateState: reset
+    downloadAndInstall,
+    dismiss
   };
 }

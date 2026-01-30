@@ -1,0 +1,144 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  # Build and release
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: 'Narrative MVP v__VERSION__'
+          releaseBody: |
+            ## What's New
+            
+            See the [CHANGELOG.md](../CHANGELOG.md) for full details.
+            
+            ## Installation
+            
+            ### macOS
+            - Download `Narrative MVP_x64.app.tar.gz` for Intel Macs
+            - Download `Narrative MVP_aarch64.app.tar.gz` for Apple Silicon Macs
+            - Or use the `.dmg` installer
+            
+            ### Windows
+            - Download `Narrative MVP_x64-setup.exe` or `Narrative MVP_x64.msi`
+            
+            ### Linux
+            - Download `.AppImage`, `.deb`, or `.rpm` package
+            
+            ## Auto-Update
+            This release supports automatic updates. The app will check for updates on launch.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+
+  # Update latest.json for updater
+  update-latest:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate latest.json
+        run: |
+          # This script generates the latest.json file needed by the updater
+          # It extracts signatures from the .sig files
+          
+          cat > latest.json << 'EOF'
+          {
+            "version": "${{ github.ref_name }}",
+            "notes": "See release notes at https://github.com/jscraik/narrative/releases/tag/${{ github.ref_name }}",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "$(cat artifacts/*aarch64.app.tar.gz.sig 2>/dev/null || echo '')",
+                "url": "https://github.com/jscraik/narrative/releases/download/${{ github.ref_name }}/Narrative%20MVP_aarch64.app.tar.gz"
+              },
+              "darwin-x86_64": {
+                "signature": "$(cat artifacts/*x64.app.tar.gz.sig 2>/dev/null || echo '')",
+                "url": "https://github.com/jscraik/narrative/releases/download/${{ github.ref_name }}/Narrative%20MVP_x64.app.tar.gz"
+              },
+              "linux-x86_64": {
+                "signature": "$(cat artifacts/*.AppImage.sig 2>/dev/null || echo '')",
+                "url": "https://github.com/jscraik/narrative/releases/download/${{ github.ref_name }}/Narrative%20MVP_amd64.AppImage"
+              },
+              "windows-x86_64": {
+                "signature": "$(cat artifacts/*x64-setup.exe.sig 2>/dev/null || echo '')",
+                "url": "https://github.com/jscraik/narrative/releases/download/${{ github.ref_name }}/Narrative%20MVP_x64-setup.exe"
+              }
+            }
+          }
+          EOF
+
+      - name: Upload latest.json to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.build.outputs.releaseUploadUrl }}
+          asset_path: ./latest.json
+          asset_name: latest.json
+          asset_content_type: application/json

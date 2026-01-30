@@ -13,7 +13,7 @@ import { useUpdater } from './hooks/useUpdater';
 import { useTraceCollector } from './hooks/useTraceCollector';
 import { useSessionImport } from './hooks/useSessionImport';
 import { useCommitData } from './hooks/useCommitData';
-import { Dialog } from './ui/components/Dialog';
+import { UpdatePrompt, UpdateIndicator } from './ui/components/UpdatePrompt';
 
 export default function App() {
   const [mode, setMode] = useState<Mode>('demo');
@@ -65,21 +65,11 @@ export default function App() {
     model: null // Will be computed inside the hook
   });
 
-  const { updateState, checkForUpdates, installUpdate, resetUpdateState } = useUpdater();
-  const updateBusy = updateState.status === 'checking' || updateState.status === 'downloading' || updateState.status === 'installing';
-  const updateStatusText =
-    updateState.status === 'up-to-date'
-      ? 'Up to date'
-      : updateState.status === 'error'
-        ? 'Update failed'
-        : updateState.status === 'downloading'
-          ? `Downloading ${updateState.progress?.percent ?? 0}%`
-          : updateState.status === 'installing'
-            ? 'Installing…'
-            : null;
-  const updateDialogOpen = updateState.status === 'available';
-  const updateVersionLabel = updateState.update?.version ? `Version ${updateState.update.version}` : 'New version';
-  const updateMessage = `${updateVersionLabel} is available. Install now?`;
+  // Auto-updater integration
+  const { status: updateStatus, checkForUpdates, downloadAndInstall, dismiss } = useUpdater({
+    checkOnMount: true,
+    pollIntervalMinutes: 60 // Check every hour
+  });
 
   const updateCodexOtelReceiverEnabled = useCallback(
     async (enabled: boolean) => {
@@ -109,6 +99,16 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col bg-[#f5f5f4] text-stone-800">
+      {/* Update Notification */}
+      {updateStatus && (
+        <UpdatePrompt
+          status={updateStatus}
+          onUpdate={downloadAndInstall}
+          onDismiss={dismiss}
+          onCheckAgain={checkForUpdates}
+        />
+      )}
+
       <TopNav
         mode={mode}
         onModeChange={setMode}
@@ -118,22 +118,10 @@ export default function App() {
         onImportKimiSession={sessionImportHandlers.importKimiSession}
         onImportAgentTrace={sessionImportHandlers.importAgentTrace}
         importEnabled={importEnabled}
-        onCheckUpdates={() => void checkForUpdates(false)}
-        updateStatus={updateStatusText}
-        updateBusy={updateBusy}
-      />
-
-      <Dialog
-        open={updateDialogOpen}
-        title="Update available"
-        message={updateMessage}
-        confirmLabel={updateBusy ? 'Installing…' : 'Install update'}
-        cancelLabel="Not now"
-        onConfirm={() => {
-          void installUpdate();
-        }}
-        onCancel={resetUpdateState}
-      />
+      >
+        {/* Update indicator in nav */}
+        <UpdateIndicator status={updateStatus} onClick={checkForUpdates} />
+      </TopNav>
 
       <div className="flex-1 overflow-hidden">
         {mode === 'speculate' ? (

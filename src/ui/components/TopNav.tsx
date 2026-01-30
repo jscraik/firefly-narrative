@@ -13,9 +13,7 @@ export function TopNav(props: {
   onImportKimiSession?: () => void;
   onImportAgentTrace?: () => void;
   importEnabled?: boolean;
-  onCheckUpdates?: () => void;
-  updateStatus?: string | null;
-  updateBusy?: boolean;
+  children?: ReactNode;
 }) {
   const {
     mode,
@@ -26,9 +24,7 @@ export function TopNav(props: {
     onImportKimiSession,
     onImportAgentTrace,
     importEnabled,
-    onCheckUpdates,
-    updateStatus,
-    updateBusy
+    children
   } = props;
 
   const Tab = (p: { id: Mode; label: string; icon: ReactNode }) => (
@@ -101,27 +97,7 @@ export function TopNav(props: {
           />
         )}
 
-        {onCheckUpdates ? (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onCheckUpdates}
-              disabled={updateBusy}
-              className={clsx(
-                'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors border',
-                updateBusy
-                  ? 'bg-stone-50 text-stone-400 border-stone-200 cursor-not-allowed'
-                  : 'bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200'
-              )}
-            >
-              <RefreshCw className={clsx('h-4 w-4', updateBusy ? 'animate-spin' : '')} />
-              {updateBusy ? 'Checking…' : 'Check updates'}
-            </button>
-            {updateStatus ? (
-              <span className="text-xs text-stone-400">{updateStatus}</span>
-            ) : null}
-          </div>
-        ) : null}
+        {children}
 
         <button
           type="button"
