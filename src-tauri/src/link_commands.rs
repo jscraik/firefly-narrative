@@ -14,12 +14,16 @@
 //! Build Plan Epic 3 Story 3.4.
 //! Build Plan Data + Contracts section defines API routes.
 
-use crate::linking::{
-    detect_secrets, link_session_to_commits, GitCommit, LinkResult,
-    SessionExcerpt, SessionMessage, SessionMessageRole, SessionTool,
+use crate::{
+    linking::{
+        detect_secrets, link_session_to_commits, GitCommit, LinkResult, SessionExcerpt,
+        SessionMessage, SessionMessageRole, SessionTool,
+    },
+    DbState,
 };
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
+use tauri::State;
 
 /// Convert frontend SessionTool to backend SessionTool
 fn convert_session_tool(tool: &str) -> SessionTool {
@@ -100,7 +104,7 @@ async fn query_commits_in_window(
         FROM commits
         WHERE repo_id = $1 AND authored_at >= $2 AND authored_at <= $3
         ORDER BY authored_at ASC
-        "#
+        "#,
     )
     .bind(repo_id)
     .bind(window_start)
@@ -138,7 +142,8 @@ async fn query_commits_in_window(
         return Ok(Vec::new());
     }
 
-    let placeholders = shas.iter()
+    let placeholders = shas
+        .iter()
         .enumerate()
         .map(|(i, _)| format!("${}", i + 4)) // Start at $4 because $1=$3 are used above
         .collect::<Vec<_>>()
@@ -198,19 +203,23 @@ async fn query_commits_in_window(
 /// Build Plan Data + Contracts: `link_session_to_commit(repo_id, session_id, ...)`
 #[tauri::command(rename_all = "camelCase")]
 pub async fn link_session_to_commit(
-    pool: tauri::State<'_, SqlitePool>,
+    db_state: State<'_, DbState>,
     repo_id: i64,
     session_data: FrontendSessionExcerpt,
 ) -> Result<LinkResult, String> {
-    let db = pool.inner();
+    let db = db_state.0.as_ref();
 
     // Calculate time window for commit lookup (±4 hours from session)
     let session_end = chrono::DateTime::parse_from_rfc3339(&session_data.imported_at_iso)
         .map_err(|e| format!("Invalid session timestamp: {}", e))?
         .with_timezone(&chrono::Utc);
     let tolerance = chrono::Duration::minutes(240); // 4 hours
-    let window_start = (session_end - tolerance).format("%Y-%m-%dT%H:%M:%SZ").to_string();
-    let window_end = (session_end + tolerance).format("%Y-%m-%dT%H:%M:%SZ").to_string();
+    let window_start = (session_end - tolerance)
+        .format("%Y-%m-%dT%H:%M:%SZ")
+        .to_string();
+    let window_end = (session_end + tolerance)
+        .format("%Y-%m-%dT%H:%M:%SZ")
+        .to_string();
 
     // Query commits in time window
     let commits = query_commits_in_window(db, repo_id, &window_start, &window_end).await?;
@@ -219,8 +228,7 @@ pub async fn link_session_to_commit(
     let session = convert_session_excerpt(session_data);
 
     // Run linking algorithm
-    let result = link_session_to_commits(&session, &commits)
-        .map_err(|e| format!("{}", e))?;
+    let result = link_session_to_commits(&session, &commits).map_err(|e| format!("{}", e))?;
 
     // Store the link in database
     sqlx::query(
@@ -232,7 +240,7 @@ pub async fn link_session_to_commit(
             confidence = excluded.confidence,
             auto_linked = excluded.auto_linked
         RETURNING id
-        "#
+        "#,
     )
     .bind(repo_id)
     .bind(&session.id)
@@ -279,8 +287,8 @@ pub async fn link_session_to_commit(
 /// Build Plan Epic 3 Story 3.4.
 /// Build Plan Epic 7 Story 7.1: Security test for path traversal.
 #[tauri::command(rename_all = "camelCase")]
-pub async fn import_session_file(
-    pool: tauri::State<'_, SqlitePool>,
+pub async fn import_and_link_session_file(
+    db_state: State<'_, DbState>,
     repo_id: i64,
     file_path: String,
 ) -> Result<LinkResult, String> {
@@ -320,5 +328,5 @@ pub async fn import_session_file(
     }
 
     // Import using link_session_to_commit command
-    link_session_to_commit(pool, repo_id, session_data).await
+    link_session_to_commit(db_state, repo_id, session_data).await
 }

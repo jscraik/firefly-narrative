@@ -10,7 +10,7 @@ export function IntentList({ items }: { items: IntentItem[] }) {
         {items.map((it) => (
           <div key={it.id} className="flex items-start justify-between gap-4 group">
             <div className="flex items-start gap-3 flex-1">
-              <span className="intent-arrow mt-1 text-stone-300 text-lg leading-none">→</span>
+              <span className="intent-arrow mt-1 text-stone-300 text-lg leading-none transition-transform duration-150 ease-out group-hover:translate-x-0.5">→</span>
               <span className="text-sm text-stone-700 leading-relaxed">{it.text}</span>
             </div>
             {it.tag ? (

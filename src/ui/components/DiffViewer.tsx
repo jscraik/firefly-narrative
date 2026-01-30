@@ -48,11 +48,20 @@ export function DiffViewer(props: {
     <div className="card flex h-full flex-col overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-stone-100 px-4 py-3 bg-stone-50/50">
         <div className="truncate font-mono text-[12px] text-stone-600">{title}</div>
-        {loading ? <div className="text-xs text-stone-400">Loading…</div> : null}
+
       </div>
 
       <div className="flex-1 overflow-auto px-4 py-3 bg-white">
-        {!diffText ? (
+        {loading ? (
+          <div className="space-y-2">
+            <div className="h-4 bg-stone-100 rounded animate-pulse w-1/4" />
+            <div className="h-4 bg-stone-100 rounded animate-pulse w-full" />
+            <div className="h-4 bg-stone-100 rounded animate-pulse w-5/6" />
+            <div className="h-4 bg-stone-100 rounded animate-pulse w-3/4" />
+            <div className="h-4 bg-stone-100 rounded animate-pulse w-full" />
+            <div className="h-4 bg-stone-100 rounded animate-pulse w-2/3" />
+          </div>
+        ) : !diffText ? (
           <div className="text-sm text-stone-400">Select a file to view its diff.</div>
         ) : (
           <pre className="text-[12px] leading-relaxed text-stone-700 font-mono">
@@ -60,7 +69,7 @@ export function DiffViewer(props: {
               let currentLineNumber = 0;
               let inHunk = false;
 
-              return diffText.split(/\r?\n/).map((line, idx) => {
+              return diffText.split(/\r?\n/).map((line) => {
                 if (line.startsWith('@@')) {
                   const nextLine = parseNewFileLineNumber(line);
                   if (nextLine !== null) {
@@ -68,19 +77,20 @@ export function DiffViewer(props: {
                     inHunk = true;
                   }
                   return (
-                    <div key={idx} className={`${lineClass(line)} px-2 -mx-2`}>
+                    <div key={`hunk-${line}`} className={`${lineClass(line)} px-2 -mx-2`}>
                       {line || ' '}
                     </div>
                   );
                 }
 
                 let traceStyle = '';
-                if (inHunk && traceLookup) {
+                if (inHunk && traceLookup && !line.startsWith('-')) {
                   const traceInfo = traceLookup.get(currentLineNumber);
                   if (traceInfo) traceStyle = traceClass(traceInfo.type);
                 }
 
                 const classes = [lineClass(line), traceStyle, 'px-2', '-mx-2'].filter(Boolean).join(' ');
+                const lineKey = inHunk ? `line-${currentLineNumber}-${line}` : `meta-${line}`;
 
                 if (inHunk) {
                   if (line.startsWith('+') && !line.startsWith('+++')) {
@@ -91,7 +101,7 @@ export function DiffViewer(props: {
                 }
 
                 return (
-                  <div key={idx} className={classes}>
+                  <div key={lineKey} className={classes}>
                     {line || ' '}
                   </div>
                 );

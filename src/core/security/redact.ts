@@ -17,7 +17,7 @@ export function redactSecrets(input: string): RedactionResult {
     { type: 'GITHUB_TOKEN', re: /\bghp_[A-Za-z0-9]{20,}\b/g },
     { type: 'AWS_ACCESS_KEY', re: /\bAKIA[0-9A-Z]{16}\b/g },
     { type: 'PRIVATE_KEY_BLOCK', re: /-----BEGIN[\s\S]*?PRIVATE KEY-----[\s\S]*?-----END[\s\S]*?PRIVATE KEY-----/g },
-    { type: 'BEARER_TOKEN', re: /\bBearer\s+[A-Za-z0-9._\-]+\b/g }
+    { type: 'BEARER_TOKEN', re: /\bBearer\s+[A-Za-z0-9._-]+\b/g }
   ];
 
   let redacted = input;

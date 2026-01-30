@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { BranchViewModel, FileChange, TestRun, TraceRange } from '../../core/types';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FileSelectionProvider, useFileSelection } from '../../core/context/FileSelectionContext';
+import { testRuns } from '../../core/demo/nearbyGridDemo';
+import type { BranchViewModel, FileChange, TestRun, TraceRange } from '../../core/types';
 import { AgentTraceSummary } from '../components/AgentTraceSummary';
 import { BranchHeader } from '../components/BranchHeader';
+import { CodexOtelSettingsPanel } from '../components/CodexOtelSettingsPanel';
 import { DiffViewer } from '../components/DiffViewer';
 import { FilesChanged } from '../components/FilesChanged';
 import { IntentList } from '../components/IntentList';
 import { SessionExcerpts } from '../components/SessionExcerpts';
+import { SourceLensView } from '../components/SourceLensView';
 import { TestResultsPanel } from '../components/TestResultsPanel';
+import { TraceTranscriptPanel } from '../components/TraceTranscriptPanel';
 import { Timeline } from '../components/Timeline';
-import { testRuns } from '../../core/demo/nearbyGridDemo';
 
 function BranchViewInner(props: {
   model: BranchViewModel;
@@ -17,8 +20,30 @@ function BranchViewInner(props: {
   loadDiffForFile: (nodeId: string, filePath: string) => Promise<string>;
   loadTraceRangesForFile: (nodeId: string, filePath: string) => Promise<TraceRange[]>;
   onExportAgentTrace: (nodeId: string, files: FileChange[]) => void;
+  onRunOtlpSmokeTest: (nodeId: string, files: FileChange[]) => void;
+  onUpdateCodexOtelPath?: (path: string) => void;
+  onToggleCodexOtelReceiver?: (enabled: boolean) => void;
+  onOpenCodexOtelDocs?: () => void;
+  codexPromptExport?: { enabled: boolean | null; configPath: string | null };
+  onUnlinkSession?: (sessionId: string) => void;
+  actionError?: string | null;
+  onDismissActionError?: () => void;
 }) {
-  const { model, loadFilesForNode, loadDiffForFile, loadTraceRangesForFile, onExportAgentTrace } = props;
+  const {
+    model,
+    loadFilesForNode,
+    loadDiffForFile,
+    loadTraceRangesForFile,
+    onExportAgentTrace,
+    onRunOtlpSmokeTest,
+    onUpdateCodexOtelPath,
+    onToggleCodexOtelReceiver,
+    onOpenCodexOtelDocs,
+    codexPromptExport,
+    onUnlinkSession,
+    actionError,
+    onDismissActionError
+  } = props;
   const { selectedFile, selectFile } = useFileSelection();
 
   const defaultSelectedId = useMemo(() => {
@@ -28,13 +53,26 @@ function BranchViewInner(props: {
   }, [model]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(defaultSelectedId);
+  // Track which commits have already pulsed (once per app session)
+  const pulsedCommits = useRef<Set<string>>(new Set());
+  const [pulseCommitId, setPulseCommitId] = useState<string | null>(null);
   const [files, setFiles] = useState<FileChange[]>([]);
   const [diffText, setDiffText] = useState<string | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loadingDiff, setLoadingDiff] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
   const [traceRanges, setTraceRanges] = useState<TraceRange[]>([]);
   const [loadingTrace, setLoadingTrace] = useState(false);
+
+  const selectedNode = useMemo(
+    () => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
+    [model.timeline, selectedNodeId]
+  );
+
+  const selectedCommitSha = useMemo(() => {
+    if (!selectedNode || selectedNode.type !== 'commit') return null;
+    return selectedNode.id;
+  }, [selectedNode]);
 
   // Get test run for current node
   const testRun = useMemo((): TestRun | undefined => {
@@ -138,6 +176,28 @@ function BranchViewInner(props: {
     };
   }, [selectedNodeId, selectedFile, loadTraceRangesForFile]);
 
+  // Pulse commit badge once on first successful import
+  useEffect(() => {
+    // Find commits with session badges (linked sessions)
+    const linkedCommits = model.timeline.filter(node =>
+      node.badges?.some(b => b.type === 'session')
+    );
+
+    for (const commit of linkedCommits) {
+      if (!pulsedCommits.current.has(commit.id)) {
+        // First time seeing this linked commit - trigger pulse once
+        pulsedCommits.current.add(commit.id);
+        setPulseCommitId(commit.id);
+
+        // Clear pulse state after animation completes (1.5s animation + buffer)
+        const timer = setTimeout(() => {
+          setPulseCommitId(null);
+        }, 1600);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [model.timeline]);
+
   const handleFileClickFromSession = (path: string) => {
     const fileExists = files.some((f) => f.path === path);
     if (fileExists) {
@@ -149,46 +209,104 @@ function BranchViewInner(props: {
     handleFileClickFromSession(path);
   };
 
+  const handleCommitClickFromSession = (commitSha: string) => {
+    setSelectedNodeId(commitSha);
+  };
+
   return (
     <div className="flex h-full flex-col bg-[#f5f5f4]">
       <div className="flex-1 overflow-hidden">
-        <div className="grid h-full grid-cols-12 gap-5 p-5">
+        <div className="flex flex-col gap-5 p-5 h-full overflow-y-auto lg:grid lg:grid-cols-12 lg:overflow-hidden">
           {/* Left column */}
-          <div className="col-span-7 flex flex-col gap-5 overflow-y-auto pr-1">
+          <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
             <BranchHeader model={model} />
             <IntentList items={model.intent} />
             <div>
               {loadingFiles ? (
-                <div className="card p-5 text-sm text-stone-400">
-                  Loading files…
+                <div className="card p-5">
+                  <div className="section-header">FILES CHANGED</div>
+                  <div className="mt-4 space-y-2">
+                    {['s1', 's2', 's3', 's4', 's5'].map((key) => (
+                      <div key={key} className="flex items-center justify-between py-2">
+                        <div className="h-4 bg-stone-200 rounded animate-pulse w-3/4" />
+                        <div className="flex gap-2">
+                          <div className="h-4 w-12 bg-stone-200 rounded animate-pulse" />
+                          <div className="h-4 w-12 bg-stone-200 rounded animate-pulse" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <FilesChanged files={files} title="FILES CHANGED" traceByFile={model.traceSummaries?.byFile} />
+                <FilesChanged
+                  files={files}
+                  title="FILES CHANGED"
+                  traceByFile={selectedNodeId ? model.traceSummaries?.byFileByCommit[selectedNodeId] : undefined}
+                />
               )}
             </div>
 
-            {error ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                {error}
+            {actionError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-start gap-3">
+                <span className="text-red-500 mt-0.5">●</span>
+                <div className="flex-1">{actionError}</div>
+                {onDismissActionError ? (
+                  <button
+                    type="button"
+                    onClick={onDismissActionError}
+                    className="text-red-400 hover:text-red-600 transition-colors"
+                    aria-label="Dismiss error"
+                  >
+                    ✕
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>
 
           {/* Right column */}
-          <div className="col-span-5 flex flex-col gap-5 overflow-y-auto">
+          <div className="flex flex-col gap-5 lg:col-span-5 lg:overflow-y-auto">
             <SessionExcerpts
               excerpts={model.sessionExcerpts}
+              selectedFile={selectedFile}
+              onFileClick={handleFileClickFromSession}
+              onUnlink={onUnlinkSession}
+              onCommitClick={handleCommitClickFromSession}
+              selectedCommitId={selectedNodeId}
+            />
+            <TraceTranscriptPanel
+              excerpt={model.sessionExcerpts?.[0]}
               selectedFile={selectedFile}
               onFileClick={handleFileClickFromSession}
             />
             <AgentTraceSummary
               summary={selectedNodeId ? model.traceSummaries?.byCommit[selectedNodeId] : undefined}
               hasFiles={files.length > 0}
+              status={model.traceStatus}
               onExport={() => {
                 if (!selectedNodeId) return;
                 onExportAgentTrace(selectedNodeId, files);
               }}
+              onSmokeTest={() => {
+                if (!selectedNodeId) return;
+                onRunOtlpSmokeTest(selectedNodeId, files);
+              }}
             />
+            <CodexOtelSettingsPanel
+              traceConfig={model.traceConfig}
+              onUpdateCodexOtelPath={onUpdateCodexOtelPath}
+              onToggleCodexOtelReceiver={onToggleCodexOtelReceiver}
+              onOpenCodexOtelDocs={onOpenCodexOtelDocs}
+              logUserPromptEnabled={codexPromptExport?.enabled ?? null}
+              logUserPromptConfigPath={codexPromptExport?.configPath ?? null}
+            />
+            {model.source === 'git' && selectedCommitSha && selectedFile && model.meta?.repoId ? (
+              <SourceLensView
+                repoId={model.meta.repoId}
+                commitSha={selectedCommitSha}
+                filePath={selectedFile}
+              />
+            ) : null}
             <TestResultsPanel testRun={testRun} onFileClick={handleFileClickFromTest} />
             <div className="min-h-[200px] flex-1">
               <DiffViewer
@@ -202,7 +320,12 @@ function BranchViewInner(props: {
         </div>
       </div>
 
-      <Timeline nodes={model.timeline} selectedId={selectedNodeId} onSelect={setSelectedNodeId} />
+      <Timeline
+        nodes={model.timeline}
+        selectedId={selectedNodeId}
+        onSelect={setSelectedNodeId}
+        pulseCommitId={pulseCommitId}
+      />
     </div>
   );
 }
@@ -213,6 +336,14 @@ export function BranchView(props: {
   loadDiffForFile: (nodeId: string, filePath: string) => Promise<string>;
   loadTraceRangesForFile: (nodeId: string, filePath: string) => Promise<TraceRange[]>;
   onExportAgentTrace: (nodeId: string, files: FileChange[]) => void;
+  onRunOtlpSmokeTest: (nodeId: string, files: FileChange[]) => void;
+  onUpdateCodexOtelPath?: (path: string) => void;
+  onToggleCodexOtelReceiver?: (enabled: boolean) => void;
+  onOpenCodexOtelDocs?: () => void;
+  codexPromptExport?: { enabled: boolean | null; configPath: string | null };
+  onUnlinkSession?: (sessionId: string) => void;
+  actionError?: string | null;
+  onDismissActionError?: () => void;
 }) {
   return (
     <FileSelectionProvider>

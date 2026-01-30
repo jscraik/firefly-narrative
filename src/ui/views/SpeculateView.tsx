@@ -2,15 +2,21 @@ export function SpeculateView() {
   return (
     <div className="h-full overflow-auto p-10 bg-[#f5f5f4]">
       <div className="mx-auto max-w-5xl">
-        <div className="text-xs font-semibold tracking-wide text-stone-400">SPECULATIVE QUERY</div>
-        <div className="mt-2 card p-5">
-          <div className="text-2xl font-semibold text-stone-800">What if we use websockets instead of polling?</div>
+        <div className="card p-5">
+          <div className="section-header">SPECULATIVE QUERY</div>
+          <div className="mt-2 text-2xl font-semibold text-stone-800">What if we use websockets instead of polling?</div>
         </div>
 
         <div className="mt-10 card p-6">
-          <svg viewBox="0 0 1000 420" className="h-[420px] w-full">
+          <svg
+            viewBox="0 0 1200 420"
+            className="h-[420px] w-full"
+            role="img"
+            aria-labelledby="speculative-chart-title"
+          >
+            <title id="speculative-chart-title">Speculative architecture outcomes chart</title>
             {/* baseline */}
-            <line x1="60" y1="300" x2="940" y2="300" stroke="#e7e5e4" strokeWidth="2" />
+            <line x1="60" y1="300" x2="1140" y2="300" stroke="#e7e5e4" strokeWidth="2" />
             <circle cx="60" cy="300" r="7" fill="#a8a29e" />
             <text x="40" y="330" fill="#78716c" fontSize="14">
               current
@@ -61,7 +67,7 @@ export function SpeculateView() {
               GraphQL Subs
             </text>
 
-            <text x="900" y="400" fill="#a8a29e" fontSize="14">
+            <text x="1100" y="290" textAnchor="end" fill="#a8a29e" fontSize="14">
               future →
             </text>
           </svg>

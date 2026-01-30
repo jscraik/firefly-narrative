@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { FileCode } from 'lucide-react';
 import type { FileChange, TraceFileSummary } from '../../core/types';
 import { useFileSelection } from '../../core/context/FileSelectionContext';
 
@@ -34,7 +35,13 @@ export function FilesChanged({
       <div className="section-header">{title ?? 'FILES CHANGED'}</div>
       <div className="mt-4 divide-y divide-stone-100 border border-stone-100 rounded-lg overflow-hidden">
         {files.length === 0 ? (
-          <div className="p-4 text-sm text-stone-400">No file changes to show.</div>
+          <div className="p-6 flex flex-col items-center text-center">
+            <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center mb-2">
+              <FileCode className="w-4 h-4 text-stone-400" />
+            </div>
+            <p className="text-sm text-stone-500">No files changed</p>
+            <p className="text-xs text-stone-400 mt-0.5">Select a commit to view changes</p>
+          </div>
         ) : (
           files.map((f) => (
             <button

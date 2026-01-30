@@ -1,8 +1,14 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, XCircle, CheckCircle, HelpCircle, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, XCircle, CheckCircle, HelpCircle, Clock, Terminal } from 'lucide-react';
 import type { TestRun, TestCase } from '../../core/types';
 
 function TestCaseRow({ test, onFileClick }: { test: TestCase; onFileClick?: (path: string) => void }) {
+  const filePath = test.filePath;
+  const handleFileClick = () => {
+    if (!filePath) return;
+    onFileClick?.(filePath);
+  };
+
   return (
     <div className="border-b border-red-100 py-3 last:border-0">
       <div className="flex items-start gap-3">
@@ -12,14 +18,15 @@ function TestCaseRow({ test, onFileClick }: { test: TestCase; onFileClick?: (pat
           {test.errorMessage && (
             <div className="mt-1 text-xs text-red-600 font-mono">{test.errorMessage}</div>
           )}
-          {test.filePath && (
+          {filePath ? (
             <button
-              onClick={() => onFileClick?.(test.filePath!)}
+              type="button"
+              onClick={handleFileClick}
               className="mt-2 pill-file"
             >
-              {test.filePath}
+              {filePath}
             </button>
-          )}
+          ) : null}
         </div>
         <div className="text-[11px] text-stone-400 tabular-nums">
           {(test.durationMs / 1000).toFixed(2)}s
@@ -44,7 +51,13 @@ export function TestResultsPanel({
     return (
       <div className={`card p-5 ${className || ''}`}>
         <div className="section-header">TEST RESULTS</div>
-        <div className="mt-3 text-sm text-stone-400">No test data available.</div>
+        <div className="mt-5 flex flex-col items-center text-center py-3">
+          <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center mb-2">
+            <Terminal className="w-4 h-4 text-stone-400" />
+          </div>
+          <p className="text-sm text-stone-500 mb-1">No test data available</p>
+          <p className="text-xs text-stone-400">Import from CI or run tests locally</p>
+        </div>
       </div>
     );
   }
@@ -55,6 +68,7 @@ export function TestResultsPanel({
   return (
     <div className={`card overflow-hidden ${className || ''}`}>
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between gap-3 p-5 hover:bg-stone-50 transition-colors"
       >

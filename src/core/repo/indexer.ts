@@ -10,7 +10,9 @@ import {
   writeRepoMeta
 } from './meta';
 import { loadSessionExcerpts } from './sessions';
-import { scanAgentTraceRecords } from './agentTrace';
+import { ingestCodexOtelLogFile, scanAgentTraceRecords } from './agentTrace';
+import { loadTraceConfig } from './traceConfig';
+import { importAttributionNotesBatch } from '../attribution-api';
 
 export type RepoIndex = {
   repoId: number;
@@ -31,14 +33,42 @@ export async function indexRepo(selectedPath: string, limit = 50): Promise<{ mod
 
   const agg = await getAggregateStatsForCommits(root, limit);
 
+  try {
+    await importAttributionNotesBatch(repoId, commits.map((c) => c.sha));
+  } catch {
+    // Notes import is best-effort
+  }
+
   const intent: IntentItem[] = commits.slice(0, 6).map((c, idx) => ({
     id: `c-${idx}`,
     text: c.subject || '(no subject)',
     tag: c.sha.slice(0, 7)
   }));
 
-  const sessionExcerpts = await loadSessionExcerpts(root, 1);
-  const trace = await scanAgentTraceRecords(root, repoId, commits.map((c) => c.sha));
+  const sessionExcerpts = await loadSessionExcerpts(root, repoId, 1);
+  const traceConfig = await loadTraceConfig(root);
+  
+  // Trace ingestion is best-effort; don't fail repo loading if it errors
+  let otelIngest: Awaited<ReturnType<typeof ingestCodexOtelLogFile>> = {
+    status: { state: 'inactive', message: 'Not configured' },
+    recordsWritten: 0
+  };
+  let trace: Awaited<ReturnType<typeof scanAgentTraceRecords>> = {
+    byCommit: {},
+    byFileByCommit: {},
+    totals: { conversations: 0, ranges: 0 }
+  };
+  
+  try {
+    otelIngest = await ingestCodexOtelLogFile({
+      repoRoot: root,
+      repoId,
+      logPath: traceConfig.codexOtelLogPath
+    });
+    trace = await scanAgentTraceRecords(root, repoId, commits.map((c) => c.sha));
+  } catch {
+    // Trace scanning failed, but we can still show the repo without trace data
+  }
 
   const timeline: TimelineNode[] = commits
     .slice()
@@ -106,7 +136,9 @@ export async function indexRepo(selectedPath: string, limit = 50): Promise<{ mod
     intent,
     timeline,
     sessionExcerpts,
-    traceSummaries: { byCommit: trace.byCommit, byFile: trace.byFile },
+    traceSummaries: { byCommit: trace.byCommit, byFileByCommit: trace.byFileByCommit },
+    traceStatus: otelIngest.status,
+    traceConfig,
     meta: { repoPath: root, branchName: branch, headSha }
   };
 

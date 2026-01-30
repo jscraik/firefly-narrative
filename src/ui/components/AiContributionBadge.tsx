@@ -1,0 +1,114 @@
+import { Bot } from 'lucide-react';
+
+interface ContributionStats {
+  humanLines: number;
+  aiAgentLines: number;
+  aiAssistLines: number;
+  collaborativeLines: number;
+  totalLines: number;
+  aiPercentage: number;
+  primaryTool?: string;
+  model?: string;
+}
+
+interface AiContributionBadgeProps {
+  stats?: ContributionStats;
+  showZero?: boolean;
+}
+
+export function AiContributionBadge({ stats, showZero = false }: AiContributionBadgeProps) {
+  if (!stats) return null;
+  
+  const percentage = Math.round(stats.aiPercentage);
+  
+  // Don't show if 0% and showZero is false
+  if (percentage === 0 && !showZero) return null;
+  
+  // Determine badge style based on percentage
+  const getBadgeStyle = () => {
+    if (percentage >= 80) {
+      return {
+        bg: 'bg-emerald-100',
+        text: 'text-emerald-700',
+        border: 'border-emerald-200',
+        icon: 'text-emerald-600',
+      };
+    } else if (percentage >= 40) {
+      return {
+        bg: 'bg-amber-100',
+        text: 'text-amber-700',
+        border: 'border-amber-200',
+        icon: 'text-amber-600',
+      };
+    } else if (percentage > 0) {
+      return {
+        bg: 'bg-blue-100',
+        text: 'text-blue-700',
+        border: 'border-blue-200',
+        icon: 'text-blue-600',
+      };
+    }
+    return {
+      bg: 'bg-stone-100',
+      text: 'text-stone-600',
+      border: 'border-stone-200',
+      icon: 'text-stone-500',
+    };
+  };
+  
+  const style = getBadgeStyle();
+  const toolLabel = stats.primaryTool 
+    ? formatToolName(stats.primaryTool)
+    : 'AI';
+  
+  return (
+    <div 
+      className={`
+        inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium
+        border ${style.bg} ${style.text} ${style.border}
+        transition-all duration-150 hover:shadow-sm
+      `}
+      title={getTooltip(stats)}
+    >
+      <Bot className={`w-3 h-3 ${style.icon}`} />
+      <span>{percentage > 0 ? `${percentage}%` : '0%'}</span>
+      <span className="opacity-75 hidden sm:inline">· {toolLabel}</span>
+    </div>
+  );
+}
+
+function formatToolName(tool: string): string {
+  const toolNames: Record<string, string> = {
+    'claude_code': 'Claude',
+    'cursor': 'Cursor',
+    'copilot': 'Copilot',
+    'codex': 'Codex',
+    'gemini': 'Gemini',
+    'continue': 'Continue',
+  };
+  
+  return toolNames[tool] || tool;
+}
+
+function getTooltip(stats: ContributionStats): string {
+  const parts: string[] = [];
+  
+  if (stats.aiAgentLines > 0) {
+    parts.push(`${stats.aiAgentLines} lines from AI agent`);
+  }
+  if (stats.aiAssistLines > 0) {
+    parts.push(`${stats.aiAssistLines} lines from AI assist`);
+  }
+  if (stats.collaborativeLines > 0) {
+    parts.push(`${stats.collaborativeLines} lines collaborative`);
+  }
+  if (stats.humanLines > 0) {
+    parts.push(`${stats.humanLines} lines human-written`);
+  }
+  
+  if (stats.model) {
+    parts.push(`Model: ${stats.model}`);
+  }
+  
+  return parts.join('\n') || 'No contribution data';
+}

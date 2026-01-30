@@ -1,32 +1,93 @@
-import type { SessionExcerpt, SessionMessage } from '../types';
+import { invoke } from '@tauri-apps/api/core';
+import type { SessionExcerpt, SessionMessage, SessionMessageRole } from '../types';
 import { listNarrativeFiles, readNarrativeFile } from '../tauri/narrativeFs';
 
 type SessionPayload = {
+  id?: string;
   tool?: string;
   durationMin?: number;
-  messages?: Array<{ role: 'user' | 'assistant'; text: string; files?: string[] }>;
+  messages?: Array<{
+    id?: string;
+    role: SessionMessageRole;
+    text: string;
+    files?: string[];
+    toolName?: string;
+    toolInput?: unknown;
+  }>;
+  linkedCommitSha?: string;
+  linkConfidence?: number;
+  autoLinked?: boolean;
 };
 
+/**
+ * Extract file paths from message text.
+ * Matches patterns like:
+ * - src/App.tsx
+ * - src/core/repo/indexer.ts
+ * - ./components/Header.tsx
+ * - ../utils/helpers.ts
+ */
+function extractFilesFromText(text: string): string[] {
+  // Pattern matches: path/to/file.ext with common source code extensions
+  // Also handles relative paths like ./file.ts or ../file.ts
+  const pattern = /\b(?:[\w./-]+\/)?[\w-]+\.(tsx?|jsx?|rs|go|py|java|cpp|c|cs|swift|kt|rb|php|sh|sql|md|css|scss|less|json|yaml|yml|toml)\b/g;
+
+  const matches = text.match(pattern) || [];
+  // Deduplicate and return
+  return Array.from(new Set(matches));
+}
+
+function normalizeTool(tool?: string): SessionExcerpt['tool'] {
+  if (!tool) return 'unknown';
+  const normalized = tool.replace(/_/g, '-').toLowerCase();
+  const allowed: SessionExcerpt['tool'][] = [
+    'claude-code',
+    'codex',
+    'kimi',
+    'cursor',
+    'gemini',
+    'copilot',
+    'continue',
+    'unknown'
+  ];
+  return allowed.includes(normalized as SessionExcerpt['tool'])
+    ? (normalized as SessionExcerpt['tool'])
+    : 'unknown';
+}
+
 function normalizeExcerpt(id: string, raw: SessionPayload): SessionExcerpt {
-  const tool = (raw.tool as SessionExcerpt['tool']) ?? 'unknown';
+  const sessionId = raw.id ?? id;
+  const tool = normalizeTool(raw.tool);
   const durationMin = typeof raw.durationMin === 'number' ? raw.durationMin : undefined;
 
-  const messages: SessionMessage[] = (raw.messages ?? []).map((m, idx) => ({
-    id: `${id}:m${idx}`,
-    role: m.role,
-    text: m.text,
-    files: m.files
-  }));
+  const messages: SessionMessage[] = (raw.messages ?? []).map((m, idx) => {
+    // Use explicitly provided files, or extract from text
+    const files = m.files && m.files.length > 0
+      ? m.files
+      : extractFilesFromText(m.text);
+
+    return {
+      id: m.id ?? `${sessionId}:m${idx}`,
+      role: m.role,
+      text: m.text,
+      files: files.length > 0 ? files : undefined,
+      toolName: m.toolName,
+      toolInput: m.toolInput
+    };
+  });
 
   return {
-    id,
+    id: sessionId,
     tool,
     durationMin,
-    messages
+    messages,
+    linkedCommitSha: raw.linkedCommitSha,
+    linkConfidence: raw.linkConfidence,
+    autoLinked: raw.autoLinked
   };
 }
 
-export async function loadSessionExcerpts(repoRoot: string, limit = 1): Promise<SessionExcerpt[]> {
+async function loadSessionExcerptsFromDisk(repoRoot: string, limit: number): Promise<SessionExcerpt[]> {
   try {
     const all = await listNarrativeFiles(repoRoot, 'sessions');
     const jsonFiles = all.filter((p) => p.toLowerCase().endsWith('.json'));
@@ -38,12 +99,18 @@ export async function loadSessionExcerpts(repoRoot: string, limit = 1): Promise<
 
     for (const rel of jsonFiles.slice(0, limit)) {
       const txt = await readNarrativeFile(repoRoot, rel);
-      const parsed = JSON.parse(txt) as any;
+      const parsed = JSON.parse(txt) as unknown;
+      const parsedRecord = parsed && typeof parsed === 'object'
+        ? (parsed as Record<string, unknown>)
+        : null;
 
       // Accept either a direct SessionPayload or a wrapper with { payload }
-      const payload: SessionPayload = parsed?.payload ?? parsed;
+      const payloadCandidate = parsedRecord?.payload ?? parsed;
+      if (!payloadCandidate || typeof payloadCandidate !== 'object') continue;
 
-      if (!payload || !Array.isArray(payload.messages)) continue;
+      const payload = payloadCandidate as SessionPayload;
+
+      if (!Array.isArray(payload.messages)) continue;
       excerpts.push(normalizeExcerpt(rel, payload));
     }
 
@@ -51,4 +118,28 @@ export async function loadSessionExcerpts(repoRoot: string, limit = 1): Promise<
   } catch {
     return [];
   }
+}
+
+async function loadSessionExcerptsFromDb(repoId: number, limit: number): Promise<SessionExcerpt[]> {
+  try {
+    const sessions = await invoke<SessionPayload[]>('get_recent_sessions', { repoId, limit });
+    return sessions.map((payload, idx) => normalizeExcerpt(payload.id ?? `session-${idx}`, payload));
+  } catch {
+    return [];
+  }
+}
+
+export async function loadSessionExcerpts(
+  repoRoot: string,
+  repoId: number | null,
+  limit = 1
+): Promise<SessionExcerpt[]> {
+  if (repoId) {
+    const dbSessions = await loadSessionExcerptsFromDb(repoId, limit);
+    if (dbSessions.length > 0) {
+      return dbSessions;
+    }
+  }
+
+  return loadSessionExcerptsFromDisk(repoRoot, limit);
 }

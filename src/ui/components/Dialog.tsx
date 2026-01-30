@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 
 /**
@@ -38,6 +38,8 @@ export function Dialog({
   onCancel,
 }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const [shouldRender, setShouldRender] = useState(open);
 
   // Focus trap: keep focus within dialog when open
   useEffect(() => {
@@ -64,21 +66,45 @@ export function Dialog({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [open, onCancel]);
 
-  if (!open) return null;
+  // Handle exit animation
+  useEffect(() => {
+    if (open) {
+      setIsClosing(false);
+      setShouldRender(true);
+    } else {
+      setIsClosing(true);
+      const timer = setTimeout(() => setShouldRender(false), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  if (!shouldRender) return null;
 
   const isDestructive = variant === 'destructive';
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="dialog-title"
+      className={clsx(
+        'fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-150 ease-out',
+        isClosing ? 'opacity-0' : 'opacity-100'
+      )}
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        aria-label="Close dialog"
+        onClick={onCancel}
+      />
       <div
         ref={dialogRef}
-        className="w-[400px] max-w-full rounded-xl border border-white/10 bg-zinc-900 p-5 shadow-xl"
-        onClick={(e) => e.stopPropagation()} // Prevent backdrop click from closing
+        className={clsx(
+          'w-[400px] max-w-full rounded-xl border border-white/10 bg-zinc-900 p-5 shadow-xl transition-all duration-150 ease-out',
+          isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+        )}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialog-title"
       >
         <h2 id="dialog-title" className="text-lg font-semibold text-white">
           {title}

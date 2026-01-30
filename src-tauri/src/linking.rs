@@ -42,7 +42,7 @@ const TIME_WINDOW_TOLERANCE_MIN: i64 = 240;
 const TEMPORAL_DECAY_MIN: i64 = 5;
 
 /// Minimum confidence threshold for auto-linking
-const CONFIDENCE_THRESHOLD: f64 = 0.65;
+const CONFIDENCE_THRESHOLD: f64 = 0.7;
 
 /// Algorithm weights for combining scores
 const TEMPORAL_WEIGHT: f64 = 0.6;
@@ -238,10 +238,7 @@ pub fn score_temporal_overlap(
 /// # Evidence
 ///
 /// Build Plan Epic 3 Story 3.2.
-pub fn score_file_overlap(
-    session_files: &[String],
-    commit_files: &[String],
-) -> f64 {
+pub fn score_file_overlap(session_files: &[String], commit_files: &[String]) -> f64 {
     // Normalize and deduplicate file paths
     let session_set: HashSet<String> = session_files
         .iter()
@@ -388,7 +385,10 @@ const SECRET_PATTERNS: &[(&str, &str)] = &[
     (r"\bsk-[a-zA-Z0-9]{20,}\b", "sk- API key"),
     (r"\bpk_[a-zA-Z0-9]{20,}\b", "pk_ API key"),
     // Common secret keywords
-    (r"\b[A-Za-z0-9]{32,}\b", "long random string (possible secret)"),
+    (
+        r"\b[A-Za-z0-9]{32,}\b",
+        "long random string (possible secret)",
+    ),
 ];
 
 /// Detect secrets in session message text.
@@ -418,7 +418,14 @@ fn detect_secrets_impl(text: &str) -> Vec<String> {
     let mut detected = Vec::new();
 
     // Check for secret keywords
-    let keywords = ["token", "secret", "api_key", "password", "private_key", "credentials"];
+    let keywords = [
+        "token",
+        "secret",
+        "api_key",
+        "password",
+        "private_key",
+        "credentials",
+    ];
     let text_lower = text.to_lowercase();
 
     for keyword in keywords {
@@ -437,7 +444,11 @@ fn detect_secrets_impl(text: &str) -> Vec<String> {
         // Check for long random strings (possible secrets)
         let words: Vec<&str> = text.split_whitespace().collect();
         for word in words {
-            if word.len() >= 32 && word.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+            if word.len() >= 32
+                && word
+                    .chars()
+                    .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+            {
                 detected.push(format!("long string: {} chars", word.len()));
                 break; // Only report once per message
             }
@@ -445,51 +456,6 @@ fn detect_secrets_impl(text: &str) -> Vec<String> {
     }
 
     detected
-}
-
-/// Redact detected secrets from text.
-///
-/// # Arguments
-///
-/// * `text` - Text that may contain secrets
-/// * `secrets` - List of detected secret patterns
-///
-/// # Returns
-///
-/// Redacted text with `[REDACTED]` placeholders
-pub fn redact_secrets(text: &str, secrets: &[String]) -> String {
-    if secrets.is_empty() {
-        return text.to_string();
-    }
-
-    // For MVP, replace entire text with redaction notice
-    // In production, would selectively redact only the secret values
-    format!("[REDACTED: {} potential secret(s) detected]", secrets.len())
-}
-
-// ============================================================================
-// PUBLIC API FOR COMMANDS
-// ============================================================================
-
-/// Extension trait to expose internal functions for Tauri commands.
-pub trait DetectSecretsExt {
-    fn scan_for_secrets(&self) -> Vec<String>;
-}
-
-impl DetectSecretsExt for SessionMessage {
-    fn scan_for_secrets(&self) -> Vec<String> {
-        detect_secrets(&self.text)
-    }
-}
-
-impl DetectSecretsExt for SessionExcerpt {
-    fn scan_for_secrets(&self) -> Vec<String> {
-        let mut secrets = Vec::new();
-        for msg in &self.messages {
-            secrets.extend(detect_secrets(&msg.text));
-        }
-        secrets
-    }
 }
 
 /// Extract all file paths from session messages.
@@ -538,14 +504,16 @@ pub fn extract_session_files(messages: &[SessionMessage]) -> Vec<String> {
 /// # Evidence
 ///
 /// Build Plan Epic 3 Story 3.4.
-pub fn link_session_to_commits(
-    session: &SessionExcerpt,
-    commits: &[GitCommit],
-) -> LinkingResult {
+pub fn link_session_to_commits(session: &SessionExcerpt, commits: &[GitCommit]) -> LinkingResult {
     // Parse session end time
     let session_end = match DateTime::parse_from_rfc3339(&session.imported_at_iso) {
         Ok(dt) => dt.with_timezone(&Utc),
-        Err(e) => return Err(UnlinkedReason::ParseError(format!("Invalid session timestamp: {}", e))),
+        Err(e) => {
+            return Err(UnlinkedReason::ParseError(format!(
+                "Invalid session timestamp: {}",
+                e
+            )))
+        }
     };
 
     // Get or infer session duration
@@ -595,36 +563,42 @@ pub fn link_session_to_commits(
         candidates.iter().map(|c| (c.sha.clone(), *c)).collect();
 
     for commit in &candidates {
-        if let Some(result) = calculate_link_confidence(
-            &session_end,
-            duration_min,
-            commit,
-            &session_files,
-        ) {
+        if let Some(result) =
+            calculate_link_confidence(&session_end, duration_min, commit, &session_files)
+        {
             match &best_result {
                 None => best_result = Some(result),
                 Some(current_best) => {
                     // Calculate timestamp distance for tie-breaking
-                    let commit_time = DateTime::parse_from_rfc3339(&commit.authored_at)
-                        .unwrap()
-                        .with_timezone(&Utc);
-                    let current_best_commit = commit_map.get(&current_best.commit_sha).unwrap();
-                    let current_best_commit_time =
-                        DateTime::parse_from_rfc3339(&current_best_commit.authored_at)
-                            .unwrap()
-                            .with_timezone(&Utc);
+                    // Use match to gracefully handle parse errors instead of unwrap
+                    let (Some(commit_time), Some(current_best_commit)) = (
+                        DateTime::parse_from_rfc3339(&commit.authored_at).ok(),
+                        commit_map.get(&current_best.commit_sha),
+                    ) else {
+                        continue;
+                    };
+                    let Some(current_best_commit_time) =
+                        DateTime::parse_from_rfc3339(&current_best_commit.authored_at).ok()
+                    else {
+                        continue;
+                    };
+
+                    let commit_time = commit_time.with_timezone(&Utc);
+                    let current_best_commit_time = current_best_commit_time.with_timezone(&Utc);
 
                     let new_distance = (commit_time - session_end).num_minutes().abs();
-                    let current_distance = (current_best_commit_time - session_end).num_minutes().abs();
+                    let current_distance =
+                        (current_best_commit_time - session_end).num_minutes().abs();
 
                     // Replace if:
                     // 1. Significantly higher confidence, OR
                     // 2. Similar confidence but closer timestamp (tie-break)
-                    if result.confidence > current_best.confidence + TIE_BREAK_MARGIN {
-                        best_result = Some(result);
-                    } else if (result.confidence - current_best.confidence).abs() <= TIE_BREAK_MARGIN
-                        && new_distance < current_distance
-                    {
+                    let improved = result.confidence > current_best.confidence + TIE_BREAK_MARGIN;
+                    let close =
+                        (result.confidence - current_best.confidence).abs() <= TIE_BREAK_MARGIN;
+                    let closer = new_distance < current_distance;
+
+                    if improved || (close && closer) {
                         best_result = Some(result);
                     }
                 }
@@ -665,7 +639,8 @@ mod tests {
         let session_end = DateTime::parse_from_rfc3339("2024-01-15T14:30:00Z")
             .unwrap()
             .with_timezone(&Utc);
-        let commit_time = DateTime::parse_from_rfc3339("2024-01-15T14:36:00Z")
+        // 3 minutes after session end (within 5 min decay window)
+        let commit_time = DateTime::parse_from_rfc3339("2024-01-15T14:33:00Z")
             .unwrap()
             .with_timezone(&Utc);
 
@@ -698,7 +673,10 @@ mod tests {
     #[test]
     fn test_file_overlap_partial() {
         let session_files = vec!["src/utils.ts".to_string(), "src/api.ts".to_string()];
-        let commit_files = vec!["src/utils.ts".to_string(), "src/components/Button.tsx".to_string()];
+        let commit_files = vec![
+            "src/utils.ts".to_string(),
+            "src/components/Button.tsx".to_string(),
+        ];
 
         let score = score_file_overlap(&session_files, &commit_files);
         assert!(score > 0.0 && score < 1.0); // Partial overlap

@@ -57,8 +57,10 @@ pub async fn create_or_update_session_link(
     auto_linked: bool,
 ) -> Result<i64, String> {
     // Validate confidence is in valid range
-    if confidence < 0.0 || confidence > 1.0 {
-        return Err(format!("Invalid confidence: {confidence}. Must be between 0.0 and 1.0."));
+    if !(0.0..=1.0).contains(&confidence) {
+        return Err(format!(
+            "Invalid confidence: {confidence}. Must be between 0.0 and 1.0."
+        ));
     }
 
     // Validate session_id is not empty
@@ -83,7 +85,7 @@ pub async fn create_or_update_session_link(
             confidence = excluded.confidence,
             auto_linked = excluded.auto_linked
         RETURNING id
-        "#
+        "#,
     )
     .bind(repo_id)
     .bind(&session_id)
@@ -125,7 +127,7 @@ pub async fn get_session_links_for_repo(
         FROM session_links
         WHERE repo_id = $1
         ORDER BY created_at DESC
-        "#
+        "#,
     )
     .bind(repo_id)
     .fetch_all(db)
@@ -178,7 +180,7 @@ pub async fn get_session_links_for_commit(
         FROM session_links
         WHERE repo_id = $1 AND commit_sha = $2
         ORDER BY created_at DESC
-        "#
+        "#,
     )
     .bind(repo_id)
     .bind(&commit_sha)
@@ -229,22 +231,18 @@ pub async fn delete_session_link(
 ) -> Result<(), String> {
     let db = pool.inner();
 
-    sqlx::query(
-        "DELETE FROM session_links WHERE repo_id = $1 AND session_id = $2"
-    )
-    .bind(repo_id)
-    .bind(&session_id)
-    .execute(db)
-    .await
-    .map_err(|e| format!("Database error: {e}"))?;
+    sqlx::query("DELETE FROM session_links WHERE repo_id = $1 AND session_id = $2")
+        .bind(repo_id)
+        .bind(&session_id)
+        .execute(db)
+        .await
+        .map_err(|e| format!("Database error: {e}"))?;
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     // Note: These tests require a test database setup.
     // In a real implementation, you would use sqlx::testing::TestHarness
     // or a fixture setup to create and tear down test databases.

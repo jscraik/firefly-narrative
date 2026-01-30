@@ -1,4 +1,6 @@
-import type { TraceCommitSummary } from '../../core/types';
+import { useMemo } from 'react';
+import { Activity, Sparkles } from 'lucide-react';
+import type { TraceCollectorStatus, TraceCommitSummary } from '../../core/types';
 
 function StatPill({ label, value, tone }: { label: string; value: string; tone: 'ai' | 'human' | 'mixed' | 'unknown' }) {
   const className =
@@ -21,10 +23,38 @@ function StatPill({ label, value, tone }: { label: string; value: string; tone: 
 export function AgentTraceSummary(props: {
   summary?: TraceCommitSummary;
   onExport?: () => void;
+  onSmokeTest?: () => void;
   hasFiles: boolean;
+  status?: TraceCollectorStatus;
 }) {
-  const { summary, onExport, hasFiles } = props;
+  const { summary, onExport, onSmokeTest, hasFiles, status } = props;
   const aiPercent = summary?.aiPercent ?? 0;
+  const activeWindowMs = 5 * 60 * 1000;
+  const statusSummary = useMemo(() => {
+    const lastSeenAt = status?.lastSeenAtISO ? Date.parse(status.lastSeenAtISO) : null;
+    const lastSeenAgeMs = lastSeenAt ? Math.max(0, Date.now() - lastSeenAt) : null;
+    const isStale = Boolean(
+      lastSeenAgeMs !== null && status?.state === 'active' && lastSeenAgeMs > activeWindowMs
+    );
+    const displayState = status
+      ? isStale
+        ? 'inactive'
+        : status.state
+      : undefined;
+    const lastSeenLabel =
+      lastSeenAgeMs !== null
+        ? lastSeenAgeMs < 60_000
+          ? `Last seen ${Math.max(1, Math.round(lastSeenAgeMs / 1000))}s ago`
+          : `Last seen ${Math.round(lastSeenAgeMs / 60_000)}m ago`
+        : null;
+    return { displayState, lastSeenLabel, isStale };
+  }, [status]);
+  const { displayState, lastSeenLabel, isStale } = statusSummary;
+  const statusTooltip = displayState
+    ? `Active if Codex OTel events are seen within 5 minutes.${lastSeenLabel ? ` ${lastSeenLabel}.` : ''}${
+        isStale ? ' Last activity is outside the 5-minute window.' : ''
+      }`
+    : undefined;
 
   return (
     <div className="card p-5">
@@ -33,22 +63,83 @@ export function AgentTraceSummary(props: {
           <div className="section-header">AGENT TRACE</div>
           <div className="section-subheader mt-0.5">who changed what</div>
         </div>
-        {onExport ? (
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-50"
-            onClick={onExport}
-            disabled={!hasFiles}
-            aria-disabled={!hasFiles}
-          >
-            Export Agent Trace
-          </button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {status ? (
+            <span
+              className={
+                displayState === 'active'
+                  ? 'pill-trace-ai'
+                  : displayState === 'inactive'
+                    ? 'pill-trace-unknown'
+                    : displayState === 'partial'
+                      ? 'pill-trace-mixed'
+                      : 'pill-trace-mixed'
+              }
+              title={statusTooltip}
+            >
+              {displayState === 'active'
+                ? 'Codex OTel: Active'
+                : displayState === 'inactive'
+                  ? 'Codex OTel: Inactive'
+                  : displayState === 'partial'
+                    ? 'Codex OTel: Partial'
+                    : 'Codex OTel: Error'}
+            </span>
+          ) : null}
+          {onSmokeTest ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 transition-all duration-150 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={onSmokeTest}
+              disabled={!hasFiles}
+              aria-disabled={!hasFiles}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Run Codex OTel Smoke Test
+            </button>
+          ) : null}
+          {onExport ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={onExport}
+              disabled={!hasFiles}
+              aria-disabled={!hasFiles}
+            >
+              Export Agent Trace
+            </button>
+          ) : null}
+        </div>
       </div>
 
+      {status?.message ? (
+        <div className="mt-4 text-xs text-stone-500">{status.message}</div>
+      ) : null}
+      {lastSeenLabel ? <div className="mt-1 text-xs text-stone-400">{lastSeenLabel}</div> : null}
+      {status?.issues && status.issues.length > 0 ? (
+        <div className="mt-2 text-xs text-stone-400">
+          {status.issues.slice(0, 3).map((issue) => (
+            <div key={issue}>• {issue}</div>
+          ))}
+          {status.issues.length > 3 ? <div>+{status.issues.length - 3} more</div> : null}
+        </div>
+      ) : null}
+
       {!summary ? (
-        <div className="mt-4 rounded-lg border border-dashed border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-500">
-          No Agent Trace records found for this commit yet.
+        <div className="mt-5 rounded-xl border border-dashed border-stone-200 bg-stone-50/50 px-5 py-6">
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-3">
+              <Activity className="w-5 h-5 text-stone-400" />
+            </div>
+            <p className="text-sm font-medium text-stone-600 mb-1">No Agent Trace yet</p>
+            <p className="text-xs text-stone-400 max-w-[240px] leading-relaxed">
+              Import a session or configure Codex OTel to see AI attribution for this commit
+            </p>
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-stone-400">
+              <Sparkles className="w-3 h-3" />
+              <span>Tracks AI vs human contributions</span>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="mt-4 space-y-4">

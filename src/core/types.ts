@@ -21,15 +21,25 @@ export type FileChange = {
   deletions: number;
 };
 
-export type SessionTool = 'claude-code' | 'codex' | 'unknown';
+export type SessionTool =
+  | 'claude-code'
+  | 'codex'
+  | 'kimi'
+  | 'cursor'
+  | 'gemini'
+  | 'copilot'
+  | 'continue'
+  | 'unknown';
 
-export type SessionMessageRole = 'user' | 'assistant';
+export type SessionMessageRole = 'user' | 'assistant' | 'thinking' | 'plan' | 'tool_call';
 
 export type SessionMessage = {
   id: string;
   role: SessionMessageRole;
   text: string;
   files?: string[];
+  toolName?: string;
+  toolInput?: unknown;
 };
 
 export type SessionExcerpt = {
@@ -37,14 +47,23 @@ export type SessionExcerpt = {
   tool: SessionTool;
   durationMin?: number;
   messages: SessionMessage[];
+  // Link state (Phase 1 MVP)
+  linkedCommitSha?: string;
+  linkConfidence?: number;
+  autoLinked?: boolean;
 };
 
 export type TimelineStatus = 'ok' | 'warn' | 'error';
 
 export type TimelineBadge = {
-  type: 'file' | 'test' | 'trace';
+  type: 'file' | 'test' | 'trace' | 'contribution' | 'session';
   label: string;
   status?: 'passed' | 'failed' | 'mixed';
+  stats?: {
+    aiPercentage: number;
+    tool?: string;
+    model?: string;
+  };
 };
 
 export type TraceContributorType = 'human' | 'ai' | 'mixed' | 'unknown';
@@ -102,6 +121,18 @@ export type TraceCommitSummary = {
   modelIds: string[];
 };
 
+export type TraceCollectorStatus = {
+  state: 'active' | 'inactive' | 'error' | 'partial';
+  message?: string;
+  issues?: string[];
+  lastSeenAtISO?: string;
+};
+
+export type TraceCollectorConfig = {
+  codexOtelLogPath: string;
+  codexOtelReceiverEnabled: boolean;
+};
+
 export type TimelineNode = {
   id: string;
   atISO?: string;
@@ -126,12 +157,15 @@ export type BranchViewModel = {
   diffsByFile?: Record<string, string>;
   traceSummaries?: {
     byCommit: Record<string, TraceCommitSummary>;
-    byFile: Record<string, TraceFileSummary>;
+    byFileByCommit: Record<string, Record<string, TraceFileSummary>>;
   };
+  traceStatus?: TraceCollectorStatus;
+  traceConfig?: TraceCollectorConfig;
   meta?: {
     repoPath?: string;
     branchName?: string;
     headSha?: string;
+    repoId?: number;
   };
 };
 

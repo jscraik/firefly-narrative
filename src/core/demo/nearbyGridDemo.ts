@@ -195,6 +195,23 @@ export const NearbyGridDemo: BranchViewModel = {
           files: ['ProfileCard.vue', 'OnlineIndicator.vue', 'useGeolocation.ts']
         },
         {
+          id: 'm2a',
+          role: 'thinking',
+          text: 'Prioritize the card layout first, then wire the expansion state once the base component renders.'
+        },
+        {
+          id: 'm2b',
+          role: 'plan',
+          text: 'Plan: 1) build ProfileCard shell 2) add online indicator 3) attach expansion behavior.'
+        },
+        {
+          id: 'm2c',
+          role: 'tool_call',
+          text: 'writeFile ProfileCard.vue',
+          toolName: 'writeFile',
+          files: ['ProfileCard.vue']
+        },
+        {
           id: 'm3',
           role: 'user',
           text:

@@ -9,7 +9,9 @@ import type {
 import { redactSecrets } from '../security/redact';
 import { getDb } from './db';
 import { listNarrativeFiles, readNarrativeFile, readTextFile, writeNarrativeFile } from '../tauri/narrativeFs';
-import { getCommitDiffForFile } from './git';
+import { codexOtelEventsToTraceRecords, otelEnvelopeToCodexEvents } from './otelAdapter';
+import type { TraceCollectorStatus } from '../types';
+import { getCommitAddedRanges } from '../tauri/gitDiff';
 
 const TRACE_EXTENSION = '.agent-trace.json';
 const TRACE_DIR = 'trace';
@@ -19,8 +21,15 @@ const CONTRIBUTOR_TYPES: TraceContributorType[] = ['human', 'ai', 'mixed', 'unkn
 
 export type TraceScanResult = {
   byCommit: Record<string, TraceCommitSummary>;
-  byFile: Record<string, TraceFileSummary>;
+  byFileByCommit: Record<string, Record<string, TraceFileSummary>>;
   totals: { conversations: number; ranges: number };
+};
+
+export type CodexOtelIngestResult = {
+  status: TraceCollectorStatus;
+  recordsWritten: number;
+  errors?: string[];
+  redactions?: { type: string; count: number }[];
 };
 
 export type TraceImportResult = {
@@ -79,14 +88,16 @@ function parseTraceRecord(raw: string): TraceRecord | null {
   if (!rawRecord.vcs || rawRecord.vcs.type !== 'git' || !rawRecord.vcs.revision) return null;
   if (!Array.isArray(rawRecord.files)) return null;
 
-  const files = rawRecord.files.map((file) => ({
-    path: file.path ?? '',
-    conversations: (file.conversations ?? []).map((conversation) => ({
-      url: conversation.url,
-      contributor: conversation.contributor
-        ? {
-            type: normalizeContributorType(conversation.contributor.type),
-            modelId: safeString(conversation.contributor.modelId ?? conversation.contributor.model_id)
+  const files = rawRecord.files
+    .filter((file) => Boolean(file.path))
+    .map((file) => ({
+      path: file.path ?? '',
+      conversations: (file.conversations ?? []).map((conversation) => ({
+        url: conversation.url,
+        contributor: conversation.contributor
+          ? {
+              type: normalizeContributorType(conversation.contributor.type),
+              modelId: safeString(conversation.contributor.modelId ?? conversation.contributor.model_id)
           }
         : undefined,
       ranges: (conversation.ranges ?? []).map((range) => ({
@@ -100,11 +111,13 @@ function parseTraceRecord(raw: string): TraceRecord | null {
             }
           : undefined
       })),
-      related: (conversation.related ?? []).flatMap((rel) =>
-        rel.type && rel.url ? [{ type: rel.type, url: rel.url }] : []
-      )
-    }))
-  }));
+        related: (conversation.related ?? []).flatMap((rel) =>
+          rel.type && rel.url ? [{ type: rel.type, url: rel.url }] : []
+        )
+      }))
+    }));
+
+  if (files.length === 0) return null;
 
   return {
     id: rawRecord.id,
@@ -126,6 +139,10 @@ function toAiPercent(aiLines: number, total: number) {
   return Math.round((aiLines / total) * 100);
 }
 
+function isCommitFallbackNotice(message: string) {
+  return /missing commit sha; attributed to repo head/i.test(message);
+}
+
 async function recordExists(repoId: number, recordId: string) {
   const db = await getDb();
   const rows = await db.select<{ id: string }[]>(
@@ -139,79 +156,187 @@ export async function ingestTraceRecord(repoId: number, record: TraceRecord): Pr
   if (await recordExists(repoId, record.id)) return;
   const db = await getDb();
 
-  await db.execute('BEGIN');
-  try {
-    await db.execute(
-      `INSERT OR IGNORE INTO trace_records
-        (id, repo_id, version, timestamp, vcs_type, revision, tool_name, tool_version, metadata_json)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        record.id,
-        repoId,
-        record.version,
-        record.timestamp,
-        record.vcs.type,
-        record.vcs.revision,
-        record.tool?.name ?? null,
-        record.tool?.version ?? null,
-        record.metadata ? JSON.stringify(record.metadata) : null
-      ]
+  // Note: Tauri SQL plugin doesn't support manual transaction control (BEGIN/COMMIT/ROLLBACK).
+  // Each statement auto-commits. We execute statements sequentially and rely on 
+  // INSERT OR IGNORE to handle duplicates gracefully if a partial insert occurs.
+  
+  await db.execute(
+    `INSERT OR IGNORE INTO trace_records
+      (id, repo_id, version, timestamp, vcs_type, revision, tool_name, tool_version, metadata_json)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      record.id,
+      repoId,
+      record.version,
+      record.timestamp,
+      record.vcs.type,
+      record.vcs.revision,
+      record.tool?.name ?? null,
+      record.tool?.version ?? null,
+      record.metadata ? JSON.stringify(record.metadata) : null
+    ]
+  );
+
+  for (const file of record.files) {
+    await db.execute('INSERT INTO trace_files (record_id, path) VALUES ($1, $2)', [
+      record.id,
+      file.path
+    ]);
+
+    const fileRow = await db.select<{ id: number }[]>(
+      'SELECT id FROM trace_files WHERE record_id = $1 AND path = $2 ORDER BY id DESC LIMIT 1',
+      [record.id, file.path]
     );
+    const fileId = fileRow?.[0]?.id;
+    if (!fileId) continue;
 
-    for (const file of record.files) {
-      await db.execute('INSERT INTO trace_files (record_id, path) VALUES ($1, $2)', [
-        record.id,
-        file.path
-      ]);
+    for (const conversation of file.conversations ?? []) {
+      const convContributorType = normalizeContributorType(conversation.contributor?.type);
+      const convModelId = safeString(conversation.contributor?.modelId);
 
-      const fileRow = await db.select<{ id: number }[]>(
-        'SELECT id FROM trace_files WHERE record_id = $1 AND path = $2 ORDER BY id DESC LIMIT 1',
-        [record.id, file.path]
+      await db.execute(
+        'INSERT INTO trace_conversations (file_id, url, contributor_type, model_id) VALUES ($1, $2, $3, $4)',
+        [fileId, conversation.url ?? null, convContributorType, convModelId ?? null]
       );
-      const fileId = fileRow?.[0]?.id;
-      if (!fileId) continue;
 
-      for (const conversation of file.conversations ?? []) {
-        const convContributorType = normalizeContributorType(conversation.contributor?.type);
-        const convModelId = safeString(conversation.contributor?.modelId);
+      const convRow = await db.select<{ id: number }[]>(
+        'SELECT id FROM trace_conversations WHERE file_id = $1 ORDER BY id DESC LIMIT 1',
+        [fileId]
+      );
+      const conversationId = convRow?.[0]?.id;
+      if (!conversationId) continue;
+
+      for (const range of conversation.ranges ?? []) {
+        const rangeContributorType = normalizeContributorType(range.contributor?.type ?? convContributorType);
+        const rangeModelId = safeString(range.contributor?.modelId ?? convModelId);
 
         await db.execute(
-          'INSERT INTO trace_conversations (file_id, url, contributor_type, model_id) VALUES ($1, $2, $3, $4)',
-          [fileId, conversation.url ?? null, convContributorType, convModelId ?? null]
+          `INSERT INTO trace_ranges
+            (conversation_id, start_line, end_line, content_hash, contributor_type, model_id)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            conversationId,
+            range.startLine,
+            range.endLine,
+            range.contentHash ?? null,
+            rangeContributorType,
+            rangeModelId ?? null
+          ]
         );
-
-        const convRow = await db.select<{ id: number }[]>(
-          'SELECT id FROM trace_conversations WHERE file_id = $1 ORDER BY id DESC LIMIT 1',
-          [fileId]
-        );
-        const conversationId = convRow?.[0]?.id;
-        if (!conversationId) continue;
-
-        for (const range of conversation.ranges ?? []) {
-          const rangeContributorType = normalizeContributorType(range.contributor?.type ?? convContributorType);
-          const rangeModelId = safeString(range.contributor?.modelId ?? convModelId);
-
-          await db.execute(
-            `INSERT INTO trace_ranges
-              (conversation_id, start_line, end_line, content_hash, contributor_type, model_id)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [
-              conversationId,
-              range.startLine,
-              range.endLine,
-              range.contentHash ?? null,
-              rangeContributorType,
-              rangeModelId ?? null
-            ]
-          );
-        }
       }
     }
+  }
+}
 
-    await db.execute('COMMIT');
+function toCollectorError(message: string): TraceCollectorStatus {
+  return { state: 'error', message };
+}
+
+function toCollectorInactive(message?: string): TraceCollectorStatus {
+  return { state: 'inactive', message };
+}
+
+function toCollectorPartial(message?: string, issues?: string[]): TraceCollectorStatus {
+  return { state: 'partial', message, issues };
+}
+
+function toCollectorActive(message?: string): TraceCollectorStatus {
+  return { state: 'active', message, lastSeenAtISO: new Date().toISOString() };
+}
+
+function mergeMetadata(
+  base: TraceRecord['metadata'] | undefined,
+  patch: Record<string, unknown>
+): TraceRecord['metadata'] {
+  return { ...(base ?? {}), ...patch };
+}
+
+function toMetadataSection(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object') return {};
+  return value as Record<string, unknown>;
+}
+
+export async function ingestCodexOtelLogFile(options: {
+  repoRoot: string;
+  repoId: number;
+  logPath?: string;
+}): Promise<CodexOtelIngestResult> {
+  const { repoRoot, repoId, logPath } = options;
+  const path = logPath ?? '/tmp/codex-otel.json';
+
+  try {
+    const raw = await readTextFile(path);
+    const redaction = redactSecrets(raw);
+    const events = otelEnvelopeToCodexEvents(redaction.redacted);
+
+    if (events.length === 0) {
+      return {
+        status: toCollectorInactive('No Codex OTel events detected'),
+        recordsWritten: 0,
+        redactions: redaction.hits
+      };
+    }
+
+    const conversion = await codexOtelEventsToTraceRecords({ repoRoot, events });
+    if (conversion.records.length === 0) {
+      const issues = conversion.errors.map((error) => error.message);
+      const status = issues.length
+        ? toCollectorError('Codex OTel events missing commit/file context')
+        : toCollectorInactive('Codex OTel events missing commit/file context');
+      return { status, recordsWritten: 0, errors: issues, redactions: redaction.hits };
+    }
+
+    let written = 0;
+    const ingestErrors: string[] = [];
+
+    for (const record of conversion.records) {
+      const enriched: TraceRecord = {
+        ...record,
+        metadata: mergeMetadata(record.metadata, {
+          'dev.narrative': {
+            ...toMetadataSection(record.metadata?.['dev.narrative']),
+            redactions: redaction.hits
+          }
+        })
+      };
+      const fileName = `${record.timestamp.replace(/[:.]/g, '-')}_${record.id}${TRACE_EXTENSION}`;
+      const rel = `${TRACE_DIR}/${fileName}`;
+      await writeNarrativeFile(repoRoot, rel, JSON.stringify(enriched, null, 2));
+      await ingestTraceRecord(repoId, enriched);
+      written += 1;
+    }
+
+    if (conversion.errors.length > 0) {
+      const issues = conversion.errors.map((error) =>
+        error.commitSha ? `${error.commitSha}: ${error.message}` : error.message
+      );
+      ingestErrors.push(...issues);
+    }
+
+    const informational = ingestErrors.filter((issue) => isCommitFallbackNotice(issue));
+    const actionable = ingestErrors.filter((issue) => !isCommitFallbackNotice(issue));
+    const note = informational[0] ?? null;
+    const activeMessage = `Codex OTel imported ${written} record${written === 1 ? '' : 's'}${
+      note ? `. ${note}` : ''
+    }`;
+
+    const status =
+      actionable.length > 0
+        ? toCollectorPartial(
+            `Codex OTel import completed with ${actionable.length} issue${actionable.length === 1 ? '' : 's'}${
+              note ? `. ${note}` : ''
+            }`,
+            actionable
+          )
+        : toCollectorActive(activeMessage);
+
+    return { status, recordsWritten: written, errors: actionable, redactions: redaction.hits };
   } catch (error) {
-    await db.execute('ROLLBACK');
-    throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('path does not exist')) {
+      return { status: toCollectorInactive('Codex OTel log not found'), recordsWritten: 0 };
+    }
+    return { status: toCollectorError(message), recordsWritten: 0 };
   }
 }
 
@@ -224,16 +349,20 @@ export async function scanAgentTraceRecords(
   const traceFiles = files.filter((p) => p.endsWith(TRACE_EXTENSION));
 
   for (const rel of traceFiles) {
-    const raw = await readNarrativeFile(repoRoot, rel);
-    const parsed = parseTraceRecord(raw);
-    if (!parsed) continue;
-    if (parsed.vcs.type !== 'git') continue;
+    try {
+      const raw = await readNarrativeFile(repoRoot, rel);
+      const parsed = parseTraceRecord(raw);
+      if (!parsed) continue;
+      if (parsed.vcs.type !== 'git') continue;
 
-    await ingestTraceRecord(repoId, parsed);
+      await ingestTraceRecord(repoId, parsed);
+    } catch {
+      // Skip files that fail to import (partial failure is OK)
+    }
   }
 
   const byCommit: Record<string, TraceCommitSummary> = {};
-  const byFile: Record<string, TraceFileSummary> = {};
+  const byFileByCommit: Record<string, Record<string, TraceFileSummary>> = {};
   let totalConversations = 0;
   let totalRanges = 0;
 
@@ -242,14 +371,14 @@ export async function scanAgentTraceRecords(
     if (!summary) continue;
 
     byCommit[sha] = summary.commit;
-    Object.assign(byFile, summary.files);
+    byFileByCommit[sha] = summary.files;
     totalConversations += summary.totals.conversations;
     totalRanges += summary.totals.ranges;
   }
 
   return {
     byCommit,
-    byFile,
+    byFileByCommit,
     totals: { conversations: totalConversations, ranges: totalRanges }
   };
 }
@@ -319,6 +448,22 @@ export async function getSessionLinkForCommit(repoId: number, commitSha: string)
     [repoId, commitSha]
   );
   return rows?.[0]?.session_id ?? null;
+}
+
+export async function linkSessionToCommit(options: {
+  repoId: number;
+  sessionId: string;
+  commitSha: string;
+  confidence?: number;
+  autoLinked?: boolean;
+}): Promise<void> {
+  const { repoId, sessionId, commitSha, confidence = 0.6, autoLinked = true } = options;
+  const db = await getDb();
+  await db.execute(
+    `INSERT OR IGNORE INTO session_links (repo_id, session_id, commit_sha, confidence, auto_linked)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [repoId, sessionId, commitSha, confidence, autoLinked ? 1 : 0]
+  );
 }
 
 type TraceSummaryResult = {
@@ -412,54 +557,11 @@ async function getTraceSummaryForCommit(repoId: number, commitSha: string): Prom
   };
 }
 
-function parseDiffAddedRanges(diffText: string): Array<{ start: number; end: number }> {
-  const ranges: Array<{ start: number; end: number }> = [];
-  let currentLine = 0;
-  let inHunk = false;
-  let activeStart: number | null = null;
-
-  const hunkRegex = /^@@\s+-(\d+),(\d+)\s+\+(\d+),(\d+)\s+@@/;
-
-  for (const line of diffText.split(/\r?\n/)) {
-    const match = hunkRegex.exec(line);
-    if (match) {
-      currentLine = Number(match[3]);
-      inHunk = true;
-      activeStart = null;
-      continue;
-    }
-
-    if (!inHunk) continue;
-
-    if (line.startsWith('+') && !line.startsWith('+++')) {
-      if (activeStart === null) activeStart = currentLine;
-      currentLine += 1;
-    } else if (line.startsWith('-') && !line.startsWith('---')) {
-      if (activeStart !== null) {
-        ranges.push({ start: activeStart, end: currentLine - 1 });
-        activeStart = null;
-      }
-    } else {
-      if (activeStart !== null) {
-        ranges.push({ start: activeStart, end: currentLine - 1 });
-        activeStart = null;
-      }
-      currentLine += 1;
-    }
-  }
-
-  if (activeStart !== null) {
-    ranges.push({ start: activeStart, end: currentLine - 1 });
-  }
-
-  return ranges;
-}
 
 function buildDerivedRangeConversations(
   filePath: string,
-  diffText: string
+  ranges: Array<{ start: number; end: number }>
 ): TraceRecord['files'][number] | null {
-  const ranges = parseDiffAddedRanges(diffText);
   if (ranges.length === 0) return null;
 
   return {
@@ -483,13 +585,17 @@ export async function generateDerivedTraceRecord(options: {
   const fileEntries: TraceRecord['files'] = [];
 
   for (const file of files) {
-    const diff = await getCommitDiffForFile(repoRoot, commitSha, file.path);
-    const entry = buildDerivedRangeConversations(file.path, diff);
+    const ranges = await getCommitAddedRanges(repoRoot, commitSha, file.path);
+    const entry = buildDerivedRangeConversations(file.path, ranges);
     if (entry) fileEntries.push(entry);
   }
 
+  if (fileEntries.length === 0) {
+    throw new Error('No diff ranges available to derive Agent Trace record');
+  }
+
   return {
-    id: `narrative-${commitSha}`,
+    id: crypto.randomUUID(),
     version: '0.1.0',
     timestamp: new Date().toISOString(),
     vcs: { type: 'git', revision: commitSha },

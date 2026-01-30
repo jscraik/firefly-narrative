@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { FileText, FolderOpen, GitBranch, LayoutGrid, Network } from 'lucide-react';
 import clsx from 'clsx';
+import { FileText, FolderOpen, GitBranch, LayoutGrid, Network } from 'lucide-react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 export type Mode = 'demo' | 'repo' | 'speculate';
 
@@ -10,10 +10,12 @@ export function TopNav(props: {
   repoPath?: string | null;
   onOpenRepo: () => void;
   onImportSession?: () => void;
+  onImportKimiSession?: () => void;
   onImportAgentTrace?: () => void;
   importEnabled?: boolean;
 }) {
-  const { mode, onModeChange, repoPath, onOpenRepo, onImportSession, onImportAgentTrace, importEnabled } = props;
+  const { mode, onModeChange, repoPath, onOpenRepo, onImportSession, onImportKimiSession, onImportAgentTrace, importEnabled } =
+    props;
 
   const Tab = (p: { id: Mode; label: string; icon: ReactNode }) => (
     <button
@@ -49,39 +51,14 @@ export function TopNav(props: {
           </div>
         ) : null}
 
-        {mode === 'repo' && onImportSession ? (
-          <button
-            type="button"
-            disabled={!importEnabled}
-            className={clsx(
-              'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
-              importEnabled
-                ? 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                : 'bg-stone-50 text-stone-400 cursor-not-allowed'
-            )}
-            onClick={onImportSession}
-          >
-            <FileText className="h-4 w-4" />
-            Import session…
-          </button>
-        ) : null}
-
-        {mode === 'repo' && onImportAgentTrace ? (
-          <button
-            type="button"
-            disabled={!importEnabled}
-            className={clsx(
-              'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
-              importEnabled
-                ? 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                : 'bg-stone-50 text-stone-400 cursor-not-allowed'
-            )}
-            onClick={onImportAgentTrace}
-          >
-            <FileText className="h-4 w-4" />
-            Import Agent Trace…
-          </button>
-        ) : null}
+        {mode === 'repo' && (
+          <ImportMenu
+            onImportSession={onImportSession}
+            onImportKimiSession={onImportKimiSession}
+            onImportAgentTrace={onImportAgentTrace}
+            importEnabled={importEnabled}
+          />
+        )}
 
         <button
           type="button"
@@ -92,6 +69,89 @@ export function TopNav(props: {
           Open repo…
         </button>
       </div>
+    </div>
+  );
+}
+
+function ImportMenu(props: {
+  onImportSession?: () => void;
+  onImportKimiSession?: () => void;
+  onImportAgentTrace?: () => void;
+  importEnabled?: boolean;
+}) {
+  const { onImportSession, onImportKimiSession, onImportAgentTrace, importEnabled } = props;
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  if (!onImportSession && !onImportKimiSession && !onImportAgentTrace) return null;
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        type="button"
+        disabled={!importEnabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className={clsx(
+          'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+          importEnabled
+            ? 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+            : 'bg-stone-50 text-stone-400 cursor-not-allowed'
+        )}
+      >
+        <FileText className="h-4 w-4" />
+        Import data…
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-stone-200 bg-white p-1 shadow-lg z-50 flex flex-col gap-0.5">
+          {onImportSession && (
+            <button
+              type="button"
+              onClick={() => {
+                onImportSession();
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-stone-700 hover:bg-stone-100 text-left"
+            >
+              Import session JSON…
+            </button>
+          )}
+          {onImportKimiSession && (
+            <button
+              type="button"
+              onClick={() => {
+                onImportKimiSession();
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-stone-700 hover:bg-stone-100 text-left"
+            >
+              Import Kimi log…
+            </button>
+          )}
+          {onImportAgentTrace && (
+            <button
+              type="button"
+              onClick={() => {
+                onImportAgentTrace();
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-stone-700 hover:bg-stone-100 text-left"
+            >
+              Import Agent Trace…
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
