@@ -137,7 +137,7 @@ export async function indexRepo(
     .map((c) => {
       const traceSummary = trace.byCommit[c.sha];
       const traceBadge = traceSummary
-        ? { type: 'trace' as const, label: `AI ${traceSummary.aiPercent}%` }
+        ? { type: 'trace' as const, label: getTraceBadgeLabel(traceSummary) }
         : null;
 
       return {
@@ -233,4 +233,15 @@ export async function getOrLoadCommitFiles(repo: RepoIndex, sha: string) {
   }
 
   return details.fileChanges;
+}
+
+// Helper function to determine trace badge label
+function getTraceBadgeLabel(summary: { aiLines: number; humanLines: number; mixedLines: number; unknownLines: number; aiPercent: number }): string {
+  const isUnknownOnly =
+    summary.unknownLines > 0 &&
+    summary.aiLines === 0 &&
+    summary.humanLines === 0 &&
+    summary.mixedLines === 0;
+
+  return isUnknownOnly ? 'Unknown' : `AI ${summary.aiPercent}%`;
 }
