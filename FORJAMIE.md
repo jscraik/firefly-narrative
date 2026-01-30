@@ -1,6 +1,8 @@
-# Narrative Desktop MVP - The Story So Far
+# Narrative Desktop - FORJAMIE
 
 > *Imagine if your git history could tell stories. Not just "what changed," but "why we changed it" and "what we were thinking." That's Narrative.*
+
+> *A living document that explains the codebase, its architecture, and the lessons we learned along the way.*
 
 ---
 
@@ -85,13 +87,33 @@ src/
 │   ├── demo/            # Demo data generation
 │   ├── types.ts         # Shared TypeScript types
 │   └── attribution-api.ts   # Attribution API wrapper
+├── hooks/               # Custom React hooks (post-JSC-7 refactoring)
+│   ├── useRepoLoader.ts      # Repo loading, indexing, LRU diff cache
+│   ├── useTraceCollector.ts   # OTLP trace collection events
+│   ├── useSessionImport.ts    # Session import (JSON, Kimi, traces)
+│   ├── useCommitData.ts       # Commit files, diffs, traces
+│   ├── useSourceLensData.ts   # Source lens data fetching
+│   ├── useTimelineNavigation.ts # Timeline scroll and nav logic
+│   ├── basename.ts            # File basename utility
+│   ├── isoStampForFile.ts     # ISO timestamp utility
+│   ├── sessionUtils.ts        # Session utilities
+│   └── useUpdater.ts           # Auto-update checker
 ├── ui/                  # React components
 │   ├── components/      # Timeline, badges, session cards
+│   │   ├── Timeline.tsx              # Timeline (post-JSC-12: ~77 LOC!)
+│   │   ├── BadgePill.tsx             # Timeline badge pills
+│   │   ├── TimelineNode.tsx           # Individual timeline node
+│   │   ├── TimelineNavButtons.tsx     # Timeline nav buttons
+│   │   ├── SourceLensView.tsx        # Source lens (post-JSC-10: ~71 LOC!)
+│   │   ├── AuthorBadge.tsx            # Line attribution badge
+│   │   ├── SourceLensStats.tsx        # Stats bar component
+│   │   ├── SourceLensLineTable.tsx    # Line table component
+│   │   ├── SourceLensEmptyStates.tsx # Empty/loading/error states
 │   │   ├── AiContributionBadge.tsx  # AI contribution display
 │   │   ├── SessionImportPanel.tsx   # Session import UI
-│   │   └── ...
+│   │   └── ... (20+ total components, most <150 LOC each)
 │   └── views/           # Main screens (Repo, Demo)
-└── App.tsx              # Main app component
+└── App.tsx              # Main app component (post-JSC-7: ~208 LOC!)
 ```
 
 ### Backend: Rust + Tauri + SQLite
@@ -113,23 +135,36 @@ src-tauri/src/
 ├── linking.rs         # The linking algorithm (temporal + file overlap)
 ├── models.rs          # Data models (SessionLink, TestCase, etc.)
 ├── session_links.rs   # CRUD for session_links table
+├── otlp_receiver.rs   # OpenTelemetry trace receiver (with auth + rate limiting)
 ├── import/            # Session import & security scanning
 │   ├── parser.rs      # Parser trait
 │   ├── secure_parser.rs   # Secret detection
-│   ├── path_validator.rs  # Path traversal protection
-│   ├── tool_sanitizer.rs  # Tool call sanitization
+│   ├── path_validator.ts  # Path traversal protection
+│   ├── tool_sanitizer.ts  # Tool call sanitization
 │   ├── claude_parser.rs   # Claude Code JSONL parser
+│   ├── cursor_parser.ts   # Cursor AI parser
+│   ├── copilot_parser.ts  # GitHub Copilot parser
+│   ├── gemini_parser.ts    # Google Gemini parser
 │   └── commands.rs    # Import Tauri commands
-├── attribution/       # AI contribution stats
-│   ├── models.rs      # ContributionStats, etc.
-│   ├── session_stats.rs   # Stats computation & caching
-│   └── commands.rs    # Stats API
-└── tests/             # Unit tests
-    ├── secure_parser_tests.rs
-    ├── path_validator_tests.rs
-    ├── claude_parser_tests.rs
-    └── session_stats_tests.rs
+├── attribution/       # AI contribution stats (NEWLY REFACTORED)
+│   ├── commands.rs       # Tauri command wrappers (thin!)
+│   ├── stats.rs          # Contribution stats computation
+│   ├── source_lens.rs    # Line attribution display
+│   ├── notes_io.rs       # Git note import/export
+│   ├── line_attribution.rs # Attribution storage
+│   ├── git_utils.rs      # Git operations (diff, patch-id)
+│   └── utils.rs          # Shared utilities
+└── tests/             # Unit tests (40 passing!)
 ```
+
+**New attribution module structure (post-JSC-8):**
+- `commands.rs` - Thin Tauri wrappers (~187 LOC, 88% reduction)
+- `stats.rs` - Stats computation, caching, tool breakdowns
+- `source_lens.rs` - Line-at-a-time attribution with pagination
+- `notes_io.rs` - Import/export attribution to/from git notes
+- `line_attribution.rs` - Store and fetch line attributions
+- `git_utils.rs` - Git diff parsing, patch-id computation
+- `utils.rs` - Fetch repo root, session metadata
 
 ---
 
@@ -693,6 +728,171 @@ This is scientific validation, not just "it seems to work."
 
 ---
 
+## What's New: Code Quality Refactoring (January 2026)
+
+We just completed a major code quality initiative to address monolithic components and technical debt. Here's the story:
+
+### The Problem: Code Bloat
+
+As features accumulated, several files became unmanageable:
+
+| File | Lines | Issue |
+|------|-------|-------|
+| `App.tsx` | 889 LOC | Mixed concerns: repo loading, session import, trace collection, UI |
+| `commands.rs` (attribution) | 1,586 LOC | Tauri commands + implementation all in one file |
+| `SourceLensView.tsx` | 410 LOC | Data fetching, state management, UI all mixed |
+| `Timeline.tsx` | 258 LOC | Scroll logic, navigation, node rendering combined |
+
+**Why this matters:** Monolithic files are hard to understand, test, and modify. They become bottlenecks for development speed.
+
+### The Solution: Extract and Modularize
+
+We refactored each monolith into focused modules with single responsibilities:
+
+#### JSC-7: App.tsx Refactoring (889 → 208 LOC, 77% reduction)
+
+**Created:**
+- `src/hooks/useRepoLoader.ts` - Repo loading, indexing, LRU diff cache
+- `src/hooks/useTraceCollector.ts` - OTLP trace event handlers
+- `src/hooks/useSessionImport.ts` - Session import (JSON, Kimi, traces)
+- `src/hooks/useCommitData.ts` - Commit files, diffs, traces
+- `src/hooks/basename.ts` - Utility for extracting file basenames
+- `src/hooks/isoStampForFile.ts` - Utility for ISO timestamps
+- `src/hooks/sessionUtils.ts` - Session-related utilities
+
+**Key insight:** Extract hooks when a component exceeds 200 LOC. One concern per hook.
+
+#### JSC-8: commands.rs Refactoring (1,586 → 187 LOC, 88% reduction)
+
+**Created:**
+- `src-tauri/src/attribution/stats.rs` - Contribution stats computation
+- `src-tauri/src/attribution/source_lens.rs` - Line attribution display
+- `src-tauri/src/attribution/notes_io.rs` - Git note import/export
+- `src-tauri/src/attribution/line_attribution.rs` - Attribution storage
+- `src-tauri/src/attribution/git_utils.rs` - Git diff, patch-id computation
+- `src-tauri/src/attribution/utils.rs` - Shared utilities
+
+**Pattern:** Tauri commands should be thin wrappers (5-20 lines). Real logic lives in modules.
+
+#### JSC-10: SourceLensView Refactoring (410 → 71 LOC, 83% reduction)
+
+**Created:**
+- `src/ui/components/AuthorBadge.tsx` - Badge component + helpers
+- `src/hooks/useSourceLensData.ts` - Data fetching hook
+- `src/ui/components/SourceLensStats.tsx` - Stats bar component
+- `src/ui/components/SourceLensLineTable.tsx` - Line table component
+- `src/ui/components/SourceLensEmptyStates.tsx` - Loading/error/empty states
+
+**Key insight:** Empty states, stats bars, and tables are all components. Extract early.
+
+#### JSC-12: Timeline Refactoring (258 → 77 LOC, 70% reduction)
+
+**Created:**
+- `src/ui/components/BadgePill.tsx` - Badge rendering component
+- `src/hooks/useTimelineNavigation.ts` - Scroll + navigation hook
+- `src/ui/components/TimelineNode.tsx` - Individual node component
+- `src/ui/components/TimelineNavButtons.tsx` - Navigation buttons
+
+**Gotcha:** Naming conflicts! `TimelineNode` (type) vs `TimelineNodeComponent` (component). Use semantic suffixes to avoid confusion.
+
+### Bug Fixes (JSC-9, JSC-11, JSC-13, JSC-14)
+
+#### JSC-9: Memory Leak with LRU Cache
+
+**Problem:** `App.tsx` cached commit diffs in an unbounded `Map`. Opening a repo with thousands of commits caused memory explosion.
+
+**Fix:** Replaced `Map` with `LRUCache` (least-recently-used) set to 100 entries max.
+
+**Lesson:** Unbounded caches are time bombs. Always set limits.
+
+#### JSC-11: Missing API Key Auth & Rate Limiting
+
+**Problem:** OTLP receiver had no authentication. Anyone hitting localhost:4318 could send fake traces.
+
+**Fix:** Added API key header validation (`X-Api-Key`) + rate limiting (100 req/sec per IP).
+
+**Lesson:** Local ≠ safe. Add defense in depth.
+
+#### JSC-13: Race Condition in OTLP Receiver Startup
+
+**Problem:** OTLP receiver started before SQLite was ready. Race condition: receiver tries to write to non-existent DB → crash.
+
+**Fix:** Added `init_db()` call that returns before starting the receiver. Made startup dependent on DB readiness.
+
+**Lesson:** Async init is tricky. Make dependencies explicit.
+
+#### JSC-14: Silent Failures in OTLP Error Handling
+
+**Problem:** OTLP receiver errors were `eprintln!`-ed and lost. Users had no idea why traces weren't showing up.
+
+**Fix:** Added proper error logging (`error!("OTLP receive error: {}", e)`) and surfaced errors in UI.
+
+**Lesson:** eprintln is for debugging, not production. Use proper logging.
+
+### Updated File Structure
+
+After all the refactoring, here's the current structure:
+
+**Frontend hooks (`src/hooks/`):**
+```
+useRepoLoader.ts          # Repo loading, indexing, LRU diff cache
+useTraceCollector.ts       # OTLP trace collection events
+useSessionImport.ts        # Session import (JSON, Kimi, traces)
+useCommitData.ts           # Commit files, diffs, traces
+useSourceLensData.ts       # Source lens data fetching
+useTimelineNavigation.ts   # Timeline scroll and nav logic
+basename.ts                # File basename utility
+isoStampForFile.ts        # ISO timestamp utility
+sessionUtils.ts            # Session utilities
+useUpdater.ts              # Auto-update checker
+```
+
+**Frontend components (`src/ui/components/`):**
+```
+AuthorBadge.tsx            # Line attribution badge
+BadgePill.tsx              # Timeline badge pills
+Timeline.tsx               # Timeline (now ~77 LOC!)
+TimelineNode.tsx           # Individual timeline node
+TimelineNavButtons.tsx     # Timeline navigation buttons
+SourceLensView.tsx         # Source lens view (now ~71 LOC!)
+SourceLensStats.tsx        # Stats bar component
+SourceLensLineTable.tsx    # Line table component
+SourceLensEmptyStates.tsx  # Empty/loading/error states
+...and 15+ other components
+```
+
+**Backend attribution modules (`src-tauri/src/attribution/`):**
+```
+commands.rs                # Tauri command wrappers (now ~187 LOC!)
+stats.rs                   # Contribution stats
+source_lens.rs             # Line attribution display
+notes_io.rs                # Git note import/export
+line_attribution.rs        # Attribution storage
+git_utils.rs               # Git operations
+utils.rs                   # Shared utilities
+```
+
+### Refactoring Patterns We Learned
+
+1. **Extract Custom Hooks Early** - When a component hits 200 LOC, look for state + data fetching patterns
+2. **Thin Tauri Commands** - Commands should be 5-20 lines. Real logic lives in modules.
+3. **Extract Small UI Components** - If JSX has >5 props or >20 lines, extract it.
+4. **Name to Avoid Conflicts** - Use semantic suffixes when component names clash with types.
+5. **LRU Cache by Default** - Never use unbounded caches for user-provided data.
+
+### Test Results
+
+All refactoring passed with flying colors:
+
+| Test Suite | Result |
+|------------|--------|
+| Rust unit tests | ✅ 40/40 passed |
+| Frontend tests | ✅ 5/5 passed |
+| TypeScript type check | ✅ No errors |
+| Linter (Biome) | ✅ 65 files checked, no issues |
+
+---
+
 ## What's New: AI Attribution Tracking (Just Shipped!)
 
 We just built a complete session import and attribution tracking system. Here's how it works:
@@ -1027,6 +1227,6 @@ const stats = await getCommitContributionStats(repoId, commitSha);
 
 ---
 
-*Last updated: January 29, 2026*
+*Last updated: January 30, 2026*
 *Version: 0.1.0*
-*Status: ✅ Calibration study passed | ✅ Attribution tracking shipped*
+*Status: ✅ Calibration study passed | ✅ Attribution tracking shipped | ✅ Code quality refactoring complete*
