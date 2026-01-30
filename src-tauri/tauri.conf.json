@@ -25,8 +25,14 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
-    "createUpdaterArtifacts": true
+    "targets": ["dmg", "app", "appimage", "deb", "rpm", "msi", "exe"],
+    "createUpdaterArtifacts": true,
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.13",
+      "license": null,
+      "signingIdentity": null
+    }
   },
   "plugins": {
     "updater": {
