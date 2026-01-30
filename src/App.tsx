@@ -67,8 +67,8 @@ export default function App() {
 
   // Auto-updater integration
   const { status: updateStatus, checkForUpdates, downloadAndInstall, dismiss } = useUpdater({
-    checkOnMount: true,
-    pollIntervalMinutes: 60 // Check every hour
+    checkOnMount: false, // Don't auto-check (GitHub releases not ready)
+    pollIntervalMinutes: 0
   });
 
   const updateCodexOtelReceiverEnabled = useCallback(
