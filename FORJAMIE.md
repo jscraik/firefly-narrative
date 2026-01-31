@@ -8,13 +8,15 @@
 
 ## The Big Idea
 
-**Narrative** is a desktop app that turns version control into a narrative medium. It layers AI coding sessions (like Claude Code or Codex) onto your git commits, creating a rich story of how your code evolved.
+Picture this: You're debugging a gnarly authentication bug at 2am. You find the fix, commit it, and move on. Six months later, a new team member asks "Why did we implement JWT refresh this way?" and you have no idea. The commit message just says "fix auth bug."
+
+**Narrative** solves this. It's a desktop app that turns version control into a narrative medium—layering AI coding sessions (Claude Code, Codex, Cursor, Copilot) onto your git commits, creating a rich story of how your code evolved.
 
 Think of it like this:
 - **Git tells you WHAT changed** (files, diffs, commits)
 - **Narrative tells you WHY and HOW** (the AI conversations that led to those changes)
 
-It's like sticking Post-it notes on your commits that say "Hey, we spent 2 hours debating this function because..."
+It's like sticking Post-it notes on your commits that say "Hey, we spent 2 hours debating this function because..." except the Post-it notes are searchable, linkable, and automatically attached to the right commits.
 
 ---
 
@@ -32,50 +34,60 @@ It's like sticking Post-it notes on your commits that say "Hey, we spent 2 hours
 
 ```mermaid
 flowchart TB
-    subgraph App["App.tsx"]
-        Router["Router"]
+    subgraph App["App.tsx (~250 LOC)"]
+        Router["Mode Router"]
+        DocsView["DocsView"]
+        UpdatePrompt["UpdatePrompt"]
     end
     
     subgraph Views["Views"]
-        RepoView["Repo View"]
-        DemoView["Demo View"]
+        BranchView["BranchView"]
+        SpeculateView["SpeculateView"]
     end
     
-    subgraph Components["UI Components"]
+    subgraph Components["UI Components (29 total)"]
         Timeline["Timeline"]
-        CommitCard["Commit Card"]
+        TimelineNode["TimelineNode"]
         Badge["AiContributionBadge"]
         ImportPanel["SessionImportPanel"]
-        ImportButton["Import Button"]
+        DocsPanel["DocsOverviewPanel"]
+        DiffViewer["DiffViewer"]
+        SourceLens["SourceLensView"]
+    end
+    
+    subgraph Hooks["Custom Hooks (10 total)"]
+        useRepoLoader["useRepoLoader"]
+        useCommitData["useCommitData"]
+        useUpdater["useUpdater"]
+        useTraceCollector["useTraceCollector"]
     end
     
     subgraph Core["Core Layer"]
         API["attribution-api.ts"]
-        GitAPI["git/ api"]
-        Types["types.ts"]
+        GitAPI["repo/ api"]
+        TauriAPI["tauri/ api"]
     end
     
     subgraph Backend["Tauri Backend"]
         Commands["Tauri Commands"]
     end
     
-    Router --> RepoView & DemoView
-    RepoView --> Timeline
-    Timeline --> CommitCard
-    CommitCard --> Badge
-    RepoView --> ImportPanel
-    ImportPanel --> ImportButton
+    Router --> BranchView & SpeculateView & DocsView
+    BranchView --> Timeline
+    Timeline --> TimelineNode
+    TimelineNode --> Badge
+    BranchView --> ImportPanel
+    BranchView --> SourceLens
+    DocsView --> DocsPanel
     
-    ImportButton --> API
-    Badge --> API
-    Timeline --> GitAPI
-    
-    API --> Commands
-    GitAPI --> Commands
+    App --> Hooks
+    Hooks --> Core
+    Core --> Commands
     
     style App fill:#e1f5fe
     style Views fill:#e3f2fd
     style Components fill:#f3e5f5
+    style Hooks fill:#fff8e1
     style Core fill:#fff3e0
     style Backend fill:#c8e6c9
 ```
@@ -83,37 +95,64 @@ flowchart TB
 ```
 src/
 ├── core/                # Business logic (git, database, indexing)
-│   ├── repo/            # Git operations
+│   ├── repo/            # Git operations, sessions, indexing
+│   │   ├── git.ts           # Git command wrappers
+│   │   ├── indexer.ts       # Repo indexing logic
+│   │   ├── sessions.ts      # Session management
+│   │   ├── db.ts            # SQLite operations
+│   │   ├── otelAdapter.ts   # OpenTelemetry adapter
+│   │   ├── kimiAdapter.ts   # Kimi session adapter
+│   │   ├── agentTrace.ts    # Agent trace handling
+│   │   └── __tests__/       # Unit tests
+│   ├── tauri/           # Tauri API wrappers
+│   │   ├── narrativeFs.ts   # File system operations
+│   │   ├── gitDiff.ts       # Git diff commands
+│   │   └── otelReceiver.ts  # OTLP receiver control
+│   ├── security/        # Security utilities
+│   │   ├── hash.ts          # Hashing utilities
+│   │   ├── redact.ts        # Secret redaction
+│   │   └── toolSanitizer.ts # Tool call sanitization
 │   ├── demo/            # Demo data generation
 │   ├── types.ts         # Shared TypeScript types
-│   └── attribution-api.ts   # Attribution API wrapper
-├── hooks/               # Custom React hooks (post-JSC-7 refactoring)
+│   ├── attribution-api.ts   # Attribution API wrapper
+│   └── rules.ts         # Rules engine
+├── hooks/               # Custom React hooks (extracted from App.tsx)
 │   ├── useRepoLoader.ts      # Repo loading, indexing, LRU diff cache
-│   ├── useTraceCollector.ts   # OTLP trace collection events
-│   ├── useSessionImport.ts    # Session import (JSON, Kimi, traces)
-│   ├── useCommitData.ts       # Commit files, diffs, traces
-│   ├── useSourceLensData.ts   # Source lens data fetching
+│   ├── useTraceCollector.ts  # OTLP trace collection events
+│   ├── useSessionImport.ts   # Session import (JSON, Kimi, traces)
+│   ├── useCommitData.ts      # Commit files, diffs, traces
+│   ├── useSourceLensData.ts  # Source lens data fetching
 │   ├── useTimelineNavigation.ts # Timeline scroll and nav logic
-│   ├── basename.ts            # File basename utility
-│   ├── isoStampForFile.ts     # ISO timestamp utility
-│   ├── sessionUtils.ts        # Session utilities
-│   └── useUpdater.ts           # Auto-update checker
+│   ├── useUpdater.ts         # Auto-update checker
+│   ├── basename.ts           # File basename utility
+│   ├── isoStampForFile.ts    # ISO timestamp utility
+│   └── sessionUtils.ts       # Session utilities
 ├── ui/                  # React components
-│   ├── components/      # Timeline, badges, session cards
-│   │   ├── Timeline.tsx              # Timeline (post-JSC-12: ~77 LOC!)
+│   ├── components/      # 29 components, most <150 LOC each
+│   │   ├── Timeline.tsx              # Timeline (~77 LOC after refactor)
+│   │   ├── TimelineNode.tsx          # Individual timeline node
+│   │   ├── TimelineNavButtons.tsx    # Timeline nav buttons
 │   │   ├── BadgePill.tsx             # Timeline badge pills
-│   │   ├── TimelineNode.tsx           # Individual timeline node
-│   │   ├── TimelineNavButtons.tsx     # Timeline nav buttons
-│   │   ├── SourceLensView.tsx        # Source lens (post-JSC-10: ~71 LOC!)
-│   │   ├── AuthorBadge.tsx            # Line attribution badge
-│   │   ├── SourceLensStats.tsx        # Stats bar component
-│   │   ├── SourceLensLineTable.tsx    # Line table component
+│   │   ├── SourceLensView.tsx        # Source lens (~71 LOC after refactor)
+│   │   ├── SourceLensStats.tsx       # Stats bar component
+│   │   ├── SourceLensLineTable.tsx   # Line table component
 │   │   ├── SourceLensEmptyStates.tsx # Empty/loading/error states
-│   │   ├── AiContributionBadge.tsx  # AI contribution display
-│   │   ├── SessionImportPanel.tsx   # Session import UI
-│   │   └── ... (20+ total components, most <150 LOC each)
-│   └── views/           # Main screens (Repo, Demo)
-└── App.tsx              # Main app component (post-JSC-7: ~208 LOC!)
+│   │   ├── AuthorBadge.tsx           # Line attribution badge
+│   │   ├── AiContributionBadge.tsx   # AI contribution display
+│   │   ├── AgentTraceSummary.tsx     # Agent trace summary
+│   │   ├── SessionImportPanel.tsx    # Session import UI
+│   │   ├── SessionExcerpts.tsx       # Session excerpts display
+│   │   ├── DocsOverviewPanel.tsx     # Docs panel with Mermaid
+│   │   ├── MermaidDiagram.tsx        # Mermaid diagram renderer
+│   │   ├── DiffViewer.tsx            # Diff viewer component
+│   │   ├── TraceTranscriptPanel.tsx  # Trace transcript display
+│   │   ├── UpdatePrompt.tsx          # Auto-update notification
+│   │   ├── TopNav.tsx                # Top navigation bar
+│   │   └── ... (10 more components)
+│   └── views/           # Main screens
+│       ├── BranchView.tsx    # Main branch view
+│       └── SpeculateView.tsx # Speculate mode view
+└── App.tsx              # Main app component (~250 LOC)
 ```
 
 ### Backend: Rust + Tauri + SQLite
@@ -135,35 +174,49 @@ src-tauri/src/
 ├── linking.rs         # The linking algorithm (temporal + file overlap)
 ├── models.rs          # Data models (SessionLink, TestCase, etc.)
 ├── session_links.rs   # CRUD for session_links table
+├── session_hash.rs    # Deterministic session hashing
 ├── otlp_receiver.rs   # OpenTelemetry trace receiver (with auth + rate limiting)
+├── git_diff.rs        # Git diff parsing utilities
+├── file_watcher.rs    # File system watching for auto-import
+├── trace_commands.rs  # Agent trace Tauri commands
 ├── import/            # Session import & security scanning
-│   ├── parser.rs      # Parser trait
-│   ├── secure_parser.rs   # Secret detection
-│   ├── path_validator.ts  # Path traversal protection
-│   ├── tool_sanitizer.ts  # Tool call sanitization
+│   ├── parser.rs          # Parser trait (all parsers implement this)
+│   ├── secure_parser.rs   # Secret detection (regex patterns)
+│   ├── path_validator.rs  # Path traversal protection
+│   ├── tool_sanitizer.rs  # Tool call sanitization
 │   ├── claude_parser.rs   # Claude Code JSONL parser
-│   ├── cursor_parser.ts   # Cursor AI parser
-│   ├── copilot_parser.ts  # GitHub Copilot parser
-│   ├── gemini_parser.ts    # Google Gemini parser
-│   └── commands.rs    # Import Tauri commands
-├── attribution/       # AI contribution stats (NEWLY REFACTORED)
+│   ├── cursor_parser.rs   # Cursor AI parser
+│   ├── copilot_parser.rs  # GitHub Copilot parser
+│   ├── gemini_parser.rs   # Google Gemini parser
+│   ├── continue_parser.rs # Continue.dev parser
+│   └── commands.rs        # Import Tauri commands
+├── attribution/       # AI contribution stats (REFACTORED)
 │   ├── commands.rs       # Tauri command wrappers (thin!)
 │   ├── stats.rs          # Contribution stats computation
+│   ├── session_stats.rs  # Session-level statistics
 │   ├── source_lens.rs    # Line attribution display
 │   ├── notes_io.rs       # Git note import/export
+│   ├── notes.rs          # Git notes utilities
 │   ├── line_attribution.rs # Attribution storage
 │   ├── git_utils.rs      # Git operations (diff, patch-id)
+│   ├── models.rs         # Attribution data models
 │   └── utils.rs          # Shared utilities
-└── tests/             # Unit tests (40 passing!)
+├── rules/             # Rules engine for attribution
+│   ├── commands.rs       # Rules Tauri commands
+│   └── mod.rs            # Rules module
+└── tests/             # Unit tests (40+ passing!)
 ```
 
-**New attribution module structure (post-JSC-8):**
-- `commands.rs` - Thin Tauri wrappers (~187 LOC, 88% reduction)
+**Attribution module structure (post-JSC-8 refactor):**
+- `commands.rs` - Thin Tauri wrappers (~187 LOC, 88% reduction from original)
 - `stats.rs` - Stats computation, caching, tool breakdowns
+- `session_stats.rs` - Session-level statistics aggregation
 - `source_lens.rs` - Line-at-a-time attribution with pagination
 - `notes_io.rs` - Import/export attribution to/from git notes
+- `notes.rs` - Git notes utilities
 - `line_attribution.rs` - Store and fetch line attributions
 - `git_utils.rs` - Git diff parsing, patch-id computation
+- `models.rs` - Attribution-specific data models
 - `utils.rs` - Fetch repo root, session metadata
 
 ---
@@ -1074,6 +1127,52 @@ utils.rs                   # Shared utilities
 4. **Name to Avoid Conflicts** - Use semantic suffixes when component names clash with types.
 5. **LRU Cache by Default** - Never use unbounded caches for user-provided data.
 
+### The Custom Hooks Pattern (Worth Remembering)
+
+Here's a pattern that saved us a lot of pain. When `App.tsx` hit 889 LOC, we extracted 7 custom hooks. The key insight: **hooks should encapsulate a single concern**.
+
+**Before (monolithic):**
+```typescript
+// App.tsx - 889 LOC of mixed concerns
+function App() {
+  const [repoState, setRepoState] = useState(...);
+  const [indexingProgress, setIndexingProgress] = useState(...);
+  const [diffCache] = useState(new Map()); // Memory leak!
+  
+  // 50 lines of repo loading logic
+  // 30 lines of trace collection logic
+  // 40 lines of session import logic
+  // 60 lines of commit data loading logic
+  // ... and so on
+}
+```
+
+**After (modular):**
+```typescript
+// App.tsx - 250 LOC, just orchestration
+function App() {
+  const { repoState, openRepo, diffCache } = useRepoLoader();
+  const traceHandlers = useTraceCollector({ repoState });
+  const importHandlers = useSessionImport({ repoState });
+  const commitData = useCommitData({ repoState, diffCache });
+  const { status: updateStatus } = useUpdater({ checkOnMount: true });
+  
+  // Just render, no logic
+}
+```
+
+**The pattern:**
+1. Each hook owns its state and side effects
+2. Hooks communicate via props (dependency injection)
+3. App.tsx just wires hooks together and renders
+4. Easy to test hooks in isolation
+
+**When to extract a hook:**
+- Component > 200 LOC
+- Multiple `useState` + `useEffect` for the same concern
+- Logic that could be reused elsewhere
+- State that's updated together (cohesion)
+
 ### Test Results
 
 All refactoring passed with flying colors:
@@ -1161,6 +1260,8 @@ The system scans standard locations for AI session files:
 - `~/.claude/projects/*/*.jsonl` (Claude Code)
 - `~/.cursor/composer/` (Cursor)
 - `~/.continue/` (Continue)
+- GitHub Copilot logs (when available)
+- Google Gemini sessions (when available)
 
 **2. Security Scanning**
 Before importing, we scan for secrets:
@@ -1171,7 +1272,32 @@ ghp_xxxxxxxx...       ← GitHub token detected!
 ```
 If secrets are found, the import is flagged for user review. This prevents accidentally storing API keys.
 
-**3. Parsing**
+**3. Parsing (Multi-Tool Support)**
+
+This is where the architecture gets interesting. Each AI tool stores sessions differently:
+
+| Tool | Format | Location | Parser |
+|------|--------|----------|--------|
+| Claude Code | JSONL | `~/.claude/projects/` | `claude_parser.rs` |
+| Cursor | JSON | `~/.cursor/composer/` | `cursor_parser.rs` |
+| Continue | JSON | `~/.continue/` | `continue_parser.rs` |
+| GitHub Copilot | Logs | Various | `copilot_parser.rs` |
+| Google Gemini | JSON | Various | `gemini_parser.rs` |
+
+All parsers implement the same `Parser` trait:
+
+```rust
+pub trait Parser {
+    fn parse(&self, content: &str) -> Result<ParsedSession, ParseError>;
+    fn can_parse(&self, content: &str) -> bool;
+}
+```
+
+This means adding support for a new AI tool is just:
+1. Create `new_tool_parser.rs`
+2. Implement the `Parser` trait
+3. Register it in `mod.rs`
+
 For Claude Code sessions (JSONL format), we extract:
 - **Messages** - User prompts and AI responses
 - **Tool calls** - Which files were read/written
@@ -1380,17 +1506,24 @@ const stats = await getCommitContributionStats(repoId, commitSha);
 
 ## What's Next? (Future Roadmap)
 
+**Completed (moved from near-term):**
+- ✅ Line-level attribution (Source Lens view)
+- ✅ Cursor, Continue, Copilot, Gemini parsers
+- ✅ Auto-updates via GitHub Releases
+- ✅ Docs view with Mermaid diagrams
+
 **Near-term:**
-- Line-level attribution (which lines in a file were AI-written)
-- Cursor and Continue parsers
-- File watcher for auto-import
-- Epic 4: Frontend UI for session linking (show links, allow unlink)
+- File watcher for auto-import (detect new sessions automatically)
+- Session unlink/relink UI improvements
+- Batch import from multiple tools at once
+- Performance optimization for large repos (1000+ commits)
 
 **Long-term:**
-- Git notes sync (export attribution to refs/notes/ai)
-- "Speculate" mode: Simulate alternative futures
+- Git notes sync (export attribution to `refs/notes/ai`)
+- "Speculate" mode: Simulate alternative futures ("what if we'd used GraphQL?")
 - Multi-level abstraction: commit → session → milestone → branch
 - Team collaboration: Share narrative layers via git
+- VS Code extension for inline attribution display
 
 ---
 
@@ -1418,12 +1551,6 @@ const stats = await getCommitContributionStats(repoId, commitSha);
 4. Test with real data, not just intuition
 5. When stuck, the error message is probably about borrowing or lifetimes
 6. Always scan for secrets before storing user data
-
----
-
-*Last updated: January 30, 2026*
-*Version: 0.2.0*
-*Status: ✅ Calibration study passed | ✅ Attribution tracking shipped | ✅ Code quality refactoring complete | ✅ Auto-updates enabled | ✅ GitHub Releases active*
 
 ---
 
@@ -1561,85 +1688,59 @@ These are configured in: `https://github.com/jscraik/narrative/settings/secrets/
 
 ---
 
-## What's New: Docs View with Auto-Repo-Load (January 30, 2026)
+## What's New: Docs View with Mermaid Diagrams (January 30, 2026)
 
-We fixed the Docs tab to automatically load documentation when you switch to it.
+Here's a fun story: We built all these beautiful architecture diagrams in Mermaid format, but they were trapped in markdown files. You had to open them in VS Code or GitHub to see them rendered. That felt wrong for an app about making code history *visible*.
 
 ### The Problem
 
-Previously, if you switched from Demo mode to Docs mode, you'd see "Open a repository to view documentation" - even if you had a repo loaded in Repo mode. This was confusing.
+Previously, if you switched from Demo mode to Docs mode, you'd see "Open a repository to view documentation" - even if you had a repo loaded in Repo mode. And even when it worked, Mermaid diagrams showed as raw code blocks. Not exactly the visual experience we were going for.
 
 ### The Solution
 
-Added a `DocsView` wrapper that auto-loads the current directory as a repo when Docs is opened without a loaded repo:
+We built a proper Docs panel with live Mermaid rendering:
 
 ```typescript
-// src/App.tsx - DocsView component
-function DocsView(props: {
-  repoState: RepoState;
-  setRepoState: React.Dispatch<React.SetStateAction<RepoState>>;
-  // ...
-}) {
-  useEffect(() => {
-    if (repoState.status !== 'idle' && repoState.status !== 'error') {
-      return; // Already loaded
-    }
-    
-    // Auto-load current directory
-    const loadCurrentDir = async () => {
-      const defaultPath = '/Users/jamiecraik/dev/narrative';
-      const { model, repo } = await indexRepo(defaultPath, 60);
-      setRepoState({ status: 'ready', path: defaultPath, model, repo });
-    };
-    
-    loadCurrentDir();
-  }, [repoState.status]);
-  
-  // ...
+// src/ui/components/DocsOverviewPanel.tsx
+export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps) {
+  // Scans .narrative/ for .md files
+  // Extracts titles from first # heading
+  // Renders markdown with react-markdown
+  // Uses beautiful-mermaid for diagram rendering
 }
 ```
 
-**What it does:**
-1. User clicks "Docs" tab
-2. If no repo loaded → automatically loads the narrative project itself
-3. Displays documentation files from `.narrative/` folder
-4. Shows markdown files with Mermaid diagram support
+**The magic ingredient:** We switched from the heavy `mermaid` library to `beautiful-mermaid`, a lightweight wrapper that renders diagrams on-demand. This keeps the bundle small while still giving us beautiful flowcharts, sequence diagrams, and ERDs.
 
 ### Docs View Features
 
-- **Auto-loads repo:** No manual "Open repo" needed
-- **Lists markdown files:** Scans `.narrative/` for `.md` files
-- **Mermaid diagrams:** Renders Mermaid charts inline
-- **Proper scrolling:** Fixed container height issues
+- **Auto-loads repo:** Click Docs tab → repo loads automatically (no manual "Open repo" needed)
+- **Lists markdown files:** Scans `.narrative/` for `.md` files, extracts titles
+- **Live Mermaid diagrams:** Flowcharts, sequence diagrams, ERDs all render inline
+- **Proper scrolling:** Fixed container height issues that caused content to overflow
 
-### Files Changed
+### The DocsView Wrapper Pattern
 
-**New files:**
-- `scripts/release.sh` - Release helper script
+This is a neat pattern worth remembering: When you have a view that depends on state from another mode, create a wrapper component that handles the loading:
 
-**Modified:**
-- `src/App.tsx` - Added DocsView component, enabled auto-updates
-- `src/ui/components/DocsOverviewPanel.tsx` - Removed debug logging
-- `AGENTS.md` - Added release protocol documentation
-- `src-tauri/src/commands.rs` - Cleaned up debug logging
+```typescript
+function DocsView(props: { repoState, setRepoState, onClose }) {
+  useEffect(() => {
+    if (repoState.status !== 'idle') return; // Already loaded
+    
+    // Auto-load current directory
+    const { model, repo } = await indexRepo(defaultPath, 60);
+    setRepoState({ status: 'ready', path: defaultPath, model, repo });
+  }, [repoState.status]);
+  
+  return <DocsOverviewPanel repoRoot={repoState.repo?.root} />;
+}
+```
+
+This keeps the actual panel component pure (just takes `repoRoot` as a prop) while the wrapper handles the "make sure we have data" logic.
 
 ---
 
-## Summary
-
-**Release Management:**
-- ✅ GitHub Releases with automated builds
-- ✅ Auto-updater checks daily
-- ✅ Signed artifacts for security
-- ✅ Multi-platform support (Mac/Win/Linux)
-
-**Docs View:**
-- ✅ Auto-loads repo when switching to Docs tab
-- ✅ Lists and displays markdown documentation
-- ✅ Mermaid diagram rendering
-- ✅ Fixed scrolling issues
-
-**Next Steps:**
-1. Future releases just run `./scripts/release.sh X.Y.Z`
-2. Users get automatic update notifications
-3. No more manual DMG files!
+*Last updated: January 30, 2026*
+*Version: 0.2.0*
+*Status: ✅ Calibration study passed | ✅ Attribution tracking shipped | ✅ Code quality refactoring complete | ✅ Auto-updates enabled | ✅ GitHub Releases active | ✅ Docs view with Mermaid | ✅ Multi-parser support (5 tools)*

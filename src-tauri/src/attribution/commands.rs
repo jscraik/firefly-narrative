@@ -9,7 +9,9 @@ use super::notes_io::{
     AttributionNoteBatchSummary, AttributionNoteExportSummary, AttributionNoteImportSummary,
 };
 use super::session_stats::compute_human_contribution;
-use super::stats::{compute_contribution_from_attributions, fetch_cached_stats, fetch_linked_session};
+use super::stats::{
+    compute_contribution_from_attributions, fetch_cached_stats, fetch_linked_session,
+};
 use crate::DbState;
 use tauri::State;
 

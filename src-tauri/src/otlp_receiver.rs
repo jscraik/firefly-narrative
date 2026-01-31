@@ -19,8 +19,8 @@ use serde::Serialize;
 use serde_json::Value;
 use std::{
     collections::{HashMap, HashSet},
-    mem,
     net::SocketAddr,
+    path::Path,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -36,12 +36,12 @@ const TRACE_DIR: &str = "trace";
 
 // Security: API key authentication for OTLP receiver
 const API_KEY_HEADER: &str = "x-narrative-api-key";
-// Default API key - users can override via environment variable
+// Default API key - used only in debug builds
 const DEFAULT_API_KEY: &str = "narrative-otel-dev-key-change-in-production";
 
 // Security: Rate limiting configuration
-const RATE_LIMIT_MAX_REQUESTS: u32 = 30;  // Max requests per window
-const RATE_LIMIT_WINDOW_SECONDS: u64 = 1;  // 1 second sliding window
+const RATE_LIMIT_MAX_REQUESTS: u32 = 30; // Max requests per window
+const RATE_LIMIT_WINDOW_SECONDS: u64 = 1; // 1 second sliding window
 
 const COMMIT_KEYS: &[&str] = &[
     "commit_sha",
@@ -284,12 +284,9 @@ pub fn start_otlp_receiver(app_handle: AppHandle, state: OtelReceiverState) -> R
     // This fixes the race condition where concurrent calls could both pass is_some() check
     let old_runtime = {
         let mut guard = state.runtime.lock().map_err(|e| e.to_string())?;
-        mem::replace(
-            &mut *guard,
-            Some(OtelReceiverRuntime {
-                shutdown: Some(shutdown_tx),
-            }),
-        )
+        guard.replace(OtelReceiverRuntime {
+            shutdown: Some(shutdown_tx),
+        })
     };
 
     // Gracefully shut down any existing runtime
@@ -304,59 +301,59 @@ pub fn start_otlp_receiver(app_handle: AppHandle, state: OtelReceiverState) -> R
         app_handle: app_handle.clone(),
     };
 
-        tauri::async_runtime::spawn(async move {
-            let runtime_state = context.state.clone();
-            let router = Router::new()
-                .route("/v1/logs", post(handle_logs))
-                .route("/v1/traces", post(handle_traces))
-                .with_state(context.clone());
+    tauri::async_runtime::spawn(async move {
+        let runtime_state = context.state.clone();
+        let router = Router::new()
+            .route("/v1/logs", post(handle_logs))
+            .route("/v1/traces", post(handle_traces))
+            .with_state(context.clone());
 
-            let addr = SocketAddr::from(([127, 0, 0, 1], OTLP_PORT));
-            let listener = match tokio::net::TcpListener::bind(addr).await {
-                Ok(listener) => listener,
-                Err(err) => {
-                    emit_status(
-                        &context.app_handle,
-                        ReceiverStatus {
-                            state: "error".to_string(),
-                            message: Some(format!("Codex OTel receiver failed to bind: {err}")),
-                            issues: None,
-                            last_seen_at_iso: None,
-                        },
-                    );
-                    clear_receiver_runtime(&runtime_state);
-                    return;
-                }
-            };
-
-            emit_status(
-                &context.app_handle,
-                ReceiverStatus {
-                    state: "active".to_string(),
-                    message: Some("Listening for Codex logs...".to_string()),
-                    issues: None,
-                    last_seen_at_iso: None,
-                },
-            );
-
-            let serve = axum::serve(listener, router).with_graceful_shutdown(async {
-                let _ = shutdown_rx.await;
-            });
-
-            if let Err(err) = serve.await {
+        let addr = SocketAddr::from(([127, 0, 0, 1], OTLP_PORT));
+        let listener = match tokio::net::TcpListener::bind(addr).await {
+            Ok(listener) => listener,
+            Err(err) => {
                 emit_status(
                     &context.app_handle,
                     ReceiverStatus {
                         state: "error".to_string(),
-                        message: Some(format!("Codex OTel receiver stopped: {err}")),
+                        message: Some(format!("Codex OTel receiver failed to bind: {err}")),
                         issues: None,
                         last_seen_at_iso: None,
                     },
                 );
+                clear_receiver_runtime(&runtime_state);
+                return;
             }
+        };
 
-            clear_receiver_runtime(&runtime_state);
+        emit_status(
+            &context.app_handle,
+            ReceiverStatus {
+                state: "active".to_string(),
+                message: Some("Listening for Codex logs...".to_string()),
+                issues: None,
+                last_seen_at_iso: None,
+            },
+        );
+
+        let serve = axum::serve(listener, router).with_graceful_shutdown(async {
+            let _ = shutdown_rx.await;
         });
+
+        if let Err(err) = serve.await {
+            emit_status(
+                &context.app_handle,
+                ReceiverStatus {
+                    state: "error".to_string(),
+                    message: Some(format!("Codex OTel receiver stopped: {err}")),
+                    issues: None,
+                    last_seen_at_iso: None,
+                },
+            );
+        }
+
+        clear_receiver_runtime(&runtime_state);
+    });
 
     Ok(())
 }
@@ -386,9 +383,12 @@ fn stop_otlp_receiver(
 }
 
 // Get the expected API key from environment or use default
-fn get_expected_api_key() -> String {
-    std::env::var("NARRATIVE_OTEL_API_KEY")
-        .unwrap_or_else(|_| DEFAULT_API_KEY.to_string())
+fn get_expected_api_key() -> Result<String, String> {
+    match std::env::var("NARRATIVE_OTEL_API_KEY") {
+        Ok(value) => Ok(value),
+        Err(_) if cfg!(debug_assertions) => Ok(DEFAULT_API_KEY.to_string()),
+        Err(_) => Err("Missing NARRATIVE_OTEL_API_KEY environment variable".to_string()),
+    }
 }
 
 // Validate API key from headers
@@ -399,11 +399,11 @@ fn validate_api_key(headers: &HeaderMap) -> Result<(), String> {
         .ok_or_else(|| {
             format!(
                 "Missing API key header: {API_KEY_HEADER}. \
-                Set NARRATIVE_OTEL_API_KEY env var or use default key."
+                Set the NARRATIVE_OTEL_API_KEY environment variable."
             )
         })?;
 
-    let expected = get_expected_api_key();
+    let expected = get_expected_api_key()?;
     if api_key == expected {
         Ok(())
     } else {
@@ -452,7 +452,10 @@ async fn handle_request(
         let mut rate_limiter = match rate_limiter {
             Ok(rl) => rl,
             Err(err) => {
-                eprintln!("[OTLP Security] Failed to acquire rate limiter lock: {}", err);
+                eprintln!(
+                    "[OTLP Security] Failed to acquire rate limiter lock: {}",
+                    err
+                );
                 return response(
                     StatusCode::INTERNAL_SERVER_ERROR,
                     IngestResponse {
@@ -941,7 +944,7 @@ fn ingest_events(
                 message: Some(format!("Notification delivery failed: {err}")),
                 issues: Some(vec![
                     "OTLP ingest completed but UI notification failed".to_string(),
-                    format!("Error: {err}")
+                    format!("Error: {err}"),
                 ]),
                 last_seen_at_iso: Some(Utc::now().to_rfc3339()),
             },
@@ -1016,13 +1019,26 @@ fn build_trace_files(
     model_id: Option<String>,
 ) -> Result<Vec<TraceFile>, String> {
     let commit_files = list_commit_files(repo_root, commit_sha)?;
-    let hint_set: HashSet<&String> = file_hints.iter().collect();
-    let files_to_use = if hint_set.is_empty() {
+    let normalized_hints: HashSet<String> = file_hints
+        .iter()
+        .filter_map(|hint| {
+            let path = Path::new(hint);
+            if path.is_absolute() {
+                path.strip_prefix(repo_root)
+                    .ok()
+                    .map(|relative| relative.to_string_lossy().to_string())
+                    .or_else(|| Some(hint.clone()))
+            } else {
+                Some(hint.clone())
+            }
+        })
+        .collect();
+    let files_to_use = if normalized_hints.is_empty() {
         commit_files
     } else {
         commit_files
             .into_iter()
-            .filter(|path| hint_set.contains(path))
+            .filter(|path| normalized_hints.contains(path))
             .collect()
     };
 
@@ -1171,7 +1187,10 @@ fn emit_status(app_handle: &AppHandle, status: ReceiverStatus) {
         // This typically happens when the app is shutting down or Tauri event system is broken
         // We log to stderr as a last resort since we can't emit to UI
         eprintln!("[OTLP Receiver] CRITICAL: Failed to emit status to UI: {err}");
-        eprintln!("[OTLP Receiver] Status was: state={}, message={:?}", status.state, status.message);
+        eprintln!(
+            "[OTLP Receiver] Status was: state={}, message={:?}",
+            status.state, status.message
+        );
 
         // Note: If this happens frequently, it indicates:
         // 1. App shutting down (expected, ignore)
@@ -1199,7 +1218,9 @@ fn clear_receiver_runtime(state: &OtelReceiverState) {
             // We recover by clearing the poisoned state to allow the app to continue
             let mut guard = poisoned.into_inner();
             *guard = None;
-            eprintln!("[OTLP Receiver] WARNING: Mutex was poisoned (thread panic), cleared runtime state");
+            eprintln!(
+                "[OTLP Receiver] WARNING: Mutex was poisoned (thread panic), cleared runtime state"
+            );
         }
     }
 }

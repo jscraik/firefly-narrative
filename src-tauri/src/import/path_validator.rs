@@ -111,9 +111,7 @@ impl PathValidator {
         }
 
         // Also allow temp directory for testing
-        if let Some(temp) = std::env::temp_dir().parent() {
-            dirs.push(temp.to_path_buf());
-        }
+        dirs.push(std::env::temp_dir());
 
         dirs
     }

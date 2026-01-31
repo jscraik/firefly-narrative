@@ -96,7 +96,7 @@ export function useCommitData({
 
       const cacheKey = `${nodeId}:${filePath}`;
       const cached = diffCache.current.get(cacheKey);
-      if (cached) return cached;
+      if (cached !== undefined) return cached;
 
       const diff = await getCommitDiffForFile(repoState.repo.root, nodeId, filePath);
       diffCache.current.set(cacheKey, diff);

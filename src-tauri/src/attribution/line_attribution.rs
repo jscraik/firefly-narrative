@@ -146,8 +146,8 @@ async fn try_restore_attributions_via_rewrite_key(
     repo_id: i64,
     commit_sha: &str,
 ) -> Result<bool, String> {
-    use super::stats::compute_contribution_from_attributions;
     use super::session_stats::store_contribution_stats;
+    use super::stats::compute_contribution_from_attributions;
 
     let Some(rewrite_key) = store_rewrite_key_for_commit(db, repo_id, commit_sha).await? else {
         return Ok(false);

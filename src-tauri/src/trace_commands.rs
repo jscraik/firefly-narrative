@@ -68,10 +68,10 @@ pub async fn get_trace_summary_for_commit(
          JOIN trace_files tf ON tf.record_id = r.id
          JOIN trace_conversations tc ON tc.file_id = tf.id
          JOIN trace_ranges tr ON tr.conversation_id = tc.id
-         WHERE r.repo_id = $1 AND r.revision = $2"
+         WHERE r.repo_id = $1 AND r.revision = $2",
     )
     .bind(repo_id)
-    .bind(&commit_sha)
+    .bind(commit_sha)
     .fetch_all(pool)
     .await
     .map_err(|e| format!("Database query failed: {}", e))?;
@@ -80,7 +80,8 @@ pub async fn get_trace_summary_for_commit(
         return Ok(None);
     }
 
-    let mut file_map: std::collections::HashMap<String, TraceFileSummary> = std::collections::HashMap::new();
+    let mut file_map: std::collections::HashMap<String, TraceFileSummary> =
+        std::collections::HashMap::new();
     let mut model_ids = std::collections::HashSet::new();
     let mut ai_lines = 0i64;
     let mut human_lines = 0i64;
@@ -96,14 +97,16 @@ pub async fn get_trace_summary_for_commit(
 
         let count = end_line - start_line + 1;
 
-        let entry = file_map.entry(path.clone()).or_insert_with(|| TraceFileSummary {
-            path: path.clone(),
-            ai_lines: 0,
-            human_lines: 0,
-            mixed_lines: 0,
-            unknown_lines: 0,
-            ai_percent: 0,
-        });
+        let entry = file_map
+            .entry(path.clone())
+            .or_insert_with(|| TraceFileSummary {
+                path: path.clone(),
+                ai_lines: 0,
+                human_lines: 0,
+                mixed_lines: 0,
+                unknown_lines: 0,
+                ai_percent: 0,
+            });
 
         match contributor_type.as_str() {
             "ai" => {
@@ -150,10 +153,10 @@ pub async fn get_trace_summary_for_commit(
     let tool_rows = sqlx::query(
         "SELECT DISTINCT tool_name
          FROM trace_records
-         WHERE repo_id = $1 AND revision = $2 AND tool_name IS NOT NULL"
+         WHERE repo_id = $1 AND revision = $2 AND tool_name IS NOT NULL",
     )
     .bind(repo_id)
-    .bind(&commit_sha)
+    .bind(commit_sha)
     .fetch_all(pool)
     .await
     .map_err(|e| format!("Failed to get tool names: {}", e))?;
@@ -170,10 +173,10 @@ pub async fn get_trace_summary_for_commit(
          JOIN trace_files tf ON tf.record_id = r.id
          JOIN trace_conversations tc ON tc.file_id = tf.id
          JOIN trace_ranges tr ON tr.conversation_id = tc.id
-         WHERE r.repo_id = $1 AND r.revision = $2"
+         WHERE r.repo_id = $1 AND r.revision = $2",
     )
     .bind(repo_id)
-    .bind(&commit_sha)
+    .bind(commit_sha)
     .fetch_one(pool)
     .await
     .map_err(|e| format!("Failed to get totals: {}", e))?;
@@ -253,7 +256,7 @@ pub async fn get_trace_ranges_for_commit_file(
          JOIN trace_conversations tc ON tc.file_id = tf.id
          JOIN trace_ranges tr ON tr.conversation_id = tc.id
          WHERE r.repo_id = $1 AND r.revision = $2 AND tf.path = $3
-         ORDER BY tr.start_line ASC"
+         ORDER BY tr.start_line ASC",
     )
     .bind(repo_id)
     .bind(&commit_sha)

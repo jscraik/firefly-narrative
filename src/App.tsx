@@ -36,16 +36,17 @@ function DocsView(props: {
     }
 
     const loadCurrentDir = async () => {
+      if (!import.meta.env.DEV) {
+        return;
+      }
+
       setIsLoading(true);
       try {
-        // Try to use current working directory
-        const _cwd = await import('@tauri-apps/api/path').then(m => m.appDataDir()).catch(() => null);
-        // Fall back to a sensible default or prompt user
-        // For now, we'll try to detect the repo from the current URL or use a default
-        const defaultPath = '/Users/jamiecraik/dev/narrative'; // Fallback for dev
-        
+        // Dev-only fallback to a local repo path
+        const defaultPath = '/Users/jamiecraik/dev/narrative';
+
         setRepoState({ status: 'loading', path: defaultPath });
-        
+
         const { model, repo } = await indexRepo(defaultPath, 60);
         setRepoState({ status: 'ready', path: defaultPath, model, repo });
       } catch (e) {

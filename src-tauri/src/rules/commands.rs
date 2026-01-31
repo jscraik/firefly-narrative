@@ -12,8 +12,8 @@ fn load_rules_from_json(path: &Path) -> Result<RuleSet, String> {
     let content = fs::read_to_string(path)
         .map_err(|e| format!("Failed to read rules file {}: {}", path.display(), e))?;
 
-    let rule_set: RuleSet = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse rules JSON: {}", e))?;
+    let rule_set: RuleSet =
+        serde_json::from_str(&content).map_err(|e| format!("Failed to parse rules JSON: {}", e))?;
 
     Ok(rule_set)
 }
@@ -29,8 +29,13 @@ fn load_all_rules(repo_root: &Path) -> Result<Vec<Rule>, String> {
 
     let mut all_rules = vec![];
 
-    let entries = fs::read_dir(&rules_dir)
-        .map_err(|e| format!("Failed to read rules directory {}: {}", rules_dir.display(), e))?;
+    let entries = fs::read_dir(&rules_dir).map_err(|e| {
+        format!(
+            "Failed to read rules directory {}: {}",
+            rules_dir.display(),
+            e
+        )
+    })?;
 
     for entry in entries {
         let entry = entry.map_err(|e| e.to_string())?;
@@ -51,7 +56,11 @@ fn load_all_rules(repo_root: &Path) -> Result<Vec<Rule>, String> {
                 all_rules.extend(rule_set.rules);
             }
             Err(e) => {
-                eprintln!("Warning: Failed to load rules from {}: {}", path.display(), e);
+                eprintln!(
+                    "Warning: Failed to load rules from {}: {}",
+                    path.display(),
+                    e
+                );
             }
         }
     }
@@ -65,9 +74,7 @@ fn file_matches_patterns(file_path: &str, include: &[String], exclude: &[String]
     let include_file = if include.is_empty() {
         true
     } else {
-        include.iter().any(|pattern| {
-            glob_match(pattern, file_path)
-        })
+        include.iter().any(|pattern| glob_match(pattern, file_path))
     };
 
     if !include_file {
@@ -136,7 +143,6 @@ fn scan_file_for_violations(
         } else {
             content
                 .match_indices(&rule.pattern)
-                .map(|(idx, m)| (idx, m))
                 .collect()
         };
 
@@ -158,8 +164,7 @@ fn scan_file_for_violations(
 
 /// Recursively find all source files in the repo
 fn find_source_files(repo_root: &Path) -> Vec<PathBuf> {
-    let mut files = vec
-![];
+    let mut files = vec![];
 
     fn visit_dir(dir: &Path, files: &mut Vec<PathBuf>) {
         if let Ok(entries) = fs::read_dir(dir) {
@@ -293,7 +298,10 @@ pub async fn get_rules(repo_root: String) -> Result<Vec<Rule>, String> {
 
 /// Validate a rule set JSON file
 #[tauri::command(rename_all = "camelCase")]
-pub async fn validate_rules(repo_root: String, rule_file: String) -> Result<Vec<RuleValidationError>, String> {
+pub async fn validate_rules(
+    repo_root: String,
+    rule_file: String,
+) -> Result<Vec<RuleValidationError>, String> {
     let repo_path = PathBuf::from(&repo_root);
     let rules_path = if PathBuf::from(&rule_file).is_absolute() {
         PathBuf::from(rule_file)
@@ -389,5 +397,8 @@ pub async fn create_default_rules(repo_root: String) -> Result<String, String> {
     fs::write(&default_rules_path, default_rules)
         .map_err(|e| format!("Failed to write default rules: {}", e))?;
 
-    Ok(format!("Created default rules at {}", default_rules_path.display()))
+    Ok(format!(
+        "Created default rules at {}",
+        default_rules_path.display()
+    ))
 }

@@ -3,12 +3,9 @@
 use super::line_attribution::LineAttributionCommitRow;
 use super::models::ContributionStats;
 use super::source_lens::LineMeta;
-use super::{
-    line_attribution::fetch_line_attributions_for_commit,
-    utils::fetch_repo_root,
-};
-use crate::linking::SessionExcerpt;
+use super::{line_attribution::fetch_line_attributions_for_commit, utils::fetch_repo_root};
 use crate::attribution::models::AttributionError;
+use crate::linking::SessionExcerpt;
 use git2::Repository;
 use std::collections::HashMap;
 
@@ -26,7 +23,10 @@ pub(super) struct ContributionStatsRow {
 }
 
 impl ContributionStatsRow {
-    pub(super) fn into_stats(self, tool_breakdown: Option<Vec<super::models::ToolStats>>) -> ContributionStats {
+    pub(super) fn into_stats(
+        self,
+        tool_breakdown: Option<Vec<super::models::ToolStats>>,
+    ) -> ContributionStats {
         ContributionStats {
             human_lines: self.human_lines as u32,
             ai_agent_lines: self.ai_agent_lines as u32,

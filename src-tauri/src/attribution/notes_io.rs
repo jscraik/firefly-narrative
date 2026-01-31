@@ -297,8 +297,10 @@ async fn export_attribution_note_internal(
         });
     }
 
-    let mut files_map: std::collections::HashMap<String, NoteFile> = std::collections::HashMap::new();
-    let mut sources: std::collections::HashMap<String, NoteSourceMeta> = std::collections::HashMap::new();
+    let mut files_map: std::collections::HashMap<String, NoteFile> =
+        std::collections::HashMap::new();
+    let mut sources: std::collections::HashMap<String, NoteSourceMeta> =
+        std::collections::HashMap::new();
 
     for row in rows {
         let Some(session_id) = row.session_id.clone() else {

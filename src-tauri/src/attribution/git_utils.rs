@@ -1,6 +1,6 @@
 //! Git utilities for diff computation and rewrite key generation
 
-use super::line_attribution::{ChangedRange, ChangeKind};
+use super::line_attribution::{ChangeKind, ChangedRange};
 use git2::{DiffFormat, DiffOptions, Oid, Repository};
 use sha2::{Digest, Sha256};
 
@@ -201,7 +201,7 @@ pub fn compute_rewrite_key(repo: &Repository, commit_sha: &str) -> Result<String
 
             hasher.update(path.as_bytes());
             hasher.update(b"\n");
-            hasher.update(&[origin as u8]);
+            hasher.update([origin as u8]);
             hasher.update(b"\n");
             let normalized = normalize_patch_line(trimmed);
             hasher.update(normalized.as_bytes());
