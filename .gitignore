@@ -18,6 +18,9 @@ yarn-error.log*
 .narrative/trace
 .narrative/meta/
 
+# Internal docs (do not commit)
+FORJAMIE.md
+
 # Local specs (generated)
 .spec/
 
