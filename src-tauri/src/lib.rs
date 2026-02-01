@@ -135,6 +135,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             attribution::commands::set_attribution_prefs,
             attribution::commands::purge_attribution_prompt_meta,
             attribution::commands::get_git_ai_cli_status,
+            attribution::dashboard::get_dashboard_stats,
             // OTLP receiver commands
             otlp_receiver::set_active_repo_root,
             otlp_receiver::set_otlp_receiver_enabled,

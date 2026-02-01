@@ -253,3 +253,103 @@ export type RuleValidationError = {
   rule_name: string;
   error: string;
 };
+
+// ============================================================================
+// Dashboard Types (Phase 1: Analytics Dashboard)
+// ============================================================================
+
+export type TimeRangePreset = '7d' | '30d' | '90d' | 'all';
+
+export interface CustomTimeRange {
+  from: string; // ISO date string
+  to: string; // ISO date string
+}
+
+export type TimeRange = TimeRangePreset | CustomTimeRange;
+
+export interface DashboardStats {
+  repo: RepoInfo;
+  timeRange: TimeRange;
+  currentPeriod: PeriodStats;
+  previousPeriod?: PeriodStats;
+  topFiles: PaginatedFiles;
+}
+
+export interface RepoInfo {
+  id: number;
+  path: string;
+  name: string;
+}
+
+export interface PeriodStats {
+  period: {
+    start: string;
+    end: string;
+    commits: number;
+  };
+  attribution: {
+    totalLines: number;
+    humanLines: number;
+    aiAgentLines: number;
+    aiAssistLines: number;
+    collaborativeLines: number;
+    aiPercentage: number;
+  };
+  toolBreakdown: ToolStats[];
+  trend: TrendPoint[];
+}
+
+export interface ToolStats {
+  tool: string;
+  model?: string;
+  lineCount: number;
+}
+
+export interface TrendPoint {
+  date: string;
+  granularity: 'hour' | 'day' | 'week';
+  aiPercentage: number;
+  commitCount: number;
+}
+
+export interface PaginatedFiles {
+  files: FileStats[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export interface FileStats {
+  filePath: string;
+  totalLines: number;
+  aiLines: number;
+  aiPercentage: number;
+  commitCount: number;
+}
+
+export type DashboardEmptyReason =
+  | 'no-repo'
+  | 'no-commits'
+  | 'no-ai'
+  | 'no-attribution';
+
+export interface DashboardFilter {
+  type: 'ai-only' | 'tool' | 'file' | 'date-range';
+  value?: string;
+  dateRange?: { from: string; to: string };
+}
+
+export interface TrendContext {
+  metric: 'ai-percentage' | 'commits' | 'ai-lines' | 'human-lines';
+  direction: 'up' | 'down' | 'neutral';
+  previousValue?: number;
+  currentValue: number;
+}
+
+export interface TrendColor {
+  color: string;
+  label: string;
+  icon: 'trending_up' | 'trending_down' | 'minus';
+  ariaLabel: string;
+}

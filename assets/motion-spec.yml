@@ -1,0 +1,100 @@
+# Motion Specification Template
+# Version: 1.0
+# Last Updated: [Date]
+
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+global:
+  easing_default: "cubic-bezier(0.16, 1, 0.3, 1)"  # ease-out, spring-like
+  easing_enter: "cubic-bezier(0.16, 1, 0.3, 1)"
+  easing_exit: "cubic-bezier(0.4, 0, 0.6, 1)"     # ease-in
+  duration_fast: 150
+  duration_base: 200
+  duration_slow: 300
+  duration_page: 500
+
+  reduced_motion:
+    respect: true
+    fallback: "opacity only, extended duration (500ms), no stagger"
+    media_query: "(prefers-reduced-motion: reduce)"
+
+# =============================================================================
+# ANIMATION SEQUENCES
+# =============================================================================
+# Define animation sequences here using the following structure:
+#
+# [animation_name]:
+#   description: "What this animation communicates"
+#   trigger: "When this animation runs"
+#   sequence: "stagger | parallel | crossfade"
+#   elements:
+#     - name: "element_name"
+#       target: "[css-selector]"
+#       animation: "fade_in | slide_up | scale | etc."
+#       duration: 200  # ms
+#       delay: 0
+#       easing: "ease_out"
+#       properties:
+#         from: { opacity: 0 }
+#         to: { opacity: 1 }
+#       reduced_motion:
+#         duration: 500
+#         properties: { opacity: 0 → 1 }
+
+# =============================================================================
+# PERFORMANCE BUDGET
+# =============================================================================
+performance:
+  main_thread:
+    max_block: 50     # ms, no long tasks during animation
+    max_jank: 3       # max dropped frames per transition
+
+  animation_limits:
+    max_duration: 500 # no animation > 500ms (except loading)
+    max_simultaneous: 5
+    transform_only: true  # use transform/opacity only
+
+  gpu:
+    prefer: "transform and opacity (composited)"
+    avoid: ["width", "height", "top", "left", "margin", "padding"]
+    will_change: "add only if needed, remove after animation"
+
+# =============================================================================
+# IMPLEMENTATION NOTES
+# =============================================================================
+implementation_notes: |
+  # Tailwind v4 CSS implementation
+
+  ## Custom animations in @theme
+  @theme {
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --duration-fast: 150ms;
+    --duration-base: 200ms;
+    --duration-slow: 300ms;
+  }
+
+  ## Utility classes
+  .animate-in { animation-fill-mode: both; }
+  .animate-in-fade-in { animation: fadeIn 200ms var(--ease-spring); }
+  .animate-in-slide-up { animation: slideUp 300ms var(--ease-spring); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  ## Reduced motion
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }

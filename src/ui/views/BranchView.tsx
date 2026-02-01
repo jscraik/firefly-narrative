@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FileSelectionProvider, useFileSelection } from '../../core/context/FileSelectionContext';
 import { testRuns } from '../../core/demo/nearbyGridDemo';
-import type { BranchViewModel, FileChange, TestRun, TraceRange } from '../../core/types';
+import type { BranchViewModel, FileChange, TestRun, TraceRange, DashboardFilter } from '../../core/types';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
 import { BranchHeader } from '../components/BranchHeader';
 import { FilesChanged } from '../components/FilesChanged';
@@ -12,6 +12,9 @@ import { Timeline } from '../components/Timeline';
 
 function BranchViewInner(props: {
   model: BranchViewModel;
+  dashboardFilter?: DashboardFilter | null;
+  onClearFilter?: () => void;
+  isExitingFilteredView?: boolean;
   loadFilesForNode: (nodeId: string) => Promise<FileChange[]>;
   loadDiffForFile: (nodeId: string, filePath: string) => Promise<string>;
   loadTraceRangesForFile: (nodeId: string, filePath: string) => Promise<TraceRange[]>;
@@ -30,6 +33,9 @@ function BranchViewInner(props: {
 }) {
   const {
     model,
+    dashboardFilter,
+    onClearFilter,
+    isExitingFilteredView,
     loadFilesForNode,
     loadDiffForFile,
     loadTraceRangesForFile,
@@ -226,12 +232,12 @@ function BranchViewInner(props: {
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#f5f5f4]">
+    <div className={`flex h-full flex-col bg-[#f5f5f4] ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 duration-150 ease-out fill-mode-forwards' : ''}`}>
       <div className="flex-1 overflow-hidden">
         <div className="flex flex-col gap-5 p-5 h-full overflow-y-auto lg:grid lg:grid-cols-12 lg:overflow-hidden">
           {/* Left column */}
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
-            <BranchHeader model={model} />
+            <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />
             <IntentList items={model.intent} />
             <div>
               {loadingFiles ? (
@@ -317,6 +323,9 @@ function BranchViewInner(props: {
 
 export function BranchView(props: {
   model: BranchViewModel;
+  dashboardFilter?: DashboardFilter | null;
+  onClearFilter?: () => void;
+  isExitingFilteredView?: boolean;
   loadFilesForNode: (nodeId: string) => Promise<FileChange[]>;
   loadDiffForFile: (nodeId: string, filePath: string) => Promise<string>;
   loadTraceRangesForFile: (nodeId: string, filePath: string) => Promise<TraceRange[]>;

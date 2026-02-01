@@ -1,8 +1,8 @@
 import clsx from 'clsx';
-import { BookOpen, FileText, FolderOpen, GitBranch, LayoutGrid, Network } from 'lucide-react';
+import { BarChart3, BookOpen, FileText, FolderOpen, GitBranch, LayoutGrid, Network } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-export type Mode = 'demo' | 'repo' | 'speculate' | 'docs';
+export type Mode = 'demo' | 'repo' | 'speculate' | 'docs' | 'dashboard';
 
 export function TopNav(props: {
   mode: Mode;
@@ -49,7 +49,7 @@ export function TopNav(props: {
   const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    const order: Mode[] = ['demo', 'repo', 'speculate'];
+    const order: Mode[] = ['demo', 'repo', 'speculate', 'dashboard'];
     const currentIndex = order.indexOf(mode);
     if (currentIndex === -1) return;
     if (event.key === 'Home') {
@@ -78,6 +78,7 @@ export function TopNav(props: {
           <Tab id="demo" label="Demo" icon={<LayoutGrid className="h-4 w-4" />} />
           <Tab id="repo" label="Repo" icon={<GitBranch className="h-4 w-4" />} />
           <Tab id="speculate" label="Speculate" icon={<Network className="h-4 w-4" />} />
+          <Tab id="dashboard" label="Dashboard" icon={<BarChart3 className="h-4 w-4" />} />
           <Tab id="docs" label="Docs" icon={<BookOpen className="h-4 w-4" />} />
         </div>
       </div>

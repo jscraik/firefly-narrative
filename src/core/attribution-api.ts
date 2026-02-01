@@ -1,13 +1,222 @@
 /**
  * Attribution tracking API
- * 
+ *
  * Types and functions for AI contribution tracking.
  */
 
 import { invoke } from '@tauri-apps/api/core';
+import { z } from 'zod';
+import type {
+  DashboardStats,
+  TimeRange,
+  TrendContext,
+  TrendColor,
+  ToolStats,
+} from './types';
+
+// Re-exported for consumer use (type-only import for re-export)
+// biome-ignore lint/correctness/noUnusedImports: Re-exported for consumer use
+import type { FileStats } from './types';
 
 // ============================================================================
-// Types
+// Types (Legacy - for backward compatibility)
+// ============================================================================
+
+// Zod schemas for contract validation
+const ToolStatsSchema = z.object({
+  tool: z.string(),
+  model: z.string().optional(),
+  lineCount: z.number(),
+});
+
+const TrendPointSchema = z.object({
+  date: z.string(),
+  granularity: z.enum(['hour', 'day', 'week']),
+  aiPercentage: z.number(),
+  commitCount: z.number(),
+});
+
+const FileStatsSchema = z.object({
+  filePath: z.string(),
+  totalLines: z.number(),
+  aiLines: z.number(),
+  aiPercentage: z.number(),
+  commitCount: z.number(),
+});
+
+const PeriodAttributionSchema = z.object({
+  totalLines: z.number(),
+  humanLines: z.number(),
+  aiAgentLines: z.number(),
+  aiAssistLines: z.number(),
+  collaborativeLines: z.number(),
+  aiPercentage: z.number(),
+});
+
+const PeriodStatsSchema = z.object({
+  period: z.object({
+    start: z.string(),
+    end: z.string(),
+    commits: z.number(),
+  }),
+  attribution: PeriodAttributionSchema,
+  toolBreakdown: z.array(ToolStatsSchema),
+  trend: z.array(TrendPointSchema),
+});
+
+const PaginatedFilesSchema = z.object({
+  files: z.array(FileStatsSchema),
+  total: z.number(),
+  offset: z.number(),
+  limit: z.number(),
+  hasMore: z.boolean(),
+});
+
+const DashboardStatsSchema = z.object({
+  repo: z.object({
+    id: z.number(),
+    path: z.string(),
+    name: z.string(),
+  }),
+  timeRange: z.union([
+    z.enum(['7d', '30d', '90d', 'all']),
+    z.object({ from: z.string(), to: z.string() }),
+  ]),
+  currentPeriod: PeriodStatsSchema,
+  previousPeriod: PeriodStatsSchema.optional(),
+  topFiles: PaginatedFilesSchema,
+});
+
+// ============================================================================
+// Dashboard API Functions
+// ============================================================================
+
+/**
+ * Get complete dashboard stats in a single call.
+ * Uses precomputed cache for fast queries; returns previous period for comparison.
+ */
+export async function getDashboardStats(
+  repoId: number,
+  timeRange: TimeRange = '30d',
+  filesOffset: number = 0,
+  filesLimit: number = 20
+): Promise<DashboardStats> {
+  const raw = await invoke('get_dashboard_stats', {
+    repoId,
+    timeRange,
+    filesOffset,
+    filesLimit,
+  });
+
+  // Validate contract with Zod
+  return DashboardStatsSchema.parse(raw);
+}
+
+/**
+ * Convert a time range preset or custom range to date strings.
+ */
+export function timeRangeToDateRange(timeRange: TimeRange): { from: string; to: string } {
+  if (typeof timeRange === 'object' && 'from' in timeRange) {
+    return timeRange;
+  }
+
+  const to = new Date();
+  const from = new Date();
+
+  switch (timeRange) {
+    case '7d':
+      from.setDate(to.getDate() - 7);
+      break;
+    case '30d':
+      from.setDate(to.getDate() - 30);
+      break;
+    case '90d':
+      from.setDate(to.getDate() - 90);
+      break;
+    case 'all':
+      from.setFullYear(from.getFullYear() - 100); // Effectively "all time"
+      break;
+  }
+
+  return {
+    from: from.toISOString().split('T')[0],
+    to: to.toISOString().split('T')[0],
+  };
+}
+
+/**
+ * Compute trend direction for metric cards.
+ * Returns 'up', 'down', 'neutral', or undefined if no previous value.
+ */
+export function computeTrend(
+  current: number,
+  previous?: number
+): 'up' | 'down' | 'neutral' | undefined {
+  if (previous === undefined) return undefined;
+  const delta = current - previous;
+  if (Math.abs(delta) < 0.01) return 'neutral';
+  return delta > 0 ? 'up' : 'down';
+}
+
+/**
+ * Determine if a trend direction is "good" or "bad" based on metric context.
+ * Not all "up" trends are positive!
+ */
+export function getTrendColor(context: TrendContext): TrendColor {
+  const { metric, direction, currentValue, previousValue } = context;
+  const delta =
+    previousValue !== undefined
+      ? ((currentValue - previousValue) / previousValue) * 100
+      : 0;
+
+  if (direction === 'neutral') {
+    return {
+      color: 'slate-400',
+      label: 'No change',
+      icon: 'minus',
+      ariaLabel: `${metric}: no change from previous period`,
+    };
+  }
+
+  // Determine if this direction is "good" for the metric
+  const isPositive = isTrendPositive(metric, direction);
+  const color = isPositive ? 'emerald-500' : 'rose-500';
+  const sign = direction === 'up' ? '+' : '';
+
+  return {
+    color,
+    label: `${sign}${delta.toFixed(1)}% from last period`,
+    icon: direction === 'up' ? 'trending_up' : 'trending_down',
+    ariaLabel: `${metric}: ${direction} by ${Math.abs(delta).toFixed(1)}% from previous period`,
+  };
+}
+
+/**
+ * Internal: Determine if trend direction is positive for given metric.
+ */
+function isTrendPositive(
+  metric: TrendContext['metric'],
+  direction: 'up' | 'down'
+): boolean {
+  const positiveRules: Record<TrendContext['metric'], 'up' | 'down' | 'context'> = {
+    'ai-percentage': 'up', // More AI = generally good
+    'commits': 'down', // Fewer commits = faster (good)
+    'ai-lines': 'context', // Depends on situation
+    'human-lines': 'up', // More human = good
+  };
+
+  const rule = positiveRules[metric];
+
+  if (rule === 'context') {
+    // For context-dependent metrics, default to neutral
+    return false;
+  }
+
+  return direction === rule;
+}
+
+// ============================================================================
+// Legacy Types (for backward compatibility)
 // ============================================================================
 
 export interface ContributionStats {
@@ -22,11 +231,16 @@ export interface ContributionStats {
   model?: string;
 }
 
-export interface ToolStats {
-  tool: string;
-  model?: string;
-  lineCount: number;
-}
+// Re-export ToolStats and dashboard types from types.ts for backward compatibility
+export type {
+  ToolStats,
+  DashboardStats,
+  TimeRange,
+  DashboardEmptyReason,
+  FileStats,
+  TrendContext,
+  TrendColor,
+} from './types';
 
 export interface ImportSuccess {
   path: string;

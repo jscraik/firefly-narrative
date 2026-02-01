@@ -1,6 +1,6 @@
 import type React from 'react';
-import { GitCommit, FileText, MessageSquare } from 'lucide-react';
-import type { BranchViewModel } from '../../core/types';
+import { ArrowLeft, GitCommit, FileText, MessageSquare } from 'lucide-react';
+import type { BranchViewModel, DashboardFilter } from '../../core/types';
 
 function Stat({ value, label, tone, icon: Icon }: { value: string; label: string; tone?: 'neutral' | 'good' | 'bad'; icon?: React.ElementType }) {
   const valueClass =
@@ -30,14 +30,29 @@ function StatGroup({ children, label }: { children: React.ReactNode; label: stri
   );
 }
 
-export function BranchHeader({ model }: { model: BranchViewModel }) {
+export function BranchHeader({ model, dashboardFilter, onClearFilter }: { model: BranchViewModel; dashboardFilter?: DashboardFilter | null; onClearFilter?: () => void }) {
   return (
     <div className="card p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3">
+            {dashboardFilter && onClearFilter && (
+              <button
+                type="button"
+                onClick={onClearFilter}
+                className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                <span>Back to dashboard</span>
+              </button>
+            )}
             <h1 className="text-2xl font-semibold text-stone-800">{model.title}</h1>
             <span className="badge-open">{model.status}</span>
+            {dashboardFilter && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-100 text-sky-700 text-xs font-medium">
+                Filtered view
+              </span>
+            )}
           </div>
           <p className="mt-2 text-sm text-stone-500 leading-relaxed">{model.description}</p>
         </div>

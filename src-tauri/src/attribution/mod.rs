@@ -4,6 +4,7 @@
 //! - Contribution statistics per commit (MVP)
 //! - Line-level attribution (Phase 2)
 //! - Source lens for viewing attribution inline (Phase 2)
+//! - Dashboard analytics (Phase 1)
 //!
 //! Module organization:
 //! - `commands.rs` - Tauri command wrappers (thin layer to external modules)
@@ -20,10 +21,12 @@
 //! - `coverage.rs` - Attribution coverage computation
 //! - `note_meta.rs` - Note metadata persistence
 //! - `prefs.rs` - Attribution preferences storage
+//! - `dashboard.rs` - Dashboard analytics aggregation
 
 pub mod cli;
 pub mod commands;
 pub mod coverage;
+pub mod dashboard;
 pub mod git_utils;
 pub mod line_attribution;
 pub mod models;

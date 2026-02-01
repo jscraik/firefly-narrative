@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { setOtelReceiverEnabled } from './core/tauri/otelReceiver';
 import type {
   BranchViewModel,
   TraceCollectorConfig
 } from './core/types';
+import type { DashboardFilter } from './core/types';
 import { RepoEmptyState } from './ui/components/RepoEmptyState';
 import { TopNav, type Mode } from './ui/components/TopNav';
 import { BranchView } from './ui/views/BranchView';
 import { SpeculateView } from './ui/views/SpeculateView';
+import { DashboardView } from './ui/views/DashboardView';
 import { DocsOverviewPanel } from './ui/components/DocsOverviewPanel';
 import { useRepoLoader, type RepoState } from './hooks/useRepoLoader';
 import { useUpdater } from './hooks/useUpdater';
@@ -83,6 +85,15 @@ function DocsView(props: {
 
 export default function App() {
   const [mode, setMode] = useState<Mode>('demo');
+  const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter | null>(null);
+  const [isExitingFilteredView, setIsExitingFilteredView] = useState(false);
+
+  // Clear dashboard filter when switching away from repo mode (optional UX enhancement)
+  useEffect(() => {
+    if (mode !== 'repo' && dashboardFilter) {
+      setDashboardFilter(null);
+    }
+  }, [mode, dashboardFilter]);
 
   // Repo loading and indexing
   const {
@@ -167,6 +178,34 @@ export default function App() {
 
   const importEnabled = mode === 'repo' && repoState.status === 'ready';
 
+  // Focus management: save active element before drill-down, restore on back
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  // Handle drill-down navigation from dashboard
+  const handleDrillDown = useCallback((filter: DashboardFilter) => {
+    // Save current focused element for restoration later
+    lastFocusedElementRef.current = document.activeElement as HTMLElement | null;
+    setDashboardFilter(filter);
+    setMode('repo');
+  }, []);
+
+  // Handle clear filter (back to dashboard) with exit animation
+  const handleClearFilter = useCallback(() => {
+    // Trigger exit animation
+    setIsExitingFilteredView(true);
+
+    // After animation completes, clear filter and restore focus
+    setTimeout(() => {
+      setDashboardFilter(null);
+      setIsExitingFilteredView(false);
+      // Restore focus to the element that was focused before drill-down
+      if (lastFocusedElementRef.current) {
+        lastFocusedElementRef.current.focus();
+        lastFocusedElementRef.current = null;
+      }
+    }, 150); // Match transition duration
+  }, []);
+
   return (
     <div className="flex h-full flex-col bg-[#f5f5f4] text-stone-800">
       {/* Update Notification */}
@@ -194,7 +233,15 @@ export default function App() {
       </TopNav>
 
       <div className="flex-1 overflow-hidden">
-        {mode === 'docs' ? (
+        {mode === 'dashboard' ? (
+          <DashboardView
+            repoState={repoState}
+            setRepoState={setRepoState}
+            setActionError={setActionError}
+            onDrillDown={handleDrillDown}
+            onModeChange={setMode}
+          />
+        ) : mode === 'docs' ? (
           <DocsView 
             repoState={repoState}
             setRepoState={setRepoState}
@@ -233,6 +280,9 @@ export default function App() {
         ) : commitData.model ? (
           <BranchView
             model={commitData.model}
+            dashboardFilter={dashboardFilter}
+            onClearFilter={handleClearFilter}
+            isExitingFilteredView={isExitingFilteredView}
             loadFilesForNode={commitData.loadFilesForNode}
             loadDiffForFile={commitData.loadDiffForFile}
             loadTraceRangesForFile={commitData.loadTraceRangesForFile}

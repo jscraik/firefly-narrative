@@ -1,0 +1,287 @@
+# SourceLens Dashboard Motion Specification
+# Version: 1.0
+# Last Updated: 2026-01-31
+
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+global:
+  easing_default: "cubic-bezier(0.16, 1, 0.3, 1)"
+  easing_enter: "cubic-bezier(0.16, 1, 0.3, 1)"
+  easing_exit: "cubic-bezier(0.4, 0, 0.6, 1)"
+  duration_fast: 150
+  duration_base: 200
+  duration_slow: 300
+  duration_page: 500
+
+  reduced_motion:
+    respect: true
+    fallback: "opacity only, extended duration (500ms), no stagger"
+    media_query: "(prefers-reduced-motion: reduce)"
+
+# =============================================================================
+# DASHBOARD ENTER ANIMATION
+# =============================================================================
+dashboard_enter:
+  description: "Dashboard content loads with staggered entrance"
+  trigger: "DashboardView mounts OR repo loads successfully"
+  sequence: "stagger_top_to_bottom"
+
+  elements:
+    - name: "header"
+      target: "[data-dashboard-header]"
+      animation: "fade_in"
+      duration: 200
+      delay: 0
+      easing: "ease_out"
+      properties:
+        from: { opacity: 0 }
+        to: { opacity: 1 }
+      reduced_motion:
+        duration: 500
+        properties: { opacity: 0 → 1 }
+
+    - name: "metrics_grid"
+      target: "[data-metrics-grid]"
+      animation: "slide_up_fade"
+      duration: 300
+      delay: 100
+      easing: "ease_out"
+      properties:
+        from:
+          opacity: 0
+          transform: "translateY(8px)"
+        to:
+          opacity: 1
+          transform: "translateY(0)"
+      reduced_motion:
+        duration: 500
+        delay: 0
+        properties: { opacity: 0 → 1 }
+
+    - name: "top_files_table"
+      target: "[data-top-files-table]"
+      animation: "fade_in"
+      duration: 300
+      delay: 200
+      easing: "ease_out"
+      properties:
+        from: { opacity: 0 }
+        to: { opacity: 1 }
+      reduced_motion:
+        duration: 500
+        delay: 0
+        properties: { opacity: 0 → 1 }
+
+# =============================================================================
+# METRIC CARD INTERACTIONS
+# =============================================================================
+metric_card:
+  description: "Metric card hover, focus, and press states"
+
+  hover:
+    description: "Card lifts slightly on hover"
+    trigger: "mouseenter"
+    duration: 150
+    easing: "ease_out"
+    properties:
+      from:
+        transform: "translateY(0)"
+        box_shadow: "theme.shadow.sm"
+      to:
+        transform: "translateY(-2px)"
+        box_shadow: "theme.shadow.md"
+    reduced_motion:
+      duration: 0
+      properties: { box_shadow: "theme.shadow.md" }
+
+  focus:
+    description: "Keyboard focus shows ring"
+    trigger: "focus"
+    duration: 0
+    properties:
+      outline: "2px solid theme.color.sky.500"
+      outline_offset: "2px"
+    reduced_motion: "same"
+
+  press:
+    description: "Card scales down briefly on click"
+    trigger: "active (mousedown)"
+    duration: 100
+    easing: "ease_out"
+    properties:
+      from: { transform: "translateY(-2px) scale(1)" }
+      to: { transform: "translateY(0) scale(0.98)" }
+    reduced_motion:
+      duration: 0
+      properties: { background_color: "theme.color.slate.100" }
+
+  trend_badge_bounce:
+    description: "Trend indicator bounces subtly on first render"
+    trigger: "component mount (once)"
+    duration: 600
+    easing: "cubic-bezier(0.34, 1.56, 0.64, 1)"
+    properties:
+      keyframes:
+        - { offset: 0, transform: "translateY(0) scale(0.8)", opacity: 0 }
+        - { offset: 0.5, transform: "translateY(-4px) scale(1.1)", opacity: 1 }
+        - { offset: 1, transform: "translateY(0) scale(1)", opacity: 1 }
+    reduced_motion: "fade in, no bounce"
+
+# =============================================================================
+# TIME RANGE CHANGE
+# =============================================================================
+time_range_change:
+  description: "Content swaps when time range changes"
+  trigger: "TimeRangePicker value changes"
+  sequence: "crossfade"
+
+  elements:
+    - name: "content_out"
+      target: "[data-dashboard-content]"
+      animation: "fade_out"
+      duration: 150
+      easing: "ease_in"
+      properties:
+        from: { opacity: 1 }
+        to: { opacity: 0 }
+      reduced_motion:
+        duration: 0
+        properties: { opacity: 1 }
+
+    - name: "content_in"
+      target: "[data-dashboard-content] (new data)"
+      animation: "fade_in"
+      duration: 200
+      delay: 150
+      easing: "ease_out"
+      properties:
+        from: { opacity: 0 }
+        to: { opacity: 1 }
+      reduced_motion:
+        duration: 0
+        delay: 0
+        properties: { opacity: 1 }
+
+  loading_indicator:
+    show_during: "gap between out and in (150ms)"
+    type: "skeleton"
+    target: "[data-metrics-grid] and [data-top-files-table]"
+
+# =============================================================================
+# TOP FILES TABLE
+# =============================================================================
+table:
+  description: "Table row interactions"
+
+  row_hover:
+    trigger: "mouseenter on tr"
+    duration: 150
+    easing: "ease_out"
+    properties:
+      from: { background_color: "transparent" }
+      to: { background_color: "theme.color.sky.50" }
+    reduced_motion: "instant"
+
+  row_focus:
+    trigger: "keyboard focus on tr"
+    duration: 0
+    properties:
+      outline: "none"
+      box_shadow: "inset 2px 0 0 theme.color.sky.500"
+    reduced_motion: "same"
+
+  load_more:
+    trigger: "click 'Load more' button"
+    duration: 200
+    easing: "ease_out"
+    properties:
+      new_rows: "fade_in"
+      button:
+        from: { opacity: 1 }
+        to: { opacity: 0.5 }
+        loading_state: true
+    reduced_motion: "instant appearance, button opacity change only"
+
+# =============================================================================
+# DRILL-DOWN TRANSITION
+# =============================================================================
+drill_down:
+  description: "Navigate from dashboard to filtered BranchView"
+  trigger: "click metric card or file row"
+  duration: 0
+  transition: "router transition (if supported)"
+
+  focus_management:
+    on_navigate: "save active element to ref"
+    on_back: "restore focus to saved element"
+    skip_if: "user navigated away (browser back button)"
+
+# =============================================================================
+# EMPTY STATES
+# =============================================================================
+empty_state:
+  description: "Empty states have subtle entrance"
+  trigger: "empty condition detected"
+  duration: 400
+  easing: "ease_out"
+  properties:
+    icon: "fade in + scale 0.8 → 1"
+    text: "fade in with stagger (icon → title → message → action)"
+    action_button: "fade in last, with subtle bounce"
+  reduced_motion: "fade in all at once, no stagger"
+
+# =============================================================================
+# LOADING STATES
+# =============================================================================
+loading_skeleton:
+  description: "Skeleton shimmer animation"
+  trigger: "data loading"
+  duration: "infinite"
+  easing: "linear"
+  properties:
+    shimmer:
+      from: { background_position: "-200% 0" }
+      to: { background_position: "200% 0" }
+    gradient: "linear-gradient(90deg, transparent, theme.color.slate.200, transparent)"
+    duration_ms: 1500
+  reduced_motion: "static gray background, no shimmer"
+
+# =============================================================================
+# ERROR STATES
+# =============================================================================
+error_state:
+  description: "Error state appears with shake animation"
+  trigger: "request fails"
+  duration: 400
+  easing: "cubic-bezier(0.36, 0.07, 0.19, 0.97)"
+  properties:
+    keyframes:
+      - { offset: 0, transform: "translateX(0)" }
+      - { offset: 0.2, transform: "translateX(-4px)" }
+      - { offset: 0.4, transform: "translateX(4px)" }
+      - { offset: 0.6, transform: "translateX(-4px)" }
+      - { offset: 0.8, transform: "translateX(4px)" }
+      - { offset: 1, transform: "translateX(0)" }
+    opacity:
+      from: 0
+      to: 1
+  reduced_motion: "fade in only, no shake"
+
+# =============================================================================
+# PERFORMANCE BUDGET
+# =============================================================================
+performance:
+  main_thread:
+    max_block: 50
+    max_jank: 3
+
+  animation_limits:
+    max_duration: 500
+    max_simultaneous: 5
+    transform_only: true
+
+  gpu:
+    prefer: "transform and opacity (composited)"
+    avoid: ["width", "height", "top", "left", "margin", "padding"]
+    will_change: "add only if needed, remove after animation"
