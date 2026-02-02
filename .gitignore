@@ -36,3 +36,6 @@ src-tauri/icons/*.ico
 # IDE
 .idea
 .vscode
+
+# Generated artifacts
+artifacts/

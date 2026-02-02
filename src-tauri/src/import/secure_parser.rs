@@ -22,22 +22,46 @@ lazy_static! {
     static ref SECRET_PATTERNS: Vec<(Regex, &'static str)> = {
         vec![
             // OpenAI API keys
-            (Regex::new(r"\bsk-[a-zA-Z0-9]{20,48}\b").unwrap(), "OpenAI API key"),
+            (
+                Regex::new(r"\bsk-[a-zA-Z0-9]{20,48}\b")
+                    .expect("valid regex: OpenAI API key"),
+                "OpenAI API key",
+            ),
 
             // Stripe keys
-            (Regex::new(r"\bpk_(live|test)_[a-zA-Z0-9]{20,}\b").unwrap(), "Stripe publishable key"),
-            (Regex::new(r"\bsk_(live|test)_[a-zA-Z0-9]{20,}\b").unwrap(), "Stripe secret key"),
+            (
+                Regex::new(r"\bpk_(live|test)_[a-zA-Z0-9]{20,}\b")
+                    .expect("valid regex: Stripe publishable key"),
+                "Stripe publishable key",
+            ),
+            (
+                Regex::new(r"\bsk_(live|test)_[a-zA-Z0-9]{20,}\b")
+                    .expect("valid regex: Stripe secret key"),
+                "Stripe secret key",
+            ),
 
             // GitHub tokens (new format)
-            (Regex::new(r"\bgh[pousr]_[A-Za-z0-9_]{36,}\b").unwrap(), "GitHub token"),
+            (
+                Regex::new(r"\bgh[pousr]_[A-Za-z0-9_]{36,}\b")
+                    .expect("valid regex: GitHub token"),
+                "GitHub token",
+            ),
 
             // AWS keys
-            (Regex::new(r"\bAKIA[0-9A-Z]{16}\b").unwrap(), "AWS access key ID"),
+            (
+                Regex::new(r"\bAKIA[0-9A-Z]{16}\b")
+                    .expect("valid regex: AWS access key ID"),
+                "AWS access key ID",
+            ),
 
             // Generic high-entropy strings (potential secrets)
             // This pattern matches long alphanumeric strings that could be API keys
             // It's intentionally broad and will have false positives
-            (Regex::new(r"\b[a-zA-Z0-9_\-]{32,64}\b").unwrap(), "Possible secret (high entropy)"),
+            (
+                Regex::new(r"\b[a-zA-Z0-9_\-]{32,64}\b")
+                    .expect("valid regex: Possible secret (high entropy)"),
+                "Possible secret (high entropy)",
+            ),
         ]
     };
 
@@ -45,19 +69,36 @@ lazy_static! {
     static ref FALSE_POSITIVE_PATTERNS: Vec<(Regex, &'static str)> = {
         vec![
             // UUIDs - common, not secrets
-            (Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap(), "UUID"),
+            (
+                Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+                    .expect("valid regex: UUID"),
+                "UUID",
+            ),
 
             // SHA-1 hashes (40 hex chars)
-            (Regex::new(r"^[0-9a-f]{40}$").unwrap(), "SHA-1 hash"),
+            (
+                Regex::new(r"^[0-9a-f]{40}$").expect("valid regex: SHA-1 hash"),
+                "SHA-1 hash",
+            ),
 
             // SHA-256 hashes (64 hex chars)
-            (Regex::new(r"^[0-9a-f]{64}$").unwrap(), "SHA-256 hash"),
+            (
+                Regex::new(r"^[0-9a-f]{64}$").expect("valid regex: SHA-256 hash"),
+                "SHA-256 hash",
+            ),
 
             // Git commit SHAs (short and long)
-            (Regex::new(r"^[0-9a-f]{7,40}$").unwrap(), "Git SHA"),
+            (
+                Regex::new(r"^[0-9a-f]{7,40}$").expect("valid regex: Git SHA"),
+                "Git SHA",
+            ),
 
             // Common variable names that match length patterns
-            (Regex::new(r"^(undefined|null|true|false)$").unwrap(), "JavaScript keyword"),
+            (
+                Regex::new(r"^(undefined|null|true|false)$")
+                    .expect("valid regex: JavaScript keyword"),
+                "JavaScript keyword",
+            ),
         ]
     };
 }
@@ -151,5 +192,13 @@ mod tests {
             sha_findings.is_empty(),
             "Git SHA should be filtered as false positive"
         );
+    }
+
+    #[test]
+    fn test_patterns_compile() {
+        // Touch both pattern sets to ensure lazy statics initialize without panicking.
+        let findings = SecretScanner::scan("noop");
+        assert!(findings.is_empty());
+        assert!(!SecretScanner::is_false_positive("noop"));
     }
 }
