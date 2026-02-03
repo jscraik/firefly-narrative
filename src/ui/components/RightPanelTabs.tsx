@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useState } from 'react';
+import { type KeyboardEvent, useEffect, useState } from 'react';
 import { MessageSquare, Activity, Settings, TestTube, FileCode } from 'lucide-react';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
 import type { SessionExcerpt, TestRun, TraceCommitSummary, TraceCollectorStatus, TraceCollectorConfig, TraceRange } from '../../core/types';
@@ -6,9 +6,11 @@ import { SessionExcerpts } from './SessionExcerpts';
 import { TraceTranscriptPanel } from './TraceTranscriptPanel';
 import { AgentTraceSummary } from './AgentTraceSummary';
 import { CodexOtelSettingsPanel } from './CodexOtelSettingsPanel';
+import { AutoIngestSetupPanel } from './AutoIngestSetupPanel';
 import { TestResultsPanel } from './TestResultsPanel';
 import { DiffViewer } from './DiffViewer';
 import { SourceLensView } from './SourceLensView';
+import type { IngestConfig, OtlpEnvStatus } from '../../core/tauri/ingestConfig';
 
 type TabId = 'session' | 'attribution' | 'settings' | 'tests';
 
@@ -50,6 +52,12 @@ interface RightPanelTabsProps {
   attributionPrefs?: AttributionPrefs | null;
   onUpdateAttributionPrefs?: (update: AttributionPrefsUpdate) => void;
   onPurgeAttributionMetadata?: () => void;
+  ingestConfig?: IngestConfig | null;
+  otlpEnvStatus?: OtlpEnvStatus | null;
+  onToggleAutoIngest?: (enabled: boolean) => void;
+  onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[] }) => void;
+  onConfigureCodex?: () => void;
+  onGrantCodexConsent?: () => void;
 
   // Test data
   testRun?: TestRun;
@@ -66,6 +74,7 @@ interface RightPanelTabsProps {
 export function RightPanelTabs(props: RightPanelTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('session');
   const [diffExpanded, setDiffExpanded] = useState(true);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const {
     sessionExcerpts,
@@ -87,6 +96,12 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
     attributionPrefs,
     onUpdateAttributionPrefs,
     onPurgeAttributionMetadata,
+    ingestConfig,
+    otlpEnvStatus,
+    onToggleAutoIngest,
+    onUpdateWatchPaths,
+    onConfigureCodex,
+    onGrantCodexConsent,
     testRun,
     onTestFileClick,
     selectedCommitSha,
@@ -111,6 +126,16 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
   })();
 
   const tabIds = TABS.map((tab) => tab.id);
+
+  useEffect(() => {
+    if (!sessionExcerpts || sessionExcerpts.length === 0) {
+      setSelectedSessionId(null);
+      return;
+    }
+    if (!selectedSessionId || !sessionExcerpts.some((s) => s.id === selectedSessionId)) {
+      setSelectedSessionId(sessionExcerpts[0]?.id ?? null);
+    }
+  }, [sessionExcerpts, selectedSessionId]);
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const currentIndex = tabIds.indexOf(effectiveTab);
@@ -197,9 +222,31 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
               onUnlink={onUnlinkSession}
               onCommitClick={onCommitClick}
               selectedCommitId={selectedCommitId}
+              selectedSessionId={selectedSessionId}
+              onSelectSession={setSelectedSessionId}
             />
+
+            {hasAttributionContent ? (
+              <div className="card px-4 py-3 flex flex-col gap-2 text-xs text-stone-600">
+                <div className="font-semibold text-stone-700">Looking for line attribution?</div>
+                <div className="text-stone-500">
+                  Source Lens lives in the AI Attribution tab and shows suggested, line-by-line influence.
+                  {!selectedFile ? ' Select a file in the diff to unlock it.' : ''}
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('attribution')}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
+                  >
+                    Open AI Attribution
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             <TraceTranscriptPanel
-              excerpt={sessionExcerpts?.[0]}
+              excerpt={sessionExcerpts?.find((s) => s.id === selectedSessionId)}
               selectedFile={selectedFile}
               onFileClick={onFileClick}
             />
@@ -207,7 +254,12 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
         )}
 
         {effectiveTab === 'attribution' && (
-          <div id="panel-attribution" role="tabpanel" aria-labelledby="tab-attribution">
+          <div
+            id="panel-attribution"
+            role="tabpanel"
+            aria-labelledby="tab-attribution"
+            className="flex flex-col gap-4"
+          >
             <AgentTraceSummary
               summary={traceSummary}
               hasFiles={hasFiles}
@@ -215,11 +267,43 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
               onExport={onExportAgentTrace}
               onSmokeTest={onRunOtlpSmokeTest}
             />
+
+            <div>
+              <div className="section-header">SOURCE LENS</div>
+              <div className="section-subheader mt-0.5">
+                Line-by-line attribution for the selected file
+              </div>
+              <div className="text-xs text-stone-500">
+                Use this to verify AI-influenced lines. Suggested only — confirm before citing or sharing.
+              </div>
+            </div>
+
+            {repoId && selectedCommitSha && selectedFile ? (
+              <SourceLensView
+                repoId={repoId}
+                commitSha={selectedCommitSha}
+                filePath={selectedFile}
+                prefsOverride={attributionPrefs}
+                showHeader={false}
+              />
+            ) : (
+              <div className="card p-5 text-sm text-stone-500">
+                Select a file in the diff to see Source Lens attribution.
+              </div>
+            )}
           </div>
         )}
 
         {effectiveTab === 'settings' && (
           <div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
+            <AutoIngestSetupPanel
+              config={ingestConfig ?? null}
+              otlpEnv={otlpEnvStatus ?? null}
+              onToggleAutoIngest={(enabled) => onToggleAutoIngest?.(enabled)}
+              onUpdateWatchPaths={(paths) => onUpdateWatchPaths?.(paths)}
+              onConfigureCodex={() => onConfigureCodex?.()}
+              onGrantConsent={() => onGrantCodexConsent?.()}
+            />
             <CodexOtelSettingsPanel
               traceConfig={traceConfig}
               onUpdateCodexOtelPath={onUpdateCodexOtelPath}
@@ -240,17 +324,6 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
           </div>
         )}
 
-        {/* Source Lens - shown in all tabs when applicable */}
-        {repoId && selectedCommitSha && selectedFile && (
-          <div className="mt-4">
-            <SourceLensView
-              repoId={repoId}
-              commitSha={selectedCommitSha}
-              filePath={selectedFile}
-              prefsOverride={attributionPrefs}
-            />
-          </div>
-        )}
       </div>
 
       {/* Diff Viewer - Always visible at bottom */}

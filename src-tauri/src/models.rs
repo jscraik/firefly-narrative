@@ -20,6 +20,7 @@ use sqlx::FromRow;
 /// * `commit_sha` - The git commit SHA this session links to
 /// * `confidence` - Algorithm confidence score (0.0 to 1.0)
 /// * `auto_linked` - true if algorithm-suggested, false if manually created
+/// * `needs_review` - true if multiple close matches require review
 /// * `created_at` - ISO timestamp when link was created
 ///
 /// # Constraints
@@ -32,6 +33,7 @@ use sqlx::FromRow;
 /// Defined in Migration 002: `src-tauri/migrations/002_add_session_links.sql`
 /// Build Plan Epic 2 Story 2.2
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionLink {
     pub id: i64,
     pub repo_id: i64,
@@ -39,5 +41,6 @@ pub struct SessionLink {
     pub commit_sha: String,
     pub confidence: f64,
     pub auto_linked: bool,
+    pub needs_review: bool,
     pub created_at: String,
 }

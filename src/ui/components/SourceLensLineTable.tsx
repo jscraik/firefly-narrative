@@ -27,6 +27,19 @@ export function SourceLensLineTable({ lines, showLineOverlays = true }: SourceLe
   return (
     <div className="max-h-[400px] overflow-auto font-mono text-xs">
       <table className="w-full table-fixed border-separate border-spacing-0" aria-label="Line attribution">
+        <thead className="sticky top-0 bg-white z-10">
+          <tr className="text-[11px] text-stone-500 border-b border-stone-200">
+            <th scope="col" className="w-10 text-right font-medium px-4 py-2">
+              Line
+            </th>
+            <th scope="col" className="w-24 text-left font-medium px-0 py-2">
+              Source
+            </th>
+            <th scope="col" className="text-left font-medium px-4 py-2">
+              Code
+            </th>
+          </tr>
+        </thead>
         <tbody>
           {lines.map((line) => (
             <tr
@@ -43,7 +56,7 @@ export function SourceLensLineTable({ lines, showLineOverlays = true }: SourceLe
                   <AuthorBadge line={line} />
                 </div>
               </td>
-              <td className="align-top px-4 py-1.5 text-stone-700 whitespace-pre">
+              <td className="align-top px-4 py-1.5 text-stone-700 whitespace-pre-wrap break-words">
                 {line.content || ' '}
               </td>
             </tr>

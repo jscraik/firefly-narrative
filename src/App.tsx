@@ -8,16 +8,33 @@ import type { DashboardFilter } from './core/types';
 import { RepoEmptyState } from './ui/components/RepoEmptyState';
 import { TopNav, type Mode } from './ui/components/TopNav';
 import { BranchView } from './ui/views/BranchView';
-import { SpeculateView } from './ui/views/SpeculateView';
 import { DashboardView } from './ui/views/DashboardView';
 import { DocsOverviewPanel } from './ui/components/DocsOverviewPanel';
 import { useRepoLoader, type RepoState } from './hooks/useRepoLoader';
 import { useUpdater } from './hooks/useUpdater';
 import { useTraceCollector } from './hooks/useTraceCollector';
 import { useSessionImport } from './hooks/useSessionImport';
+import { useAutoIngest } from './hooks/useAutoIngest';
 import { useCommitData } from './hooks/useCommitData';
 import { UpdatePrompt, UpdateIndicator } from './ui/components/UpdatePrompt';
 import { indexRepo } from './core/repo/indexer';
+
+const EMPTY_MODEL: BranchViewModel = {
+  source: 'git',
+  title: '',
+  status: 'open',
+  description: '',
+  stats: {
+    added: 0,
+    removed: 0,
+    files: 0,
+    commits: 0,
+    prompts: 0,
+    responses: 0
+  },
+  intent: [],
+  timeline: []
+};
 
 /**
  * Docs view wrapper that auto-loads the current directory as repo if needed.
@@ -110,6 +127,8 @@ export default function App() {
     diffCache
   } = useRepoLoader();
 
+  const modelForHooks = repoState.status === 'ready' ? repoState.model : EMPTY_MODEL;
+
   // OTLP trace collection events and handlers
   const traceCollectorHandlers = useTraceCollector({
     repoRoot: repoState.status === 'ready' ? repoState.repo.root : '',
@@ -128,7 +147,7 @@ export default function App() {
   const sessionImportHandlers = useSessionImport({
     repoRoot: repoState.status === 'ready' ? repoState.repo.root : '',
     repoId: repoState.status === 'ready' ? repoState.repo.repoId : 0,
-    model: repoState.status === 'ready' ? repoState.model : ({} as BranchViewModel),
+    model: modelForHooks,
     setRepoState: (updater) => {
       setRepoState((prev) => {
         if (prev.status !== 'ready') return prev;
@@ -136,6 +155,18 @@ export default function App() {
       });
     },
     setActionError
+  });
+
+  const autoIngest = useAutoIngest({
+    repoRoot: repoState.status === 'ready' ? repoState.repo.root : '',
+    repoId: repoState.status === 'ready' ? repoState.repo.repoId : 0,
+    model: modelForHooks,
+    setRepoState: (updater) => {
+      setRepoState((prev) => {
+        if (prev.status !== 'ready') return prev;
+        return { ...prev, model: updater(prev.model) };
+      });
+    }
   });
 
   // Commit data loading (model, path, files, diffs, traces)
@@ -247,8 +278,6 @@ export default function App() {
             setRepoState={setRepoState}
             onClose={() => setMode('repo')}
           />
-        ) : mode === 'speculate' ? (
-          <SpeculateView />
         ) : mode === 'repo' && repoState.status === 'loading' ? (
           <div className="p-8 text-sm text-stone-500">
             <div className="text-sm font-medium text-stone-700">Indexing repo…</div>
@@ -298,6 +327,16 @@ export default function App() {
             onUnlinkSession={sessionImportHandlers.unlinkSession}
             actionError={actionError}
             onDismissActionError={() => setActionError(null)}
+            ingestStatus={autoIngest.ingestStatus}
+            ingestIssues={autoIngest.issues}
+            onDismissIngestIssue={autoIngest.dismissIssue}
+            onToggleAutoIngest={autoIngest.toggleAutoIngest}
+            ingestToast={autoIngest.toast}
+            ingestConfig={autoIngest.ingestConfig}
+            otlpEnvStatus={autoIngest.otlpEnvStatus}
+            onUpdateWatchPaths={autoIngest.updateWatchPaths}
+            onConfigureCodex={autoIngest.configureCodexTelemetry}
+            onGrantCodexConsent={autoIngest.grantCodexConsent}
           />
         ) : (
           <RepoEmptyState onOpenRepo={openRepo} />

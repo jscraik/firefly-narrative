@@ -23,6 +23,7 @@ export type SessionLinkResult = {
   autoLinked: boolean;
   temporalScore: number;
   fileScore: number;
+  needsReview: boolean;
 };
 
 /**
@@ -135,5 +136,6 @@ export type SessionLink = {
   commitSha: string;
   confidence: number;
   autoLinked: boolean;
+  needsReview?: boolean;
   createdAt: string;
 };

@@ -45,12 +45,16 @@ export type SessionMessage = {
 export type SessionExcerpt = {
   id: string;
   tool: SessionTool;
+  agentName?: string;
   durationMin?: number;
   messages: SessionMessage[];
+  importedAtISO?: string;
   // Link state (Phase 1 MVP)
   linkedCommitSha?: string;
   linkConfidence?: number;
   autoLinked?: boolean;
+  needsReview?: boolean;
+  redactionCount?: number;
 };
 
 export type TimelineStatus = 'ok' | 'warn' | 'error';

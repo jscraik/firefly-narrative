@@ -4,48 +4,34 @@
 //! and emits events to the frontend for auto-import.
 
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
+use std::collections::HashMap;
+use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tauri::Emitter;
 
-/// Start watching AI session directories for changes
-///
-/// Watches:
-/// - ~/.claude/projects/ (Claude Code)
-/// - ~/.cursor/composer/ (Cursor)
-/// - ~/.continue/ (Continue.dev)
-/// - ~/.gemini/ (Google Gemini)
+/// Start watching AI session directories for changes.
 ///
 /// Emits "session-file-changed" events to the frontend when
 /// session files are created or modified.
 pub fn start_session_watcher(
     app_handle: tauri::AppHandle,
-    _repo_root: String,
+    watch_paths: Vec<String>,
 ) -> Result<RecommendedWatcher, String> {
-    let watch_paths = vec![
-        // Claude Code
-        dirs::home_dir()
-            .map(|h| h.join(".claude/projects"))
-            .filter(|p| p.exists()),
-        // Cursor
-        dirs::home_dir()
-            .map(|h| h.join(".cursor/composer"))
-            .filter(|p| p.exists()),
-        // Continue.dev
-        dirs::home_dir()
-            .map(|h| h.join(".continue"))
-            .filter(|p| p.exists()),
-        // Gemini
-        dirs::home_dir()
-            .map(|h| h.join(".gemini"))
-            .filter(|p| p.exists()),
-    ];
-
-    // Filter to existing paths
-    let existing_paths: Vec<PathBuf> = watch_paths.into_iter().flatten().collect();
+    let existing_paths: Vec<PathBuf> = watch_paths
+        .into_iter()
+        .filter_map(|raw| expand_path(&raw))
+        .filter(|p| p.exists())
+        .collect();
 
     if existing_paths.is_empty() {
         return Err("No AI tool directories found to watch".to_string());
     }
+
+    let allowed_roots = Arc::new(existing_paths.clone());
+    let debounce_state: Arc<Mutex<HashMap<PathBuf, Instant>>> =
+        Arc::new(Mutex::new(HashMap::new()));
 
     let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
         match res {
@@ -55,10 +41,53 @@ pub fn start_session_watcher(
 
                 if is_relevant {
                     if let Some(path) = event.paths.first() {
-                        if is_session_file(path) {
-                            // Emit event to frontend
-                            let path_str = path.to_string_lossy().to_string();
-                            let tool = detect_tool_from_path(path);
+                        let candidate = path.to_path_buf();
+
+                        if !is_session_file(&candidate) {
+                            return;
+                        }
+                        if is_symlink(&candidate) {
+                            return;
+                        }
+                        if !is_under_roots(&candidate, allowed_roots.as_ref()) {
+                            return;
+                        }
+
+                        let now = Instant::now();
+                        if let Ok(mut guard) = debounce_state.lock() {
+                            guard.insert(candidate.clone(), now);
+                        } else {
+                            return;
+                        }
+
+                        let app_handle = app_handle.clone();
+                        let debounce_state = Arc::clone(&debounce_state);
+                        let allowed_roots = Arc::clone(&allowed_roots);
+
+                        std::thread::spawn(move || {
+                            if !is_under_roots(&candidate, allowed_roots.as_ref()) {
+                                return;
+                            }
+
+                            if is_symlink(&candidate) {
+                                return;
+                            }
+
+                            if !is_file_stable(&candidate) {
+                                return;
+                            }
+
+                            let latest = debounce_state
+                                .lock()
+                                .ok()
+                                .and_then(|guard| guard.get(&candidate).copied());
+
+                            if latest != Some(now) {
+                                return;
+                            }
+
+                            let path_str = candidate.to_string_lossy().to_string();
+                            let tool = detect_tool_from_path(&candidate);
 
                             let payload = serde_json::json!({
                                 "path": path_str,
@@ -69,7 +98,11 @@ pub fn start_session_watcher(
                             if let Err(e) = app_handle.emit("session-file-changed", payload) {
                                 eprintln!("Failed to emit session-file-changed: {}", e);
                             }
-                        }
+
+                            if let Ok(mut guard) = debounce_state.lock() {
+                                guard.remove(&candidate);
+                            }
+                        });
                     }
                 }
             }
@@ -90,6 +123,51 @@ pub fn start_session_watcher(
     }
 
     Ok(watcher)
+}
+
+fn expand_path(raw: &str) -> Option<PathBuf> {
+    if raw.trim().is_empty() {
+        return None;
+    }
+    if let Some(stripped) = raw.strip_prefix("~/") {
+        if let Some(home) = dirs::home_dir() {
+            return Some(home.join(stripped));
+        }
+    }
+    Some(PathBuf::from(raw))
+}
+
+fn is_under_roots(path: &Path, roots: &[PathBuf]) -> bool {
+    roots.iter().any(|root| path.starts_with(root))
+}
+
+fn is_symlink(path: &Path) -> bool {
+    fs::symlink_metadata(path)
+        .map(|meta| meta.file_type().is_symlink())
+        .unwrap_or(false)
+}
+
+fn is_file_stable(path: &Path) -> bool {
+    let Some((size_a, modified_a)) = file_signature(path) else {
+        return false;
+    };
+
+    std::thread::sleep(Duration::from_millis(500));
+
+    let Some((size_b, modified_b)) = file_signature(path) else {
+        return false;
+    };
+
+    size_a == size_b && modified_a == modified_b
+}
+
+fn file_signature(path: &Path) -> Option<(u64, std::time::SystemTime)> {
+    let meta = fs::metadata(path).ok()?;
+    if !meta.is_file() {
+        return None;
+    }
+    let modified = meta.modified().ok()?;
+    Some((meta.len(), modified))
 }
 
 /// Check if a path is a session file we care about

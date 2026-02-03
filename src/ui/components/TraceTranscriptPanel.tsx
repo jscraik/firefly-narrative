@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Sparkles, User, Terminal, Lightbulb, Wrench, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import type { SessionExcerpt, SessionMessage, SessionMessageRole } from '../../core/types';
 
@@ -302,11 +302,28 @@ export function TraceTranscriptPanel({
   onFileClick?: (path: string) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const [pendingScrollToEnd, setPendingScrollToEnd] = useState(false);
+  const endRef = useRef<HTMLDivElement | null>(null);
 
   const messages = excerpt?.messages ?? [];
   const stats = useMemo(() => roleSummary(messages), [messages]);
   const visibleMessages = showAll ? messages : messages.slice(0, 8);
   const hiddenCount = messages.length - visibleMessages.length;
+
+  useEffect(() => {
+    if (!pendingScrollToEnd) return;
+    const shouldReduceMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    endRef.current?.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth', block: 'end' });
+    setPendingScrollToEnd(false);
+  }, [pendingScrollToEnd]);
+
+  const handleJumpToLatest = () => {
+    setShowAll(true);
+    setPendingScrollToEnd(true);
+  };
 
   if (!excerpt || messages.length === 0) {
     return <EmptyState />;
@@ -339,7 +356,7 @@ export function TraceTranscriptPanel({
 
       {/* Show more/less */}
       {hiddenCount > 0 && (
-        <div className="mt-4 flex justify-center">
+        <div className="mt-4 flex flex-col items-center justify-center gap-2 sm:flex-row">
           <button
             type="button"
             onClick={() => setShowAll(!showAll)}
@@ -351,8 +368,19 @@ export function TraceTranscriptPanel({
               <><ChevronDown className="w-3.5 h-3.5" /> Show {hiddenCount} more messages</>
             )}
           </button>
+          {!showAll ? (
+            <button
+              type="button"
+              onClick={handleJumpToLatest}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-stone-200 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+            >
+              Jump to latest
+            </button>
+          ) : null}
         </div>
       )}
+
+      <div ref={endRef} />
     </div>
   );
 }

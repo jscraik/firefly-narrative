@@ -1,56 +1,55 @@
-import { ChevronDown, ChevronUp, Link2, Link2Off, Upload } from 'lucide-react';
+import { Link2, Link2Off, Upload } from 'lucide-react';
 import { useState } from 'react';
 import type { SessionExcerpt } from '../../core/types';
 import { Dialog } from './Dialog';
 
-function CollapsibleText({ text }: { text: string }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const maxLength = 500;
-
-  if (text.length <= maxLength) {
-    return (
-      <div className="text-sm text-stone-700 leading-relaxed whitespace-pre-wrap break-words">
-        {text}
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className={`text-sm text-stone-700 leading-relaxed whitespace-pre-wrap break-words relative ${!isExpanded ? 'max-h-[200px] overflow-hidden' : ''
-        }`}>
-        {text}
-        {!isExpanded && (
-          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => setIsExpanded(!isExpanded)}
-        aria-label={isExpanded ? "Show less" : "Show more"}
-        className="mt-2 text-xs font-medium text-stone-400 hover:text-stone-600 flex items-center gap-1.5 transition-colors select-none"
-      >
-        {isExpanded ? (
-          <>Show less <ChevronUp className="w-3 h-3" /></>
-        ) : (
-          <>Show more <ChevronDown className="w-3 h-3" /></>
-        )}
-      </button>
-    </div>
-  );
+function truncateText(text: string, limit = 160) {
+  const trimmed = text.trim().replace(/\s+/g, ' ');
+  if (trimmed.length <= limit) return trimmed;
+  return `${trimmed.slice(0, limit).trim()}…`;
 }
 
-function ToolPill({ tool, durationMin }: { tool: string; durationMin?: number }) {
+function ToolPill({
+  tool,
+  durationMin,
+  agentName,
+  redactionCount
+}: {
+  tool: string;
+  durationMin?: number;
+  agentName?: string;
+  redactionCount?: number;
+}) {
   return (
     <div className="flex items-center gap-2 text-[11px] text-stone-400">
       <span className="px-2 py-1 bg-stone-100 rounded-md font-mono text-stone-500">
         {tool}
       </span>
+      {agentName ? <span className="text-stone-500">· {agentName}</span> : null}
       {typeof durationMin === 'number' && (
         <span>{durationMin} min</span>
       )}
+      {typeof redactionCount === 'number' && redactionCount > 0 ? (
+        <span className="px-1.5 py-0.5 bg-amber-50 rounded text-amber-700">Redacted {redactionCount}</span>
+      ) : null}
     </div>
   );
+}
+
+function collectFiles(messages: SessionExcerpt['messages']) {
+  const files = messages.flatMap((m) => m.files ?? []);
+  return Array.from(new Set(files));
+}
+
+function selectHighlights(messages: SessionExcerpt['messages']) {
+  const assistantMessages = messages.filter((m) =>
+    ['assistant', 'thinking', 'plan'].includes(m.role)
+  );
+  const source = assistantMessages.length > 0 ? assistantMessages : messages;
+  return source
+    .filter((m) => m.text.trim().length > 0)
+    .slice(0, 3)
+    .map((m) => ({ id: m.id, text: truncateText(m.text) }));
 }
 
 function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
@@ -162,7 +161,9 @@ export function SessionExcerpts({
   onFileClick,
   onUnlink,
   onCommitClick,
-  selectedCommitId
+  selectedCommitId,
+  selectedSessionId,
+  onSelectSession
 }: {
   excerpts: SessionExcerpt[] | undefined;
   selectedFile?: string | null;
@@ -170,6 +171,8 @@ export function SessionExcerpts({
   onUnlink?: (sessionId: string) => void;
   onCommitClick?: (commitSha: string) => void;
   selectedCommitId?: string | null;
+  selectedSessionId?: string | null;
+  onSelectSession?: (sessionId: string) => void;
 }) {
   const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
   const [pendingUnlinkId, setPendingUnlinkId] = useState<string | null>(null);
@@ -194,7 +197,11 @@ export function SessionExcerpts({
     );
   }
 
-  const excerpt = excerpts[0];
+  const excerpt =
+    excerpts.find((item) => item.id === selectedSessionId) ?? excerpts[0];
+
+  const filesTouched = collectFiles(excerpt.messages);
+  const highlights = selectHighlights(excerpt.messages);
 
   const linkedCommitSha = excerpt.linkedCommitSha ?? null;
 
@@ -225,41 +232,102 @@ export function SessionExcerpts({
             <div className="section-subheader mt-0.5">Key moments from the session</div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <ToolPill tool={excerpt.tool} durationMin={excerpt.durationMin} />
+            <ToolPill
+              tool={excerpt.tool}
+              durationMin={excerpt.durationMin}
+              agentName={excerpt.agentName}
+              redactionCount={excerpt.redactionCount}
+            />
             <LinkStatus
               excerpt={excerpt}
               onUnlink={onUnlink && linkedCommitSha ? handleUnlinkClick : undefined}
               onClick={linkedCommitSha && onCommitClick ? () => onCommitClick(linkedCommitSha) : undefined}
               isSelected={selectedCommitId === linkedCommitSha}
             />
+            {excerpt.needsReview ? (
+              <span className="px-1.5 py-0.5 bg-amber-50 rounded text-amber-700 text-[11px]">Needs review</span>
+            ) : null}
           </div>
         </div>
 
-        <div className="mt-4 space-y-4">
-          {excerpt.messages.map((m) => (
-            <div
-              key={m.id}
-              className={m.role === 'user' ? 'message-user p-3' : 'message-assistant p-3'}
-            >
-              <div className={`text-[10px] font-bold tracking-wider uppercase mb-1 ${m.role === 'user' ? 'text-sky-600' : 'text-emerald-600'
-                }`}>
-                {m.role}
-              </div>
-              <CollapsibleText text={m.text} />
-              {m.files && m.files.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {m.files.map((f) => (
-                    <FilePill
-                      key={f}
-                      file={f}
-                      isSelected={selectedFile === f}
-                      onClick={() => onFileClick?.(f)}
-                    />
-                  ))}
-                </div>
-              ) : null}
+        {excerpts.length > 1 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {excerpts.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelectSession?.(item.id)}
+                className={`px-2 py-1 rounded-md text-[11px] border ${
+                  item.id === excerpt.id
+                    ? 'bg-sky-50 border-sky-200 text-sky-700'
+                    : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                }`}
+              >
+                {item.tool}
+                {item.redactionCount ? ` · ${item.redactionCount} redactions` : ''}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-4 grid gap-4 rounded-lg border border-stone-100 bg-stone-50 p-4">
+          <div className="flex flex-wrap gap-4 text-xs text-stone-600">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-stone-400">Messages</div>
+              <div className="font-semibold">{excerpt.messages.length}</div>
             </div>
-          ))}
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-stone-400">Files</div>
+              <div className="font-semibold">{filesTouched.length}</div>
+            </div>
+            {typeof excerpt.durationMin === 'number' ? (
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-stone-400">Duration</div>
+                <div className="font-semibold">{excerpt.durationMin} min</div>
+              </div>
+            ) : null}
+          </div>
+
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-stone-400">AI-suggested highlights</div>
+            {highlights.length > 0 ? (
+              <ul className="mt-2 list-disc pl-4 text-xs text-stone-600 space-y-1">
+                {highlights.map((highlight) => (
+                  <li key={highlight.id}>{highlight.text}</li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-2 text-xs text-stone-400">No highlights available.</div>
+            )}
+            <div className="mt-2 text-[11px] text-stone-400">
+              Review these in the Conversation panel before reusing or sharing.
+            </div>
+          </div>
+
+          {filesTouched.length > 0 ? (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-stone-400">Files touched</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {filesTouched.slice(0, 8).map((f) => (
+                  <FilePill
+                    key={f}
+                    file={f}
+                    isSelected={selectedFile === f}
+                    onClick={() => onFileClick?.(f)}
+                  />
+                ))}
+                {filesTouched.length > 8 ? (
+                  <span className="text-[11px] text-stone-400">
+                    +{filesTouched.length - 8} more
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="text-[11px] text-stone-400">
+            Full conversation appears below in the Conversation panel.
+          </div>
         </div>
       </div>
 

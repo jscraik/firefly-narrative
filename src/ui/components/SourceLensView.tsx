@@ -10,9 +10,16 @@ export interface SourceLensViewProps {
   commitSha: string;
   filePath: string;
   prefsOverride?: AttributionPrefs | null;
+  showHeader?: boolean;
 }
 
-export function SourceLensView({ repoId, commitSha, filePath, prefsOverride }: SourceLensViewProps) {
+export function SourceLensView({
+  repoId,
+  commitSha,
+  filePath,
+  prefsOverride,
+  showHeader = true
+}: SourceLensViewProps) {
   const {
     lines,
     stats,
@@ -36,10 +43,49 @@ export function SourceLensView({ repoId, commitSha, filePath, prefsOverride }: S
     loading,
     error,
     linesLength: lines.length,
+    showHeader,
   });
 
   if (emptyState) {
     return emptyState;
+  }
+
+  const hasNote = noteSummary?.hasNote ?? false;
+  const hasAiSignals = lines.some((line) => line.authorType !== 'human' && line.authorType !== 'unknown');
+  const showSetup = !hasNote && !hasAiSignals;
+
+  if (showSetup) {
+    return (
+      <div className="card p-5">
+        {showHeader ? (
+          <>
+            <div className="section-header">SOURCE LENS</div>
+            <div className="section-subheader mt-0.5">Line-by-line attribution</div>
+          </>
+        ) : null}
+        <div className="mt-3 text-sm text-stone-600">
+          Source Lens only works when your tools write attribution notes. It does not guess.
+        </div>
+        <ol className="mt-3 list-decimal pl-5 text-xs text-stone-500 space-y-1">
+          <li>Enable Codex telemetry in Settings (or import notes from your tool).</li>
+          <li>Click “Import note” to pull attribution data.</li>
+          <li>Re-open this file to see AI vs human lines.</li>
+        </ol>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleImportNote}
+            disabled={syncing}
+            className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-50"
+          >
+            Import note
+          </button>
+        </div>
+        {syncStatus ? (
+          <div className="mt-2 text-[11px] text-stone-400">{syncStatus}</div>
+        ) : null}
+      </div>
+    );
   }
 
   const effectivePrefs = prefsOverride ?? prefs;
@@ -61,6 +107,7 @@ export function SourceLensView({ repoId, commitSha, filePath, prefsOverride }: S
           onImportNote={handleImportNote}
           onExportNote={handleExportNote}
           onEnableMetadata={handleEnableMetadata}
+          showHeader={showHeader}
         />
       </div>
 

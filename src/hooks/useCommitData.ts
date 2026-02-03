@@ -23,7 +23,7 @@ async function loadDemoModel(): Promise<BranchViewModel> {
 }
 
 export interface UseCommitDataProps {
-  mode: 'demo' | 'repo' | 'speculate' | 'docs' | 'dashboard';
+  mode: 'demo' | 'repo' | 'docs' | 'dashboard';
   repoState: RepoState;
   diffCache: React.MutableRefObject<{ get(key: string): string | undefined; set(key: string, value: string): void }>;
   model: BranchViewModel | null;

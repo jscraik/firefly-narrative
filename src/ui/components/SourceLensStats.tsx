@@ -16,6 +16,7 @@ export interface SourceLensStatsProps {
   onImportNote: () => void;
   onExportNote: () => void;
   onEnableMetadata: () => void;
+  showHeader?: boolean;
 }
 
 export function SourceLensStats({
@@ -30,7 +31,8 @@ export function SourceLensStats({
   syncing,
   onImportNote,
   onExportNote,
-  onEnableMetadata
+  onEnableMetadata,
+  showHeader = true
 }: SourceLensStatsProps) {
   // Calculate stats from current lines
   const agentLines = lines.filter(l => l.authorType === 'ai_agent' || l.authorType === 'ai_tab').length;
@@ -42,6 +44,7 @@ export function SourceLensStats({
   const hasLocalOnly = lines.some(
     (line) => line.authorType !== 'human' && line.traceAvailable === false
   );
+  const hasNote = noteSummary?.hasNote ?? false;
   const metadataAvailable = noteSummary?.metadataAvailable ?? false;
   const metadataCached = noteSummary?.metadataCached ?? false;
   const coveragePercent = noteSummary?.coverage?.coveragePercent;
@@ -76,8 +79,17 @@ export function SourceLensStats({
       {/* Header with stats */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="section-header">SOURCE LENS</div>
-          <div className="section-subheader mt-0.5">line attribution</div>
+          {showHeader ? (
+            <>
+              <div className="section-header">SOURCE LENS</div>
+              <div className="section-subheader mt-0.5">Line-by-line attribution</div>
+            </>
+          ) : null}
+          {!hasNote ? (
+            <div className="mt-2 text-[11px] text-stone-400">
+              No attribution note yet. Source Lens only shows data written by your tools.
+            </div>
+          ) : null}
           {hasLocalOnly ? (
             <div className="mt-2 text-[11px] text-stone-400">
               Session traces are local-only. Import local sessions to view trace details.
@@ -88,29 +100,29 @@ export function SourceLensStats({
               className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${evidenceTone}`}
               title={evidenceTitle}
             >
-              Evidence: {evidenceLabel}
+              Data source: {evidenceLabel}
             </span>
-            <span>Coverage: {coverageLabel}</span>
-            <span>{cliLabel}</span>
+            <span title="Coverage = percent of lines with attribution data">Coverage: {coverageLabel}</span>
+            <span title="CLI needed to import/export git notes">{cliLabel}</span>
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-xs text-stone-500">{agentLines} Agent</span>
+            <span className="text-xs text-stone-500">{agentLines} Agent (AI generated)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
-            <span className="text-xs text-stone-500">{mixedLines} Mixed</span>
+            <span className="text-xs text-stone-500">{mixedLines} Mixed (AI + edits)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-stone-300" />
-            <span className="text-xs text-stone-500">{humanLines} Human</span>
+            <span className="text-xs text-stone-500">{humanLines} Human (no AI trace)</span>
           </div>
           {mixedLines > 0 ? (
             <div className="text-[11px] text-stone-400 inline-flex items-center gap-1">
-              <span>Mixed indicates modified lines (AI + human edits).</span>
-              <span title="Legend: added lines are AI, mixed lines are edits.">
+              <span>Mixed = AI text that was later edited.</span>
+              <span title="Legend: AI-generated vs AI-assisted vs human edits.">
                 <HelpCircle className="h-3 w-3 text-stone-300" aria-hidden="true" />
               </span>
             </div>
@@ -178,6 +190,14 @@ export function SourceLensStats({
           Prompts: {noteSummary.promptCount}
         </div>
       ) : null}
+      <div className="mt-3 rounded-md border border-stone-100 bg-stone-50 px-3 py-2 text-[11px] text-stone-600">
+        <div className="font-semibold">How to read this</div>
+        <ul className="mt-1 list-disc pl-4 space-y-1 text-stone-500">
+          <li>Badge shows the primary source for each line.</li>
+          <li>Row tint shows AI influence (if any).</li>
+          <li>Coverage reflects how much of the file has attribution data.</li>
+        </ul>
+      </div>
       {showMetadataPending ? (
         <div className="mt-3 rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
           <div className="font-semibold">Prompt metadata caching is enabled.</div>

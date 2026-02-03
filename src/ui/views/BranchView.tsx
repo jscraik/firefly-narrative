@@ -6,9 +6,14 @@ import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attrib
 import { BranchHeader } from '../components/BranchHeader';
 import { FilesChanged } from '../components/FilesChanged';
 import { ImportErrorBanner } from '../components/ImportErrorBanner';
+import { IngestStatusStrip } from '../components/IngestStatusStrip';
 import { IntentList } from '../components/IntentList';
+import { NeedsAttentionList } from '../components/NeedsAttentionList';
 import { RightPanelTabs } from '../components/RightPanelTabs';
 import { Timeline } from '../components/Timeline';
+import { IngestToast } from '../components/IngestToast';
+import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
+import type { IngestConfig, OtlpEnvStatus } from '../../core/tauri/ingestConfig';
 
 function BranchViewInner(props: {
   model: BranchViewModel;
@@ -30,6 +35,16 @@ function BranchViewInner(props: {
   onUnlinkSession?: (sessionId: string) => void;
   actionError?: string | null;
   onDismissActionError?: () => void;
+  ingestStatus?: IngestStatus;
+  ingestIssues?: IngestIssue[];
+  onDismissIngestIssue?: (id: string) => void;
+  onToggleAutoIngest?: (enabled: boolean) => void;
+  ingestToast?: { id: string; message: string } | null;
+  ingestConfig?: IngestConfig | null;
+  otlpEnvStatus?: OtlpEnvStatus | null;
+  onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[] }) => void;
+  onConfigureCodex?: () => void;
+  onGrantCodexConsent?: () => void;
 }) {
   const {
     model,
@@ -50,7 +65,17 @@ function BranchViewInner(props: {
     onPurgeAttributionMetadata,
     onUnlinkSession,
     actionError,
-    onDismissActionError
+    onDismissActionError,
+    ingestStatus,
+    ingestIssues,
+    onDismissIngestIssue,
+    onToggleAutoIngest,
+    ingestToast,
+    ingestConfig,
+    otlpEnvStatus,
+    onUpdateWatchPaths,
+    onConfigureCodex,
+    onGrantCodexConsent
   } = props;
   const { selectedFile, selectFile } = useFileSelection();
 
@@ -233,11 +258,18 @@ function BranchViewInner(props: {
 
   return (
     <div className={`flex h-full flex-col bg-[#f5f5f4] ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 duration-150 ease-out fill-mode-forwards' : ''}`}>
+      <IngestToast toast={ingestToast ?? null} />
       <div className="flex-1 overflow-hidden">
         <div className="flex flex-col gap-5 p-5 h-full overflow-y-auto lg:grid lg:grid-cols-12 lg:overflow-hidden">
           {/* Left column */}
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
             <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />
+            {ingestStatus ? (
+              <IngestStatusStrip status={ingestStatus} onToggle={onToggleAutoIngest} />
+            ) : null}
+            {ingestIssues && onDismissIngestIssue ? (
+              <NeedsAttentionList issues={ingestIssues} onDismiss={onDismissIngestIssue} />
+            ) : null}
             <IntentList items={model.intent} />
             <div>
               {loadingFiles ? (
@@ -297,6 +329,12 @@ function BranchViewInner(props: {
               attributionPrefs={attributionPrefs}
               onUpdateAttributionPrefs={onUpdateAttributionPrefs}
               onPurgeAttributionMetadata={onPurgeAttributionMetadata}
+              ingestConfig={ingestConfig}
+              otlpEnvStatus={otlpEnvStatus}
+              onToggleAutoIngest={onToggleAutoIngest}
+              onUpdateWatchPaths={onUpdateWatchPaths}
+              onConfigureCodex={onConfigureCodex}
+              onGrantCodexConsent={onGrantCodexConsent}
               // Tests
               testRun={testRun}
               onTestFileClick={handleFileClickFromTest}
@@ -341,6 +379,16 @@ export function BranchView(props: {
   onUnlinkSession?: (sessionId: string) => void;
   actionError?: string | null;
   onDismissActionError?: () => void;
+  ingestStatus?: IngestStatus;
+  ingestIssues?: IngestIssue[];
+  onDismissIngestIssue?: (id: string) => void;
+  onToggleAutoIngest?: (enabled: boolean) => void;
+  ingestToast?: { id: string; message: string } | null;
+  ingestConfig?: IngestConfig | null;
+  otlpEnvStatus?: OtlpEnvStatus | null;
+  onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[] }) => void;
+  onConfigureCodex?: () => void;
+  onGrantCodexConsent?: () => void;
 }) {
   return (
     <FileSelectionProvider>

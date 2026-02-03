@@ -124,13 +124,25 @@ pub async fn fetch_linked_session(
 
 /// Fetch files changed in a commit
 pub async fn fetch_commit_files(
-    _db: &sqlx::SqlitePool,
-    _repo_id: i64,
-    _commit_sha: &str,
+    db: &sqlx::SqlitePool,
+    repo_id: i64,
+    commit_sha: &str,
 ) -> Result<Vec<String>, AttributionError> {
-    // TODO: Get files from git or from stored commit data
-    // For now, return empty (stats computation will use session files only)
-    Ok(vec![])
+    let rows: Vec<String> = sqlx::query_scalar(
+        r#"
+        SELECT path
+        FROM file_changes
+        WHERE repo_id = ? AND commit_sha = ?
+        ORDER BY path ASC
+        "#,
+    )
+    .bind(repo_id)
+    .bind(commit_sha)
+    .fetch_all(db)
+    .await
+    .map_err(|e| AttributionError::DatabaseError(e.to_string()))?;
+
+    Ok(rows)
 }
 
 /// Fetch tool breakdown for a commit

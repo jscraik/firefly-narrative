@@ -30,6 +30,7 @@ fn convert_session_tool(tool: &str) -> SessionTool {
     match tool {
         "claude-code" => SessionTool::ClaudeCode,
         "codex" => SessionTool::Codex,
+        "cursor" => SessionTool::Cursor,
         _ => SessionTool::Unknown,
     }
 }
@@ -91,7 +92,7 @@ pub struct FrontendSessionMessage {
 ///
 /// * `Ok(Vec<GitCommit>)` - Commits with their changed files
 /// * `Err(String)` - Database error
-async fn query_commits_in_window(
+pub(crate) async fn query_commits_in_window(
     pool: &SqlitePool,
     repo_id: i64,
     window_start: &str,
@@ -233,12 +234,13 @@ pub async fn link_session_to_commit(
     // Store the link in database
     sqlx::query(
         r#"
-        INSERT INTO session_links (repo_id, session_id, commit_sha, confidence, auto_linked)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO session_links (repo_id, session_id, commit_sha, confidence, auto_linked, needs_review)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT(repo_id, session_id) DO UPDATE SET
             commit_sha = excluded.commit_sha,
             confidence = excluded.confidence,
-            auto_linked = excluded.auto_linked
+            auto_linked = excluded.auto_linked,
+            needs_review = excluded.needs_review
         RETURNING id
         "#,
     )
@@ -247,6 +249,7 @@ pub async fn link_session_to_commit(
     .bind(&result.commit_sha)
     .bind(result.confidence)
     .bind(result.auto_linked)
+    .bind(if result.needs_review { 1 } else { 0 })
     .fetch_one(db)
     .await
     .map_err(|e| format!("Failed to store link: {}", e))?
@@ -259,6 +262,7 @@ pub async fn link_session_to_commit(
         auto_linked: result.auto_linked,
         temporal_score: result.temporal_score,
         file_score: result.file_score,
+        needs_review: result.needs_review,
     })
 }
 

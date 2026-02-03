@@ -11,6 +11,7 @@ pub mod cursor_parser;
 pub mod gemini_parser;
 pub mod parser;
 pub mod path_validator;
+pub mod redactor;
 pub mod secure_parser;
 pub mod tool_sanitizer;
 

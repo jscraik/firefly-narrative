@@ -5,7 +5,11 @@ import { listNarrativeFiles, readNarrativeFile } from '../tauri/narrativeFs';
 type SessionPayload = {
   id?: string;
   tool?: string;
+  agentName?: string;
   durationMin?: number;
+  importedAtISO?: string;
+  redactionCount?: number;
+  needsReview?: boolean;
   messages?: Array<{
     id?: string;
     role: SessionMessageRole;
@@ -59,6 +63,9 @@ function normalizeExcerpt(id: string, raw: SessionPayload): SessionExcerpt {
   const sessionId = raw.id ?? id;
   const tool = normalizeTool(raw.tool);
   const durationMin = typeof raw.durationMin === 'number' ? raw.durationMin : undefined;
+  const importedAtISO = typeof raw.importedAtISO === 'string' ? raw.importedAtISO : undefined;
+  const redactionCount = typeof raw.redactionCount === 'number' ? raw.redactionCount : undefined;
+  const needsReview = typeof raw.needsReview === 'boolean' ? raw.needsReview : undefined;
 
   const messages: SessionMessage[] = (raw.messages ?? []).map((m, idx) => {
     // Use explicitly provided files, or extract from text
@@ -79,11 +86,15 @@ function normalizeExcerpt(id: string, raw: SessionPayload): SessionExcerpt {
   return {
     id: sessionId,
     tool,
+    agentName: raw.agentName,
     durationMin,
     messages,
+    importedAtISO,
     linkedCommitSha: raw.linkedCommitSha,
     linkConfidence: raw.linkConfidence,
-    autoLinked: raw.autoLinked
+    autoLinked: raw.autoLinked,
+    needsReview,
+    redactionCount
   };
 }
 

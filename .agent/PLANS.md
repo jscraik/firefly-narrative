@@ -116,6 +116,99 @@ Commands executed:
 
 No new dependencies. Use existing React, TypeScript, and CSS utilities. If a dependency becomes necessary (e.g., Radix Tabs or Dialog), stop and ask for approval before adding.
 
+---
+
+# Automatic Realtime Ingestion (Codex + Claude + Cursor)
+
+This ExecPlan is a living document. The sections `Progress`, `Surprises & Discoveries`, `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work proceeds.
+
+This plan follows `/Users/jamiecraik/.codex/instructions/plans.md`.
+
+## Purpose / Big Picture
+
+After this change, Narrative will automatically ingest session logs from Claude and Cursor, and provide a guided setup for Codex telemetry via a local OTLP receiver. When a log file changes, the app will wait for the file to stabilize, redact likely secrets, store the session in SQLite, attempt to link it to a commit, and surface the result in the Sessions UI with clear status. The user can verify this by enabling auto‑ingest, touching a known log file, and watching the session appear with redaction and “Needs review” badges if linking is ambiguous.
+
+## Progress
+
+- [x] (2026-02-02) Implement ingestion config storage in app data and Tauri commands.
+- [x] (2026-02-02) Add file watcher debouncing, path allow‑list, and stability checks.
+- [x] (2026-02-02) Add redaction + dedupe + audit logging in auto‑import pipeline.
+- [x] (2026-02-02) Wire needs‑review flag through linking + session payloads.
+- [x] (2026-02-02) Add UI: status strip, needs‑attention list, consolidated sessions panel, setup panel.
+- [ ] (2026-02-02) Run lint/typecheck/tests and manual ingest walkthrough.
+
+## Surprises & Discoveries
+
+- Observation: the auto‑import linking helper was synchronous while commit lookup is async; it required an async conversion to avoid a compile error.
+  Evidence: `link_session_to_commit_internal` needed `.await` on `query_commits_in_window`.
+
+## Decision Log
+
+- Decision: auto‑import should never hard‑fail if linking fails; it should still ingest and surface a “Needs review” state or remain unlinked.
+  Rationale: preserves user trust and data continuity during ambiguous links or missing commits.
+  Date/Author: 2026-02-02 / assistant.
+- Decision: configuration is stored in the app data directory (not `.narrative`), and Codex secrets are referenced only via env var.
+  Rationale: keeps committable state clean and avoids secret leakage.
+  Date/Author: 2026-02-02 / assistant.
+
+## Outcomes & Retrospective
+
+Auto‑ingest now supports Claude/Cursor file watchers and a Codex telemetry setup flow, with redaction, dedupe, and audit logging. Sessions appear in a consolidated panel with status badges and quick actions. Remaining work is verification (tests + manual ingest). A follow‑up could add a first‑run checklist and additional tool adapters once stability is proven.
+
+## Context and Orientation
+
+This repo is a Tauri desktop app with React UI and a SQLite cache. “Ingest” here means importing AI session logs into SQLite so they can be linked to commits. “OTLP” is the telemetry format Codex emits; the receiver listens locally on port 4318. The auto‑import flow uses these key files:
+
+- `src-tauri/src/import/commands.rs` — auto‑import pipeline (parse → redact → store → link → audit).
+- `src-tauri/src/file_watcher.rs` — watches tool directories and emits “session‑file‑changed” events.
+- `src-tauri/src/ingest_config.rs` — config stored in app data (not committable).
+- `src/hooks/useAutoIngest.ts` — frontend listener that starts the watcher and imports sessions.
+- `src/ui/components/AutoIngestSetupPanel.tsx` — connect‑once setup UI.
+
+## Plan of Work
+
+First, introduce app‑level ingest config stored outside the repo so auto‑ingest state is local‑only. Next, harden the file watcher with debounce and stability checks to avoid partial reads. Then implement redaction, dedupe, audit logging, and best‑effort linking in the auto‑import pipeline. After that, surface ingest state via a status strip, needs‑attention list, and a consolidated session + conversation panel. Finally, wire everything into App and BranchView and verify with tests and a manual file‑change walkthrough.
+
+## Concrete Steps
+
+1) Update backend ingest pipeline and file watcher (Rust).
+2) Update frontend types and hooks for ingest config and results.
+3) Add UI for status, issues, and setup.
+4) Run verification:
+   - `pnpm -s lint`
+   - `pnpm -s typecheck`
+   - `pnpm -s test`
+   - `cargo test --manifest-path src-tauri/Cargo.toml`
+   - Manual: touch a Claude/Cursor log file and confirm a new session appears.
+
+## Validation and Acceptance
+
+Acceptance is met when:
+
+- Auto‑ingest can be enabled, and a session appears after a log file changes.
+- Redactions are counted and visible.
+- Linking ambiguity sets “Needs review.”
+- Auto‑ingest can be paused, and the Codex receiver is disabled.
+- Lint, typecheck, and tests pass.
+
+## Idempotence and Recovery
+
+All steps are additive and can be re‑run. If the watcher misbehaves, disable auto‑ingest via the toggle to stop the watcher. If linking fails, the session still remains; you can unlink or retry linking after re‑indexing commits.
+
+## Artifacts and Notes
+
+Key new artifacts:
+
+  - `src-tauri/migrations/009_auto_ingest.sql`
+  - `src-tauri/src/ingest_config.rs`
+  - `src/hooks/useAutoIngest.ts`
+  - `src/ui/components/AutoIngestSetupPanel.tsx`
+
+## Interfaces and Dependencies
+
+No new dependencies. Use the existing Tauri + React stack. The main new interface is `get_ingest_config` / `set_ingest_config` and `auto_import_session_file` commands, plus the `IngestConfig` and `AutoImportResult` types in `src/core/tauri/ingestConfig.ts`.
+
+Plan note (2026-02-02): Appended this ExecPlan by consolidating the previous root `PLANS.md` into `.agent/PLANS.md` to comply with repo guidance.
 
 # Indexing Progress + Performance Improvements (Narrative Desktop)
 

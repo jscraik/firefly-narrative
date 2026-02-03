@@ -1,0 +1,277 @@
+import { listen } from '@tauri-apps/api/event';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { BranchViewModel } from '../core/types';
+import { refreshSessionBadges } from '../core/repo/sessionBadges';
+import { setOtelReceiverEnabled } from '../core/tauri/otelReceiver';
+import {
+  autoImportSessionFile,
+  configureCodexOtel,
+  getIngestConfig,
+  getOtlpEnvStatus,
+  purgeExpiredSessions,
+  setIngestConfig,
+  startFileWatcher,
+  stopFileWatcher,
+  type IngestConfig,
+  type OtlpEnvStatus
+} from '../core/tauri/ingestConfig';
+
+export type IngestStatus = {
+  enabled: boolean;
+  lastImportAt?: string;
+  lastSource?: string;
+  errorCount: number;
+};
+
+export type IngestIssue = {
+  id: string;
+  title: string;
+  message: string;
+  action?: { label: string; handler: () => void };
+};
+
+export type IngestToast = {
+  id: string;
+  message: string;
+};
+
+export function useAutoIngest(params: {
+  repoRoot: string;
+  repoId: number;
+  model: BranchViewModel;
+  setRepoState: (updater: (prev: BranchViewModel) => BranchViewModel) => void;
+}) {
+  const { repoRoot, repoId, model, setRepoState } = params;
+  const [config, setConfig] = useState<IngestConfig | null>(null);
+  const [otlpEnv, setOtlpEnv] = useState<OtlpEnvStatus | null>(null);
+  const [status, setStatus] = useState<IngestStatus>({
+    enabled: false,
+    errorCount: 0
+  });
+  const [issues, setIssues] = useState<IngestIssue[]>([]);
+  const [toast, setToast] = useState<IngestToast | null>(null);
+  const lastImportRef = useRef<{ source?: string; time?: string }>({});
+  const idCounter = useRef(0);
+
+  const watchPaths = useMemo(() => {
+    if (!config) return [];
+    return [...config.watchPaths.claude, ...config.watchPaths.cursor];
+  }, [config]);
+
+  const refreshBadges = useCallback(async () => {
+    if (!repoRoot || !repoId) return;
+    await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { limit: 10 });
+  }, [repoRoot, repoId, model.timeline, setRepoState]);
+
+  const recordIssue = useCallback((title: string, message: string, action?: IngestIssue['action']) => {
+    idCounter.current += 1;
+    const id = `${Date.now()}-${idCounter.current}`;
+    setIssues((prev) => {
+      if (prev.some((issue) => issue.title === title && issue.message === message)) {
+        return prev;
+      }
+      setStatus((prevStatus) => ({ ...prevStatus, errorCount: prevStatus.errorCount + 1 }));
+      return [{ id, title, message, action }, ...prev];
+    });
+  }, []);
+
+  const showToast = useCallback((message: string) => {
+    idCounter.current += 1;
+    const id = `${Date.now()}-${idCounter.current}`;
+    setToast({ id, message });
+    setTimeout(() => {
+      setToast((prev) => (prev?.id === id ? null : prev));
+    }, 3500);
+  }, []);
+
+  const handleAutoImport = useCallback(
+    async (payload: { path: string; tool?: string }) => {
+      if (!repoId) return;
+      try {
+        const result = await autoImportSessionFile(repoId, payload.path);
+        await refreshBadges();
+
+        if (result.status === 'imported') {
+          const message = `Imported ${result.tool} session (redactions: ${result.redactionCount})`;
+          showToast(message);
+          lastImportRef.current = { source: result.tool, time: new Date().toISOString() };
+          setStatus((prev) => ({
+            ...prev,
+            lastImportAt: lastImportRef.current.time,
+            lastSource: result.tool
+          }));
+        } else if (result.status === 'skipped') {
+          showToast(`Skipped duplicate ${result.tool} session`);
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        recordIssue('Auto-import failed', message);
+      }
+    },
+    [repoId, refreshBadges, recordIssue, showToast]
+  );
+
+  useEffect(() => {
+    if (!repoRoot || !repoId) return;
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        const config = await getIngestConfig();
+        const env = await getOtlpEnvStatus();
+        if (!mounted) return;
+        setConfig(config);
+        setOtlpEnv(env);
+        setStatus((prev) => ({ ...prev, enabled: config.autoIngestEnabled }));
+        await purgeExpiredSessions(repoId, config.retentionDays);
+      } catch (e) {
+        if (!mounted) return;
+        recordIssue('Ingest config error', e instanceof Error ? e.message : String(e));
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [repoRoot, repoId, recordIssue]);
+
+  useEffect(() => {
+    if (!config?.autoIngestEnabled || watchPaths.length === 0) return;
+    if (!repoRoot || !repoId) return;
+
+    let unlisten: (() => void) | undefined;
+    let cancelled = false;
+
+    const start = async () => {
+      try {
+        await startFileWatcher(watchPaths);
+      } catch (e) {
+        recordIssue('Auto-ingest disabled', e instanceof Error ? e.message : String(e));
+        return;
+      }
+
+      try {
+        unlisten = await listen<{ path: string; tool?: string }>('session-file-changed', async (event) => {
+          if (cancelled) return;
+          await handleAutoImport(event.payload);
+        });
+      } catch (e) {
+        recordIssue('Auto-ingest listener failed', e instanceof Error ? e.message : String(e));
+      }
+    };
+
+    start();
+
+    return () => {
+      cancelled = true;
+      if (unlisten) unlisten();
+      stopFileWatcher();
+    };
+  }, [config?.autoIngestEnabled, watchPaths, repoRoot, repoId, handleAutoImport, recordIssue]);
+
+  const toggleAutoIngest = useCallback(
+    async (enabled: boolean) => {
+      try {
+        const codexUpdate = !enabled && config
+          ? { ...config.codex, receiverEnabled: false }
+          : undefined;
+        const next = await setIngestConfig({
+          autoIngestEnabled: enabled,
+          codex: codexUpdate
+        });
+        setConfig(next);
+        setStatus((prev) => ({ ...prev, enabled }));
+
+        if (!enabled) {
+          stopFileWatcher();
+          try {
+            await setOtelReceiverEnabled(false);
+          } catch (e) {
+            recordIssue('Failed to disable Codex receiver', e instanceof Error ? e.message : String(e));
+          }
+          return;
+        }
+
+        if (next.consent.codexTelemetryGranted && next.codex.receiverEnabled) {
+          if (otlpEnv?.present) {
+            try {
+              await setOtelReceiverEnabled(true);
+            } catch (e) {
+              recordIssue('Failed to enable Codex receiver', e instanceof Error ? e.message : String(e));
+            }
+          } else {
+            recordIssue(
+              'Missing Codex API key',
+              `Set ${next.codex.headerEnvKey} in your shell environment, then restart Narrative.`
+            );
+          }
+        }
+      } catch (e) {
+        recordIssue('Auto-ingest toggle failed', e instanceof Error ? e.message : String(e));
+      }
+    },
+    [config, otlpEnv?.present, recordIssue]
+  );
+
+  const updateWatchPaths = useCallback(async (paths: { claude: string[]; cursor: string[] }) => {
+    try {
+      const next = await setIngestConfig({ watchPaths: paths });
+      setConfig(next);
+    } catch (e) {
+      recordIssue('Failed to update watch paths', e instanceof Error ? e.message : String(e));
+    }
+  }, [recordIssue]);
+
+  const configureCodexTelemetry = useCallback(async () => {
+    if (!config) return;
+    try {
+      await configureCodexOtel(config.codex.endpoint);
+      const env = await getOtlpEnvStatus();
+      setOtlpEnv(env);
+      if (!env.present) {
+        recordIssue(
+          'Missing Codex API key',
+          `Set ${config.codex.headerEnvKey} in your shell environment, then restart Narrative.`
+        );
+      }
+      const receiverEnabled = env.present && config.consent.codexTelemetryGranted;
+      const next = await setIngestConfig({
+        codex: { ...config.codex, receiverEnabled }
+      });
+      setConfig(next);
+      showToast('Codex telemetry configured');
+    } catch (e) {
+      recordIssue('Codex config failed', e instanceof Error ? e.message : String(e));
+    }
+  }, [config, recordIssue, showToast]);
+
+  const grantCodexConsent = useCallback(async () => {
+    try {
+      const now = new Date().toISOString();
+      const next = await setIngestConfig({
+        consent: { codexTelemetryGranted: true, grantedAtISO: now }
+      });
+      setConfig(next);
+    } catch (e) {
+      recordIssue('Consent update failed', e instanceof Error ? e.message : String(e));
+    }
+  }, [recordIssue]);
+
+  const dismissIssue = useCallback((id: string) => {
+    setIssues((prev) => prev.filter((issue) => issue.id !== id));
+  }, []);
+
+  return {
+    ingestConfig: config,
+    otlpEnvStatus: otlpEnv,
+    ingestStatus: status,
+    issues,
+    toast,
+    toggleAutoIngest,
+    updateWatchPaths,
+    configureCodexTelemetry,
+    grantCodexConsent,
+    dismissIssue
+  };
+}

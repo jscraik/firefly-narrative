@@ -69,6 +69,7 @@ pub struct SessionExcerpt {
 pub enum SessionTool {
     ClaudeCode,
     Codex,
+    Cursor,
     Unknown,
 }
 
@@ -106,6 +107,7 @@ pub struct LinkResult {
     pub auto_linked: bool,
     pub temporal_score: f64,
     pub file_score: f64,
+    pub needs_review: bool,
 }
 
 /// Reason why a session failed to link.
@@ -142,6 +144,7 @@ impl std::fmt::Display for SessionTool {
         match self {
             SessionTool::ClaudeCode => write!(f, "claude-code"),
             SessionTool::Codex => write!(f, "codex"),
+            SessionTool::Cursor => write!(f, "cursor"),
             SessionTool::Unknown => write!(f, "unknown"),
         }
     }
@@ -149,6 +152,11 @@ impl std::fmt::Display for SessionTool {
 
 /// Result of attempting to link a session.
 pub type LinkingResult = Result<LinkResult, UnlinkedReason>;
+
+#[derive(Debug, Clone, Copy)]
+pub struct LinkOptions {
+    pub skip_secret_scan: bool,
+}
 
 // ============================================================================
 // Story 3.1: Temporal Overlap Scoring
@@ -362,6 +370,7 @@ pub fn calculate_link_confidence(
             auto_linked: true,
             temporal_score,
             file_score,
+            needs_review: false,
         })
     } else {
         None
@@ -505,6 +514,20 @@ pub fn extract_session_files(messages: &[SessionMessage]) -> Vec<String> {
 ///
 /// Build Plan Epic 3 Story 3.4.
 pub fn link_session_to_commits(session: &SessionExcerpt, commits: &[GitCommit]) -> LinkingResult {
+    link_session_to_commits_with_options(
+        session,
+        commits,
+        LinkOptions {
+            skip_secret_scan: false,
+        },
+    )
+}
+
+pub fn link_session_to_commits_with_options(
+    session: &SessionExcerpt,
+    commits: &[GitCommit],
+    options: LinkOptions,
+) -> LinkingResult {
     // Parse session end time
     let session_end = match DateTime::parse_from_rfc3339(&session.imported_at_iso) {
         Ok(dt) => dt.with_timezone(&Utc),
@@ -519,14 +542,16 @@ pub fn link_session_to_commits(session: &SessionExcerpt, commits: &[GitCommit]) 
     // Get or infer session duration
     let duration_min = session.duration_min.unwrap_or(30); // Default to 30 min if missing
 
-    // Security: Scan for secrets in session messages
-    let mut detected_secrets = Vec::new();
-    for msg in &session.messages {
-        detected_secrets.extend(detect_secrets(&msg.text));
-    }
+    if !options.skip_secret_scan {
+        // Security: Scan for secrets in session messages
+        let mut detected_secrets = Vec::new();
+        for msg in &session.messages {
+            detected_secrets.extend(detect_secrets(&msg.text));
+        }
 
-    if !detected_secrets.is_empty() {
-        return Err(UnlinkedReason::SecretDetected(detected_secrets));
+        if !detected_secrets.is_empty() {
+            return Err(UnlinkedReason::SecretDetected(detected_secrets));
+        }
     }
 
     // Extract session files
@@ -556,6 +581,7 @@ pub fn link_session_to_commits(session: &SessionExcerpt, commits: &[GitCommit]) 
 
     // Score each candidate commit with tie-breaking logic
     let mut best_result: Option<LinkResult> = None;
+    let mut second_best: Option<LinkResult> = None;
     const TIE_BREAK_MARGIN: f64 = 0.05; // Within 5% confidence, prefer closer timestamp
 
     // Build a map of SHA to commit for later lookup
@@ -599,7 +625,14 @@ pub fn link_session_to_commits(session: &SessionExcerpt, commits: &[GitCommit]) 
                     let closer = new_distance < current_distance;
 
                     if improved || (close && closer) {
+                        second_best = best_result.take();
                         best_result = Some(result);
+                    } else if second_best
+                        .as_ref()
+                        .map(|existing| result.confidence > existing.confidence)
+                        .unwrap_or(true)
+                    {
+                        second_best = Some(result);
                     }
                 }
             }
@@ -608,7 +641,14 @@ pub fn link_session_to_commits(session: &SessionExcerpt, commits: &[GitCommit]) 
 
     // Return best match or error if below threshold
     match best_result {
-        Some(result) => Ok(result),
+        Some(mut result) => {
+            let needs_review = second_best
+                .as_ref()
+                .map(|second| (result.confidence - second.confidence).abs() <= TIE_BREAK_MARGIN)
+                .unwrap_or(false);
+            result.needs_review = needs_review;
+            Ok(result)
+        }
         None => Err(UnlinkedReason::LowConfidence),
     }
 }

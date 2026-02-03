@@ -78,12 +78,13 @@ pub async fn create_or_update_session_link(
     // Perform upsert using ON CONFLICT with parameter binding
     let result = sqlx::query(
         r#"
-        INSERT INTO session_links (repo_id, session_id, commit_sha, confidence, auto_linked)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO session_links (repo_id, session_id, commit_sha, confidence, auto_linked, needs_review)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT(repo_id, session_id) DO UPDATE SET
             commit_sha = excluded.commit_sha,
             confidence = excluded.confidence,
-            auto_linked = excluded.auto_linked
+            auto_linked = excluded.auto_linked,
+            needs_review = excluded.needs_review
         RETURNING id
         "#,
     )
@@ -92,6 +93,7 @@ pub async fn create_or_update_session_link(
     .bind(&commit_sha)
     .bind(confidence)
     .bind(auto_linked)
+    .bind(false)
     .fetch_one(db)
     .await
     .map_err(|e| format!("Database error: {e}"))?;
@@ -123,7 +125,7 @@ pub async fn get_session_links_for_repo(
 
     let rows = sqlx::query(
         r#"
-        SELECT id, repo_id, session_id, commit_sha, confidence, auto_linked, created_at
+        SELECT id, repo_id, session_id, commit_sha, confidence, auto_linked, needs_review, created_at
         FROM session_links
         WHERE repo_id = $1
         ORDER BY created_at DESC
@@ -142,7 +144,8 @@ pub async fn get_session_links_for_repo(
             session_id: row.get("session_id"),
             commit_sha: row.get("commit_sha"),
             confidence: row.get("confidence"),
-            auto_linked: row.get("auto_linked"),
+            auto_linked: row.get::<i64, _>("auto_linked") != 0,
+            needs_review: row.get::<i64, _>("needs_review") != 0,
             created_at: row.get("created_at"),
         })
         .collect();
@@ -176,7 +179,7 @@ pub async fn get_session_links_for_commit(
 
     let rows = sqlx::query(
         r#"
-        SELECT id, repo_id, session_id, commit_sha, confidence, auto_linked, created_at
+        SELECT id, repo_id, session_id, commit_sha, confidence, auto_linked, needs_review, created_at
         FROM session_links
         WHERE repo_id = $1 AND commit_sha = $2
         ORDER BY created_at DESC
@@ -196,7 +199,8 @@ pub async fn get_session_links_for_commit(
             session_id: row.get("session_id"),
             commit_sha: row.get("commit_sha"),
             confidence: row.get("confidence"),
-            auto_linked: row.get("auto_linked"),
+            auto_linked: row.get::<i64, _>("auto_linked") != 0,
+            needs_review: row.get::<i64, _>("needs_review") != 0,
             created_at: row.get("created_at"),
         })
         .collect();

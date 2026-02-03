@@ -28,6 +28,7 @@ export function CodexOtelSettingsPanel(props: {
   const [retentionDays, setRetentionDays] = useState(
     attributionPrefs?.retentionDays ? String(attributionPrefs.retentionDays) : ''
   );
+  const [copiedPromptSnippet, setCopiedPromptSnippet] = useState(false);
 
   useEffect(() => {
     if (!traceConfig?.codexOtelLogPath) return;
@@ -39,6 +40,17 @@ export function CodexOtelSettingsPanel(props: {
   }, [attributionPrefs?.retentionDays]);
 
   const receiverEnabled = traceConfig?.codexOtelReceiverEnabled ?? false;
+  const disablePromptSnippet = 'log_user_prompt = false';
+
+  const handleCopyPromptSnippet = async () => {
+    try {
+      await navigator.clipboard.writeText(disablePromptSnippet);
+      setCopiedPromptSnippet(true);
+      setTimeout(() => setCopiedPromptSnippet(false), 1500);
+    } catch {
+      setCopiedPromptSnippet(false);
+    }
+  };
 
   if (!traceConfig) {
     return (
@@ -108,10 +120,20 @@ export function CodexOtelSettingsPanel(props: {
         {logUserPromptEnabled ? (
           <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
             <div className="font-semibold">Raw prompt export is ON.</div>
-            <div>This can include sensitive text.</div>
+            <div>This means full prompt text is being sent and may include sensitive data.</div>
             {logUserPromptConfigPath ? (
               <div className="mt-1 text-[11px] text-amber-700">Config: {logUserPromptConfigPath}</div>
             ) : null}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyPromptSnippet}
+                className="inline-flex items-center rounded-md border border-amber-200 bg-white px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100"
+              >
+                {copiedPromptSnippet ? 'Snippet copied' : 'Copy disable snippet'}
+              </button>
+              <span className="text-[11px] text-amber-700 font-mono">{disablePromptSnippet}</span>
+            </div>
           </div>
         ) : null}
       </div>

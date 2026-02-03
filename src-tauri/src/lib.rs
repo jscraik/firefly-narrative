@@ -2,6 +2,7 @@ mod attribution;
 mod commands;
 mod file_watcher;
 mod git_diff;
+mod ingest_config;
 mod import;
 mod link_commands;
 mod linking;
@@ -22,8 +23,11 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 static FILE_WATCHER: std::sync::Mutex<Option<RecommendedWatcher>> = std::sync::Mutex::new(None);
 
 /// Start the file watcher for auto-import
-#[tauri::command]
-fn start_file_watcher(app_handle: tauri::AppHandle, repo_root: String) -> Result<(), String> {
+#[tauri::command(rename_all = "camelCase")]
+fn start_file_watcher(
+    app_handle: tauri::AppHandle,
+    watch_paths: Vec<String>,
+) -> Result<(), String> {
     // Stop existing watcher if any
     {
         let mut watcher = FILE_WATCHER.lock().map_err(|e| e.to_string())?;
@@ -33,13 +37,23 @@ fn start_file_watcher(app_handle: tauri::AppHandle, repo_root: String) -> Result
     }
 
     // Start new watcher
-    let new_watcher = file_watcher::start_session_watcher(app_handle, repo_root)?;
+    let new_watcher = file_watcher::start_session_watcher(app_handle, watch_paths)?;
 
     {
         let mut watcher = FILE_WATCHER.lock().map_err(|e| e.to_string())?;
         *watcher = Some(new_watcher);
     }
 
+    Ok(())
+}
+
+/// Stop the file watcher (if running)
+#[tauri::command(rename_all = "camelCase")]
+fn stop_file_watcher() -> Result<(), String> {
+    let mut watcher = FILE_WATCHER.lock().map_err(|e| e.to_string())?;
+    if let Some(existing) = watcher.take() {
+        file_watcher::stop_session_watcher(existing);
+    }
     Ok(())
 }
 
@@ -99,6 +113,18 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             sql: include_str!("../migrations/007_attribution_note_meta.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 8,
+            description: "add_collaborative_lines",
+            sql: include_str!("../migrations/008_add_collaborative_lines.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 9,
+            description: "add_auto_ingest",
+            sql: include_str!("../migrations/009_auto_ingest.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -119,8 +145,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             // Import commands
             import::commands::import_session_files,
             import::commands::import_session_file,
+            import::commands::auto_import_session_file,
             import::commands::scan_for_session_files,
             import::commands::get_recent_sessions,
+            import::commands::purge_expired_sessions,
             // Git diff commands
             git_diff::get_commit_added_ranges,
             // Attribution commands
@@ -151,6 +179,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             rules::commands::create_default_rules,
             // File watcher commands
             start_file_watcher,
+            stop_file_watcher,
+            // Ingest config commands
+            ingest_config::get_ingest_config,
+            ingest_config::set_ingest_config,
+            ingest_config::get_otlp_env_status,
+            ingest_config::configure_codex_otel,
         ])
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())

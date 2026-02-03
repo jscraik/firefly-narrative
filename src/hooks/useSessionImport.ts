@@ -3,9 +3,8 @@ import { mergeSanitizerHits, sanitizePayloadMessages } from './sessionUtils';
 import { useCallback } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { importAgentTraceFile } from '../core/repo/agentTrace';
-import { linkSessionToCommit } from '../core/repo/sessionLinking';
-import { deleteSessionLinkBySessionId, getSessionLinksForCommit } from '../core/repo/sessionLinking';
-import { loadSessionExcerpts } from '../core/repo/sessions';
+import { linkSessionToCommit, deleteSessionLinkBySessionId } from '../core/repo/sessionLinking';
+import { refreshSessionBadges } from '../core/repo/sessionBadges';
 import { parseKimiContextJsonl } from '../core/repo/kimiAdapter';
 import { sha256Hex } from '../core/security/hash';
 import { redactSecrets } from '../core/security/redact';
@@ -118,7 +117,7 @@ export function useSessionImport({
       await linkSessionToCommit(repoId, sessionExcerpt);
 
       // Reload excerpts and update badges
-      await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState);
+      await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { limit: 10 });
     } catch (e: unknown) {
       setActionError(e instanceof Error ? e.message : String(e));
     }
@@ -195,7 +194,7 @@ export function useSessionImport({
       await linkSessionToCommit(repoId, sessionExcerpt);
 
       // Reload excerpts and update badges
-      await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState);
+      await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { limit: 10 });
     } catch (e: unknown) {
       setActionError(e instanceof Error ? e.message : String(e));
     }
@@ -232,7 +231,7 @@ export function useSessionImport({
         await deleteSessionLinkBySessionId(repoId, sessionId);
 
         // Reload excerpts and update badges
-        await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, true);
+        await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { unlinkMode: true, limit: 10 });
       } catch (e: unknown) {
         setActionError(e instanceof Error ? e.message : String(e));
       }
@@ -285,54 +284,6 @@ function applyTraceUpdate(
   };
 }
 
-async function refreshSessionBadges(
-  repoRoot: string,
-  repoId: number,
-  timeline: Array<{ id: string }>,
-  setRepoState: (updater: (prev: BranchViewModel) => BranchViewModel) => void,
-  unlinkMode = false
-) {
-  // Reload excerpts (latest only)
-  const sessionExcerpts = await loadSessionExcerpts(repoRoot, repoId, 1);
-
-  // Fetch all session links for commits
-  const commitShas = timeline.map((n) => n.id);
-  const linksByCommit: Record<string, import('../core/repo/sessionLinking').SessionLink[]> = {};
-  for (const sha of commitShas) {
-    const links = await getSessionLinksForCommit(repoId, sha);
-    if (links.length > 0) {
-      linksByCommit[sha] = links;
-    }
-  }
-
-  // Now update the state with the new badges
-  setRepoState((prev) => {
-    const existingBadges = prev.timeline.map((node) => {
-      const links = linksByCommit[node.id];
-      if (!links || links.length === 0) {
-        // Remove session badges if no links (or if unlinking)
-        if (unlinkMode) {
-          return {
-            ...node,
-            badges: node.badges?.filter((b) => b.type !== 'session') ?? []
-          };
-        }
-        return node;
-      }
-      const existing = node.badges?.filter((b) => b.type !== 'session') ?? [];
-      return {
-        ...node,
-        badges: [...existing, { type: 'session' as const, label: `${links.length} session${links.length > 1 ? 's' : ''}` }]
-      };
-    });
-
-    return {
-      ...prev,
-      sessionExcerpts,
-      timeline: existingBadges
-    };
-  });
-}
 
 function isSessionMessageRecord(
   value: unknown
