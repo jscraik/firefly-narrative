@@ -29,7 +29,7 @@ opentelemetry-proto = { version = "0.6", features = ["gen-tonic-messages", "trac
 prost = "0.12"
 
 # Attribution tracking dependencies
-git2 = "0.18"
+git2 = "0.20"
 sha2 = "0.10"
 regex = "1.10"
 lazy_static = "1.4"
