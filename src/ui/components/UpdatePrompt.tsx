@@ -1,10 +1,14 @@
 import { Download, X, RefreshCw, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import type { UpdateStatus } from '../../hooks/useUpdater';
 
-interface UpdatePromptProps {
+export interface UpdatePromptProps {
   status: UpdateStatus;
   onUpdate: () => void;
-  onDismiss: () => void;
+  onClose?: () => void;
+  /**
+   * @deprecated Use onClose instead.
+   */
+  onDismiss?: () => void;
   onCheckAgain?: () => void;
 }
 
@@ -12,7 +16,8 @@ interface UpdatePromptProps {
  * Update notification component that displays update status
  * and allows users to download/install updates.
  */
-export function UpdatePrompt({ status, onUpdate, onDismiss, onCheckAgain }: UpdatePromptProps) {
+export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgain }: UpdatePromptProps) {
+  const handleClose = onClose ?? onDismiss;
   // Don't show anything if no update or checking (silent)
   if (status.type === 'no_update' || status.type === 'checking') {
     return null;
@@ -39,14 +44,16 @@ export function UpdatePrompt({ status, onUpdate, onDismiss, onCheckAgain }: Upda
                 </button>
               )}
             </div>
-            <button
-              type="button"
-              onClick={onDismiss}
-              className="text-red-400 hover:text-red-600 transition-colors"
-              aria-label="Dismiss"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {handleClose ? (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="text-red-400 hover:text-red-600 transition-colors"
+                aria-label="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -89,14 +96,16 @@ export function UpdatePrompt({ status, onUpdate, onDismiss, onCheckAgain }: Upda
                 The update has been downloaded. Restart the app to apply changes.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onDismiss}
-              className="text-emerald-400 hover:text-emerald-600 transition-colors"
-              aria-label="Dismiss"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {handleClose ? (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="text-emerald-400 hover:text-emerald-600 transition-colors"
+                aria-label="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -116,13 +125,13 @@ export function UpdatePrompt({ status, onUpdate, onDismiss, onCheckAgain }: Upda
               <Download className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-stone-800 text-sm">
+              <div className="font-semibold text-text-primary text-sm">
                 Update Available
               </div>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Version <span className="font-medium text-stone-700">{version}</span> is now available.
+              <p className="text-xs text-text-tertiary mt-0.5">
+                Version <span className="font-medium text-text-secondary">{version}</span> is now available.
                 {currentVersion && (
-                  <span className="text-stone-400"> (Current: {currentVersion})</span>
+                  <span className="text-text-muted"> (Current: {currentVersion})</span>
                 )}
               </p>
               
@@ -130,18 +139,20 @@ export function UpdatePrompt({ status, onUpdate, onDismiss, onCheckAgain }: Upda
                 <button
                   type="button"
                   onClick={onUpdate}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-strong text-white text-xs font-medium hover:bg-surface-strong-hover transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download & Install
                 </button>
-                <button
-                  type="button"
-                  onClick={onDismiss}
-                  className="px-3 py-1.5 rounded-lg border border-stone-200 text-stone-600 text-xs font-medium hover:bg-stone-50 transition-colors"
-                >
-                  Later
-                </button>
+                {handleClose ? (
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="px-3 py-1.5 rounded-lg border border-border-light text-text-secondary text-xs font-medium hover:bg-bg-subtle transition-colors"
+                  >
+                    Later
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -157,13 +168,15 @@ export function UpdatePrompt({ status, onUpdate, onDismiss, onCheckAgain }: Upda
  * Small update indicator for the status bar or header.
  * Shows a dot/badge when updates are available.
  */
+export interface UpdateIndicatorProps {
+  status: UpdateStatus | null;
+  onClick: () => void;
+}
+
 export function UpdateIndicator({ 
   status, 
   onClick 
-}: { 
-  status: UpdateStatus | null;
-  onClick: () => void;
-}) {
+}: UpdateIndicatorProps) {
   if (!status) return null;
   
   if (status.type === 'available') {

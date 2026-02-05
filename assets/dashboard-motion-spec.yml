@@ -87,20 +87,20 @@ metric_card:
     properties:
       from:
         transform: "translateY(0)"
-        box_shadow: "theme.shadow.sm"
+        box_shadow: "shadow.sm"
       to:
         transform: "translateY(-2px)"
-        box_shadow: "theme.shadow.md"
+        box_shadow: "shadow.md"
     reduced_motion:
       duration: 0
-      properties: { box_shadow: "theme.shadow.md" }
+      properties: { box_shadow: "shadow.md" }
 
   focus:
     description: "Keyboard focus shows ring"
     trigger: "focus"
     duration: 0
     properties:
-      outline: "2px solid theme.color.sky.500"
+      outline: "2px solid colors.sky.500"
       outline_offset: "2px"
     reduced_motion: "same"
 
@@ -114,7 +114,7 @@ metric_card:
       to: { transform: "translateY(0) scale(0.98)" }
     reduced_motion:
       duration: 0
-      properties: { background_color: "theme.color.slate.100" }
+      properties: { background_color: "colors.slate.100" }
 
   trend_badge_bounce:
     description: "Trend indicator bounces subtly on first render"
@@ -180,7 +180,7 @@ table:
     easing: "ease_out"
     properties:
       from: { background_color: "transparent" }
-      to: { background_color: "theme.color.sky.50" }
+      to: { background_color: "colors.sky.50" }
     reduced_motion: "instant"
 
   row_focus:
@@ -188,7 +188,7 @@ table:
     duration: 0
     properties:
       outline: "none"
-      box_shadow: "inset 2px 0 0 theme.color.sky.500"
+      box_shadow: "inset 2px 0 0 colors.sky.500"
     reduced_motion: "same"
 
   load_more:
@@ -243,7 +243,7 @@ loading_skeleton:
     shimmer:
       from: { background_position: "-200% 0" }
       to: { background_position: "200% 0" }
-    gradient: "linear-gradient(90deg, transparent, theme.color.slate.200, transparent)"
+    gradient: "linear-gradient(90deg, transparent, colors.slate.200, transparent)"
     duration_ms: 1500
   reduced_motion: "static gray background, no shimmer"
 

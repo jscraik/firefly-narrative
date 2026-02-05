@@ -23,7 +23,7 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
     >
       {/* Label above */}
       {showLabel && node.label ? (
-        <div className="mb-2 w-32 text-center text-[11px] font-medium text-stone-600 leading-tight truncate px-1">
+        <div className="mb-2 w-32 text-center text-[11px] font-medium text-text-secondary leading-tight truncate px-1">
           {node.label}
         </div>
       ) : (
@@ -60,7 +60,7 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
       )}
 
       {/* Date below */}
-      <div className="mt-2 h-4 text-[10px] text-stone-400">
+      <div className="mt-2 h-4 text-[10px] text-text-muted">
         {showLabel && node.atISO
           ? new Date(node.atISO).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
           : ''}

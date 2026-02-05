@@ -21,13 +21,20 @@ function StatPill({ label, value, tone }: { label: string; value: string; tone: 
   );
 }
 
-export function AgentTraceSummary(props: {
+export interface AgentTraceSummaryProps {
+  /** Summary for the current commit trace attribution. */
   summary?: TraceCommitSummary;
+  /** Trigger export of trace data. */
   onExport?: () => void;
+  /** Trigger a telemetry smoke test. */
   onSmokeTest?: () => void;
+  /** Whether the current commit has files to show. */
   hasFiles: boolean;
+  /** Current trace collector status. */
   status?: TraceCollectorStatus;
-}) {
+}
+
+export function AgentTraceSummary(props: AgentTraceSummaryProps) {
   const { summary, onExport, onSmokeTest, hasFiles, status } = props;
   const aiPercent = summary?.aiPercent ?? 0;
   const activeWindowMs = 5 * 60 * 1000;
@@ -101,7 +108,7 @@ export function AgentTraceSummary(props: {
           {onSmokeTest ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 transition-all duration-150 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-secondary transition-all duration-150 hover:bg-bg-subtle disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onSmokeTest}
               disabled={!hasFiles}
               aria-disabled={!hasFiles}
@@ -113,7 +120,7 @@ export function AgentTraceSummary(props: {
           {onExport ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-secondary hover:bg-bg-subtle disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onExport}
               disabled={!hasFiles}
               aria-disabled={!hasFiles}
@@ -125,11 +132,11 @@ export function AgentTraceSummary(props: {
       </div>
 
       {status?.message ? (
-        <div className="mt-4 text-xs text-stone-500">{status.message}</div>
+        <div className="mt-4 text-xs text-text-tertiary">{status.message}</div>
       ) : null}
-      {lastSeenLabel ? <div className="mt-1 text-xs text-stone-400">{lastSeenLabel}</div> : null}
+      {lastSeenLabel ? <div className="mt-1 text-xs text-text-muted">{lastSeenLabel}</div> : null}
       {status?.issues && status.issues.length > 0 ? (
-        <div className="mt-2 text-xs text-stone-400">
+        <div className="mt-2 text-xs text-text-muted">
           {status.issues.slice(0, 3).map((issue) => (
             <div key={issue}>• {issue}</div>
           ))}
@@ -138,16 +145,16 @@ export function AgentTraceSummary(props: {
       ) : null}
 
       {!summary ? (
-        <div className="mt-5 rounded-xl border border-dashed border-stone-200 bg-stone-50/50 px-5 py-6">
+        <div className="mt-5 rounded-xl border border-dashed border-border-light bg-bg-subtle/50 px-5 py-6">
           <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-3">
-              <Activity className="w-5 h-5 text-stone-400" />
+            <div className="w-12 h-12 rounded-full bg-bg-page flex items-center justify-center mb-3">
+              <Activity className="w-5 h-5 text-text-muted" />
             </div>
-            <p className="text-sm font-medium text-stone-600 mb-1">No Agent Trace yet</p>
-            <p className="text-xs text-stone-400 max-w-[240px] leading-relaxed">
+            <p className="text-sm font-medium text-text-secondary mb-1">No Agent Trace yet</p>
+            <p className="text-xs text-text-muted max-w-[240px] leading-relaxed">
               Import an Agent Trace or configure Codex OTel to see AI attribution for this commit
             </p>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-stone-400">
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-text-muted">
               <Sparkles className="w-3 h-3" />
               <span>Tracks AI vs human contributions</span>
             </div>
@@ -159,7 +166,7 @@ export function AgentTraceSummary(props: {
             <div className="trace-bar">
               <div className="trace-bar-fill" style={{ width: `${aiPercent}%` }} />
             </div>
-            <div className="text-sm font-semibold text-stone-700">{traceLabel}</div>
+            <div className="text-sm font-semibold text-text-secondary">{traceLabel}</div>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -169,23 +176,23 @@ export function AgentTraceSummary(props: {
             <StatPill label="Unknown" value={`${summary.unknownLines}`} tone="unknown" />
           </div>
 
-          <div className="text-xs text-stone-500 leading-relaxed">
+          <div className="text-xs text-text-tertiary leading-relaxed">
             Agent Trace highlights which lines were generated by AI versus edited by humans. It is a
             helpful guide, not a legal ownership claim.
           </div>
 
           {summary.toolNames.length > 0 ? (
-            <div className="text-xs text-stone-400">Tools: {summary.toolNames.map(formatToolName).join(', ')}</div>
+            <div className="text-xs text-text-muted">Tools: {summary.toolNames.map(formatToolName).join(', ')}</div>
           ) : (
-            <div className="text-xs text-stone-400">Tools: unknown</div>
+            <div className="text-xs text-text-muted">Tools: unknown</div>
           )}
 
           {summary.modelIds.length > 0 ? (
-            <div className="text-xs text-stone-400">
+            <div className="text-xs text-text-muted">
               Models: {summary.modelIds.join(', ')}
             </div>
           ) : (
-            <div className="text-xs text-stone-400">Models: unknown</div>
+            <div className="text-xs text-text-muted">Models: unknown</div>
           )}
         </div>
       )}

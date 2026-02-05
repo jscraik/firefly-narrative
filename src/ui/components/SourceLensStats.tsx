@@ -63,7 +63,7 @@ export function SourceLensStats({
     return 'Note contains ranges only (no prompt metadata).';
   })();
   const evidenceTone = (() => {
-    if (!noteSummary?.hasNote) return 'bg-stone-100 text-stone-500';
+    if (!noteSummary?.hasNote) return 'bg-bg-page text-text-tertiary';
     if (metadataCached) return 'bg-emerald-100 text-emerald-700';
     return 'bg-amber-100 text-amber-700';
   })();
@@ -86,16 +86,16 @@ export function SourceLensStats({
             </>
           ) : null}
           {!hasNote ? (
-            <div className="mt-2 text-[11px] text-stone-400">
+            <div className="mt-2 text-[11px] text-text-muted">
               No attribution note yet. Source Lens only shows data written by your tools.
             </div>
           ) : null}
           {hasLocalOnly ? (
-            <div className="mt-2 text-[11px] text-stone-400">
+            <div className="mt-2 text-[11px] text-text-muted">
               Session traces are local-only. Import local sessions to view trace details.
             </div>
           ) : null}
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-stone-400">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${evidenceTone}`}
               title={evidenceTitle}
@@ -109,21 +109,21 @@ export function SourceLensStats({
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-xs text-stone-500">{agentLines} Agent (AI generated)</span>
+            <span className="text-xs text-text-tertiary">{agentLines} Agent (AI generated)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
-            <span className="text-xs text-stone-500">{mixedLines} Mixed (AI + edits)</span>
+            <span className="text-xs text-text-tertiary">{mixedLines} Mixed (AI + edits)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-stone-300" />
-            <span className="text-xs text-stone-500">{humanLines} Human (no AI trace)</span>
+            <div className="w-2 h-2 rounded-full bg-border-medium" />
+            <span className="text-xs text-text-tertiary">{humanLines} Human (no AI trace)</span>
           </div>
           {mixedLines > 0 ? (
-            <div className="text-[11px] text-stone-400 inline-flex items-center gap-1">
+            <div className="text-[11px] text-text-muted inline-flex items-center gap-1">
               <span>Mixed = AI text that was later edited.</span>
               <span title="Legend: AI-generated vs AI-assisted vs human edits.">
-                <HelpCircle className="h-3 w-3 text-stone-300" aria-hidden="true" />
+                <HelpCircle className="h-3 w-3 text-text-muted" aria-hidden="true" />
               </span>
             </div>
           ) : null}
@@ -132,7 +132,7 @@ export function SourceLensStats({
               type="button"
               onClick={onImportNote}
               disabled={syncing}
-              className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-medium text-stone-600 transition-colors motion-reduce:transition-none hover:bg-stone-50 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-subtle disabled:opacity-50"
             >
               <RefreshCw className={`h-3 w-3 ${syncing ? 'motion-safe:animate-spin' : ''}`} />
               Import note
@@ -141,7 +141,7 @@ export function SourceLensStats({
               type="button"
               onClick={onExportNote}
               disabled={syncing}
-              className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-medium text-stone-600 transition-colors motion-reduce:transition-none hover:bg-stone-50 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-subtle disabled:opacity-50"
             >
               <Save className="h-3 w-3" />
               Export note
@@ -166,16 +166,16 @@ export function SourceLensStats({
         )}
         {humanLines > 0 && (
           <div
-            className="bg-stone-300"
+            className="bg-border-medium"
             style={{ width: `${(humanLines / lines.length) * 100}%` }}
           />
         )}
       </div>
-      <div className="mt-1 text-xs text-stone-500 text-right">
+      <div className="mt-1 text-xs text-text-tertiary text-right">
         {agentPercentage}% agent-generated
       </div>
       {stats?.toolBreakdown && stats.toolBreakdown.length > 0 ? (
-        <div className="mt-2 text-[11px] text-stone-500 text-right">
+        <div className="mt-2 text-[11px] text-text-tertiary text-right">
           Tools:{' '}
           {stats.toolBreakdown.slice(0, 2).map((toolStat, index) => (
             <span key={`${toolStat.tool}-${toolStat.model ?? 'unknown'}`}>
@@ -186,13 +186,13 @@ export function SourceLensStats({
         </div>
       ) : null}
       {noteSummary?.promptCount ? (
-        <div className="mt-1 text-[11px] text-stone-400 text-right">
+        <div className="mt-1 text-[11px] text-text-muted text-right">
           Prompts: {noteSummary.promptCount}
         </div>
       ) : null}
-      <div className="mt-3 rounded-md border border-stone-100 bg-stone-50 px-3 py-2 text-[11px] text-stone-600">
+      <div className="mt-3 rounded-md border border-border-subtle bg-bg-subtle px-3 py-2 text-[11px] text-text-secondary">
         <div className="font-semibold">How to read this</div>
-        <ul className="mt-1 list-disc pl-4 space-y-1 text-stone-500">
+        <ul className="mt-1 list-disc pl-4 space-y-1 text-text-tertiary">
           <li>Badge shows the primary source for each line.</li>
           <li>Row tint shows AI influence (if any).</li>
           <li>Coverage reflects how much of the file has attribution data.</li>
@@ -219,7 +219,7 @@ export function SourceLensStats({
         </div>
       ) : null}
       {syncStatus ? (
-        <div className="mt-2 text-[11px] text-stone-400 text-right">{syncStatus}</div>
+        <div className="mt-2 text-[11px] text-text-muted text-right">{syncStatus}</div>
       ) : null}
       {statsError ? (
         <div className="mt-2 text-[11px] text-amber-600 text-right">{statsError}</div>
@@ -227,7 +227,7 @@ export function SourceLensStats({
       {noteSummaryError ? (
         <div className="mt-2 text-[11px] text-amber-600 text-right">{noteSummaryError}</div>
       ) : null}
-      <div className="mt-3 text-[11px] text-stone-400">
+      <div className="mt-3 text-[11px] text-text-muted">
         Attribution indicates how lines were generated or edited; it is not a legal ownership claim.
       </div>
     </>

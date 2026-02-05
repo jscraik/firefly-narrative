@@ -18,23 +18,23 @@ viewport:
 # SPACING SYSTEM (using Tailwind v4 @theme)
 # =============================================================================
 spacing:
-  scale: "4px base unit (theme.scale.4)"
+  scale: "4px base unit (spacing.scale.4)"
 
   content:
-    padding_x: "theme.spacing.xl (24px)"
-    padding_y: "theme.spacing.xl (24px)"
+    padding_x: "spacing.scale.xl (24px)"
+    padding_y: "spacing.scale.xl (24px)"
 
   sections:
-    gap_header_hero: "theme.spacing.xl (24px)"
-    gap_hero_table: "theme.spacing.6xl (48px)"
+    gap_header_hero: "spacing.scale.xl (24px)"
+    gap_hero_table: "spacing.scale.6xl (48px)"
 
   cards:
-    gap: "theme.spacing.xl (24px)"
-    padding: "theme.spacing.xl (24px)"
+    gap: "spacing.scale.xl (24px)"
+    padding: "spacing.scale.xl (24px)"
 
   table:
-    cell_padding_x: "theme.spacing.md (16px)"
-    cell_padding_y: "theme.spacing.sm (12px)"
+    cell_padding_x: "spacing.scale.md (16px)"
+    cell_padding_y: "spacing.scale.sm (12px)"
 
 # =============================================================================
 # ZONES
@@ -43,11 +43,11 @@ zones:
   header:
     type: "sticky"
     height: 64
-    background: "theme.color.white"
-    border_bottom: "1px solid theme.color.slate.200"
+    background: "colors.white"
+    border_bottom: "1px solid colors.slate.200"
     z_index: 10
     contains: ["repo_breadcrumb", "time_range_picker", "last_updated"]
-    padding_x: "theme.spacing.xl (24px)"
+    padding_x: "spacing.scale.xl (24px)"
 
     layout:
       direction: "row"
@@ -63,7 +63,7 @@ zones:
       grid: "responsive"
       columns_narrow: 2
       columns_medium: 4
-      gap: "theme.spacing.xl (24px)"
+      gap: "spacing.scale.xl (24px)"
 
   content:
     type: "scrollable"
@@ -72,7 +72,7 @@ zones:
 
     layout:
       max_width: "none"
-      padding_top: "theme.spacing.6xl (48px)"
+      padding_top: "spacing.scale.6xl (48px)"
 
 # =============================================================================
 # COMPONENT LAYOUTS
@@ -81,12 +81,12 @@ components:
   metric_card:
     dimensions:
       min_height: 128
-      border_radius: "theme.radius.lg (12px)"
+      border_radius: "radius.lg (12px)"
 
     internal_spacing:
-      padding: "theme.spacing.xl (24px)"
-      gap_icon_value: "theme.spacing.sm (12px)"
-      gap_value_trend: "theme.spacing.xs (8px)"
+      padding: "spacing.scale.xl (24px)"
+      gap_icon_value: "spacing.scale.sm (12px)"
+      gap_value_trend: "spacing.scale.xs (8px)"
 
     layout:
       direction: "column"
@@ -110,7 +110,7 @@ components:
       grid_template_columns:
         narrow: "repeat(2, 1fr)"
         medium: "repeat(4, 1fr)"
-      gap: "theme.spacing.xl (24px)"
+      gap: "spacing.scale.xl (24px)"
 
   top_files_table:
     layout:
@@ -119,30 +119,30 @@ components:
       border_collapse: "collapse"
 
     header:
-      background: "theme.color.slate.50"
-      border_bottom: "1px solid theme.color.slate.200"
+      background: "colors.slate.50"
+      border_bottom: "1px solid colors.slate.200"
 
     rows:
-      border_bottom: "1px solid theme.color.slate.100"
-      hover_background: "theme.color.sky.50"
+      border_bottom: "1px solid colors.slate.100"
+      hover_background: "colors.sky.50"
 
     columns:
       - name: "file_path"
         width: "auto"
         text_align: "left"
-        padding_left: "theme.spacing.md (16px)"
+        padding_left: "spacing.scale.md (16px)"
       - name: "ai_percentage"
         width: 120
         text_align: "right"
-        padding_right: "theme.spacing.md (16px)"
+        padding_right: "spacing.scale.md (16px)"
       - name: "ai_lines"
         width: 100
         text_align: "right"
-        padding_right: "theme.spacing.md (16px)"
+        padding_right: "spacing.scale.md (16px)"
       - name: "commit_count"
         width: 100
         text_align: "right"
-        padding_right: "theme.spacing.md (16px)"
+        padding_right: "spacing.scale.md (16px)"
 
 # =============================================================================
 # RESPONSIVE BREAKPOINTS
@@ -154,8 +154,8 @@ responsive:
       columns: 2
       card_height: 128
     table:
-      font_size: "theme.fontSize.sm (14px)"
-      cell_padding: "theme.spacing.sm (12px)"
+      font_size: "typography.fontSize.sm (14px)"
+      cell_padding: "spacing.scale.sm (12px)"
 
   medium:
     min_width: 800
@@ -164,8 +164,8 @@ responsive:
       columns: 4
       card_height: 128
     table:
-      font_size: "theme.fontSize.base (16px)"
-      cell_padding: "theme.spacing.md (16px)"
+      font_size: "typography.fontSize.base (16px)"
+      cell_padding: "spacing.scale.md (16px)"
 
   wide:
     min_width: 1200
@@ -173,8 +173,8 @@ responsive:
       columns: 4
       card_height: 144
     table:
-      font_size: "theme.fontSize.base (16px)"
-      cell_padding: "theme.spacing.md (16px)"
+      font_size: "typography.fontSize.base (16px)"
+      cell_padding: "spacing.scale.md (16px)"
       max_width: 1400
       margin: "0 auto"
 
@@ -186,35 +186,35 @@ hierarchy:
     primary:
       target: "metric_card value (especially ai_percentage)"
       treatment:
-        font_size: "theme.fontSize.5xl (48px)"
+        font_size: "typography.fontSize.5xl (48px)"
         font_weight: 700
-        color: "theme.color.slate.900"
+        color: "colors.slate.900"
 
     secondary:
       target: "other metric values"
       treatment:
-        font_size: "theme.fontSize.3xl (30px)"
+        font_size: "typography.fontSize.3xl (30px)"
         font_weight: 600
-        color: "theme.color.slate.700"
+        color: "colors.slate.700"
 
     tertiary:
       target: "metric labels, table text"
       treatment:
-        font_size: "theme.fontSize.sm (14px)"
+        font_size: "typography.fontSize.sm (14px)"
         font_weight: 500
-        color: "theme.color.slate.600"
+        color: "colors.slate.600"
 
     quaternary:
       target: "trend indicators, timestamps"
       treatment:
-        font_size: "theme.fontSize.xs (12px)"
+        font_size: "typography.fontSize.xs (12px)"
         font_weight: 600
-        color: "theme.color.slate.500"
+        color: "colors.slate.500"
 
   emphasis:
     metric_highlight:
       target: "ai_percentage_metric_card"
       treatment:
-        border: "2px solid theme.color.sky.500"
+        border: "2px solid colors.sky.500"
         background: "gradient_to_br from-sky-50 to-transparent"
         shadow: "theme.shadow.md"

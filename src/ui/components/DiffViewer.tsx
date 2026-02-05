@@ -35,36 +35,42 @@ function parseNewFileLineNumber(hunkLine: string) {
   return Number(match[3]);
 }
 
-export function DiffViewer(props: {
+export interface DiffViewerProps {
+  /** File title displayed in the header. */
   title: string;
+  /** Raw diff text to render. */
   diffText: string | null;
+  /** Loading state for skeleton UI. */
   loading?: boolean;
+  /** Trace ranges for attribution overlays. */
   traceRanges?: TraceRange[];
-}) {
+}
+
+export function DiffViewer(props: DiffViewerProps) {
   const { title, diffText, loading, traceRanges } = props;
   const traceLookup = traceRanges ? buildTraceLineLookup(traceRanges) : null;
 
   return (
     <div className="card flex h-full flex-col overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-stone-100 px-4 py-3 bg-stone-50/50">
-        <div className="truncate font-mono text-[12px] text-stone-600">{title}</div>
+      <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 bg-bg-subtle/50">
+        <div className="truncate font-mono text-[12px] text-text-secondary">{title}</div>
 
       </div>
 
       <div className="flex-1 overflow-auto px-4 py-3 bg-white">
         {loading ? (
           <div className="space-y-2">
-            <div className="h-4 bg-stone-100 rounded animate-pulse w-1/4" />
-            <div className="h-4 bg-stone-100 rounded animate-pulse w-full" />
-            <div className="h-4 bg-stone-100 rounded animate-pulse w-5/6" />
-            <div className="h-4 bg-stone-100 rounded animate-pulse w-3/4" />
-            <div className="h-4 bg-stone-100 rounded animate-pulse w-full" />
-            <div className="h-4 bg-stone-100 rounded animate-pulse w-2/3" />
+            <div className="h-4 bg-bg-page rounded animate-pulse w-1/4" />
+            <div className="h-4 bg-bg-page rounded animate-pulse w-full" />
+            <div className="h-4 bg-bg-page rounded animate-pulse w-5/6" />
+            <div className="h-4 bg-bg-page rounded animate-pulse w-3/4" />
+            <div className="h-4 bg-bg-page rounded animate-pulse w-full" />
+            <div className="h-4 bg-bg-page rounded animate-pulse w-2/3" />
           </div>
         ) : !diffText ? (
-          <div className="text-sm text-stone-400">Select a file to view its diff.</div>
+          <div className="text-sm text-text-muted">Select a file to view its diff.</div>
         ) : (
-          <pre className="text-[12px] leading-relaxed text-stone-700 font-mono">
+          <pre className="text-[12px] leading-relaxed text-text-secondary font-mono">
             {(() => {
               let currentLineNumber = 0;
               let inHunk = false;

@@ -21,11 +21,11 @@ function ToolPill({
   redactionCount?: number;
 }) {
   return (
-    <div className="flex items-center gap-2 text-[11px] text-stone-400">
-      <span className="px-2 py-1 bg-stone-100 rounded-md font-mono text-stone-500">
+    <div className="flex items-center gap-2 text-[11px] text-text-muted">
+      <span className="px-2 py-1 bg-bg-page rounded-md font-mono text-text-tertiary">
         {tool}
       </span>
-      {agentName ? <span className="text-stone-500">· {agentName}</span> : null}
+      {agentName ? <span className="text-text-tertiary">· {agentName}</span> : null}
       {typeof durationMin === 'number' && (
         <span>{durationMin} min</span>
       )}
@@ -60,7 +60,7 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
 }) {
   if (!excerpt.linkedCommitSha) {
     return (
-      <div className="flex items-center gap-2 text-[11px] text-stone-500">
+      <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
         <Link2Off className="w-3 h-3" />
         <span>Not linked</span>
       </div>
@@ -72,21 +72,21 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
   const isAutoLinked = excerpt.autoLinked ?? false;
 
   return (
-    <div className="flex items-center gap-2 text-[11px] text-stone-400">
+    <div className="flex items-center gap-2 text-[11px] text-text-muted">
       <Link2 className="w-3 h-3" />
       <button
         type="button"
         onClick={onClick}
         aria-label={`View commit ${shortSha} in timeline`}
         className={`
-          text-stone-600 hover:text-sky-600 transition-colors
+          text-text-secondary hover:text-sky-600 transition-colors
           ${isSelected ? 'text-sky-600 font-semibold' : ''}
         `}
         title="Click to view this commit in the timeline"
       >
         Linked to <span className="font-mono">{shortSha}</span>
       </button>
-      <span className="px-1.5 py-0.5 bg-stone-100 rounded text-stone-500">
+      <span className="px-1.5 py-0.5 bg-bg-page rounded text-text-tertiary">
         {confidencePercent}%
       </span>
       {isAutoLinked && (
@@ -155,6 +155,17 @@ function UnlinkConfirmDialog({
   );
 }
 
+export interface SessionExcerptsProps {
+  excerpts: SessionExcerpt[] | undefined;
+  selectedFile?: string | null;
+  onFileClick?: (path: string) => void;
+  onUnlink?: (sessionId: string) => void;
+  onCommitClick?: (commitSha: string) => void;
+  selectedCommitId?: string | null;
+  selectedSessionId?: string | null;
+  onSelectSession?: (sessionId: string) => void;
+}
+
 export function SessionExcerpts({
   excerpts,
   selectedFile,
@@ -164,16 +175,7 @@ export function SessionExcerpts({
   selectedCommitId,
   selectedSessionId,
   onSelectSession
-}: {
-  excerpts: SessionExcerpt[] | undefined;
-  selectedFile?: string | null;
-  onFileClick?: (path: string) => void;
-  onUnlink?: (sessionId: string) => void;
-  onCommitClick?: (commitSha: string) => void;
-  selectedCommitId?: string | null;
-  selectedSessionId?: string | null;
-  onSelectSession?: (sessionId: string) => void;
-}) {
+}: SessionExcerptsProps) {
   const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
   const [pendingUnlinkId, setPendingUnlinkId] = useState<string | null>(null);
 
@@ -187,11 +189,11 @@ export function SessionExcerpts({
           </div>
         </div>
         <div className="mt-6 flex flex-col items-center text-center py-4">
-          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-3">
-            <Upload className="w-5 h-5 text-stone-400" />
+          <div className="w-12 h-12 rounded-full bg-bg-page flex items-center justify-center mb-3">
+            <Upload className="w-5 h-5 text-text-muted" />
           </div>
-          <p className="text-sm text-stone-500 mb-1">No sessions imported yet</p>
-          <p className="text-xs text-stone-400 mb-4">Import from Claude, Cursor, or Kimi</p>
+          <p className="text-sm text-text-tertiary mb-1">No sessions imported yet</p>
+          <p className="text-xs text-text-muted mb-4">Import from Claude, Cursor, or Kimi</p>
         </div>
       </div>
     );
@@ -260,7 +262,7 @@ export function SessionExcerpts({
                 className={`px-2 py-1 rounded-md text-[11px] border ${
                   item.id === excerpt.id
                     ? 'bg-sky-50 border-sky-200 text-sky-700'
-                    : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                    : 'bg-white border-border-light text-text-secondary hover:bg-bg-subtle'
                 }`}
               >
                 {item.tool}
@@ -270,43 +272,43 @@ export function SessionExcerpts({
           </div>
         ) : null}
 
-        <div className="mt-4 grid gap-4 rounded-lg border border-stone-100 bg-stone-50 p-4">
-          <div className="flex flex-wrap gap-4 text-xs text-stone-600">
+        <div className="mt-4 grid gap-4 rounded-lg border border-border-subtle bg-bg-subtle p-4">
+          <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-stone-400">Messages</div>
+              <div className="text-[10px] uppercase tracking-wider text-text-muted">Messages</div>
               <div className="font-semibold">{excerpt.messages.length}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-stone-400">Files</div>
+              <div className="text-[10px] uppercase tracking-wider text-text-muted">Files</div>
               <div className="font-semibold">{filesTouched.length}</div>
             </div>
             {typeof excerpt.durationMin === 'number' ? (
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-stone-400">Duration</div>
+                <div className="text-[10px] uppercase tracking-wider text-text-muted">Duration</div>
                 <div className="font-semibold">{excerpt.durationMin} min</div>
               </div>
             ) : null}
           </div>
 
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-stone-400">AI-suggested highlights</div>
+            <div className="text-[10px] uppercase tracking-wider text-text-muted">AI-suggested highlights</div>
             {highlights.length > 0 ? (
-              <ul className="mt-2 list-disc pl-4 text-xs text-stone-600 space-y-1">
+              <ul className="mt-2 list-disc pl-4 text-xs text-text-secondary space-y-1">
                 {highlights.map((highlight) => (
                   <li key={highlight.id}>{highlight.text}</li>
                 ))}
               </ul>
             ) : (
-              <div className="mt-2 text-xs text-stone-400">No highlights available.</div>
+              <div className="mt-2 text-xs text-text-muted">No highlights available.</div>
             )}
-            <div className="mt-2 text-[11px] text-stone-400">
+            <div className="mt-2 text-[11px] text-text-muted">
               Review these in the Conversation panel before reusing or sharing.
             </div>
           </div>
 
           {filesTouched.length > 0 ? (
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-stone-400">Files touched</div>
+              <div className="text-[10px] uppercase tracking-wider text-text-muted">Files touched</div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {filesTouched.slice(0, 8).map((f) => (
                   <FilePill
@@ -317,7 +319,7 @@ export function SessionExcerpts({
                   />
                 ))}
                 {filesTouched.length > 8 ? (
-                  <span className="text-[11px] text-stone-400">
+                  <span className="text-[11px] text-text-muted">
                     +{filesTouched.length - 8} more
                   </span>
                 ) : null}
@@ -325,7 +327,7 @@ export function SessionExcerpts({
             </div>
           ) : null}
 
-          <div className="text-[11px] text-stone-400">
+          <div className="text-[11px] text-text-muted">
             Full conversation appears below in the Conversation panel.
           </div>
         </div>

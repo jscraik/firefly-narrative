@@ -49,10 +49,10 @@ export function AiContributionBadge({ stats, showZero = false }: AiContributionB
       };
     }
     return {
-      bg: 'bg-stone-100',
-      text: 'text-stone-600',
-      border: 'border-stone-200',
-      icon: 'text-stone-500',
+      bg: 'bg-bg-page',
+      text: 'text-text-secondary',
+      border: 'border-border-light',
+      icon: 'text-text-tertiary',
     };
   };
   

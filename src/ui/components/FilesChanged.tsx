@@ -33,14 +33,14 @@ export function FilesChanged({
   return (
     <div className="card p-5">
       <div className="section-header">{title ?? 'FILES CHANGED'}</div>
-      <div className="mt-4 divide-y divide-stone-100 border border-stone-100 rounded-lg overflow-hidden">
+      <div className="mt-4 divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden">
         {files.length === 0 ? (
           <div className="p-6 flex flex-col items-center text-center">
-            <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center mb-2">
-              <FileCode className="w-4 h-4 text-stone-400" />
+            <div className="w-10 h-10 rounded-full bg-bg-page flex items-center justify-center mb-2">
+              <FileCode className="w-4 h-4 text-text-muted" />
             </div>
-            <p className="text-sm text-stone-500">No files changed</p>
-            <p className="text-xs text-stone-400 mt-0.5">Select a commit to view changes</p>
+            <p className="text-sm text-text-tertiary">No files changed</p>
+            <p className="text-xs text-text-muted mt-0.5">Select a commit to view changes</p>
           </div>
         ) : (
           files.map((f) => (
@@ -54,12 +54,12 @@ export function FilesChanged({
               className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all ${
                 selectedFile === f.path 
                   ? 'bg-sky-50 border-l-2 border-l-sky-500 -ml-[2px] pl-[18px]' 
-                  : 'hover:bg-stone-50 border-l-2 border-l-transparent'
+                  : 'hover:bg-bg-subtle border-l-2 border-l-transparent'
               }`}
               onClick={() => selectFile(f.path)}
             >
               <div className={`truncate font-mono text-[12px] ${
-                selectedFile === f.path ? 'text-sky-700' : 'text-stone-600'
+                selectedFile === f.path ? 'text-sky-700' : 'text-text-secondary'
               }`}>
                 {f.path}
               </div>

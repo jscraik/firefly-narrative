@@ -28,7 +28,7 @@ export function NeedsAttentionList(props: {
               ) : null}
               <button
                 type="button"
-                className="inline-flex items-center rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-600 hover:bg-stone-100"
+                className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
                 onClick={() => onDismiss(issue.id)}
               >
                 Dismiss

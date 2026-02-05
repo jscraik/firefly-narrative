@@ -83,7 +83,7 @@ function DocsView(props: {
   if (repoState.status === 'loading' || isLoading) {
     return (
       <div className="h-full p-4 flex items-center justify-center">
-        <div className="text-center text-stone-500">
+        <div className="text-center text-text-tertiary">
           <div className="text-sm">Loading repository...</div>
         </div>
       </div>
@@ -238,13 +238,13 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex h-full flex-col bg-[#f5f5f4] text-stone-800">
+    <div className="flex h-full flex-col bg-bg-page text-text-primary">
       {/* Update Notification */}
       {updateStatus && (
         <UpdatePrompt
           status={updateStatus}
           onUpdate={downloadAndInstall}
-          onDismiss={dismiss}
+          onClose={dismiss}
           onCheckAgain={checkForUpdates}
         />
       )}
@@ -279,18 +279,18 @@ export default function App() {
             onClose={() => setMode('repo')}
           />
         ) : mode === 'repo' && repoState.status === 'loading' ? (
-          <div className="p-8 text-sm text-stone-500">
-            <div className="text-sm font-medium text-stone-700">Indexing repo…</div>
-            <div className="mt-2 text-xs text-stone-500">
+          <div className="p-8 text-sm text-text-tertiary">
+            <div className="text-sm font-medium text-text-secondary">Indexing repo…</div>
+            <div className="mt-2 text-xs text-text-tertiary">
               {indexingProgress?.message ?? 'Preparing index…'}
             </div>
-            <div className="mt-3 h-2 w-64 max-w-full rounded-full bg-stone-200 overflow-hidden">
+            <div className="mt-3 h-2 w-64 max-w-full rounded-full bg-border-light overflow-hidden">
               <div
                 className="h-full bg-sky-500 transition-[width] duration-300"
                 style={{ width: `${indexingProgress?.percent ?? 0}%` }}
               />
             </div>
-            <div className="mt-2 text-xs text-stone-400">
+            <div className="mt-2 text-xs text-text-muted">
               {indexingProgress?.total
                 ? `${indexingProgress.current ?? 0}/${indexingProgress.total} · ${indexingProgress.phase}`
                 : indexingProgress?.phase ?? 'loading'}
@@ -301,7 +301,7 @@ export default function App() {
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               {repoState.message}
             </div>
-            <div className="mt-4 text-sm text-stone-500">
+            <div className="mt-4 text-sm text-text-tertiary">
               Ensure the selected folder is a git repository and that <span className="font-mono">git</span> is
               available on your PATH.
             </div>

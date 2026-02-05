@@ -14,7 +14,7 @@ function TestCaseRow({ test, onFileClick }: { test: TestCase; onFileClick?: (pat
       <div className="flex items-start gap-3">
         <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm text-stone-700">{test.name}</div>
+          <div className="text-sm text-text-secondary">{test.name}</div>
           {test.errorMessage && (
             <div className="mt-1 text-xs text-red-600 font-mono">{test.errorMessage}</div>
           )}
@@ -28,7 +28,7 @@ function TestCaseRow({ test, onFileClick }: { test: TestCase; onFileClick?: (pat
             </button>
           ) : null}
         </div>
-        <div className="text-[11px] text-stone-400 tabular-nums">
+        <div className="text-[11px] text-text-muted tabular-nums">
           {(test.durationMs / 1000).toFixed(2)}s
         </div>
       </div>
@@ -53,11 +53,11 @@ export function TestResultsPanel({
       <div className={`card p-5 ${className || ''}`}>
         <div className="section-header">TEST RESULTS</div>
         <div className="mt-5 flex flex-col items-center text-center py-3">
-          <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center mb-2">
-            <Terminal className="w-4 h-4 text-stone-400" />
+          <div className="w-10 h-10 rounded-full bg-bg-page flex items-center justify-center mb-2">
+            <Terminal className="w-4 h-4 text-text-muted" />
           </div>
-          <p className="text-sm text-stone-500 mb-1">No test data available</p>
-          <p className="text-xs text-stone-400">Import from CI or run tests locally</p>
+          <p className="text-sm text-text-tertiary mb-1">No test data available</p>
+          <p className="text-xs text-text-muted">Import from CI or run tests locally</p>
         </div>
       </div>
     );
@@ -71,7 +71,7 @@ export function TestResultsPanel({
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between gap-3 p-5 hover:bg-stone-50 transition-colors"
+        className="flex w-full items-center justify-between gap-3 p-5 hover:bg-bg-subtle transition-colors"
         aria-expanded={expanded}
         aria-controls={panelId}
       >
@@ -85,7 +85,7 @@ export function TestResultsPanel({
               </span>
             )}
           </div>
-          <div className="mt-2 flex items-center gap-4 text-[11px] text-stone-500">
+          <div className="mt-2 flex items-center gap-4 text-[11px] text-text-tertiary">
             <span className="flex items-center gap-1.5">
               <XCircle className="h-3.5 w-3.5 text-red-500" />
               {testRun.failed} failed
@@ -95,24 +95,24 @@ export function TestResultsPanel({
               {testRun.passed} passed
             </span>
             <span className="flex items-center gap-1.5">
-              <HelpCircle className="h-3.5 w-3.5 text-stone-400" />
+              <HelpCircle className="h-3.5 w-3.5 text-text-muted" />
               {testRun.skipped} skipped
             </span>
             <span className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-stone-400" />
+              <Clock className="h-3.5 w-3.5 text-text-muted" />
               {testRun.durationSec.toFixed(1)}s
             </span>
           </div>
         </div>
         {expanded ? (
-          <ChevronDown className="h-4 w-4 text-stone-400" />
+          <ChevronDown className="h-4 w-4 text-text-muted" />
         ) : (
-          <ChevronUp className="h-4 w-4 text-stone-400" />
+          <ChevronUp className="h-4 w-4 text-text-muted" />
         )}
       </button>
 
       {expanded && (
-        <div id={panelId} className="border-t border-stone-100 px-5 pb-5">
+        <div id={panelId} className="border-t border-border-subtle px-5 pb-5">
           {hasFailures ? (
             <div className="mt-4">
               <div className="mb-3 flex items-center gap-2">

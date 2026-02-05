@@ -1,11 +1,20 @@
 import type { IngestToast as IngestToastType } from '../../hooks/useAutoIngest';
 
-export function IngestToast(props: { toast: IngestToastType | null }) {
+export interface IngestToastProps {
+  toast: IngestToastType | null;
+}
+
+export function IngestToast(props: IngestToastProps) {
   const { toast } = props;
   if (!toast) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 rounded-lg border border-stone-200 bg-white px-4 py-2 shadow-sm text-xs text-stone-700">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="fixed top-4 right-4 z-50 rounded-lg border border-border-light bg-white px-4 py-2 shadow-sm text-xs text-text-secondary"
+    >
       {toast.message}
     </div>
   );

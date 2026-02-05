@@ -16,7 +16,7 @@ const ROLE_CONFIG: Record<SessionMessageRole, {
   },
   assistant: {
     label: 'Assistant',
-    badgeClass: 'bg-stone-100 text-stone-700 border-stone-200',
+    badgeClass: 'bg-bg-page text-text-secondary border-border-light',
     icon: Bot,
     description: 'Assistant response'
   },
@@ -200,7 +200,7 @@ function MessageCard({
       message.role === 'thinking' ? 'bg-amber-50/50 border-amber-200' :
       message.role === 'plan' ? 'bg-violet-50/50 border-violet-200' :
       message.role === 'tool_call' ? 'bg-emerald-50/50 border-emerald-200' :
-      'bg-white border-stone-200'
+      'bg-white border-border-light'
     }`}>
       {/* Header */}
       <div className="flex items-center justify-between gap-3 min-w-0">
@@ -210,7 +210,7 @@ function MessageCard({
             {messageTitle(message)}
           </span>
         </div>
-        <span className="text-[10px] text-stone-400">
+        <span className="text-[10px] text-text-muted">
           {config.description}
         </span>
       </div>
@@ -221,9 +221,9 @@ function MessageCard({
       ) : message.role === 'tool_call' ? (
         <ToolCallDetails message={message} />
       ) : (
-        <div className="mt-2 text-sm text-stone-700 leading-relaxed whitespace-pre-wrap break-words">
+        <div className="mt-2 text-sm text-text-secondary leading-relaxed whitespace-pre-wrap break-words">
           {message.text || (
-            <span className="text-stone-400 italic">No message content</span>
+            <span className="text-text-muted italic">No message content</span>
           )}
         </div>
       )}
@@ -259,11 +259,11 @@ function EmptyState() {
         </div>
       </div>
       <div className="mt-6 flex flex-col items-center text-center py-4">
-        <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-3">
-          <Sparkles className="w-5 h-5 text-stone-400" />
+        <div className="w-12 h-12 rounded-full bg-bg-page flex items-center justify-center mb-3">
+          <Sparkles className="w-5 h-5 text-text-muted" />
         </div>
-        <p className="text-sm text-stone-500 mb-1">No conversation loaded</p>
-        <p className="text-xs text-stone-400 max-w-[280px]">
+        <p className="text-sm text-text-tertiary mb-1">No conversation loaded</p>
+        <p className="text-xs text-text-muted max-w-[280px]">
           Import a session to see the full conversation including thinking, planning, and tool calls.
         </p>
       </div>
@@ -274,7 +274,7 @@ function EmptyState() {
 function StatsBar({ stats }: { stats: Record<SessionMessageRole, number> }) {
   const items = [
     { count: stats.user, label: 'user', color: 'text-sky-600' },
-    { count: stats.assistant, label: 'assistant', color: 'text-stone-600' },
+    { count: stats.assistant, label: 'assistant', color: 'text-text-secondary' },
     { count: stats.thinking, label: 'thinking', color: 'text-amber-600' },
     { count: stats.plan, label: 'plan', color: 'text-violet-600' },
     { count: stats.tool_call, label: 'tools', color: 'text-emerald-600' },
@@ -285,7 +285,7 @@ function StatsBar({ stats }: { stats: Record<SessionMessageRole, number> }) {
       {items.map(({ count, label, color }) => (
         <span key={label} className="flex items-center gap-1">
           <span className={`font-semibold ${color}`}>{count}</span>
-          <span className="text-stone-400">{label}</span>
+          <span className="text-text-muted">{label}</span>
         </span>
       ))}
     </div>
@@ -360,7 +360,7 @@ export function TraceTranscriptPanel({
           <button
             type="button"
             onClick={() => setShowAll(!showAll)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-stone-100 text-stone-600 text-xs font-medium hover:bg-stone-200 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-bg-page text-text-secondary text-xs font-medium hover:bg-border-light transition-colors"
           >
             {showAll ? (
               <><ChevronUp className="w-3.5 h-3.5" /> Show less</>
@@ -372,7 +372,7 @@ export function TraceTranscriptPanel({
             <button
               type="button"
               onClick={handleJumpToLatest}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-stone-200 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-subtle transition-colors"
             >
               Jump to latest
             </button>

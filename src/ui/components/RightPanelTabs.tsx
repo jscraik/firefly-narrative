@@ -194,7 +194,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                   transition-all duration-150
                   ${isActive
                     ? 'bg-sky-100 text-sky-700'
-                    : 'text-stone-500 hover:bg-stone-100 hover:text-stone-700'
+                    : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary'
                   }
                   ${!hasContent && tab.id !== 'settings' ? 'opacity-60' : ''}
                 `}
@@ -227,9 +227,9 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
             />
 
             {hasAttributionContent ? (
-              <div className="card px-4 py-3 flex flex-col gap-2 text-xs text-stone-600">
-                <div className="font-semibold text-stone-700">Looking for line attribution?</div>
-                <div className="text-stone-500">
+              <div className="card px-4 py-3 flex flex-col gap-2 text-xs text-text-secondary">
+                <div className="font-semibold text-text-secondary">Looking for line attribution?</div>
+                <div className="text-text-tertiary">
                   Source Lens lives in the AI Attribution tab and shows suggested, line-by-line influence.
                   {!selectedFile ? ' Select a file in the diff to unlock it.' : ''}
                 </div>
@@ -237,7 +237,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                   <button
                     type="button"
                     onClick={() => setActiveTab('attribution')}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-bg-page text-text-secondary hover:bg-border-light transition-colors"
                   >
                     Open AI Attribution
                   </button>
@@ -273,7 +273,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
               <div className="section-subheader mt-0.5">
                 Line-by-line attribution for the selected file
               </div>
-              <div className="text-xs text-stone-500">
+              <div className="text-xs text-text-tertiary">
                 Use this to verify AI-influenced lines. Suggested only — confirm before citing or sharing.
               </div>
             </div>
@@ -287,7 +287,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                 showHeader={false}
               />
             ) : (
-              <div className="card p-5 text-sm text-stone-500">
+              <div className="card p-5 text-sm text-text-tertiary">
                 Select a file in the diff to see Source Lens attribution.
               </div>
             )}
@@ -331,7 +331,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
         <button
           type="button"
           onClick={() => setDiffExpanded(!diffExpanded)}
-          className="w-full flex items-center justify-between px-4 py-2 bg-stone-100 hover:bg-stone-200 rounded-t-lg text-xs font-medium text-stone-600 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-2 bg-bg-page hover:bg-border-light rounded-t-lg text-xs font-medium text-text-secondary transition-colors"
         >
           <span className="flex items-center gap-2">
             <FileCode className="w-3.5 h-3.5" />

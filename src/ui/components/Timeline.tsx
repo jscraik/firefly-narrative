@@ -21,7 +21,7 @@ export function Timeline({ nodes, selectedId, onSelect, pulseCommitId }: Timelin
   } = useTimelineNavigation({ nodes, selectedId, onSelect });
 
   return (
-    <div className="bg-white border-t border-stone-200 px-4 py-4">
+    <div className="bg-white border-t border-border-light px-4 py-4">
       <div className="flex items-center gap-3">
         <TimelineNavButtons
           hasPrev={hasPrev}
@@ -47,7 +47,7 @@ export function Timeline({ nodes, selectedId, onSelect, pulseCommitId }: Timelin
           }}
         >
           {/* Connection line - visible path */}
-          <div className="absolute left-0 right-0 top-[18px] h-[2px] bg-gradient-to-r from-stone-200 via-stone-300 to-stone-200" />
+          <div className="absolute left-0 right-0 top-[18px] h-[2px] bg-gradient-to-r from-border-light via-border-medium to-border-light" />
 
           <div className="relative flex min-w-max items-start gap-12 px-4 py-2">
             {sorted.map((n) => (

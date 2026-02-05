@@ -13,7 +13,7 @@ export function TimelineNavButtons({ hasPrev, hasNext, onPrev, onNext }: Timelin
       <button
         type="button"
         disabled={!hasPrev}
-        className="flex items-center justify-center w-8 h-8 rounded-lg border border-stone-200 bg-stone-50 text-stone-500 hover:bg-stone-100 hover:text-stone-700 active:bg-stone-200 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-stone-50 disabled:hover:text-stone-500"
+        className="flex items-center justify-center w-8 h-8 rounded-lg border border-border-light bg-bg-subtle text-text-tertiary hover:bg-bg-hover hover:text-text-secondary active:bg-border-light active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-bg-subtle disabled:hover:text-text-tertiary"
         onClick={onPrev}
         aria-label="Previous commit"
         title="Previous commit (Left Arrow)"
@@ -24,7 +24,7 @@ export function TimelineNavButtons({ hasPrev, hasNext, onPrev, onNext }: Timelin
       <button
         type="button"
         disabled={!hasNext}
-        className="flex items-center justify-center w-8 h-8 rounded-lg border border-stone-200 bg-stone-50 text-stone-500 hover:bg-stone-100 hover:text-stone-700 active:bg-stone-200 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-stone-50 disabled:hover:text-stone-500"
+        className="flex items-center justify-center w-8 h-8 rounded-lg border border-border-light bg-bg-subtle text-text-tertiary hover:bg-bg-hover hover:text-text-secondary active:bg-border-light active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-bg-subtle disabled:hover:text-text-tertiary"
         onClick={onNext}
         aria-label="Next commit"
         title="Next commit (Right Arrow)"

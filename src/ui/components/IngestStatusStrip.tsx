@@ -12,19 +12,19 @@ export function IngestStatusStrip(props: {
   return (
     <div className="card p-3 flex items-center justify-between gap-3">
       <div>
-        <div className="text-xs font-semibold text-stone-600">INGESTION STATUS</div>
-        <div className="text-[11px] text-stone-500 mt-0.5">
+        <div className="text-xs font-semibold text-text-secondary">INGESTION STATUS</div>
+        <div className="text-[11px] text-text-tertiary mt-0.5">
           {status.enabled ? 'On' : 'Off'} · Last import: {lastImport} · Errors: {status.errorCount}
         </div>
         {status.lastSource ? (
-          <div className="text-[11px] text-stone-400">Last source: {status.lastSource}</div>
+          <div className="text-[11px] text-text-muted">Last source: {status.lastSource}</div>
         ) : null}
       </div>
       {onToggle ? (
-        <label className="flex items-center gap-2 text-xs text-stone-600">
+        <label className="flex items-center gap-2 text-xs text-text-secondary">
           <input
             type="checkbox"
-            className="h-4 w-4 rounded border-stone-300 text-sky-600 focus:ring-sky-200"
+            className="h-4 w-4 rounded border-border-light text-sky-600 focus:ring-sky-200"
             checked={status.enabled}
             onChange={(event) => onToggle(event.target.checked)}
           />

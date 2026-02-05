@@ -257,10 +257,10 @@ function BranchViewInner(props: {
   };
 
   return (
-    <div className={`flex h-full flex-col bg-[#f5f5f4] ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 duration-150 ease-out fill-mode-forwards' : ''}`}>
+    <div className={`flex h-full flex-col bg-bg-page ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 duration-150 ease-out fill-mode-forwards' : ''}`}>
       <IngestToast toast={ingestToast ?? null} />
       <div className="flex-1 overflow-hidden">
-        <div className="flex flex-col gap-5 p-5 h-full overflow-y-auto lg:grid lg:grid-cols-12 lg:overflow-hidden">
+        <div className="flex flex-col gap-5 p-6 lg:p-8 h-full overflow-y-auto lg:grid lg:grid-cols-12 lg:overflow-hidden">
           {/* Left column */}
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
             <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />
@@ -278,10 +278,10 @@ function BranchViewInner(props: {
                   <div className="mt-4 space-y-2">
                     {['s1', 's2', 's3', 's4', 's5'].map((key) => (
                       <div key={key} className="flex items-center justify-between py-2">
-                        <div className="h-4 bg-stone-200 rounded animate-pulse w-3/4" />
+                        <div className="h-4 bg-border-light rounded animate-pulse w-3/4" />
                         <div className="flex gap-2">
-                          <div className="h-4 w-12 bg-stone-200 rounded animate-pulse" />
-                          <div className="h-4 w-12 bg-stone-200 rounded animate-pulse" />
+                          <div className="h-4 w-12 bg-border-light rounded animate-pulse" />
+                          <div className="h-4 w-12 bg-border-light rounded animate-pulse" />
                         </div>
                       </div>
                     ))}

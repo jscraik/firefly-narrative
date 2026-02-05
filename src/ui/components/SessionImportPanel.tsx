@@ -85,14 +85,14 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
   }, []);
 
   return (
-    <div className="bg-white rounded-lg border border-stone-200 p-4">
+    <div className="bg-white rounded-lg border border-border-light p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium text-stone-800">Import AI Sessions</h3>
+        <h3 className="font-medium text-text-primary">Import AI Sessions</h3>
         <button
           type="button"
           onClick={handleScan}
           disabled={scanning}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-stone-600 bg-stone-50 border border-stone-200 rounded-md hover:bg-stone-100 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary bg-bg-subtle border border-border-light rounded-md hover:bg-bg-hover disabled:opacity-50 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
           {scanning ? 'Scanning...' : 'Scan for Sessions'}
@@ -109,7 +109,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
       {sessions.length > 0 && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-stone-600">
+            <p className="text-sm text-text-secondary">
               Found {sessions.length} session file{sessions.length !== 1 ? 's' : ''}
             </p>
             {selectedPaths.size > 0 && (
@@ -125,7 +125,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
             )}
           </div>
 
-          <div className="border border-stone-200 rounded-md divide-y divide-stone-200 max-h-64 overflow-auto">
+          <div className="border border-border-light rounded-md divide-y divide-border-light max-h-64 overflow-auto">
             {sessions.map((session) => {
               const isSelected = selectedPaths.has(session.path);
               const fileName = session.path.split('/').pop() || session.path;
@@ -134,7 +134,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
               return (
                 <div
                   key={session.path}
-                  className={`flex items-center justify-between p-3 hover:bg-stone-50 transition-colors ${
+                  className={`flex items-center justify-between p-3 hover:bg-bg-subtle transition-colors ${
                     isSelected ? 'bg-sky-50' : ''
                   }`}
                 >
@@ -144,11 +144,11 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleSelection(session.path)}
-                      className="w-4 h-4 text-sky-600 border-stone-300 rounded focus:ring-sky-500"
+                      className="w-4 h-4 text-sky-600 border-border-light rounded focus:ring-sky-500"
                     />
                     <label htmlFor={checkboxId} className="cursor-pointer">
-                      <p className="text-sm font-medium text-stone-800">{fileName}</p>
-                      <p className="text-xs text-stone-500">{session.tool}</p>
+                      <p className="text-sm font-medium text-text-primary">{fileName}</p>
+                      <p className="text-xs text-text-tertiary">{session.tool}</p>
                     </label>
                   </div>
                   <button
@@ -220,11 +220,11 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
         </div>
       )}
 
-      <div className="mt-4 p-3 bg-stone-50 rounded-md">
-        <p className="text-xs text-stone-600">
+      <div className="mt-4 p-3 bg-bg-subtle rounded-md">
+        <p className="text-xs text-text-secondary">
           <strong>Supported locations:</strong> ~/.claude/projects/, ~/.cursor/composer/, ~/.continue/
         </p>
-        <p className="text-xs text-stone-500 mt-1">
+        <p className="text-xs text-text-tertiary mt-1">
           Sessions are scanned for secrets before import. Files with potential secrets will be flagged.
         </p>
       </div>

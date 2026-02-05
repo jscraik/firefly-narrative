@@ -42,6 +42,7 @@ export function DashboardHeader({
             <Calendar className="w-4 h-4 text-slate-500" />
             <div className="relative">
               <select
+                aria-label="Time range"
                 value={typeof timeRange === 'string' ? timeRange : '30d'}
                 onChange={(e) => {
                   const value = e.target.value as TimeRangePreset;

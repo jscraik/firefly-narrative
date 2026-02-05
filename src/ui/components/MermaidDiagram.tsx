@@ -48,7 +48,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   return (
     <div 
       ref={containerRef}
-      className="mermaid-diagram my-4 rounded-lg border border-stone-200 bg-white p-4 overflow-auto"
+      className="mermaid-diagram my-4 rounded-lg border border-border-light bg-white p-4 overflow-auto"
     />
   );
 }

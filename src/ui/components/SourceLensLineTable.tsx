@@ -28,7 +28,7 @@ export function SourceLensLineTable({ lines, showLineOverlays = true }: SourceLe
     <div className="max-h-[400px] overflow-auto font-mono text-xs">
       <table className="w-full table-fixed border-separate border-spacing-0" aria-label="Line attribution">
         <thead className="sticky top-0 bg-white z-10">
-          <tr className="text-[11px] text-stone-500 border-b border-stone-200">
+          <tr className="text-[11px] text-text-tertiary border-b border-border-light">
             <th scope="col" className="w-10 text-right font-medium px-4 py-2">
               Line
             </th>
@@ -46,9 +46,9 @@ export function SourceLensLineTable({ lines, showLineOverlays = true }: SourceLe
               key={line.lineNumber}
               tabIndex={0}
               aria-label={getLineAriaLabel(line)}
-              className={`border-b border-stone-50 last:border-0 transition-colors motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${showLineOverlays ? getLineColor(line.authorType) : ''}`}
+              className={`border-b border-border-subtle last:border-0 transition-colors motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${showLineOverlays ? getLineColor(line.authorType) : ''}`}
             >
-              <td className="w-10 text-right text-stone-400 select-none align-top px-4 py-1.5">
+              <td className="w-10 text-right text-text-muted select-none align-top px-4 py-1.5">
                 {line.lineNumber}
               </td>
               <td className="w-24 align-top px-0 py-1.5">
@@ -56,7 +56,7 @@ export function SourceLensLineTable({ lines, showLineOverlays = true }: SourceLe
                   <AuthorBadge line={line} />
                 </div>
               </td>
-              <td className="align-top px-4 py-1.5 text-stone-700 whitespace-pre-wrap break-words">
+              <td className="align-top px-4 py-1.5 text-text-secondary whitespace-pre-wrap break-words">
                 {line.content || ' '}
               </td>
             </tr>

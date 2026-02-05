@@ -39,15 +39,15 @@ export function SourceLensView({
     handleEnableMetadata,
   } = useSourceLensData({ repoId, commitSha, filePath });
 
-  const emptyState = SourceLensEmptyStates({
-    loading,
-    error,
-    linesLength: lines.length,
-    showHeader,
-  });
-
-  if (emptyState) {
-    return emptyState;
+  if ((loading && lines.length === 0) || error || lines.length === 0) {
+    return (
+      <SourceLensEmptyStates
+        loading={loading}
+        error={error}
+        lineCount={lines.length}
+        showHeader={showHeader}
+      />
+    );
   }
 
   const hasNote = noteSummary?.hasNote ?? false;
@@ -63,10 +63,10 @@ export function SourceLensView({
             <div className="section-subheader mt-0.5">Line-by-line attribution</div>
           </>
         ) : null}
-        <div className="mt-3 text-sm text-stone-600">
+        <div className="mt-3 text-sm text-text-secondary">
           Source Lens only works when your tools write attribution notes. It does not guess.
         </div>
-        <ol className="mt-3 list-decimal pl-5 text-xs text-stone-500 space-y-1">
+        <ol className="mt-3 list-decimal pl-5 text-xs text-text-tertiary space-y-1">
           <li>Enable Codex telemetry in Settings (or import notes from your tool).</li>
           <li>Click “Import note” to pull attribution data.</li>
           <li>Re-open this file to see AI vs human lines.</li>
@@ -76,13 +76,13 @@ export function SourceLensView({
             type="button"
             onClick={handleImportNote}
             disabled={syncing}
-            className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-medium text-text-secondary hover:bg-bg-subtle disabled:opacity-50"
           >
             Import note
           </button>
         </div>
         {syncStatus ? (
-          <div className="mt-2 text-[11px] text-stone-400">{syncStatus}</div>
+          <div className="mt-2 text-[11px] text-text-muted">{syncStatus}</div>
         ) : null}
       </div>
     );
@@ -93,7 +93,7 @@ export function SourceLensView({
 
   return (
     <div className="card overflow-hidden">
-      <div className="p-5 border-b border-stone-100">
+      <div className="p-5 border-b border-border-subtle">
         <SourceLensStats
           lines={lines}
           stats={stats}
@@ -112,7 +112,7 @@ export function SourceLensView({
       </div>
 
       {!showLineOverlays ? (
-        <div className="px-5 py-3 text-xs text-stone-400 border-b border-stone-100">
+        <div className="px-5 py-3 text-xs text-text-muted border-b border-border-subtle">
           Line overlays are hidden by preference.
         </div>
       ) : null}
@@ -120,7 +120,7 @@ export function SourceLensView({
       <SourceLensLineTable lines={lines} showLineOverlays={showLineOverlays} />
 
       {hasMore && (
-        <div className="p-3 border-t border-stone-100 text-center">
+        <div className="p-3 border-t border-border-subtle text-center">
           <button
             type="button"
             onClick={loadMore}
