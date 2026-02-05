@@ -4,7 +4,7 @@
 
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize)]
@@ -20,13 +20,20 @@ pub struct RedactionSummary {
 }
 
 lazy_static! {
-    static ref REDACTION_PATTERNS: Vec<(Regex, &'static str)> = vec![
-        (Regex::new(r"\bsk-[A-Za-z0-9]{20,}\b").expect("openai key"), "OPENAI_KEY"),
-        (Regex::new(r"\bghp_[A-Za-z0-9]{20,}\b").expect("github token"), "GITHUB_TOKEN"),
-        (Regex::new(r"\bAKIA[0-9A-Z]{16}\b").expect("aws access key"), "AWS_ACCESS_KEY"),
-        (Regex::new(r"-----BEGIN[\s\S]*?PRIVATE KEY-----[\s\S]*?-----END[\s\S]*?PRIVATE KEY-----").expect("private key"), "PRIVATE_KEY_BLOCK"),
-        (Regex::new(r"\bBearer\s+[A-Za-z0-9._-]+\b").expect("bearer token"), "BEARER_TOKEN"),
-    ];
+    static ref REDACTION_PATTERNS: Vec<(Regex, String)> = {
+        let raw = include_str!("../../../src/shared/redaction-patterns.json");
+        let patterns: Vec<RedactionPatternConfig> =
+            serde_json::from_str(raw).expect("valid redaction pattern json");
+
+        patterns
+            .into_iter()
+            .map(|pattern| {
+                let regex = Regex::new(&pattern.pattern)
+                    .unwrap_or_else(|_| panic!("valid redaction regex: {}", pattern.kind));
+                (regex, pattern.kind)
+            })
+            .collect()
+    };
 }
 
 const REDACTION_TOKEN_PREFIX: &str = "⟦REDACTED:";
@@ -96,4 +103,12 @@ fn merge_hits(target: &mut Vec<RedactionHit>, incoming: Vec<RedactionHit>) {
             target.push(hit);
         }
     }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct RedactionPatternConfig {
+    kind: String,
+    pattern: String,
+    #[allow(dead_code)]
+    flags: Option<String>,
 }

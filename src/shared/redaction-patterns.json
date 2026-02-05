@@ -1,0 +1,27 @@
+[
+  {
+    "kind": "OPENAI_KEY",
+    "pattern": "\\bsk-[A-Za-z0-9]{20,}\\b",
+    "flags": "g"
+  },
+  {
+    "kind": "GITHUB_TOKEN",
+    "pattern": "\\bghp_[A-Za-z0-9]{20,}\\b",
+    "flags": "g"
+  },
+  {
+    "kind": "AWS_ACCESS_KEY",
+    "pattern": "\\bAKIA[0-9A-Z]{16}\\b",
+    "flags": "g"
+  },
+  {
+    "kind": "PRIVATE_KEY_BLOCK",
+    "pattern": "-----BEGIN[\\s\\S]*?PRIVATE KEY-----[\\s\\S]*?-----END[\\s\\S]*?PRIVATE KEY-----",
+    "flags": "g"
+  },
+  {
+    "kind": "BEARER_TOKEN",
+    "pattern": "\\bBearer\\s+[A-Za-z0-9._-]+\\b",
+    "flags": "g"
+  }
+]

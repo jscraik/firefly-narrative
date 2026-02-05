@@ -1,3 +1,5 @@
+import redactionPatterns from '../../shared/redaction-patterns.json';
+
 export type RedactionHit = { type: string; count: number };
 
 export type RedactionResult = {
@@ -11,19 +13,28 @@ export type RedactionResult = {
  *
  * Expand as needed.
  */
-export function redactSecrets(input: string): RedactionResult {
-  const patterns: Array<{ type: string; re: RegExp }> = [
-    { type: 'OPENAI_KEY', re: /\bsk-[A-Za-z0-9]{20,}\b/g },
-    { type: 'GITHUB_TOKEN', re: /\bghp_[A-Za-z0-9]{20,}\b/g },
-    { type: 'AWS_ACCESS_KEY', re: /\bAKIA[0-9A-Z]{16}\b/g },
-    { type: 'PRIVATE_KEY_BLOCK', re: /-----BEGIN[\s\S]*?PRIVATE KEY-----[\s\S]*?-----END[\s\S]*?PRIVATE KEY-----/g },
-    { type: 'BEARER_TOKEN', re: /\bBearer\s+[A-Za-z0-9._-]+\b/g }
-  ];
+type RedactionPatternConfig = {
+  kind: string;
+  pattern: string;
+  flags?: string;
+};
 
+const compiledPatterns: Array<{ type: string; re: RegExp }> = (
+  redactionPatterns as RedactionPatternConfig[]
+).map((pattern) => {
+  const baseFlags = pattern.flags ?? '';
+  const flags = baseFlags.includes('g') ? baseFlags : `${baseFlags}g`;
+  return {
+    type: pattern.kind,
+    re: new RegExp(pattern.pattern, flags)
+  };
+});
+
+export function redactSecrets(input: string): RedactionResult {
   let redacted = input;
   const hits: RedactionHit[] = [];
 
-  for (const p of patterns) {
+  for (const p of compiledPatterns) {
     const matches = redacted.match(p.re);
     if (!matches || matches.length === 0) continue;
     hits.push({ type: p.type, count: matches.length });

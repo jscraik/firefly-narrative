@@ -7,7 +7,7 @@ use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc};
 use std::time::{Duration, Instant};
 use tauri::Emitter;
 
@@ -30,8 +30,72 @@ pub fn start_session_watcher(
     }
 
     let allowed_roots = Arc::new(existing_paths.clone());
-    let debounce_state: Arc<Mutex<HashMap<PathBuf, Instant>>> =
-        Arc::new(Mutex::new(HashMap::new()));
+    let (tx, rx) = mpsc::channel::<PathBuf>();
+
+    let worker_handle = app_handle.clone();
+    let worker_roots = Arc::clone(&allowed_roots);
+    std::thread::spawn(move || {
+        let debounce_window = Duration::from_millis(500);
+        let tick = Duration::from_millis(200);
+        let mut pending: HashMap<PathBuf, PendingEntry> = HashMap::new();
+
+        loop {
+            match rx.recv_timeout(tick) {
+                Ok(path) => {
+                    let entry = pending.entry(path.clone()).or_insert_with(PendingEntry::default);
+                    entry.last_seen = Instant::now();
+                    entry.last_sig = file_signature(&path);
+                }
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(mpsc::RecvTimeoutError::Disconnected) => break,
+            }
+
+            let now = Instant::now();
+            let mut ready = Vec::new();
+
+            for (path, entry) in pending.iter_mut() {
+                if now.duration_since(entry.last_seen) < debounce_window {
+                    continue;
+                }
+
+                if !is_under_roots(path, worker_roots.as_ref()) || is_symlink(path) {
+                    ready.push(path.clone());
+                    continue;
+                }
+
+                let current_sig = file_signature(path);
+                if current_sig.is_some() && current_sig == entry.last_sig {
+                    ready.push(path.clone());
+                } else {
+                    entry.last_seen = now;
+                    entry.last_sig = current_sig;
+                }
+            }
+
+            for path in ready {
+                pending.remove(&path);
+
+                if !is_session_file(&path) {
+                    continue;
+                }
+                if !is_under_roots(&path, worker_roots.as_ref()) || is_symlink(&path) {
+                    continue;
+                }
+
+                let path_str = path.to_string_lossy().to_string();
+                let tool = detect_tool_from_path(&path);
+                let payload = serde_json::json!({
+                    "path": path_str,
+                    "tool": tool,
+                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                });
+
+                if let Err(e) = worker_handle.emit("session-file-changed", payload) {
+                    eprintln!("Failed to emit session-file-changed: {}", e);
+                }
+            }
+        }
+    });
 
     let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
         match res {
@@ -46,63 +110,10 @@ pub fn start_session_watcher(
                         if !is_session_file(&candidate) {
                             return;
                         }
-                        if is_symlink(&candidate) {
-                            return;
-                        }
                         if !is_under_roots(&candidate, allowed_roots.as_ref()) {
                             return;
                         }
-
-                        let now = Instant::now();
-                        if let Ok(mut guard) = debounce_state.lock() {
-                            guard.insert(candidate.clone(), now);
-                        } else {
-                            return;
-                        }
-
-                        let app_handle = app_handle.clone();
-                        let debounce_state = Arc::clone(&debounce_state);
-                        let allowed_roots = Arc::clone(&allowed_roots);
-
-                        std::thread::spawn(move || {
-                            if !is_under_roots(&candidate, allowed_roots.as_ref()) {
-                                return;
-                            }
-
-                            if is_symlink(&candidate) {
-                                return;
-                            }
-
-                            if !is_file_stable(&candidate) {
-                                return;
-                            }
-
-                            let latest = debounce_state
-                                .lock()
-                                .ok()
-                                .and_then(|guard| guard.get(&candidate).copied());
-
-                            if latest != Some(now) {
-                                return;
-                            }
-
-                            let path_str = candidate.to_string_lossy().to_string();
-                            let tool = detect_tool_from_path(&candidate);
-
-                            let payload = serde_json::json!({
-                                "path": path_str,
-                                "tool": tool,
-                                "timestamp": chrono::Utc::now().to_rfc3339(),
-                            });
-
-                            if let Err(e) = app_handle.emit("session-file-changed", payload) {
-                                eprintln!("Failed to emit session-file-changed: {}", e);
-                            }
-
-                            if let Ok(mut guard) = debounce_state.lock() {
-                                guard.remove(&candidate);
-                            }
-                        });
+                        let _ = tx.send(candidate);
                     }
                 }
             }
@@ -147,20 +158,6 @@ fn is_symlink(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-fn is_file_stable(path: &Path) -> bool {
-    let Some((size_a, modified_a)) = file_signature(path) else {
-        return false;
-    };
-
-    std::thread::sleep(Duration::from_millis(500));
-
-    let Some((size_b, modified_b)) = file_signature(path) else {
-        return false;
-    };
-
-    size_a == size_b && modified_a == modified_b
-}
-
 fn file_signature(path: &Path) -> Option<(u64, std::time::SystemTime)> {
     let meta = fs::metadata(path).ok()?;
     if !meta.is_file() {
@@ -168,6 +165,21 @@ fn file_signature(path: &Path) -> Option<(u64, std::time::SystemTime)> {
     }
     let modified = meta.modified().ok()?;
     Some((meta.len(), modified))
+}
+
+#[derive(Debug)]
+struct PendingEntry {
+    last_seen: Instant,
+    last_sig: Option<(u64, std::time::SystemTime)>,
+}
+
+impl Default for PendingEntry {
+    fn default() -> Self {
+        Self {
+            last_seen: Instant::now(),
+            last_sig: None,
+        }
+    }
 }
 
 /// Check if a path is a session file we care about
