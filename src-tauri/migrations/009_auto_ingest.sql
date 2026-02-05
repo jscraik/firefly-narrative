@@ -12,6 +12,22 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_repo_dedupe
   ON sessions(repo_id, dedupe_key)
   WHERE dedupe_key IS NOT NULL;
 
+-- Ensure session_links exists for older DBs before altering
+CREATE TABLE IF NOT EXISTS session_links (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  repo_id INTEGER NOT NULL,
+  session_id TEXT NOT NULL,
+  commit_sha TEXT NOT NULL,
+  confidence REAL NOT NULL,
+  auto_linked BOOLEAN NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  UNIQUE(repo_id, session_id),
+  FOREIGN KEY(repo_id) REFERENCES repos(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_links_repo_commit ON session_links(repo_id, commit_sha);
+CREATE INDEX IF NOT EXISTS idx_session_links_repo_id ON session_links(repo_id);
+
 ALTER TABLE session_links ADD COLUMN needs_review INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS ingest_audit_log (

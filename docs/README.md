@@ -17,6 +17,7 @@ Short index of the repo’s documentation surfaces.
 - `docs/agents/testing.md` — lint, Typecheck, and test commands
 - `docs/agents/tauri.md` — tauri permissions + data locations
 - `docs/agents/repo-structure.md` — repo layout overview
+- `docs/agents/repair-agent.md` — autonomous CI repair agent workflow
 
 ## Doc tooling
 
@@ -49,4 +50,4 @@ npx -y markdownlint-cli2 README.md docs/**/*.md brand/README.md
 ## Meta
 
 - Owner: repo maintainers (update as needed)
-- Last updated: 2026-01-30
+- Last updated: 2026-02-05

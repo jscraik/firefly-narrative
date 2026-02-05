@@ -14,7 +14,7 @@ mod session_links;
 mod trace_commands;
 
 use notify::RecommendedWatcher;
-use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
 use std::sync::Arc;
 use tauri::Manager;
 use tauri_plugin_sql::{Migration, MigrationKind};
@@ -54,6 +54,46 @@ fn stop_file_watcher() -> Result<(), String> {
     if let Some(existing) = watcher.take() {
         file_watcher::stop_session_watcher(existing);
     }
+    Ok(())
+}
+
+async fn ensure_session_links_schema(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS session_links (\
+        id INTEGER PRIMARY KEY AUTOINCREMENT,\
+        repo_id INTEGER NOT NULL,\
+        session_id TEXT NOT NULL,\
+        commit_sha TEXT NOT NULL,\
+        confidence REAL NOT NULL,\
+        auto_linked BOOLEAN NOT NULL DEFAULT 1,\
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),\
+        UNIQUE(repo_id, session_id),\
+        FOREIGN KEY(repo_id) REFERENCES repos(id) ON DELETE CASCADE\
+      )",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_session_links_repo_commit ON session_links(repo_id, commit_sha)")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_session_links_repo_id ON session_links(repo_id)")
+        .execute(pool)
+        .await?;
+
+    let columns = sqlx::query("PRAGMA table_info(session_links)")
+        .fetch_all(pool)
+        .await?;
+    let has_needs_review = columns
+        .iter()
+        .any(|row| row.get::<String, _>("name") == "needs_review");
+
+    if !has_needs_review {
+        sqlx::query("ALTER TABLE session_links ADD COLUMN needs_review INTEGER NOT NULL DEFAULT 0")
+            .execute(pool)
+            .await?;
+    }
+
     Ok(())
 }
 
@@ -211,12 +251,18 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     .filename(&path)
                     .create_if_missing(true);
 
-                SqlitePool::connect_with(options)
+                let pool = SqlitePool::connect_with(options)
                     .await
                     .map_err(|e| {
                         eprintln!("Narrative: Database connection failed: {}", e);
                         format!("Failed to connect to database: {}. Please check file permissions and disk space.", e)
-                    })
+                    })?;
+
+                if let Err(e) = ensure_session_links_schema(&pool).await {
+                    eprintln!("Narrative: Failed to ensure session_links schema: {}", e);
+                }
+
+                Ok::<SqlitePool, String>(pool)
             })?;
 
             app.manage(DbState(Arc::new(pool)));

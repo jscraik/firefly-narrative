@@ -53,6 +53,7 @@ Includes:
 - `docs/agents/testing.md` — lint, Typecheck, and test commands
 - `docs/agents/tauri.md` — tauri permissions + data locations
 - `docs/agents/repo-structure.md` — repo layout overview
+- `docs/agents/repair-agent.md` — autonomous CI repair agent workflow
 - `pnpm docs:lint` — run Vale + markdownlint for docs
 
 ---

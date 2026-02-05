@@ -15,7 +15,8 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "docs:lint": "vale --minAlertLevel=warning README.md docs/README.md docs/agents/*.md && npx -y markdownlint-cli2 README.md docs/**/*.md brand/README.md"
+    "docs:lint": "vale --minAlertLevel=warning README.md docs/README.md docs/agents/*.md && npx -y markdownlint-cli2 README.md docs/**/*.md brand/README.md",
+    "repair:agent": "node scripts/repair-agent.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.13",
+    "@openai/codex": "0.97.0-alpha.4",
     "@tailwindcss/vite": "^4.1.0",
     "@tauri-apps/cli": "^2.0.0",
     "@testing-library/jest-dom": "^6.9.1",
