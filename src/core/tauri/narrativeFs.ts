@@ -33,3 +33,11 @@ export async function listNarrativeFiles(repoRoot: string, relativeDir: string):
 export async function readTextFile(absPath: string): Promise<string> {
   return await invoke<string>('read_text_file', { path: absPath });
 }
+
+/**
+ * Best-effort existence check for a repo-relative path.
+ * Used for UI hints (e.g. "mentioned file not found in this repo").
+ */
+export async function fileExists(repoRoot: string, relativePath: string): Promise<boolean> {
+  return await invoke<boolean>('file_exists', { repoRoot, relativePath });
+}

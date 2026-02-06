@@ -13,6 +13,7 @@ import { loadSessionExcerpts } from './sessions';
 import { ingestCodexOtelLogFile, scanAgentTraceRecords } from './agentTrace';
 import { loadTraceConfig } from './traceConfig';
 import { importAttributionNotesBatch } from '../attribution-api';
+import { getLatestTestRunSummaryByCommit } from './testRuns';
 
 export type IndexingProgress = {
   phase: string;
@@ -131,6 +132,14 @@ export async function indexRepo(
     console.error('[Indexer] Trace scanning failed:', e);
   }
 
+  // Test run badge hydration is best-effort; DB table may not exist on older installs.
+  let testSummaries: Awaited<ReturnType<typeof getLatestTestRunSummaryByCommit>> = {};
+  try {
+    testSummaries = await getLatestTestRunSummaryByCommit(repoId, commits.map((c) => c.sha));
+  } catch (e) {
+    console.warn('[Indexer] Test run hydration failed:', e);
+  }
+
   const timeline: TimelineNode[] = commits
     .slice()
     .reverse()
@@ -139,6 +148,16 @@ export async function indexRepo(
       const traceBadge = traceSummary
         ? { type: 'trace' as const, label: getTraceBadgeLabel(traceSummary) }
         : null;
+      const testSummary = testSummaries[c.sha];
+      const testBadge = testSummary
+        ? {
+            type: 'test' as const,
+            label: testSummary.failed > 0 ? `${testSummary.failed} failed` : `${testSummary.passed} passed`,
+            status: testSummary.failed > 0 ? 'failed' : 'passed'
+          }
+        : null;
+
+      const badges = [testBadge, traceBadge].filter(Boolean) as NonNullable<TimelineNode['badges']>;
 
       return {
         id: c.sha,
@@ -146,7 +165,8 @@ export async function indexRepo(
         label: c.subject,
         atISO: c.authoredAtISO,
         status: 'ok',
-        badges: traceBadge ? [traceBadge] : undefined
+        testRunId: testSummary?.runId,
+        badges: badges.length ? badges : undefined
       };
     });
 

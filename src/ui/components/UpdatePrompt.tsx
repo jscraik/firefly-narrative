@@ -27,17 +27,17 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
   if (status.type === 'error') {
     return (
       <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
-        <div className="rounded-xl border border-red-200 bg-red-50 shadow-lg p-4">
+        <div className="rounded-xl border border-accent-red-light bg-accent-red-bg shadow-lg p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+            <AlertCircle className="w-5 h-5 text-accent-red mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-red-800 text-sm">Update Error</div>
-              <p className="text-xs text-red-600 mt-1">{status.error}</p>
+              <div className="font-semibold text-accent-red text-sm">Update Error</div>
+              <p className="text-xs text-text-secondary mt-1">{status.error}</p>
               {onCheckAgain && (
                 <button
                   type="button"
                   onClick={onCheckAgain}
-                  className="mt-2 text-xs font-medium text-red-700 hover:text-red-900 flex items-center gap-1"
+                  className="mt-2 text-xs font-medium text-text-secondary hover:text-text-primary flex items-center gap-1"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Try Again
@@ -48,7 +48,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
               <button
                 type="button"
                 onClick={handleClose}
-                className="text-red-400 hover:text-red-600 transition-colors"
+                className="text-text-tertiary hover:text-text-secondary transition-colors"
                 aria-label="Dismiss"
               >
                 <X className="w-4 h-4" />
@@ -64,18 +64,18 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
   if (status.type === 'downloading') {
     return (
       <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
-        <div className="rounded-xl border border-sky-200 bg-sky-50 shadow-lg p-4">
+        <div className="rounded-xl border border-accent-blue-light bg-accent-blue-bg shadow-lg p-4">
           <div className="flex items-center gap-3">
-            <Loader2 className="w-5 h-5 text-sky-500 animate-spin shrink-0" />
+            <Loader2 className="w-5 h-5 text-accent-blue motion-safe:animate-spin shrink-0" />
             <div className="flex-1">
-              <div className="font-semibold text-sky-800 text-sm">Downloading Update</div>
-              <div className="mt-2 h-1.5 bg-sky-200 rounded-full overflow-hidden">
+              <div className="font-semibold text-text-primary text-sm">Downloading Update</div>
+              <div className="mt-2 h-1.5 bg-accent-blue-light rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-sky-500 transition-all duration-300"
+                  className="h-full bg-accent-blue transition-all duration-300"
                   style={{ width: `${status.progress}%` }}
                 />
               </div>
-              <div className="text-xs text-sky-600 mt-1">{status.progress}%</div>
+              <div className="text-xs text-text-tertiary mt-1">{status.progress}%</div>
             </div>
           </div>
         </div>
@@ -87,12 +87,12 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
   if (status.type === 'ready') {
     return (
       <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 shadow-lg p-4">
+        <div className="rounded-xl border border-accent-green-light bg-accent-green-bg shadow-lg p-4">
           <div className="flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+            <CheckCircle className="w-5 h-5 text-accent-green mt-0.5 shrink-0" />
             <div className="flex-1">
-              <div className="font-semibold text-emerald-800 text-sm">Update Ready</div>
-              <p className="text-xs text-emerald-600 mt-1">
+              <div className="font-semibold text-text-primary text-sm">Update Ready</div>
+              <p className="text-xs text-text-tertiary mt-1">
                 The update has been downloaded. Restart the app to apply changes.
               </p>
             </div>
@@ -100,7 +100,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
               <button
                 type="button"
                 onClick={handleClose}
-                className="text-emerald-400 hover:text-emerald-600 transition-colors"
+                className="text-text-tertiary hover:text-text-secondary transition-colors"
                 aria-label="Dismiss"
               >
                 <X className="w-4 h-4" />
@@ -119,7 +119,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
 
     return (
       <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
-        <div className="rounded-xl border border-amber-200 bg-white shadow-lg p-4">
+        <div className="rounded-xl border border-border-light bg-bg-card shadow-lg p-4">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center shrink-0">
               <Download className="w-5 h-5 text-white" />
@@ -184,7 +184,7 @@ export function UpdateIndicator({
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-100 text-amber-700 text-xs font-medium hover:bg-amber-200 transition-colors animate-pulse"
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-accent-amber-light text-amber-800 text-xs font-medium hover:bg-amber-200 transition-colors motion-safe:animate-pulse"
         title={`Update available: ${status.update.version}`}
       >
         <Download className="w-3 h-3" />

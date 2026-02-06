@@ -279,6 +279,7 @@ index 0000000..c0ffee1
       label: 'Created the parsing foundation',
       status: 'ok',
       atISO: '2026-01-17T15:00:00Z',
+      testRunId: 'tr1',
       badges: [
         { type: 'test', label: '4 failed', status: 'failed' },
         { type: 'file', label: 'validate.ts' }
@@ -290,6 +291,7 @@ index 0000000..c0ffee1
       label: 'Set up memory-efficient streaming',
       status: 'ok',
       atISO: '2026-01-18T09:00:00Z',
+      testRunId: 'tr2',
       badges: [
         { type: 'test', label: '12 passed', status: 'passed' },
         { type: 'file', label: 'schema.ts' }

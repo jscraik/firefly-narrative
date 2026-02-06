@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FileSelectionProvider, useFileSelection } from '../../core/context/FileSelectionContext';
 import { testRuns } from '../../core/demo/nearbyGridDemo';
 import type { BranchViewModel, FileChange, TestRun, TraceRange, DashboardFilter } from '../../core/types';
@@ -14,12 +14,15 @@ import { Timeline } from '../components/Timeline';
 import { IngestToast } from '../components/IngestToast';
 import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
 import type { IngestConfig, OtlpEnvStatus } from '../../core/tauri/ingestConfig';
+import { useTestImport } from '../../hooks/useTestImport';
+import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
 
 function BranchViewInner(props: {
   model: BranchViewModel;
   dashboardFilter?: DashboardFilter | null;
   onClearFilter?: () => void;
   isExitingFilteredView?: boolean;
+  updateModel: (updater: (prev: BranchViewModel) => BranchViewModel) => void;
   loadFilesForNode: (nodeId: string) => Promise<FileChange[]>;
   loadDiffForFile: (nodeId: string, filePath: string) => Promise<string>;
   loadTraceRangesForFile: (nodeId: string, filePath: string) => Promise<TraceRange[]>;
@@ -34,6 +37,7 @@ function BranchViewInner(props: {
   onPurgeAttributionMetadata?: () => void;
   onUnlinkSession?: (sessionId: string) => void;
   actionError?: string | null;
+  setActionError: (error: string | null) => void;
   onDismissActionError?: () => void;
   ingestStatus?: IngestStatus;
   ingestIssues?: IngestIssue[];
@@ -51,6 +55,7 @@ function BranchViewInner(props: {
     dashboardFilter,
     onClearFilter,
     isExitingFilteredView,
+    updateModel,
     loadFilesForNode,
     loadDiffForFile,
     loadTraceRangesForFile,
@@ -65,6 +70,7 @@ function BranchViewInner(props: {
     onPurgeAttributionMetadata,
     onUnlinkSession,
     actionError,
+    setActionError,
     onDismissActionError,
     ingestStatus,
     ingestIssues,
@@ -107,16 +113,44 @@ function BranchViewInner(props: {
     return selectedNode.id;
   }, [selectedNode]);
 
-  // Get test run for current node
-  const testRun = useMemo((): TestRun | undefined => {
+  // Demo: test run lookup is driven by node.testRunId.
+  const demoTestRun = useMemo((): TestRun | undefined => {
     if (model.source !== 'demo') return undefined;
     const node = model.timeline.find((n) => n.id === selectedNodeId);
-    if (node?.badges?.some((b) => b.type === 'test')) {
-      if (selectedNodeId === 't1') return testRuns.tr1;
-      if (selectedNodeId === 't2') return testRuns.tr2;
-    }
-    return undefined;
+    const id = node?.testRunId;
+    if (!id) return undefined;
+    return testRuns[id];
   }, [model, selectedNodeId]);
+
+  // Repo: load latest test run from DB for the selected commit.
+  const [repoTestRun, setRepoTestRun] = useState<TestRun | null>(null);
+  const [loadingTests, setLoadingTests] = useState(false);
+
+  const repoRoot = model.meta?.repoPath ?? '';
+  const repoId = model.meta?.repoId ?? null;
+
+  const refreshRepoTestRun = useCallback(async () => {
+    if (model.source !== 'git') return;
+    if (!repoId || !selectedCommitSha) {
+      setRepoTestRun(null);
+      return;
+    }
+    setLoadingTests(true);
+    try {
+      const run = await getLatestTestRunForCommit(repoId, selectedCommitSha);
+      setRepoTestRun(run);
+    } catch {
+      setRepoTestRun(null);
+    } finally {
+      setLoadingTests(false);
+    }
+  }, [model.source, repoId, selectedCommitSha]);
+
+  useEffect(() => {
+    refreshRepoTestRun();
+  }, [refreshRepoTestRun]);
+
+  const testRun = model.source === 'demo' ? demoTestRun : repoTestRun ?? undefined;
 
   // Reset selection if model changes
   useEffect(() => {
@@ -256,6 +290,21 @@ function BranchViewInner(props: {
     onRunOtlpSmokeTest(selectedNodeId, files);
   };
 
+  const { importJUnitForCommit } = useTestImport({
+    repoRoot,
+    repoId: repoId ?? 0,
+    setRepoState: updateModel,
+    setActionError,
+  });
+
+  const handleImportJUnit = async () => {
+    if (model.source !== 'git') return;
+    if (!repoId) return;
+    if (!selectedCommitSha) return;
+    await importJUnitForCommit(selectedCommitSha);
+    await refreshRepoTestRun();
+  };
+
   return (
     <div className={`flex h-full flex-col bg-bg-page ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 duration-150 ease-out fill-mode-forwards' : ''}`}>
       <IngestToast toast={ingestToast ?? null} />
@@ -338,6 +387,10 @@ function BranchViewInner(props: {
               // Tests
               testRun={testRun}
               onTestFileClick={handleFileClickFromTest}
+              loadingTests={loadingTests}
+              onImportJUnit={handleImportJUnit}
+              repoRoot={repoRoot}
+              changedFiles={files.map((f) => f.path)}
               // Diff
               selectedCommitSha={selectedCommitSha}
               repoId={model.meta?.repoId}
@@ -364,6 +417,7 @@ export function BranchView(props: {
   dashboardFilter?: DashboardFilter | null;
   onClearFilter?: () => void;
   isExitingFilteredView?: boolean;
+  updateModel: (updater: (prev: BranchViewModel) => BranchViewModel) => void;
   loadFilesForNode: (nodeId: string) => Promise<FileChange[]>;
   loadDiffForFile: (nodeId: string, filePath: string) => Promise<string>;
   loadTraceRangesForFile: (nodeId: string, filePath: string) => Promise<TraceRange[]>;
@@ -378,6 +432,7 @@ export function BranchView(props: {
   onPurgeAttributionMetadata?: () => void;
   onUnlinkSession?: (sessionId: string) => void;
   actionError?: string | null;
+  setActionError: (error: string | null) => void;
   onDismissActionError?: () => void;
   ingestStatus?: IngestStatus;
   ingestIssues?: IngestIssue[];

@@ -199,6 +199,12 @@ export type TestCase = {
 
 export type TestRun = {
   id: string;
+  /** ISO timestamp when this test run was imported into Narrative (repo mode). */
+  importedAtISO?: string;
+  /** Basename of the imported artifact (repo mode). */
+  sourceBasename?: string;
+  /** Path under `.narrative/` where the raw artifact was stored (repo mode). */
+  rawRelPath?: string;
   sessionId?: string;
   commitSha?: string;
   atISO: string;

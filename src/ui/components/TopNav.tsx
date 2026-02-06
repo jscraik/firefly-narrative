@@ -66,7 +66,7 @@ export function TopNav(props: {
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-border-light bg-white px-4 py-3">
+    <div className="flex items-center justify-between border-b border-border-light bg-bg-card px-4 py-3">
       <div className="flex items-center gap-3">
         <div className="text-sm font-bold tracking-wide text-text-primary">Narrative</div>
         <div

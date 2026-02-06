@@ -232,6 +232,30 @@ body {
   border-color: #0284c7;
 }
 
+.pill-file.best-effort {
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  border-color: var(--border-light);
+}
+
+.pill-file.best-effort:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-medium);
+  transform: none;
+}
+
+.pill-file.not-found {
+  background: var(--accent-amber-light);
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.pill-file.not-found:hover {
+  background: #fde68a;
+  border-color: #f59e0b;
+  transform: none;
+}
+
 .pill-file:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--accent-blue), 0 0 0 3px white;
@@ -437,6 +461,122 @@ body {
   }
   100% {
     box-shadow: 0 0 0 2px var(--accent-green), 0 0 8px 2px rgba(16, 185, 129, 0.2);
+  }
+}
+
+/* ------------------------------------------------------------
+ * Motion utilities
+ *
+ * Several components use classes like `animate-in`, `fade-in`,
+ * `slide-in-from-right`, etc. This file defines a small, local
+ * set of utilities to make those classnames functional (without
+ * requiring any extra Tailwind plugin).
+ *
+ * These lightweight utilities implement the same intent using
+ * Tailwind's existing `duration-*` + `ease-*` variables:
+ * - `duration-*` sets `--tw-duration`
+ * - `ease-*` sets `--tw-ease`
+ *
+ * This keeps the classnames in code meaningful while making the
+ * motion actually run.
+ * ------------------------------------------------------------ */
+
+.fill-mode-forwards {
+  animation-fill-mode: forwards;
+}
+
+.animate-in {
+  /* Defaults (overridden by helper classes below) */
+  --narrative-enter-opacity: 1;
+  --narrative-enter-translate-x: 0px;
+  --narrative-enter-translate-y: 0px;
+  --narrative-enter-scale: 1;
+
+  animation-name: narrative-enter;
+  animation-duration: var(--tw-duration, 200ms);
+  animation-timing-function: var(--tw-ease, ease-out);
+  animation-fill-mode: both;
+}
+
+.animate-out {
+  --narrative-exit-opacity: 1;
+  --narrative-exit-translate-x: 0px;
+  --narrative-exit-translate-y: 0px;
+  --narrative-exit-scale: 1;
+
+  animation-name: narrative-exit;
+  animation-duration: var(--tw-duration, 200ms);
+  animation-timing-function: var(--tw-ease, ease-out);
+  animation-fill-mode: both;
+}
+
+/* Enter helpers (used alongside `.animate-in`) */
+.fade-in {
+  --narrative-enter-opacity: 0;
+}
+
+.slide-in-from-right {
+  --narrative-enter-translate-x: 12px;
+}
+
+.slide-in-from-bottom-2 {
+  --narrative-enter-translate-y: 8px;
+}
+
+.slide-in-from-bottom-1 {
+  --narrative-enter-translate-y: 4px;
+}
+
+.zoom-in {
+  --narrative-enter-scale: 0.98;
+}
+
+/* Exit helpers (used alongside `.animate-out`) */
+.fade-out {
+  --narrative-exit-opacity: 0;
+}
+
+.slide-out-to-top-2 {
+  --narrative-exit-translate-y: -8px;
+}
+
+@keyframes narrative-enter {
+  from {
+    opacity: var(--narrative-enter-opacity, 1);
+    transform: translate3d(
+        var(--narrative-enter-translate-x, 0px),
+        var(--narrative-enter-translate-y, 0px),
+        0
+      )
+      scale(var(--narrative-enter-scale, 1));
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes narrative-exit {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: var(--narrative-exit-opacity, 1);
+    transform: translate3d(
+        var(--narrative-exit-translate-x, 0px),
+        var(--narrative-exit-translate-y, 0px),
+        0
+      )
+      scale(var(--narrative-exit-scale, 1));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-out {
+    animation: none;
+    transform: none;
   }
 }
 

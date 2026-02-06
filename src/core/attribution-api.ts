@@ -171,7 +171,8 @@ export function getTrendColor(context: TrendContext): TrendColor {
 
   if (direction === 'neutral') {
     return {
-      color: 'slate-400',
+      // Used directly as a Tailwind class in the UI.
+      color: 'text-text-muted',
       label: 'No change',
       icon: 'minus',
       ariaLabel: `${metric}: no change from previous period`,
@@ -180,7 +181,8 @@ export function getTrendColor(context: TrendContext): TrendColor {
 
   // Determine if this direction is "good" for the metric
   const isPositive = isTrendPositive(metric, direction);
-  const color = isPositive ? 'emerald-500' : 'rose-500';
+  // Used directly as a Tailwind class in the UI.
+  const color = isPositive ? 'text-accent-green' : 'text-accent-red';
   const sign = direction === 'up' ? '+' : '';
 
   return {

@@ -33,6 +33,7 @@ export function FilesChanged({
   return (
     <div className="card p-5">
       <div className="section-header">{title ?? 'FILES CHANGED'}</div>
+      <div className="section-subheader mt-0.5">From git: files changed in this commit</div>
       <div className="mt-4 divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden">
         {files.length === 0 ? (
           <div className="p-6 flex flex-col items-center text-center">
@@ -40,7 +41,7 @@ export function FilesChanged({
               <FileCode className="w-4 h-4 text-text-muted" />
             </div>
             <p className="text-sm text-text-tertiary">No files changed</p>
-            <p className="text-xs text-text-muted mt-0.5">Select a commit to view changes</p>
+            <p className="text-xs text-text-muted mt-0.5">Select a commit to see what changed</p>
           </div>
         ) : (
           files.map((f) => (
@@ -53,13 +54,13 @@ export function FilesChanged({
               aria-pressed={selectedFile === f.path}
               className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all ${
                 selectedFile === f.path 
-                  ? 'bg-sky-50 border-l-2 border-l-sky-500 -ml-[2px] pl-[18px]' 
+                  ? 'bg-accent-blue-bg border-l-2 border-l-accent-blue -ml-[2px] pl-[18px]' 
                   : 'hover:bg-bg-subtle border-l-2 border-l-transparent'
               }`}
               onClick={() => selectFile(f.path)}
             >
               <div className={`truncate font-mono text-[12px] ${
-                selectedFile === f.path ? 'text-sky-700' : 'text-text-secondary'
+                selectedFile === f.path ? 'text-accent-blue' : 'text-text-secondary'
               }`}>
                 {f.path}
               </div>

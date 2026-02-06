@@ -37,10 +37,23 @@ pub fn ensure_narrative_dirs(repo_root: String) -> Result<(), String> {
     fs::create_dir_all(base.join("meta/commits")).map_err(|e| e.to_string())?;
     fs::create_dir_all(base.join("meta/branches")).map_err(|e| e.to_string())?;
     fs::create_dir_all(base.join("sessions/imported")).map_err(|e| e.to_string())?;
+    fs::create_dir_all(base.join("tests/imported")).map_err(|e| e.to_string())?;
     fs::create_dir_all(base.join("trace")).map_err(|e| e.to_string())?;
     fs::create_dir_all(base.join("trace/generated")).map_err(|e| e.to_string())?;
     fs::create_dir_all(base.join("rules")).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn file_exists(repo_root: String, relative_path: String) -> Result<bool, String> {
+    let root = PathBuf::from(&repo_root);
+    if !root.exists() {
+        return Err(format!("repo root does not exist: {repo_root}"));
+    }
+    let root = canonicalize_existing(&root)?;
+    let rel = validate_rel(&relative_path)?;
+    let target = root.join(rel);
+    Ok(target.exists())
 }
 
 #[tauri::command(rename_all = "camelCase")]

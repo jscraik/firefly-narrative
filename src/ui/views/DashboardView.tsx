@@ -151,7 +151,7 @@ export function DashboardView({
   }
 
   return (
-    <div className="dashboard-container min-w-[800px] bg-white">
+    <div className="dashboard-container min-w-[800px] bg-bg-page">
       <DashboardHeader
         repoName={stats.repo.name}
         repoPath={stats.repo.path}

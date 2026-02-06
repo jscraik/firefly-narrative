@@ -2,6 +2,7 @@ import { Link2, Link2Off, Upload } from 'lucide-react';
 import { useState } from 'react';
 import type { SessionExcerpt } from '../../core/types';
 import { Dialog } from './Dialog';
+import { useRepoFileExistence } from '../../hooks/useRepoFileExistence';
 
 function truncateText(text: string, limit = 160) {
   const trimmed = text.trim().replace(/\s+/g, ' ');
@@ -39,6 +40,16 @@ function ToolPill({
 function collectFiles(messages: SessionExcerpt['messages']) {
   const files = messages.flatMap((m) => m.files ?? []);
   return Array.from(new Set(files));
+}
+
+function isRepoRelativePath(p: string): boolean {
+  // POSIX absolute
+  if (p.startsWith('/')) return false;
+  // Windows drive absolute
+  if (/^[A-Za-z]:[\\/]/.test(p)) return false;
+  // Avoid traversal-y looking paths (best-effort)
+  if (p.includes('..')) return false;
+  return true;
 }
 
 function selectHighlights(messages: SessionExcerpt['messages']) {
@@ -112,20 +123,38 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
 function FilePill({
   file,
   onClick,
-  isSelected
+  isSelected,
+  variant,
+  title
 }: {
   file: string;
   onClick?: () => void;
   isSelected?: boolean;
+  variant?: 'default' | 'best-effort' | 'not-found';
+  title?: string;
 }) {
+  const variantClass =
+    variant === 'not-found' ? 'not-found' : variant === 'best-effort' ? 'best-effort' : '';
+
+  if (!onClick) {
+    return (
+      <span
+        title={title ?? file}
+        className={`pill-file max-w-full truncate ${variantClass} ${isSelected ? 'selected' : ''}`}
+      >
+        {file}
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={isSelected ? `View file ${file} (selected)` : `View file ${file}`}
       aria-pressed={isSelected}
-      title={file}
-      className={`pill-file max-w-full truncate ${isSelected ? 'selected' : ''}`}
+      title={title ?? file}
+      className={`pill-file max-w-full truncate ${variantClass} ${isSelected ? 'selected' : ''}`}
     >
       {file}
     </button>
@@ -164,6 +193,8 @@ export interface SessionExcerptsProps {
   selectedCommitId?: string | null;
   selectedSessionId?: string | null;
   onSelectSession?: (sessionId: string) => void;
+  repoRoot?: string;
+  changedFiles?: string[];
 }
 
 export function SessionExcerpts({
@@ -174,12 +205,28 @@ export function SessionExcerpts({
   onCommitClick,
   selectedCommitId,
   selectedSessionId,
-  onSelectSession
+  onSelectSession,
+  repoRoot,
+  changedFiles
 }: SessionExcerptsProps) {
   const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
   const [pendingUnlinkId, setPendingUnlinkId] = useState<string | null>(null);
 
-  if (!excerpts || excerpts.length === 0) {
+  const hasExcerpts = Boolean(excerpts && excerpts.length > 0);
+  const excerpt = hasExcerpts
+    ? excerpts?.find((item) => item.id === selectedSessionId) ?? excerpts?.[0] ?? null
+    : null;
+
+  const filesTouched = excerpt ? collectFiles(excerpt.messages) : [];
+  const highlights = excerpt ? selectHighlights(excerpt.messages) : [];
+  const changedSet = new Set(changedFiles ?? []);
+  const visibleFiles = filesTouched.slice(0, 8);
+  const existsMap = useRepoFileExistence(
+    repoRoot ?? '',
+    visibleFiles.filter((p) => isRepoRelativePath(p))
+  );
+
+  if (!hasExcerpts) {
     return (
       <div className="card p-5 overflow-x-hidden">
         <div className="flex items-center justify-between">
@@ -199,12 +246,12 @@ export function SessionExcerpts({
     );
   }
 
-  const excerpt =
-    excerpts.find((item) => item.id === selectedSessionId) ?? excerpts[0];
+  if (!excerpt) {
+    // Defensive: should be impossible if hasExcerpts is true, but keeps TS happy.
+    return null;
+  }
 
-  const filesTouched = collectFiles(excerpt.messages);
-  const highlights = selectHighlights(excerpt.messages);
-
+  const allExcerpts = excerpts ?? [];
   const linkedCommitSha = excerpt.linkedCommitSha ?? null;
 
   const handleUnlinkClick = () => {
@@ -252,9 +299,9 @@ export function SessionExcerpts({
           </div>
         </div>
 
-        {excerpts.length > 1 ? (
+        {allExcerpts.length > 1 ? (
           <div className="mt-3 flex flex-wrap gap-2">
-            {excerpts.map((item) => (
+            {allExcerpts.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -279,7 +326,7 @@ export function SessionExcerpts({
               <div className="font-semibold">{excerpt.messages.length}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-text-muted">Files</div>
+              <div className="text-[10px] uppercase tracking-wider text-text-muted">Mentioned files</div>
               <div className="font-semibold">{filesTouched.length}</div>
             </div>
             {typeof excerpt.durationMin === 'number' ? (
@@ -308,15 +355,38 @@ export function SessionExcerpts({
 
           {filesTouched.length > 0 ? (
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-text-muted">Files touched</div>
+              <div className="text-[10px] uppercase tracking-wider text-text-muted">Mentioned files</div>
+              <div className="mt-1 text-[11px] text-text-muted">
+                From imported session logs. Best-effort — may not be changed in this commit.
+              </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {filesTouched.slice(0, 8).map((f) => (
-                  <FilePill
-                    key={f}
-                    file={f}
-                    isSelected={selectedFile === f}
-                    onClick={() => onFileClick?.(f)}
-                  />
+                {visibleFiles.map((f) => (
+                  (() => {
+                    const isRel = isRepoRelativePath(f);
+                    const exists = isRel ? existsMap[f] : false;
+                    const inCommit = changedSet.has(f);
+                    const variant: 'default' | 'best-effort' | 'not-found' =
+                      exists === false ? 'not-found' : inCommit ? 'default' : 'best-effort';
+                    const title = !isRel
+                      ? 'Mentioned, but the path is not repo-relative'
+                      : exists === false
+                        ? 'Mentioned, but file was not found in this repo'
+                        : inCommit
+                          ? 'Mentioned and changed in this commit'
+                          : 'Mentioned, but not changed in this commit';
+                    const clickable = isRel && exists !== false;
+
+                    return (
+                      <FilePill
+                        key={f}
+                        file={f}
+                        isSelected={selectedFile === f}
+                        variant={variant}
+                        title={title}
+                        onClick={clickable ? () => onFileClick?.(f) : undefined}
+                      />
+                    );
+                  })()
                 ))}
                 {filesTouched.length > 8 ? (
                   <span className="text-[11px] text-text-muted">

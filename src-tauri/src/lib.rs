@@ -165,6 +165,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             sql: include_str!("../migrations/009_auto_ingest.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 10,
+            description: "add_test_runs",
+            sql: include_str!("../migrations/010_test_runs.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -174,6 +180,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             commands::read_narrative_file,
             commands::list_narrative_files,
             commands::read_text_file,
+            commands::file_exists,
             // Session link commands
             session_links::create_or_update_session_link,
             session_links::get_session_links_for_repo,

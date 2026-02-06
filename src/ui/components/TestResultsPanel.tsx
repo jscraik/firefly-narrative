@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, XCircle, CheckCircle, HelpCircle, Clock, Terminal } from 'lucide-react';
 import type { TestRun, TestCase } from '../../core/types';
+import { useRepoFileExistence } from '../../hooks/useRepoFileExistence';
 
 function TestCaseRow({ test, onFileClick }: { test: TestCase; onFileClick?: (path: string) => void }) {
   const filePath = test.filePath;
@@ -39,14 +40,37 @@ function TestCaseRow({ test, onFileClick }: { test: TestCase; onFileClick?: (pat
 export function TestResultsPanel({
   testRun,
   onFileClick,
-  className
+  className,
+  selectedCommitSha,
+  onImportJUnit,
+  loading,
+  repoRoot,
+  changedFiles
 }: {
   testRun?: TestRun;
   onFileClick?: (path: string) => void;
   className?: string;
+  selectedCommitSha?: string | null;
+  onImportJUnit?: () => void;
+  loading?: boolean;
+  repoRoot?: string;
+  changedFiles?: string[];
 }) {
   const [expanded, setExpanded] = useState(true);
   const panelId = "test-results-panel";
+
+  const isRepoRelativePath = (p: string) => {
+    if (p.startsWith('/')) return false;
+    if (/^[A-Za-z]:[\\/]/.test(p)) return false;
+    if (p.includes('..')) return false;
+    return true;
+  };
+
+  const mentionedFiles = testRun
+    ? Array.from(new Set(testRun.tests.map((t) => t.filePath).filter((p): p is string => Boolean(p)))).slice(0, 8)
+    : [];
+  const changedSet = new Set(changedFiles ?? []);
+  const existsMap = useRepoFileExistence(repoRoot ?? '', mentionedFiles.filter((p) => isRepoRelativePath(p)));
 
   if (!testRun) {
     return (
@@ -56,8 +80,22 @@ export function TestResultsPanel({
           <div className="w-10 h-10 rounded-full bg-bg-page flex items-center justify-center mb-2">
             <Terminal className="w-4 h-4 text-text-muted" />
           </div>
-          <p className="text-sm text-text-tertiary mb-1">No test data available</p>
-          <p className="text-xs text-text-muted">Import from CI or run tests locally</p>
+          <p className="text-sm text-text-tertiary mb-1">
+            {selectedCommitSha ? 'No test results for this commit yet' : 'Select a commit to view tests'}
+          </p>
+          <p className="text-xs text-text-muted">
+            Narrative doesn’t fetch CI automatically. Import a JUnit XML file to attach results here.
+          </p>
+          {selectedCommitSha && onImportJUnit ? (
+            <button
+              type="button"
+              onClick={onImportJUnit}
+              disabled={loading}
+              className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-page text-text-secondary hover:bg-border-light transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              Import JUnit XML…
+            </button>
+          ) : null}
         </div>
       </div>
     );
@@ -113,6 +151,53 @@ export function TestResultsPanel({
 
       {expanded && (
         <div id={panelId} className="border-t border-border-subtle px-5 pb-5">
+          <div className="mt-4 text-[11px] text-text-muted">
+            Imported JUnit XML
+            {testRun.sourceBasename ? ` · ${testRun.sourceBasename}` : ''}
+            {testRun.importedAtISO ? ` · ${new Date(testRun.importedAtISO).toLocaleString()}` : ''}
+          </div>
+
+          {mentionedFiles.length > 0 ? (
+            <div className="mt-4">
+              <div className="text-[10px] uppercase tracking-wider text-text-muted">Mentioned files</div>
+              <div className="mt-1 text-[11px] text-text-muted">
+                From imported test results. Best-effort — may not be changed in this commit.
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {mentionedFiles.map((f) => {
+                  const isRel = isRepoRelativePath(f);
+                  const exists = isRel ? existsMap[f] : false;
+                  const inCommit = changedSet.has(f);
+                  const variantClass =
+                    exists === false ? 'not-found' : inCommit ? '' : 'best-effort';
+                  const title = !isRel
+                    ? 'Mentioned, but the path is not repo-relative'
+                    : exists === false
+                      ? 'Mentioned, but file was not found in this repo'
+                      : inCommit
+                        ? 'Mentioned and changed in this commit'
+                        : 'Mentioned, but not changed in this commit';
+                  const clickable = isRel && exists !== false;
+                  return clickable ? (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => onFileClick?.(f)}
+                      title={title}
+                      className={`pill-file max-w-full truncate ${variantClass}`}
+                    >
+                      {f}
+                    </button>
+                  ) : (
+                    <span key={f} title={title} className={`pill-file max-w-full truncate ${variantClass}`}>
+                      {f}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           {hasFailures ? (
             <div className="mt-4">
               <div className="mb-3 flex items-center gap-2">

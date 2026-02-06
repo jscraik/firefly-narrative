@@ -309,6 +309,12 @@ export default function App() {
         ) : commitData.model ? (
           <BranchView
             model={commitData.model}
+            updateModel={(updater) => {
+              setRepoState((prev) => {
+                if (prev.status !== 'ready') return prev;
+                return { ...prev, model: updater(prev.model) };
+              });
+            }}
             dashboardFilter={dashboardFilter}
             onClearFilter={handleClearFilter}
             isExitingFilteredView={isExitingFilteredView}
@@ -326,6 +332,7 @@ export default function App() {
             onPurgeAttributionMetadata={purgeAttributionMetadata}
             onUnlinkSession={sessionImportHandlers.unlinkSession}
             actionError={actionError}
+            setActionError={setActionError}
             onDismissActionError={() => setActionError(null)}
             ingestStatus={autoIngest.ingestStatus}
             ingestIssues={autoIngest.issues}
