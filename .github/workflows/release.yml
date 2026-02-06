@@ -97,6 +97,16 @@ jobs:
       - name: Build frontend
         run: pnpm build
 
+      - name: Resolve GitHub Release ID (by tag)
+        id: resolve_release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            const { owner, repo } = context.repo;
+            const { data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            core.setOutput('release_id', String(release.id));
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
@@ -104,90 +114,42 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: v__VERSION__
-          releaseName: 'Narrative MVP v__VERSION__'
-          releaseBody: |
-            ## What's New
-            
-            See the [CHANGELOG.md](../CHANGELOG.md) for full details.
-            
-            ## Installation
-            
-            ### macOS
-            - Download `Narrative MVP_*.dmg` for easy installation (Intel or Apple Silicon)
-            - Or download `.app.tar.gz` and extract manually
-            
-            ### Windows
-            - Download `Narrative MVP_x64-setup.exe` for installer
-            - Or download `.msi` for enterprise deployment
-            
-            ### Linux
-            - Download `.AppImage` for portable use
-            - Or download `.deb` (Debian/Ubuntu) or `.rpm` (Fedora)
-            
-            ## Auto-Update
-            This release supports automatic updates. The app will check for updates on launch.
-          releaseDraft: true
+          tagName: ${{ github.ref_name }}
+          releaseId: ${{ steps.resolve_release.outputs.release_id }}
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
-  # Update latest.json for updater
-  update-latest:
+  verify-release-assets:
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     if: always() && needs.build.result == 'success'
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Get release info
-        id: get_release
+      - name: Verify required assets exist on the tag release
         uses: actions/github-script@v7
         with:
           script: |
-            const { data: release } = await github.rest.repos.getLatestRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            });
-            core.setOutput('upload_url', release.upload_url);
-            core.setOutput('tag_name', release.tag_name);
+            const tag = context.ref.replace('refs/tags/', '');
+            const { owner, repo } = context.repo;
 
-      - name: Generate latest.json
-        run: |
-          VERSION="${{ steps.get_release.outputs.tag_name }}"
-          cat > latest.json << EOF
-          {
-            "version": "$VERSION",
-            "notes": "See release notes at https://github.com/jscraik/narrative/releases/tag/$VERSION",
-            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "platforms": {
-              "darwin-aarch64": {
-                "signature": "",
-                "url": "https://github.com/jscraik/narrative/releases/download/$VERSION/Narrative%20MVP_aarch64.app.tar.gz"
-              },
-              "darwin-x86_64": {
-                "signature": "",
-                "url": "https://github.com/jscraik/narrative/releases/download/$VERSION/Narrative%20MVP_x64.app.tar.gz"
-              },
-              "linux-x86_64": {
-                "signature": "",
-                "url": "https://github.com/jscraik/narrative/releases/download/$VERSION/Narrative%20MVP_amd64.AppImage"
-              },
-              "windows-x86_64": {
-                "signature": "",
-                "url": "https://github.com/jscraik/narrative/releases/download/$VERSION/Narrative%20MVP_x64-setup.exe"
+            const { data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            const names = new Set((release.assets || []).map(a => a.name));
+
+            const requiredAny = [
+              // macOS: require at least one DMG (arch-specific names vary by tauri-action config)
+              { label: 'macOS DMG', predicate: (n) => n.toLowerCase().endsWith('.dmg') },
+              // Updater: latest.json must exist for the configured endpoint
+              { label: 'latest.json', predicate: (n) => n === 'latest.json' },
+            ];
+
+            for (const req of requiredAny) {
+              const ok = Array.from(names).some(req.predicate);
+              if (!ok) {
+                core.setFailed(`Missing required release asset: ${req.label}. Assets: ${Array.from(names).join(', ')}`);
+                return;
               }
             }
-          }
-          EOF
 
-      - name: Upload latest.json to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ./latest.json
-          asset_name: latest.json
-          asset_content_type: application/json
+            core.info(`Release ${tag} has DMG + latest.json. Asset count: ${names.size}`);

@@ -39,21 +39,20 @@ A Tauri desktop app that layers AI session narratives onto git history.
 **All updates MUST be published through GitHub Releases.** Do not create manual DMG files.
 
 ### Release Process
-**Use the helper script (recommended):**
+**Recommended (fully automated):**
+1. Merge normal PRs into `main` using conventional commits (`feat:`, `fix:`, etc.)
+2. A bot (`release-please`) opens/updates a **Release PR** that bumps versions + updates `CHANGELOG.md`
+3. Merge the Release PR → it creates tag `vX.Y.Z` + a published GitHub Release
+
+**Fallback (manual trigger):**
 ```bash
 ./scripts/release.sh 0.2.1
 ```
 
-**Or manually:**
-1. Update version in `package.json` and `src-tauri/tauri.conf.json`
-2. Create a git tag: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`
-3. Push the tag: `git push origin vX.Y.Z`
-
 **The GitHub Action** (`.github/workflows/release.yml`) will automatically:
 - Build for all platforms (macOS Intel/Apple Silicon, Windows, Linux)
-- Create a GitHub Release with artifacts
-- Generate and upload `latest.json` for auto-updater
-- Sign artifacts with Tauri signing key
+- Upload build artifacts (including DMGs) to the tag’s GitHub Release
+- Publish updater artifacts for auto-update (including `latest.json` + signatures)
 
 ### Why GitHub Releases?
 - Enables automatic updates for existing users
@@ -78,6 +77,7 @@ Manual DMG files in the repo root (e.g., `Narrative-MVP-v0.1.x-AppleSilicon.dmg`
 The GitHub Action requires these secrets in the repository settings:
 - `TAURI_SIGNING_PRIVATE_KEY` - The private key for signing updates (generate with `pnpm tauri signer generate`)
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` - Password for the private key
+- `RELEASE_PLEASE_TOKEN` - GitHub PAT used by release-please to open the Release PR and create tags/releases (must not be `GITHUB_TOKEN`)
 
 To generate a new signing key:
 ```bash
