@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
 Generate Tauri app icons using Pillow (Python Imaging Library).
-Creates an icon that matches the app's warm stone + sky blue aesthetic.
+
+IMPORTANT:
+- This script MUST output the filenames referenced by `src-tauri/tauri.conf.json`
+  (e.g. `32x32.png`, `128x128.png`, `128x128@2x.png`, `icon.icns`, `icon.ico`).
+- The design should match Narrative’s UI: minimal, professional, calm.
 """
 
 import os
@@ -12,29 +16,29 @@ from PIL import Image, ImageDraw, ImageFilter
 
 def create_icon(size):
     """Create the Narrative app icon at the specified size.
-    
-    Design matches the app aesthetic:
-    - Warm stone gray background (like --bg-page: #f5f5f4)
-    - Sky blue accent (#0ea5e9) for the timeline/nodes
-    - White elements with subtle shadows
-    - Rounded corners matching iOS style
+
+    Design goals:
+    - Minimal + professional (reads well at 16–32px)
+    - Consistent with the app UI palette (warm stone + sky)
+    - A single “narrative thread” mark (curve + nodes), not busy detail
     """
-    # App color palette
-    stone_100 = (245, 245, 244)      # #f5f5f4 - main background
-    stone_200 = (231, 229, 228)      # #e7e5e4 - subtle variation
-    stone_300 = (214, 211, 209)      # #d6d3d1 - border/line
-    sky_500 = (14, 165, 233)         # #0ea5e9 - accent blue
-    sky_600 = (2, 132, 199)          # #0284c7 - darker blue
+    # App color palette (aligned to UI)
+    stone_100 = (245, 245, 244)  # #f5f5f4 - background
+    stone_200 = (231, 229, 228)  # #e7e5e4 - subtle gradient
+    stone_300 = (214, 211, 209)  # #d6d3d1 - border
+    stone_400 = (168, 162, 158)  # #a8a29e - muted stroke
+    sky_500 = (14, 165, 233)     # #0ea5e9 - accent
+    sky_600 = (2, 132, 199)      # #0284c7 - deeper accent
     white = (255, 255, 255)
     
-    # Corner radius (22% of size for iOS-style rounded corners)
+    # macOS/iOS style rounded corners
     corner_radius = int(size * 0.22)
     
     # Create base image with subtle gradient (stone-100 to stone-200)
     img = Image.new('RGB', (size, size), stone_100)
     draw = ImageDraw.Draw(img)
     
-    # Add subtle gradient overlay
+    # Subtle vertical gradient overlay
     for y in range(size):
         ratio = y / size
         r = int(stone_100[0] + (stone_200[0] - stone_100[0]) * ratio * 0.3)
@@ -58,64 +62,48 @@ def create_icon(size):
     
     # Calculate sizes based on icon size
     center = size // 2
-    line_width = max(4, size // 24)
-    node_radius = max(10, size // 14)
+    # Geometry tuned to remain readable at small sizes
+    line_width = max(6, size // 16)
+    node_radius = max(8, size // 10)
+
+    # “Narrative thread”: a single, bold curve with two nodes.
+    # Coordinates are normalized so the mark remains optically centered.
+    x0 = int(size * 0.20)
+    x1 = int(size * 0.80)
+    y_mid = int(size * 0.52)
+    y_top = int(size * 0.36)
+    y_bot = int(size * 0.68)
+
+    # Shadow (very subtle) for the whole mark
+    shadow = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadow)
+    sd.line([(x0, y_top), (center, y_mid), (x1, y_bot)], fill=(0, 0, 0, 55), width=line_width)
+    sd.ellipse([x0 - node_radius, y_top - node_radius, x0 + node_radius, y_top + node_radius], fill=(0, 0, 0, 55))
+    sd.ellipse([x1 - node_radius, y_bot - node_radius, x1 + node_radius, y_bot + node_radius], fill=(0, 0, 0, 55))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(radius=max(1, size // 64)))
+    img.alpha_composite(shadow, (0, int(size * 0.02)))
+
+    # Main curve (accent)
+    draw.line([(x0, y_top), (center, y_mid), (x1, y_bot)], fill=sky_500, width=line_width, joint="curve")
+
+    # Nodes: solid accent with thin light ring (keeps crisp at 32px)
+    ring_w = max(2, size // 96)
+    for (cx, cy) in [(x0, y_top), (x1, y_bot)]:
+        draw.ellipse([cx - node_radius - ring_w, cy - node_radius - ring_w,
+                      cx + node_radius + ring_w, cy + node_radius + ring_w],
+                     fill=white)
+        draw.ellipse([cx - node_radius, cy - node_radius,
+                      cx + node_radius, cy + node_radius],
+                     fill=sky_600)
     
-    # Draw the timeline/narrative flow with app colors
-    # Main connecting line (stone-300, subtle)
-    start_x = int(size * 0.18)
-    end_x = int(size * 0.82)
-    line_y = center
-    
-    # Draw subtle connecting line
-    draw.line([(start_x, line_y), (end_x, line_y)], 
-              fill=stone_300, width=line_width)
-    
-    # Draw nodes with sky blue accent (matching app UI)
-    # Start node (smaller)
-    start_pos = (start_x, line_y)
-    draw.ellipse([start_pos[0] - node_radius, start_pos[1] - node_radius,
-                  start_pos[0] + node_radius, start_pos[1] + node_radius], 
-                 fill=white, outline=stone_300, width=2)
-    draw.ellipse([start_pos[0] - node_radius//2, start_pos[1] - node_radius//2,
-                  start_pos[0] + node_radius//2, start_pos[1] + node_radius//2], 
-                 fill=stone_300)
-    
-    # Middle node (larger, primary accent)
-    mid_pos = (center, line_y)
-    mid_radius = int(node_radius * 1.3)
-    # Shadow/glow effect
-    shadow_offset = 3
-    draw.ellipse([mid_pos[0] - mid_radius + shadow_offset, mid_pos[1] - mid_radius + shadow_offset,
-                  mid_pos[0] + mid_radius + shadow_offset, mid_pos[1] + mid_radius + shadow_offset], 
-                 fill=(*stone_200, 100))
-    # Main node
-    draw.ellipse([mid_pos[0] - mid_radius, mid_pos[1] - mid_radius,
-                  mid_pos[0] + mid_radius, mid_pos[1] + mid_radius], 
-                 fill=white, outline=sky_500, width=3)
-    # Inner accent
-    inner_radius = int(mid_radius * 0.6)
-    draw.ellipse([mid_pos[0] - inner_radius, mid_pos[1] - inner_radius,
-                  mid_pos[0] + inner_radius, mid_pos[1] + inner_radius], 
-                 fill=sky_500)
-    
-    # End node
-    end_pos = (end_x, line_y)
-    draw.ellipse([end_pos[0] - node_radius, end_pos[1] - node_radius,
-                  end_pos[0] + node_radius, end_pos[1] + node_radius], 
-                 fill=white, outline=stone_300, width=2)
-    draw.ellipse([end_pos[0] - node_radius//2, end_pos[1] - node_radius//2,
-                  end_pos[0] + node_radius//2, end_pos[1] + node_radius//2], 
-                 fill=stone_300)
-    
-    # Add subtle inner border/highlight (like cards in the app)
+    # Subtle inner border to match card surfaces
     border_width = max(1, size // 256)
-    padding = size // 40
+    padding = size // 36
     draw.rounded_rectangle(
         [padding, padding, size - padding, size - padding],
-        radius=corner_radius - padding,
-        outline=(*white, 80),
-        width=border_width
+        radius=max(1, corner_radius - padding),
+        outline=(*stone_400, 55),
+        width=border_width,
     )
     
     return img
@@ -170,17 +158,30 @@ def main():
     icons_dir.mkdir(parents=True, exist_ok=True)
     iconset_dir.mkdir(parents=True, exist_ok=True)
     
-    # Generate standard Tauri icon sizes
+    # Generate standard icon sizes (we'll also write filenames Tauri expects)
     print("=== Generating PNG Icons ===")
-    standard_sizes = [32, 128, 256, 512, 1024]
+    standard_sizes = [32, 64, 128, 256, 512, 1024]
     generated_images = {}
     
     for size in standard_sizes:
         img = create_icon(size)
-        png_path = icons_dir / f"icon{size}x{size}.png"
-        img.save(png_path, 'PNG')
         generated_images[size] = img
-        print(f"  icon{size}x{size}.png")
+        # Keep `icon{size}x{size}.png` for convenience/debugging
+        debug_path = icons_dir / f"icon{size}x{size}.png"
+        img.save(debug_path, 'PNG')
+        print(f"  {debug_path.name}")
+
+    # Write the exact filenames referenced by tauri.conf.json
+    # bundle.icon = ["icons/32x32.png","icons/128x128.png","icons/128x128@2x.png",...]
+    tauri_named = [
+        (32, "32x32.png"),
+        (64, "64x64.png"),
+        (128, "128x128.png"),
+        (256, "128x128@2x.png"),
+    ]
+    for sz, name in tauri_named:
+        generated_images[1024].resize((sz, sz), Image.Resampling.LANCZOS).save(icons_dir / name, 'PNG')
+        print(f"  {name}")
     
     # Create main icon.png (copy of 1024)
     main_icon_path = icons_dir / "icon.png"
@@ -223,11 +224,25 @@ def main():
     ico_path = icons_dir / "icon.ico"
     create_ico(list(generated_images.values()), ico_path)
     
-    # Create StoreLogo
+    # Windows Store assets (keep in sync so packaging looks consistent)
     store_logo = icons_dir / "StoreLogo.png"
-    store_img = generated_images[1024].resize((50, 50), Image.Resampling.LANCZOS)
-    store_img.save(store_logo, 'PNG')
-    print(f"  StoreLogo.png")
+    generated_images[1024].resize((50, 50), Image.Resampling.LANCZOS).save(store_logo, 'PNG')
+    print("  StoreLogo.png")
+
+    square_logos = [
+        (30, "Square30x30Logo.png"),
+        (44, "Square44x44Logo.png"),
+        (71, "Square71x71Logo.png"),
+        (89, "Square89x89Logo.png"),
+        (107, "Square107x107Logo.png"),
+        (142, "Square142x142Logo.png"),
+        (150, "Square150x150Logo.png"),
+        (284, "Square284x284Logo.png"),
+        (310, "Square310x310Logo.png"),
+    ]
+    for sz, name in square_logos:
+        generated_images[1024].resize((sz, sz), Image.Resampling.LANCZOS).save(icons_dir / name, 'PNG')
+        # too noisy to print each; keep list at end
     
     print()
     print("=== Icon Generation Complete ===")

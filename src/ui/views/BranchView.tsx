@@ -3,10 +3,11 @@ import { FileSelectionProvider, useFileSelection } from '../../core/context/File
 import { testRuns } from '../../core/demo/nearbyGridDemo';
 import type { BranchViewModel, FileChange, TestRun, TraceRange, DashboardFilter } from '../../core/types';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
+import type { ActivityEvent } from '../../core/tauri/activity';
 import { BranchHeader } from '../components/BranchHeader';
+import { CaptureActivityStrip } from '../components/CaptureActivityStrip';
 import { FilesChanged } from '../components/FilesChanged';
 import { ImportErrorBanner } from '../components/ImportErrorBanner';
-import { IngestStatusStrip } from '../components/IngestStatusStrip';
 import { IntentList } from '../components/IntentList';
 import { NeedsAttentionList } from '../components/NeedsAttentionList';
 import { RightPanelTabs } from '../components/RightPanelTabs';
@@ -40,6 +41,8 @@ function BranchViewInner(props: {
   setActionError: (error: string | null) => void;
   onDismissActionError?: () => void;
   ingestStatus?: IngestStatus;
+  ingestActivityRecent?: ActivityEvent[];
+  onRequestIngestActivityAll?: () => Promise<ActivityEvent[]>;
   ingestIssues?: IngestIssue[];
   onDismissIngestIssue?: (id: string) => void;
   onToggleAutoIngest?: (enabled: boolean) => void;
@@ -75,6 +78,8 @@ function BranchViewInner(props: {
     setActionError,
     onDismissActionError,
     ingestStatus,
+    ingestActivityRecent,
+    onRequestIngestActivityAll,
     ingestIssues,
     onDismissIngestIssue,
     onToggleAutoIngest,
@@ -318,7 +323,21 @@ function BranchViewInner(props: {
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
             <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />
             {ingestStatus ? (
-              <IngestStatusStrip status={ingestStatus} onToggle={onToggleAutoIngest} />
+              <CaptureActivityStrip
+                enabled={ingestStatus.enabled}
+                sourcesLabel={(() => {
+                  const out: string[] = [];
+                  if (discoveredSources?.claude?.length) out.push('Claude');
+                  if (discoveredSources?.cursor?.length) out.push('Cursor');
+                  if (discoveredSources?.codexLogs?.length) out.push('Codex');
+                  return out.join(', ');
+                })()}
+                issueCount={ingestStatus.errorCount}
+                lastSeenISO={ingestStatus.lastImportAt}
+                recent={ingestActivityRecent ?? []}
+                onToggle={onToggleAutoIngest}
+                onRequestAll={onRequestIngestActivityAll}
+              />
             ) : null}
             {ingestIssues && onDismissIngestIssue ? (
               <NeedsAttentionList issues={ingestIssues} onDismiss={onDismissIngestIssue} />
@@ -441,6 +460,8 @@ export function BranchView(props: {
   setActionError: (error: string | null) => void;
   onDismissActionError?: () => void;
   ingestStatus?: IngestStatus;
+  ingestActivityRecent?: ActivityEvent[];
+  onRequestIngestActivityAll?: () => Promise<ActivityEvent[]>;
   ingestIssues?: IngestIssue[];
   onDismissIngestIssue?: (id: string) => void;
   onToggleAutoIngest?: (enabled: boolean) => void;

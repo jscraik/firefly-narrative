@@ -417,6 +417,14 @@ pub async fn auto_import_session_file(
     repo_id: i64,
     file_path: String,
 ) -> Result<AutoImportResult, String> {
+    auto_import_session_file_inner(&db.0, repo_id, file_path).await
+}
+
+async fn auto_import_session_file_inner(
+    db: &sqlx::SqlitePool,
+    repo_id: i64,
+    file_path: String,
+) -> Result<AutoImportResult, String> {
     let registry = ParserRegistry::new();
     let path = std::path::Path::new(&file_path);
 
@@ -425,7 +433,7 @@ pub async fn auto_import_session_file(
         ParseResult::Partial(parsed, _warnings) => parsed,
         ParseResult::Failure(e) => {
             log_auto_ingest(
-                &db.0,
+                db,
                 repo_id,
                 "unknown",
                 Some(&file_path),
@@ -443,7 +451,7 @@ pub async fn auto_import_session_file(
     let dedupe_key = build_dedupe_key(&redacted_session);
 
     let session_id = match store_session_with_meta(
-        &db.0,
+        db,
         repo_id,
         &redacted_session,
         Some(&file_path),
@@ -455,7 +463,7 @@ pub async fn auto_import_session_file(
         Ok(id) => id,
         Err(StoreSessionError::Duplicate) => {
             log_auto_ingest(
-                &db.0,
+                db,
                 repo_id,
                 &redacted_session.origin.tool,
                 Some(&file_path),
@@ -472,7 +480,7 @@ pub async fn auto_import_session_file(
         }
         Err(StoreSessionError::Db(err)) => {
             log_auto_ingest(
-                &db.0,
+                db,
                 repo_id,
                 &redacted_session.origin.tool,
                 Some(&file_path),
@@ -487,7 +495,7 @@ pub async fn auto_import_session_file(
     };
 
     let (link_result, link_error) = match link_session_to_commit_internal(
-        &db.0,
+        db,
         repo_id,
         &redacted_session,
         &session_id,
@@ -499,7 +507,7 @@ pub async fn auto_import_session_file(
     };
 
     log_auto_ingest(
-        &db.0,
+        db,
         repo_id,
         &redacted_session.origin.tool,
         Some(&file_path),
@@ -516,6 +524,136 @@ pub async fn auto_import_session_file(
         redaction.total as i64,
         link_result.map(|result| result.needs_review).unwrap_or(false),
     ))
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackfillResult {
+    pub attempted: i64,
+    pub imported: i64,
+    pub skipped: i64,
+    pub failed: i64,
+}
+
+fn expand_home(raw: &str) -> std::path::PathBuf {
+    if let Some(stripped) = raw.strip_prefix("~/") {
+        if let Some(home) = dirs::home_dir() {
+            return home.join(stripped);
+        }
+    }
+    std::path::PathBuf::from(raw)
+}
+
+fn collect_recent_files(
+    roots: &[String],
+    predicate: impl Fn(&std::path::Path) -> bool,
+    max_scan: usize,
+) -> Vec<(std::path::PathBuf, std::time::SystemTime)> {
+    let mut out: Vec<(std::path::PathBuf, std::time::SystemTime)> = Vec::new();
+
+    fn walk(
+        dir: &std::path::Path,
+        predicate: &impl Fn(&std::path::Path) -> bool,
+        out: &mut Vec<(std::path::PathBuf, std::time::SystemTime)>,
+        max_scan: usize,
+    ) {
+        if out.len() >= max_scan {
+            return;
+        }
+        let Ok(entries) = std::fs::read_dir(dir) else { return; };
+        for entry in entries.flatten() {
+            if out.len() >= max_scan {
+                return;
+            }
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path, predicate, out, max_scan);
+            } else if predicate(&path) {
+                if let Ok(meta) = std::fs::metadata(&path) {
+                    if let Ok(mtime) = meta.modified() {
+                        out.push((path, mtime));
+                    }
+                }
+            }
+        }
+    }
+
+    for root in roots {
+        let p = expand_home(root);
+        if p.exists() && p.is_dir() {
+            walk(&p, &predicate, &mut out, max_scan);
+        }
+    }
+
+    out.sort_by(|a, b| b.1.cmp(&a.1));
+    out
+}
+
+/// Backfill recent session files from configured capture sources.
+///
+/// This is used to make the UI feel alive immediately after enabling auto-ingest.
+#[tauri::command(rename_all = "camelCase")]
+pub async fn backfill_recent_sessions(
+    db: State<'_, DbState>,
+    repo_id: i64,
+    limit_per_tool: i64,
+) -> Result<BackfillResult, String> {
+    let config = crate::ingest_config::load_config().unwrap_or_default();
+    let limit = limit_per_tool.clamp(1, 50) as usize;
+
+    let mut candidates: Vec<String> = Vec::new();
+
+    // Claude session files
+    let claude = collect_recent_files(
+        &config.watch_paths.claude,
+        |p| p.extension().map(|e| e == "jsonl").unwrap_or(false) && p.to_string_lossy().contains(".claude"),
+        5000,
+    );
+    candidates.extend(
+        claude
+            .into_iter()
+            .take(limit)
+            .map(|(p, _)| p.to_string_lossy().to_string()),
+    );
+
+    // Codex logs (fallback)
+    if config.codex.mode == "logs" || config.codex.mode == "both" {
+        let codex = collect_recent_files(
+            &config.watch_paths.codex_logs,
+            |p| p.to_string_lossy().contains(".codex") && p.to_string_lossy().contains(".log"),
+            5000,
+        );
+        candidates.extend(
+            codex
+                .into_iter()
+                .take(limit)
+                .map(|(p, _)| p.to_string_lossy().to_string()),
+        );
+    }
+
+    let mut attempted = 0i64;
+    let mut imported = 0i64;
+    let mut skipped = 0i64;
+    let mut failed = 0i64;
+
+    for path in candidates {
+        attempted += 1;
+        match auto_import_session_file_inner(&db.0, repo_id, path).await {
+            Ok(r) => match r.status.as_str() {
+                "imported" => imported += 1,
+                "skipped" => skipped += 1,
+                _ => {}
+            },
+            Err(_) => failed += 1,
+        }
+    }
+
+    Ok(BackfillResult {
+        attempted,
+        imported,
+        skipped,
+        failed,
+    })
 }
 
 /// Purge sessions older than retentionDays by scrubbing raw_json.

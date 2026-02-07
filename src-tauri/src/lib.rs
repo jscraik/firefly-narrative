@@ -1,4 +1,5 @@
 mod attribution;
+mod activity;
 mod commands;
 mod file_watcher;
 mod git_diff;
@@ -176,6 +177,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
+            activity::get_ingest_activity,
+            activity::get_commit_capture_bundle,
             commands::ensure_narrative_dirs,
             commands::write_narrative_file,
             commands::read_narrative_file,
@@ -237,6 +240,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             ingest_config::reset_otlp_api_key,
             ingest_config::discover_capture_sources,
             ingest_config::configure_codex_otel,
+            import::commands::backfill_recent_sessions,
         ])
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())

@@ -335,6 +335,8 @@ export default function App() {
             setActionError={setActionError}
             onDismissActionError={() => setActionError(null)}
             ingestStatus={autoIngest.ingestStatus}
+            ingestActivityRecent={autoIngest.activityRecent}
+            onRequestIngestActivityAll={autoIngest.getActivityAll}
             ingestIssues={autoIngest.issues}
             onDismissIngestIssue={autoIngest.dismissIssue}
             onToggleAutoIngest={autoIngest.toggleAutoIngest}

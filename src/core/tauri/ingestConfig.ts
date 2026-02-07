@@ -67,6 +67,17 @@ export async function configureCodexOtel(endpoint: string): Promise<void> {
   await invoke('configure_codex_otel', { endpoint });
 }
 
+export type BackfillResult = {
+  attempted: number;
+  imported: number;
+  skipped: number;
+  failed: number;
+};
+
+export async function backfillRecentSessions(repoId: number, limitPerTool = 10): Promise<BackfillResult> {
+  return await invoke<BackfillResult>('backfill_recent_sessions', { repoId, limitPerTool });
+}
+
 export async function startFileWatcher(paths: string[]): Promise<void> {
   await invoke('start_file_watcher', { watchPaths: paths });
 }

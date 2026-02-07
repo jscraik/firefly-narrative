@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BranchViewModel } from '../core/types';
 import { refreshSessionBadges } from '../core/repo/sessionBadges';
 import { setOtelReceiverEnabled } from '../core/tauri/otelReceiver';
+import { getIngestActivity, type ActivityEvent } from '../core/tauri/activity';
 import {
   autoImportSessionFile,
   configureCodexOtel,
@@ -10,6 +11,7 @@ import {
   getIngestConfig,
   ensureOtlpApiKey,
   getOtlpKeyStatus,
+  backfillRecentSessions,
   purgeExpiredSessions,
   resetOtlpApiKey,
   setIngestConfig,
@@ -55,8 +57,27 @@ export function useAutoIngest(params: {
   });
   const [issues, setIssues] = useState<IngestIssue[]>([]);
   const [toast, setToast] = useState<IngestToast | null>(null);
+  const [activityRecent, setActivityRecent] = useState<ActivityEvent[]>([]);
   const lastImportRef = useRef<{ source?: string; time?: string }>({});
   const idCounter = useRef(0);
+
+  const refreshActivity = useCallback(async (limit: number) => {
+    try {
+      const items = await getIngestActivity(repoId, limit);
+      setActivityRecent(items.slice(0, 3));
+      const lastSeenAtISO = items[0]?.createdAtIso;
+      if (lastSeenAtISO) {
+        lastImportRef.current = { ...lastImportRef.current, time: lastSeenAtISO };
+        setStatus((prev) => ({
+          ...prev,
+          lastImportAt: lastSeenAtISO
+        }));
+      }
+    } catch (e) {
+      // non-fatal; avoid spamming issues list for optional UI enhancement
+      void e;
+    }
+  }, [repoId]);
 
   const watchPaths = useMemo(() => {
     if (!config) return [];
@@ -99,6 +120,7 @@ export function useAutoIngest(params: {
       try {
         const result = await autoImportSessionFile(repoId, payload.path);
         await refreshBadges();
+        await refreshActivity(3);
 
         if (result.status === 'imported') {
           const message = `Imported ${result.tool} session (redactions: ${result.redactionCount})`;
@@ -117,7 +139,7 @@ export function useAutoIngest(params: {
         recordIssue('Auto-import failed', message);
       }
     },
-    [repoId, refreshBadges, recordIssue, showToast]
+    [repoId, refreshBadges, refreshActivity, recordIssue, showToast]
   );
 
   useEffect(() => {
@@ -135,6 +157,7 @@ export function useAutoIngest(params: {
         setSources(discovered);
         setStatus((prev) => ({ ...prev, enabled: config.autoIngestEnabled }));
         await purgeExpiredSessions(repoId, config.retentionDays);
+        await refreshActivity(3);
       } catch (e) {
         if (!mounted) return;
         recordIssue('Ingest config error', e instanceof Error ? e.message : String(e));
@@ -145,13 +168,14 @@ export function useAutoIngest(params: {
     return () => {
       mounted = false;
     };
-  }, [repoRoot, repoId, recordIssue]);
+  }, [repoRoot, repoId, recordIssue, refreshActivity]);
 
   useEffect(() => {
     if (!config?.autoIngestEnabled || watchPaths.length === 0) return;
     if (!repoRoot || !repoId) return;
 
     let unlisten: (() => void) | undefined;
+    let unlistenOtel: (() => void) | undefined;
     let cancelled = false;
 
     const start = async () => {
@@ -170,6 +194,15 @@ export function useAutoIngest(params: {
       } catch (e) {
         recordIssue('Auto-ingest listener failed', e instanceof Error ? e.message : String(e));
       }
+
+      try {
+        unlistenOtel = await listen('otel-trace-ingested', async () => {
+          if (cancelled) return;
+          await refreshActivity(3);
+        });
+      } catch {
+        // optional
+      }
     };
 
     start();
@@ -177,9 +210,10 @@ export function useAutoIngest(params: {
     return () => {
       cancelled = true;
       if (unlisten) unlisten();
+      if (unlistenOtel) unlistenOtel();
       stopFileWatcher();
     };
-  }, [config?.autoIngestEnabled, watchPaths, repoRoot, repoId, handleAutoImport, recordIssue]);
+  }, [config?.autoIngestEnabled, watchPaths, repoRoot, repoId, handleAutoImport, refreshActivity, recordIssue]);
 
   const toggleAutoIngest = useCallback(
     async (enabled: boolean) => {
@@ -204,6 +238,25 @@ export function useAutoIngest(params: {
           return;
         }
 
+        // Backfill immediately so the UI doesn’t feel empty.
+        showToast('Backfilling recent sessions…');
+        try {
+          const res = await backfillRecentSessions(repoId, 10);
+          if (res.failed && res.failed > 0) {
+            showToast(`Backfilled ${res.imported} session(s) with ${res.failed} failure(s).`);
+          } else if (res.imported && res.imported > 0) {
+            showToast(`Backfilled ${res.imported} session(s).`);
+          } else {
+            showToast('No sessions found to backfill.');
+          }
+          await refreshBadges();
+          await refreshActivity(3);
+        } catch (e) {
+          // Backfill failure should not prevent enabling capture.
+          const msg = e instanceof Error ? e.message : String(e);
+          recordIssue('Backfill failed', msg);
+        }
+
         if (next.consent.codexTelemetryGranted && next.codex.receiverEnabled) {
           if (otlpKey?.present) {
             try {
@@ -222,7 +275,7 @@ export function useAutoIngest(params: {
         recordIssue('Auto-ingest toggle failed', e instanceof Error ? e.message : String(e));
       }
     },
-    [config, otlpKey?.present, recordIssue]
+    [config, otlpKey?.present, repoId, refreshActivity, refreshBadges, recordIssue, showToast]
   );
 
   const updateWatchPaths = useCallback(async (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => {
@@ -283,6 +336,8 @@ export function useAutoIngest(params: {
     otlpKeyStatus: otlpKey,
     discoveredSources: sources,
     ingestStatus: status,
+    activityRecent,
+    getActivityAll: async () => getIngestActivity(repoId, 50),
     issues,
     toast,
     toggleAutoIngest,

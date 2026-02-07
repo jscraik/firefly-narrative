@@ -17,6 +17,7 @@ use opentelemetry_proto::tonic::resource::v1::Resource;
 use prost::Message;
 use serde::Serialize;
 use serde_json::Value;
+use sqlx::Row;
 use std::{
     collections::{HashMap, HashSet},
     net::SocketAddr,
@@ -24,10 +25,10 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::oneshot;
 
-use crate::{commands, git_diff, secret_store};
+use crate::{commands, git_diff, secret_store, DbState};
 
 const OTLP_PORT: u16 = 4318;
 const MAX_BODY_BYTES: usize = 10 * 1024 * 1024;
@@ -421,6 +422,48 @@ fn validate_api_key(headers: &HeaderMap) -> Result<(), String> {
     }
 }
 
+async fn resolve_repo_id(db: &sqlx::SqlitePool, repo_root: &str) -> Option<i64> {
+    let row = sqlx::query("SELECT id FROM repos WHERE path = ? LIMIT 1")
+        .bind(repo_root)
+        .fetch_optional(db)
+        .await
+        .ok()?;
+    row.map(|r| r.get::<i64, _>("id"))
+}
+
+async fn log_otlp_activity(
+    db: &sqlx::SqlitePool,
+    repo_id: i64,
+    status: &str,
+    commit_shas: &[String],
+    accepted: usize,
+    dropped: usize,
+    issues: &[String],
+    error: Option<&str>,
+) {
+    let payload = serde_json::json!({
+        "accepted": accepted,
+        "dropped": dropped,
+        "commitShas": commit_shas,
+        "issues": issues,
+        "error": error,
+    })
+    .to_string();
+
+    let _ = sqlx::query(
+        r#"
+        INSERT INTO ingest_audit_log
+          (repo_id, source_tool, source_path, session_id, action, status, redaction_count, error_message, created_at)
+        VALUES (?, 'codex_otlp', NULL, NULL, 'otlp_ingest', ?, 0, ?, datetime('now'))
+        "#,
+    )
+    .bind(repo_id)
+    .bind(status)
+    .bind(payload)
+    .execute(db)
+    .await;
+}
+
 async fn handle_logs(
     State(context): State<ReceiverContext>,
     headers: HeaderMap,
@@ -511,6 +554,15 @@ async fn handle_request(
     let events = match parse_otlp_events(&headers, &body, signal) {
         Ok(events) => events,
         Err(err) => {
+            // Log activity (best effort) so the UI can surface failed capture attempts.
+            if let Some(repo_root) = context.state.repo_root.lock().ok().and_then(|g| g.clone()) {
+                if let Some(db) = context.app_handle.try_state::<DbState>().map(|s| s.0.clone()) {
+                    if let Some(repo_id) = resolve_repo_id(&db, &repo_root).await {
+                        log_otlp_activity(&db, repo_id, "failed", &[], 0, 0, &[], Some(&err)).await;
+                    }
+                }
+            }
+
             emit_status(
                 &context.app_handle,
                 ReceiverStatus {
@@ -532,22 +584,53 @@ async fn handle_request(
     };
 
     match ingest_events(&context, events, signal) {
-        Ok(outcome) => response(
-            StatusCode::OK,
-            IngestResponse {
-                accepted: outcome.records_written,
-                dropped: outcome.dropped,
-                errors: outcome.issues,
-            },
-        ),
-        Err(err) => response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            IngestResponse {
-                accepted: 0,
-                dropped: 0,
-                errors: vec![err.to_string()],
-            },
-        ),
+        Ok(outcome) => {
+            // Log activity (best effort)
+            if let Some(repo_root) = context.state.repo_root.lock().ok().and_then(|g| g.clone()) {
+                if let Some(db) = context.app_handle.try_state::<DbState>().map(|s| s.0.clone()) {
+                    if let Some(repo_id) = resolve_repo_id(&db, &repo_root).await {
+                        log_otlp_activity(
+                            &db,
+                            repo_id,
+                            "imported",
+                            &outcome.commit_shas,
+                            outcome.records_written,
+                            outcome.dropped,
+                            &outcome.issues,
+                            None,
+                        )
+                        .await;
+                    }
+                }
+            }
+
+            response(
+                StatusCode::OK,
+                IngestResponse {
+                    accepted: outcome.records_written,
+                    dropped: outcome.dropped,
+                    errors: outcome.issues,
+                },
+            )
+        }
+        Err(err) => {
+            if let Some(repo_root) = context.state.repo_root.lock().ok().and_then(|g| g.clone()) {
+                if let Some(db) = context.app_handle.try_state::<DbState>().map(|s| s.0.clone()) {
+                    if let Some(repo_id) = resolve_repo_id(&db, &repo_root).await {
+                        log_otlp_activity(&db, repo_id, "failed", &[], 0, 0, &[], Some(&err.to_string())).await;
+                    }
+                }
+            }
+
+            response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                IngestResponse {
+                    accepted: 0,
+                    dropped: 0,
+                    errors: vec![err.to_string()],
+                },
+            )
+        }
     }
 }
 

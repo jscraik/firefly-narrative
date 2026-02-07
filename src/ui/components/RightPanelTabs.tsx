@@ -10,6 +10,7 @@ import { AutoIngestSetupPanel } from './AutoIngestSetupPanel';
 import { TestResultsPanel } from './TestResultsPanel';
 import { DiffViewer } from './DiffViewer';
 import { SourceLensView } from './SourceLensView';
+import { StepsSummaryCard } from './StepsSummaryCard';
 import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
 
 type TabId = 'session' | 'attribution' | 'settings' | 'tests';
@@ -227,6 +228,15 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
       <div className="flex-1 min-h-0 overflow-y-auto">
         {effectiveTab === 'session' && (
           <div id="panel-session" role="tabpanel" aria-labelledby="tab-session" className="flex flex-col gap-4">
+            {repoId && repoRoot && selectedCommitSha ? (
+              <StepsSummaryCard
+                repoId={repoId}
+                repoRoot={repoRoot}
+                commitSha={selectedCommitSha}
+                traceSummary={traceSummary}
+              />
+            ) : null}
+
             <SessionExcerpts
               excerpts={sessionExcerpts}
               selectedFile={selectedFile}
