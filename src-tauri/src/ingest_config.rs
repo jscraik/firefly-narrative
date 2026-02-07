@@ -6,38 +6,86 @@ use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use tauri::command;
 
+use crate::secret_store;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IngestConfig {
+    #[serde(default)]
     pub auto_ingest_enabled: bool,
+    #[serde(default)]
     pub watch_paths: WatchPaths,
+    #[serde(default)]
     pub codex: CodexConfig,
+    #[serde(default)]
     pub retention_days: i64,
+    #[serde(default)]
     pub redaction_mode: String,
+    #[serde(default)]
     pub consent: ConsentState,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WatchPaths {
+    #[serde(default)]
     pub claude: Vec<String>,
+    #[serde(default)]
     pub cursor: Vec<String>,
+    #[serde(default)]
+    pub codex_logs: Vec<String>,
+}
+
+impl Default for WatchPaths {
+    fn default() -> Self {
+        Self {
+            claude: vec!["~/.claude/projects".to_string()],
+            cursor: vec!["~/.cursor".to_string()],
+            codex_logs: vec!["~/.codex/logs".to_string()],
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CodexConfig {
+    #[serde(default)]
     pub receiver_enabled: bool,
+    #[serde(default)]
+    pub mode: String, // "otlp" | "logs" | "both"
+    #[serde(default)]
     pub endpoint: String,
+    #[serde(default)]
     pub header_env_key: String,
+}
+
+impl Default for CodexConfig {
+    fn default() -> Self {
+        Self {
+            receiver_enabled: false,
+            mode: "both".to_string(),
+            endpoint: "http://127.0.0.1:4318/v1/logs".to_string(),
+            header_env_key: "NARRATIVE_OTEL_API_KEY".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConsentState {
+    #[serde(default)]
     pub codex_telemetry_granted: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub granted_at_iso: Option<String>,
+}
+
+impl Default for ConsentState {
+    fn default() -> Self {
+        Self {
+            codex_telemetry_granted: false,
+            granted_at_iso: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,24 +103,11 @@ impl Default for IngestConfig {
     fn default() -> Self {
         Self {
             auto_ingest_enabled: false,
-            watch_paths: WatchPaths {
-                claude: vec!["~/.claude/projects".to_string()],
-                cursor: vec![
-                    "~/.cursor/composer".to_string(),
-                    "/Users/jamiecraik/.cursor/ai-tracking".to_string(),
-                ],
-            },
-            codex: CodexConfig {
-                receiver_enabled: false,
-                endpoint: "http://127.0.0.1:4318/v1/logs".to_string(),
-                header_env_key: "NARRATIVE_OTEL_API_KEY".to_string(),
-            },
+            watch_paths: WatchPaths::default(),
+            codex: CodexConfig::default(),
             retention_days: 30,
             redaction_mode: "redact".to_string(),
-            consent: ConsentState {
-                codex_telemetry_granted: false,
-                granted_at_iso: None,
-            },
+            consent: ConsentState::default(),
         }
     }
 }
@@ -124,8 +159,12 @@ pub fn apply_update(update: IngestConfigUpdate) -> Result<IngestConfig, String> 
 }
 
 pub fn config_path() -> Result<PathBuf, String> {
-    let home = dirs::home_dir().ok_or_else(|| "Could not determine home directory".to_string())?;
-    Ok(home.join("Library/Application Support/com.jamie.narrative-mvp/ingest-config.json"))
+    // Cross-platform equivalent of Tauri's app_data_dir resolution:
+    // dirs::data_dir() / <bundle_identifier> / ingest-config.json
+    let base = dirs::data_dir().ok_or_else(|| "Could not determine data directory".to_string())?;
+    Ok(base
+        .join("com.jamie.narrative-mvp")
+        .join("ingest-config.json"))
 }
 
 #[command(rename_all = "camelCase")]
@@ -147,12 +186,15 @@ pub struct OtlpEnvStatus {
 
 #[command(rename_all = "camelCase")]
 pub fn get_otlp_env_status() -> Result<OtlpEnvStatus, String> {
-    let config = load_config().unwrap_or_default();
-    let key = config.codex.header_env_key;
-    let present = std::env::var(&key).ok().map(|v| !v.is_empty()).unwrap_or(false);
+    // Back-compat for older UI: treat "present" as "key exists" (keychain or env).
+    let present = secret_store::get_otlp_api_key()?.is_some()
+        || std::env::var("NARRATIVE_OTEL_API_KEY")
+            .ok()
+            .map(|v| !v.is_empty())
+            .unwrap_or(false);
     Ok(OtlpEnvStatus {
         present,
-        key_name: key,
+        key_name: "NARRATIVE_OTEL_API_KEY".to_string(),
     })
 }
 
@@ -177,15 +219,93 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
         fs::write(&backup_path, &existing).map_err(|e| e.to_string())?;
     }
 
-    let header_env = "NARRATIVE_OTEL_API_KEY";
+    // Ensure a local receiver key exists (stored in keychain).
+    let api_key = secret_store::ensure_otlp_api_key()?;
+
+    // Narrative receiver expects this header.
+    let header_name = "x-narrative-api-key";
     let otel_block = format!(
-        "[otel]\nexporter = {{ otlp-http = {{ endpoint = \"{}\", protocol = \"json\", headers = {{ \"x-otlp-api-key\" = \"${{{}}}\" }} }} }}\nlog_user_prompt = false\n",
-        endpoint, header_env
+        "[otel]\nexporter = {{ otlp-http = {{ endpoint = \"{}\", protocol = \"json\", headers = {{ \"{}\" = \"{}\" }} }} }}\nlog_user_prompt = false\n",
+        endpoint, header_name, api_key
     );
 
     let updated = upsert_otel_block(&existing, &otel_block);
     fs::write(&config_path, updated).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OtlpKeyStatus {
+    pub present: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub masked_preview: Option<String>,
+}
+
+#[command(rename_all = "camelCase")]
+pub fn get_otlp_key_status() -> Result<OtlpKeyStatus, String> {
+    let key = secret_store::get_otlp_api_key()?;
+    Ok(OtlpKeyStatus {
+        present: key.is_some(),
+        masked_preview: key.as_deref().map(secret_store::masked_preview),
+    })
+}
+
+#[command(rename_all = "camelCase")]
+pub fn ensure_otlp_api_key() -> Result<OtlpKeyStatus, String> {
+    let key = secret_store::ensure_otlp_api_key()?;
+    Ok(OtlpKeyStatus {
+        present: true,
+        masked_preview: Some(secret_store::masked_preview(&key)),
+    })
+}
+
+#[command(rename_all = "camelCase")]
+pub fn reset_otlp_api_key() -> Result<OtlpKeyStatus, String> {
+    secret_store::delete_otlp_api_key()?;
+    let key = secret_store::ensure_otlp_api_key()?;
+    Ok(OtlpKeyStatus {
+        present: true,
+        masked_preview: Some(secret_store::masked_preview(&key)),
+    })
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiscoveredSources {
+    pub claude: Vec<String>,
+    pub cursor: Vec<String>,
+    pub codex_logs: Vec<String>,
+}
+
+#[command(rename_all = "camelCase")]
+pub fn discover_capture_sources() -> Result<DiscoveredSources, String> {
+    let mut claude = Vec::new();
+    let mut cursor = Vec::new();
+    let mut codex_logs = Vec::new();
+
+    if let Some(home) = dirs::home_dir() {
+        let claude_dir = home.join(".claude/projects");
+        if claude_dir.exists() {
+            claude.push(claude_dir.to_string_lossy().to_string());
+        }
+
+        let cursor_dir = home.join(".cursor");
+        if cursor_dir.exists() {
+            cursor.push(cursor_dir.to_string_lossy().to_string());
+        }
+
+        let codex_dir = home.join(".codex/logs");
+        if codex_dir.exists() {
+            codex_logs.push(codex_dir.to_string_lossy().to_string());
+        }
+    }
+
+    Ok(DiscoveredSources {
+        claude,
+        cursor,
+        codex_logs,
+    })
 }
 
 fn upsert_otel_block(existing: &str, block: &str) -> String {

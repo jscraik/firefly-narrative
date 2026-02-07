@@ -13,7 +13,7 @@ import { RightPanelTabs } from '../components/RightPanelTabs';
 import { Timeline } from '../components/Timeline';
 import { IngestToast } from '../components/IngestToast';
 import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
-import type { IngestConfig, OtlpEnvStatus } from '../../core/tauri/ingestConfig';
+import type { IngestConfig, OtlpKeyStatus, DiscoveredSources } from '../../core/tauri/ingestConfig';
 import { useTestImport } from '../../hooks/useTestImport';
 import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
 
@@ -45,9 +45,11 @@ function BranchViewInner(props: {
   onToggleAutoIngest?: (enabled: boolean) => void;
   ingestToast?: { id: string; message: string } | null;
   ingestConfig?: IngestConfig | null;
-  otlpEnvStatus?: OtlpEnvStatus | null;
-  onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[] }) => void;
+  otlpKeyStatus?: OtlpKeyStatus | null;
+  discoveredSources?: DiscoveredSources | null;
+  onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => void;
   onConfigureCodex?: () => void;
+  onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
 }) {
   const {
@@ -78,9 +80,11 @@ function BranchViewInner(props: {
     onToggleAutoIngest,
     ingestToast,
     ingestConfig,
-    otlpEnvStatus,
+    otlpKeyStatus,
+    discoveredSources,
     onUpdateWatchPaths,
     onConfigureCodex,
+    onRotateOtlpKey,
     onGrantCodexConsent
   } = props;
   const { selectedFile, selectFile } = useFileSelection();
@@ -379,10 +383,12 @@ function BranchViewInner(props: {
               onUpdateAttributionPrefs={onUpdateAttributionPrefs}
               onPurgeAttributionMetadata={onPurgeAttributionMetadata}
               ingestConfig={ingestConfig}
-              otlpEnvStatus={otlpEnvStatus}
+              otlpKeyStatus={otlpKeyStatus}
+              discoveredSources={discoveredSources}
               onToggleAutoIngest={onToggleAutoIngest}
               onUpdateWatchPaths={onUpdateWatchPaths}
               onConfigureCodex={onConfigureCodex}
+              onRotateOtlpKey={onRotateOtlpKey}
               onGrantCodexConsent={onGrantCodexConsent}
               // Tests
               testRun={testRun}
@@ -440,9 +446,11 @@ export function BranchView(props: {
   onToggleAutoIngest?: (enabled: boolean) => void;
   ingestToast?: { id: string; message: string } | null;
   ingestConfig?: IngestConfig | null;
-  otlpEnvStatus?: OtlpEnvStatus | null;
-  onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[] }) => void;
+  otlpKeyStatus?: OtlpKeyStatus | null;
+  discoveredSources?: DiscoveredSources | null;
+  onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => void;
   onConfigureCodex?: () => void;
+  onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
 }) {
   return (

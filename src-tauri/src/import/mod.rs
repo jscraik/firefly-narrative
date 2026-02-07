@@ -4,6 +4,7 @@
 //! All parsers implement security scanning before returning data.
 
 pub mod claude_parser;
+pub mod codex_parser;
 pub mod commands;
 pub mod continue_parser;
 pub mod copilot_parser;
@@ -16,6 +17,7 @@ pub mod secure_parser;
 pub mod tool_sanitizer;
 
 use claude_parser::ClaudeCodeParser;
+use codex_parser::CodexLogParser;
 use continue_parser::ContinueParser;
 use copilot_parser::CopilotParser;
 use cursor_parser::CursorParser;
@@ -36,6 +38,7 @@ impl ParserRegistry {
 
         // Register built-in parsers
         registry.register(Box::new(ClaudeCodeParser));
+        registry.register(Box::new(CodexLogParser));
         registry.register(Box::new(CursorParser));
         registry.register(Box::new(GeminiParser));
         registry.register(Box::new(CopilotParser));

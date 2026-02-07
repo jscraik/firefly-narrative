@@ -340,9 +340,11 @@ export default function App() {
             onToggleAutoIngest={autoIngest.toggleAutoIngest}
             ingestToast={autoIngest.toast}
             ingestConfig={autoIngest.ingestConfig}
-            otlpEnvStatus={autoIngest.otlpEnvStatus}
+            otlpKeyStatus={autoIngest.otlpKeyStatus}
+            discoveredSources={autoIngest.discoveredSources}
             onUpdateWatchPaths={autoIngest.updateWatchPaths}
             onConfigureCodex={autoIngest.configureCodexTelemetry}
+            onRotateOtlpKey={autoIngest.rotateOtlpKey}
             onGrantCodexConsent={autoIngest.grantCodexConsent}
           />
         ) : (

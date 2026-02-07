@@ -6,14 +6,18 @@ import { setOtelReceiverEnabled } from '../core/tauri/otelReceiver';
 import {
   autoImportSessionFile,
   configureCodexOtel,
+  discoverCaptureSources,
   getIngestConfig,
-  getOtlpEnvStatus,
+  ensureOtlpApiKey,
+  getOtlpKeyStatus,
   purgeExpiredSessions,
+  resetOtlpApiKey,
   setIngestConfig,
   startFileWatcher,
   stopFileWatcher,
   type IngestConfig,
-  type OtlpEnvStatus
+  type DiscoveredSources,
+  type OtlpKeyStatus
 } from '../core/tauri/ingestConfig';
 
 export type IngestStatus = {
@@ -43,7 +47,8 @@ export function useAutoIngest(params: {
 }) {
   const { repoRoot, repoId, model, setRepoState } = params;
   const [config, setConfig] = useState<IngestConfig | null>(null);
-  const [otlpEnv, setOtlpEnv] = useState<OtlpEnvStatus | null>(null);
+  const [otlpKey, setOtlpKey] = useState<OtlpKeyStatus | null>(null);
+  const [sources, setSources] = useState<DiscoveredSources | null>(null);
   const [status, setStatus] = useState<IngestStatus>({
     enabled: false,
     errorCount: 0
@@ -55,7 +60,11 @@ export function useAutoIngest(params: {
 
   const watchPaths = useMemo(() => {
     if (!config) return [];
-    return [...config.watchPaths.claude, ...config.watchPaths.cursor];
+    const base = [...config.watchPaths.claude, ...config.watchPaths.cursor];
+    if (config.codex.mode === 'logs' || config.codex.mode === 'both') {
+      base.push(...(config.watchPaths.codexLogs ?? []));
+    }
+    return base;
   }, [config]);
 
   const refreshBadges = useCallback(async () => {
@@ -118,10 +127,12 @@ export function useAutoIngest(params: {
     const load = async () => {
       try {
         const config = await getIngestConfig();
-        const env = await getOtlpEnvStatus();
+        const key = await getOtlpKeyStatus();
+        const discovered = await discoverCaptureSources();
         if (!mounted) return;
         setConfig(config);
-        setOtlpEnv(env);
+        setOtlpKey(key);
+        setSources(discovered);
         setStatus((prev) => ({ ...prev, enabled: config.autoIngestEnabled }));
         await purgeExpiredSessions(repoId, config.retentionDays);
       } catch (e) {
@@ -194,7 +205,7 @@ export function useAutoIngest(params: {
         }
 
         if (next.consent.codexTelemetryGranted && next.codex.receiverEnabled) {
-          if (otlpEnv?.present) {
+          if (otlpKey?.present) {
             try {
               await setOtelReceiverEnabled(true);
             } catch (e) {
@@ -203,7 +214,7 @@ export function useAutoIngest(params: {
           } else {
             recordIssue(
               'Missing Codex API key',
-              `Set ${next.codex.headerEnvKey} in your shell environment, then restart Narrative.`
+              'Generate an API key in Narrative settings (stored securely), then configure Codex telemetry.'
             );
           }
         }
@@ -211,10 +222,10 @@ export function useAutoIngest(params: {
         recordIssue('Auto-ingest toggle failed', e instanceof Error ? e.message : String(e));
       }
     },
-    [config, otlpEnv?.present, recordIssue]
+    [config, otlpKey?.present, recordIssue]
   );
 
-  const updateWatchPaths = useCallback(async (paths: { claude: string[]; cursor: string[] }) => {
+  const updateWatchPaths = useCallback(async (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => {
     try {
       const next = await setIngestConfig({ watchPaths: paths });
       setConfig(next);
@@ -226,16 +237,10 @@ export function useAutoIngest(params: {
   const configureCodexTelemetry = useCallback(async () => {
     if (!config) return;
     try {
+      const key = await ensureOtlpApiKey();
+      setOtlpKey(key);
       await configureCodexOtel(config.codex.endpoint);
-      const env = await getOtlpEnvStatus();
-      setOtlpEnv(env);
-      if (!env.present) {
-        recordIssue(
-          'Missing Codex API key',
-          `Set ${config.codex.headerEnvKey} in your shell environment, then restart Narrative.`
-        );
-      }
-      const receiverEnabled = env.present && config.consent.codexTelemetryGranted;
+      const receiverEnabled = key.present && config.consent.codexTelemetryGranted;
       const next = await setIngestConfig({
         codex: { ...config.codex, receiverEnabled }
       });
@@ -245,6 +250,16 @@ export function useAutoIngest(params: {
       recordIssue('Codex config failed', e instanceof Error ? e.message : String(e));
     }
   }, [config, recordIssue, showToast]);
+
+  const rotateOtlpKey = useCallback(async () => {
+    try {
+      const key = await resetOtlpApiKey();
+      setOtlpKey(key);
+      showToast('Receiver API key rotated');
+    } catch (e) {
+      recordIssue('Key rotation failed', e instanceof Error ? e.message : String(e));
+    }
+  }, [recordIssue, showToast]);
 
   const grantCodexConsent = useCallback(async () => {
     try {
@@ -264,13 +279,16 @@ export function useAutoIngest(params: {
 
   return {
     ingestConfig: config,
-    otlpEnvStatus: otlpEnv,
+    otlpEnvStatus: null,
+    otlpKeyStatus: otlpKey,
+    discoveredSources: sources,
     ingestStatus: status,
     issues,
     toast,
     toggleAutoIngest,
     updateWatchPaths,
     configureCodexTelemetry,
+    rotateOtlpKey,
     grantCodexConsent,
     dismissIssue
   };

@@ -11,6 +11,7 @@ mod otlp_receiver;
 mod rules;
 mod session_hash;
 mod session_links;
+mod secret_store;
 mod trace_commands;
 
 use notify::RecommendedWatcher;
@@ -231,6 +232,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             ingest_config::get_ingest_config,
             ingest_config::set_ingest_config,
             ingest_config::get_otlp_env_status,
+            ingest_config::get_otlp_key_status,
+            ingest_config::ensure_otlp_api_key,
+            ingest_config::reset_otlp_api_key,
+            ingest_config::discover_capture_sources,
             ingest_config::configure_codex_otel,
         ])
         .plugin(tauri_plugin_shell::init())

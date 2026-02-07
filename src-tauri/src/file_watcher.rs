@@ -187,6 +187,12 @@ fn is_session_file(path: &Path) -> bool {
     let ext = path.extension().and_then(|e| e.to_str());
     let path_str = path.to_string_lossy();
 
+    // Codex logs: match anything under ~/.codex that looks like a log file.
+    // Codex log files may have extensions like `.log`, `.log.1`, etc. so we can't rely solely on `Path::extension`.
+    if path_str.contains(".codex") && path_str.contains(".log") {
+        return true;
+    }
+
     match ext {
         Some("jsonl") => {
             // Claude Code uses .jsonl
@@ -214,6 +220,8 @@ fn detect_tool_from_path(path: &Path) -> String {
 
     if path_str.contains(".claude") {
         "claude_code".to_string()
+    } else if path_str.contains(".codex") {
+        "codex".to_string()
     } else if path_str.contains(".cursor") {
         "cursor".to_string()
     } else if path_str.contains(".continue") {
@@ -243,6 +251,14 @@ mod tests {
         // Claude files
         assert!(is_session_file(&PathBuf::from(
             "/home/user/.claude/projects/foo/session.jsonl"
+        )));
+
+        // Codex logs
+        assert!(is_session_file(&PathBuf::from(
+            "/home/user/.codex/logs/codex-session.log"
+        )));
+        assert!(is_session_file(&PathBuf::from(
+            "/home/user/.codex/logs/codex-session.log.1"
         )));
 
         // Cursor files

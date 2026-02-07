@@ -2,8 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 
 export type IngestConfig = {
   autoIngestEnabled: boolean;
-  watchPaths: { claude: string[]; cursor: string[] };
-  codex: { receiverEnabled: boolean; endpoint: string; headerEnvKey: string };
+  watchPaths: { claude: string[]; cursor: string[]; codexLogs: string[] };
+  codex: { receiverEnabled: boolean; mode: 'otlp' | 'logs' | 'both'; endpoint: string; headerEnvKey: string };
   retentionDays: number;
   redactionMode: 'redact';
   consent: { codexTelemetryGranted: boolean; grantedAtISO?: string };
@@ -14,6 +14,17 @@ export type IngestConfigUpdate = Partial<IngestConfig>;
 export type OtlpEnvStatus = {
   present: boolean;
   keyName: string;
+};
+
+export type OtlpKeyStatus = {
+  present: boolean;
+  maskedPreview?: string;
+};
+
+export type DiscoveredSources = {
+  claude: string[];
+  cursor: string[];
+  codexLogs: string[];
 };
 
 export type AutoImportResult = {
@@ -34,6 +45,22 @@ export async function setIngestConfig(update: IngestConfigUpdate): Promise<Inges
 
 export async function getOtlpEnvStatus(): Promise<OtlpEnvStatus> {
   return await invoke<OtlpEnvStatus>('get_otlp_env_status');
+}
+
+export async function getOtlpKeyStatus(): Promise<OtlpKeyStatus> {
+  return await invoke<OtlpKeyStatus>('get_otlp_key_status');
+}
+
+export async function ensureOtlpApiKey(): Promise<OtlpKeyStatus> {
+  return await invoke<OtlpKeyStatus>('ensure_otlp_api_key');
+}
+
+export async function resetOtlpApiKey(): Promise<OtlpKeyStatus> {
+  return await invoke<OtlpKeyStatus>('reset_otlp_api_key');
+}
+
+export async function discoverCaptureSources(): Promise<DiscoveredSources> {
+  return await invoke<DiscoveredSources>('discover_capture_sources');
 }
 
 export async function configureCodexOtel(endpoint: string): Promise<void> {

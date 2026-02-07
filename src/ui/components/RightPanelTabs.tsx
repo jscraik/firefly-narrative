@@ -10,7 +10,7 @@ import { AutoIngestSetupPanel } from './AutoIngestSetupPanel';
 import { TestResultsPanel } from './TestResultsPanel';
 import { DiffViewer } from './DiffViewer';
 import { SourceLensView } from './SourceLensView';
-import type { IngestConfig, OtlpEnvStatus } from '../../core/tauri/ingestConfig';
+import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
 
 type TabId = 'session' | 'attribution' | 'settings' | 'tests';
 
@@ -55,10 +55,12 @@ interface RightPanelTabsProps {
   onUpdateAttributionPrefs?: (update: AttributionPrefsUpdate) => void;
   onPurgeAttributionMetadata?: () => void;
   ingestConfig?: IngestConfig | null;
-  otlpEnvStatus?: OtlpEnvStatus | null;
+  otlpKeyStatus?: OtlpKeyStatus | null;
+  discoveredSources?: DiscoveredSources | null;
   onToggleAutoIngest?: (enabled: boolean) => void;
-  onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[] }) => void;
+  onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => void;
   onConfigureCodex?: () => void;
+  onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
 
   // Test data
@@ -103,10 +105,12 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
     onUpdateAttributionPrefs,
     onPurgeAttributionMetadata,
     ingestConfig,
-    otlpEnvStatus,
+    otlpKeyStatus,
+    discoveredSources,
     onToggleAutoIngest,
     onUpdateWatchPaths,
     onConfigureCodex,
+    onRotateOtlpKey,
     onGrantCodexConsent,
     testRun,
     onTestFileClick,
@@ -308,10 +312,12 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
           <div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
             <AutoIngestSetupPanel
               config={ingestConfig ?? null}
-              otlpEnv={otlpEnvStatus ?? null}
+              otlpKey={otlpKeyStatus ?? null}
+              sources={discoveredSources ?? null}
               onToggleAutoIngest={(enabled) => onToggleAutoIngest?.(enabled)}
               onUpdateWatchPaths={(paths) => onUpdateWatchPaths?.(paths)}
               onConfigureCodex={() => onConfigureCodex?.()}
+              onRotateOtlpKey={() => onRotateOtlpKey?.()}
               onGrantConsent={() => onGrantCodexConsent?.()}
             />
             <CodexOtelSettingsPanel

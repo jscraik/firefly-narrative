@@ -27,7 +27,7 @@ use std::{
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
-use crate::{commands, git_diff};
+use crate::{commands, git_diff, secret_store};
 
 const OTLP_PORT: u16 = 4318;
 const MAX_BODY_BYTES: usize = 10 * 1024 * 1024;
@@ -382,13 +382,23 @@ fn stop_otlp_receiver(
     Ok(())
 }
 
-// Get the expected API key from environment or use default
+// Get the expected API key from keychain (preferred) or environment (legacy) or use default in debug.
 fn get_expected_api_key() -> Result<String, String> {
-    match std::env::var("NARRATIVE_OTEL_API_KEY") {
-        Ok(value) => Ok(value),
-        Err(_) if cfg!(debug_assertions) => Ok(DEFAULT_API_KEY.to_string()),
-        Err(_) => Err("Missing NARRATIVE_OTEL_API_KEY environment variable".to_string()),
+    if let Ok(value) = std::env::var("NARRATIVE_OTEL_API_KEY") {
+        if !value.trim().is_empty() {
+            return Ok(value);
+        }
     }
+
+    if let Some(value) = secret_store::get_otlp_api_key()? {
+        return Ok(value);
+    }
+
+    if cfg!(debug_assertions) {
+        return Ok(DEFAULT_API_KEY.to_string());
+    }
+
+    Err("Missing Narrative OTLP API key. Configure Codex telemetry in Narrative settings.".to_string())
 }
 
 // Validate API key from headers
@@ -399,7 +409,7 @@ fn validate_api_key(headers: &HeaderMap) -> Result<(), String> {
         .ok_or_else(|| {
             format!(
                 "Missing API key header: {API_KEY_HEADER}. \
-                Set the NARRATIVE_OTEL_API_KEY environment variable."
+                Configure Codex telemetry in Narrative settings."
             )
         })?;
 

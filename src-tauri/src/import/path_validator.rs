@@ -106,6 +106,9 @@ impl PathValidator {
             // Continue
             dirs.push(home.join(".continue"));
 
+            // Codex
+            dirs.push(home.join(".codex"));
+
             // Generic
             dirs.push(home.join(".config"));
         }

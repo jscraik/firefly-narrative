@@ -1,25 +1,38 @@
 import { useEffect, useState } from 'react';
-import type { IngestConfig, OtlpEnvStatus } from '../../core/tauri/ingestConfig';
+import { open } from '@tauri-apps/plugin-dialog';
+import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
 
 export function AutoIngestSetupPanel(props: {
   config: IngestConfig | null;
-  otlpEnv: OtlpEnvStatus | null;
+  otlpKey: OtlpKeyStatus | null;
+  sources: DiscoveredSources | null;
   onToggleAutoIngest: (enabled: boolean) => void;
-  onUpdateWatchPaths: (paths: { claude: string[]; cursor: string[] }) => void;
+  onUpdateWatchPaths: (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => void;
   onConfigureCodex: () => void;
+  onRotateOtlpKey: () => void;
   onGrantConsent: () => void;
 }) {
-  const { config, otlpEnv, onToggleAutoIngest, onUpdateWatchPaths, onConfigureCodex, onGrantConsent } = props;
+  const { config, otlpKey, sources, onToggleAutoIngest, onUpdateWatchPaths, onConfigureCodex, onRotateOtlpKey, onGrantConsent } =
+    props;
   const [claudePaths, setClaudePaths] = useState('');
   const [cursorPaths, setCursorPaths] = useState('');
-  const [generatedKey, setGeneratedKey] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [codexLogPaths, setCodexLogPaths] = useState('');
 
   useEffect(() => {
     if (!config) return;
     setClaudePaths(config.watchPaths.claude.join('\n'));
     setCursorPaths(config.watchPaths.cursor.join('\n'));
+    setCodexLogPaths((config.watchPaths.codexLogs ?? []).join('\n'));
   }, [config]);
+
+  const discoveredSummary = (() => {
+    if (!sources) return null;
+    const items: string[] = [];
+    if (sources.claude.length > 0) items.push('Claude');
+    if (sources.cursor.length > 0) items.push('Cursor');
+    if (sources.codexLogs.length > 0) items.push('Codex Logs');
+    return items.length > 0 ? `Detected: ${items.join(' · ')}` : 'No known sources detected on this machine.';
+  })();
 
   if (!config) {
     return (
@@ -32,28 +45,13 @@ export function AutoIngestSetupPanel(props: {
   }
 
   const hasConsent = config.consent.codexTelemetryGranted;
-  const envPresent = otlpEnv?.present ?? false;
-  const envVarName = otlpEnv?.keyName ?? 'NARRATIVE_OTEL_API_KEY';
+  const keyPresent = otlpKey?.present ?? false;
+  const maskedKey = otlpKey?.maskedPreview ?? (keyPresent ? '********' : null);
 
-  const generateKey = () => {
-    const bytes = new Uint8Array(24);
-    crypto.getRandomValues(bytes);
-    const next = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-    setGeneratedKey(next);
-    setCopied(false);
-  };
-
-  const exportCommand = generatedKey ? `export ${envVarName}="${generatedKey}"` : '';
-
-  const handleCopyExport = async () => {
-    if (!exportCommand) return;
-    try {
-      await navigator.clipboard.writeText(exportCommand);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setCopied(false);
-    }
+  const pickDir = async () => {
+    const selected = await open({ directory: true, multiple: false, title: 'Choose a folder to capture from' });
+    if (!selected) return null;
+    return typeof selected === 'string' ? selected : selected[0] ?? null;
   };
 
   return (
@@ -71,6 +69,10 @@ export function AutoIngestSetupPanel(props: {
           />
           Enable auto‑ingest
         </label>
+
+        {discoveredSummary && (
+          <div className="text-[11px] text-text-tertiary">{discoveredSummary}</div>
+        )}
 
         <div className="rounded-lg border border-border-light bg-bg-subtle p-3">
           <label htmlFor="claude-paths" className="text-xs font-semibold text-text-secondary">
@@ -93,13 +95,60 @@ export function AutoIngestSetupPanel(props: {
             value={cursorPaths}
             onChange={(event) => setCursorPaths(event.target.value)}
           />
+          <label htmlFor="codex-log-paths" className="mt-2 text-xs font-semibold text-text-secondary">
+            Codex log paths (fallback) (one per line)
+          </label>
+          <textarea
+            id="codex-log-paths"
+            className="mt-2 w-full rounded-md border border-border-light bg-white p-2 text-xs text-text-secondary"
+            rows={2}
+            value={codexLogPaths}
+            onChange={(event) => setCodexLogPaths(event.target.value)}
+          />
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+              onClick={async () => {
+                const dir = await pickDir();
+                if (!dir) return;
+                setClaudePaths((prev) => (prev.trim() ? `${prev}\n${dir}` : dir));
+              }}
+            >
+              Add Claude folder…
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+              onClick={async () => {
+                const dir = await pickDir();
+                if (!dir) return;
+                setCursorPaths((prev) => (prev.trim() ? `${prev}\n${dir}` : dir));
+              }}
+            >
+              Add Cursor folder…
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+              onClick={async () => {
+                const dir = await pickDir();
+                if (!dir) return;
+                setCodexLogPaths((prev) => (prev.trim() ? `${prev}\n${dir}` : dir));
+              }}
+            >
+              Add Codex logs folder…
+            </button>
+          </div>
           <button
             type="button"
             className="mt-2 inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100"
             onClick={() => {
               const next = {
                 claude: claudePaths.split(/\r?\n/).map((p) => p.trim()).filter(Boolean),
-                cursor: cursorPaths.split(/\r?\n/).map((p) => p.trim()).filter(Boolean)
+                cursor: cursorPaths.split(/\r?\n/).map((p) => p.trim()).filter(Boolean),
+                codexLogs: codexLogPaths.split(/\r?\n/).map((p) => p.trim()).filter(Boolean),
               };
               onUpdateWatchPaths(next);
             }}
@@ -111,7 +160,7 @@ export function AutoIngestSetupPanel(props: {
         <div className="rounded-lg border border-border-light bg-white p-3">
           <div className="text-xs font-semibold text-text-secondary">Codex telemetry</div>
           <div className="text-[11px] text-text-tertiary mt-1">
-            Requires local OTLP receiver and an API key in the environment.
+            Uses a local OTLP receiver with an API key stored securely on this machine.
           </div>
 
           {!hasConsent ? (
@@ -129,41 +178,7 @@ export function AutoIngestSetupPanel(props: {
           )}
 
           <div className="mt-2 text-[11px] text-text-tertiary">
-            Env var: <span className="font-mono">{envVarName}</span>
-          </div>
-          {!envPresent ? (
-            <div className="mt-1 text-[11px] text-amber-700">
-              Missing env var. Paste the command below in your terminal, then restart Narrative.
-            </div>
-          ) : (
-            <div className="mt-1 text-[11px] text-emerald-700">Env var detected.</div>
-          )}
-
-          <div className="mt-3 rounded-md border border-border-light bg-bg-subtle px-3 py-2 text-[11px] text-text-secondary">
-            <div className="font-semibold">Need a key?</div>
-            <div className="mt-1">
-              We can generate a local key, but we can’t set it in your system automatically.
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={generateKey}
-                className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
-              >
-                Generate key
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyExport}
-                disabled={!generatedKey}
-                className="inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
-              >
-                {copied ? 'Copied' : 'Copy export command'}
-              </button>
-            </div>
-            <div className="mt-2 font-mono text-[11px] text-text-tertiary">
-              {exportCommand || `export ${envVarName}="YOUR_KEY"`}
-            </div>
+            Receiver key: <span className="font-mono">{maskedKey ?? 'not set'}</span>
           </div>
 
           <button
@@ -173,6 +188,16 @@ export function AutoIngestSetupPanel(props: {
             disabled={!hasConsent}
           >
             Configure Codex telemetry
+          </button>
+
+          <button
+            type="button"
+            className="mt-2 ml-2 inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+            onClick={onRotateOtlpKey}
+            disabled={!hasConsent}
+            title="Rotate the local receiver key (you will need to re-configure Codex telemetry afterwards)."
+          >
+            Rotate key
           </button>
         </div>
       </div>
