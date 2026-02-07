@@ -34,6 +34,33 @@ export function BadgePill({ badge }: BadgePillProps) {
     return <span className={className} title={title}>{badge.label}</span>;
   }
 
+  if (badge.type === 'anchor') {
+    const meta = badge.anchor;
+    const presentCount = meta
+      ? Number(meta.hasAttributionNote) + Number(meta.hasSessionsNote) + Number(meta.hasLineageNote)
+      : null;
+    const title = meta
+      ? `Story Anchors — Attribution: ${meta.hasAttributionNote ? '✓' : '—'} · Sessions: ${
+          meta.hasSessionsNote ? '✓' : '—'
+        } · Lineage: ${meta.hasLineageNote ? '✓' : '—'}`
+      : 'Story Anchors';
+    const className =
+      badge.status === 'passed'
+        ? 'pill-anchor-passed'
+        : badge.status === 'failed'
+          ? 'pill-anchor-missing'
+          : 'pill-anchor-partial';
+
+    return (
+      <span className={className} title={title}>
+        {badge.label}
+        {typeof presentCount === 'number' ? (
+          <span className="ml-1 font-mono text-[10px] opacity-80">{presentCount}/3</span>
+        ) : null}
+      </span>
+    );
+  }
+
   if (badge.type === 'contribution' && badge.stats) {
     return (
       <AiContributionBadge

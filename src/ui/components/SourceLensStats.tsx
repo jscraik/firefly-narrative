@@ -1,6 +1,6 @@
 import { RefreshCw, Save, HelpCircle } from 'lucide-react';
 import { formatToolName } from '../../core/attribution-api';
-import type { AttributionNoteSummary, AttributionPrefs, ContributionStats, GitAiCliStatus } from '../../core/attribution-api';
+import type { AttributionNoteSummary, AttributionPrefs, ContributionStats } from '../../core/attribution-api';
 import type { SourceLine } from './AuthorBadge';
 
 export interface SourceLensStatsProps {
@@ -8,7 +8,6 @@ export interface SourceLensStatsProps {
   stats: ContributionStats | null;
   noteSummary: AttributionNoteSummary | null;
   prefs: AttributionPrefs | null;
-  cliStatus: GitAiCliStatus | null;
   statsError: string | null;
   noteSummaryError: string | null;
   syncStatus: string | null;
@@ -24,7 +23,6 @@ export function SourceLensStats({
   stats,
   noteSummary,
   prefs,
-  cliStatus,
   statsError,
   noteSummaryError,
   syncStatus,
@@ -70,10 +68,6 @@ export function SourceLensStats({
   const cacheEnabled = prefs?.cachePromptMetadata ?? false;
   const showMetadataOptIn = metadataAvailable && !metadataCached && !cacheEnabled;
   const showMetadataPending = metadataAvailable && !metadataCached && cacheEnabled;
-  const cliLabel = cliStatus?.available
-    ? `git-ai CLI detected${cliStatus.version ? ` (${cliStatus.version})` : ''}`
-    : 'git-ai CLI not detected';
-
   return (
     <>
       {/* Header with stats */}
@@ -103,7 +97,6 @@ export function SourceLensStats({
               Data source: {evidenceLabel}
             </span>
             <span title="Coverage = percent of lines with attribution data">Coverage: {coverageLabel}</span>
-            <span title="CLI needed to import/export git notes">{cliLabel}</span>
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">

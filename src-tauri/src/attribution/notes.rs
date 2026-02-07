@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Notes ref for Narrative attribution exports/imports.
-pub const ATTRIBUTION_NOTES_REF: &str = "refs/notes/narrative-attribution";
-/// Legacy notes ref for backward-compatible imports (read-only).
-pub const LEGACY_ATTRIBUTION_NOTES_REF: &str = "refs/notes/ai";
+/// Notes ref for Narrative attribution exports/imports (canonical write target).
+pub const ATTRIBUTION_NOTES_REF: &str = "refs/notes/narrative/attribution";
+/// Legacy Narrative notes ref for backward-compatible imports.
+pub const LEGACY_NARRATIVE_ATTRIBUTION_NOTES_REF: &str = "refs/notes/narrative-attribution";
 pub const ATTRIBUTION_SCHEMA_VERSION: &str = "narrative/attribution/1.0.0";
 
 #[derive(Debug, Clone)]

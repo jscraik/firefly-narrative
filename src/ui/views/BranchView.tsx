@@ -419,6 +419,7 @@ function BranchViewInner(props: {
               // Diff
               selectedCommitSha={selectedCommitSha}
               repoId={model.meta?.repoId}
+              indexedCommitShas={model.timeline.filter((n) => n.type === 'commit').map((n) => n.id)}
               diffText={diffText}
               loadingDiff={loadingDiff || loadingTrace}
               traceRanges={traceRanges}

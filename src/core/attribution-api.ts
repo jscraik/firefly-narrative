@@ -323,11 +323,6 @@ export interface AttributionPrefsUpdate {
   clearRetentionDays?: boolean;
 }
 
-export interface GitAiCliStatus {
-  available: boolean;
-  version?: string;
-  error?: string;
-}
 
 export interface AttributionPromptPurgeSummary {
   removed: number;
@@ -434,10 +429,6 @@ export async function setAttributionPrefs(
 
 export async function purgeAttributionPromptMeta(repoId: number): Promise<AttributionPromptPurgeSummary> {
   return invoke('purge_attribution_prompt_meta', { repoId });
-}
-
-export async function getGitAiCliStatus(): Promise<GitAiCliStatus> {
-  return invoke('get_git_ai_cli_status');
 }
 
 // ============================================================================

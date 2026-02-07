@@ -1,0 +1,346 @@
+//! Tauri commands for Story Anchors.
+
+use super::hooks as hooks_impl;
+use super::sessions_notes_io::{
+    export_sessions_note, import_sessions_notes_batch, SessionsNoteBatchSummary,
+    SessionsNoteExportSummary,
+};
+use super::status::{get_commit_story_anchor_status, StoryAnchorCommitStatus};
+use crate::attribution::line_attribution::{ensure_line_attributions_for_commit, store_rewrite_key};
+use crate::attribution::utils::fetch_repo_root;
+use crate::story_anchors::refs::{
+    ATTRIBUTION_REF_CANONICAL, ATTRIBUTION_REF_LEGACY_NARRATIVE,
+};
+use crate::DbState;
+use git2::{Oid, Repository, Signature};
+use serde::Serialize;
+use tauri::State;
+use tauri::Manager;
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn get_story_anchor_status(
+    db: State<'_, DbState>,
+    repo_id: i64,
+    commit_shas: Vec<String>,
+) -> Result<Vec<StoryAnchorCommitStatus>, String> {
+    let mut out = Vec::new();
+    for sha in commit_shas {
+        out.push(get_commit_story_anchor_status(&db.0, repo_id, &sha).await);
+    }
+    Ok(out)
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn import_session_link_notes_batch(
+    db: State<'_, DbState>,
+    repo_id: i64,
+    commit_shas: Vec<String>,
+) -> Result<SessionsNoteBatchSummary, String> {
+    import_sessions_notes_batch(&db.0, repo_id, commit_shas).await
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn export_session_link_note(
+    db: State<'_, DbState>,
+    repo_id: i64,
+    commit_sha: String,
+) -> Result<SessionsNoteExportSummary, String> {
+    export_sessions_note(&db.0, repo_id, &commit_sha).await
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LinkSessionsSummary {
+    pub commit_sha: String,
+    pub session_count: u32,
+    pub note_status: String,
+}
+
+/// Link sessions to a commit (Story Anchors), then export the canonical sessions note.
+#[tauri::command(rename_all = "camelCase")]
+pub async fn link_sessions_to_commit(
+    db: State<'_, DbState>,
+    repo_id: i64,
+    commit_sha: String,
+    session_ids: Vec<String>,
+) -> Result<LinkSessionsSummary, String> {
+    // Write links into commit_session_links (source=notes)
+    sqlx::query(
+        r#"
+        DELETE FROM commit_session_links
+        WHERE repo_id = ? AND commit_sha = ? AND source = 'notes'
+        "#,
+    )
+    .bind(repo_id)
+    .bind(&commit_sha)
+    .execute(&*db.0)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    for id in &session_ids {
+        if id.trim().is_empty() {
+            continue;
+        }
+        sqlx::query(
+            r#"
+            INSERT INTO commit_session_links (repo_id, commit_sha, session_id, source, confidence)
+            VALUES (?, ?, ?, 'notes', NULL)
+            ON CONFLICT(repo_id, commit_sha, session_id) DO UPDATE SET
+                source = 'notes',
+                updated_at = CURRENT_TIMESTAMP
+            "#,
+        )
+        .bind(repo_id)
+        .bind(&commit_sha)
+        .bind(id.trim())
+        .execute(&*db.0)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    let export = export_sessions_note(&db.0, repo_id, &commit_sha).await?;
+
+    Ok(LinkSessionsSummary {
+        commit_sha,
+        session_count: session_ids.len() as u32,
+        note_status: export.status,
+    })
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MigrateAttributionNotesSummary {
+    pub total: u32,
+    pub migrated: u32,
+    pub missing: u32,
+    pub failed: u32,
+}
+
+/// Migrate attribution notes from legacy Narrative ref to canonical ref (per commit).
+#[tauri::command(rename_all = "camelCase")]
+pub async fn migrate_attribution_notes_ref(
+    db: State<'_, DbState>,
+    repo_id: i64,
+    commit_shas: Vec<String>,
+) -> Result<MigrateAttributionNotesSummary, String> {
+    let repo_root = fetch_repo_root(&db.0, repo_id).await?;
+    let repo = Repository::open(&repo_root).map_err(|e| e.to_string())?;
+    let signature = repo
+        .signature()
+        .or_else(|_| Signature::now("Narrative", "narrative@local"))
+        .map_err(|e| e.to_string())?;
+
+    let mut migrated = 0;
+    let mut missing = 0;
+    let mut failed = 0;
+
+    for sha in commit_shas {
+        let oid = match Oid::from_str(&sha) {
+            Ok(v) => v,
+            Err(_) => {
+                failed += 1;
+                continue;
+            }
+        };
+
+        // Only migrate from legacy narrative ref.
+        let note = match repo.find_note(Some(ATTRIBUTION_REF_LEGACY_NARRATIVE), oid) {
+            Ok(n) => n,
+            Err(_) => {
+                missing += 1;
+                continue;
+            }
+        };
+
+        let Some(message) = note.message() else {
+            failed += 1;
+            continue;
+        };
+
+        if let Err(_) = repo.note(
+            &signature,
+            &signature,
+            Some(ATTRIBUTION_REF_CANONICAL),
+            oid,
+            message,
+            true,
+        ) {
+            failed += 1;
+            continue;
+        }
+
+        migrated += 1;
+    }
+
+    Ok(MigrateAttributionNotesSummary {
+        total: (migrated + missing + failed) as u32,
+        migrated: migrated as u32,
+        missing: missing as u32,
+        failed: failed as u32,
+    })
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReconcileSummary {
+    pub total: u32,
+    pub recovered_sessions: u32,
+    pub recovered_attribution: u32,
+    pub wrote_notes: u32,
+}
+
+/// Reconcile Story Anchors after rewrite (patch-id recovery).
+///
+/// Optional-but-implemented:
+/// - `write_recovered_notes`: if true, writes canonical notes after recovery.
+#[tauri::command(rename_all = "camelCase")]
+pub async fn reconcile_after_rewrite(
+    db: State<'_, DbState>,
+    repo_id: i64,
+    commit_shas: Vec<String>,
+    write_recovered_notes: bool,
+) -> Result<ReconcileSummary, String> {
+    use crate::attribution::git_utils::compute_rewrite_key;
+    use crate::attribution::notes_io::export_attribution_note;
+    use crate::story_anchors::sessions_notes_io::export_sessions_note;
+
+    let repo_root = fetch_repo_root(&db.0, repo_id).await?;
+    let repo = Repository::open(&repo_root).map_err(|e| e.to_string())?;
+
+    let mut recovered_sessions = 0;
+    let mut recovered_attribution = 0;
+    let mut wrote_notes = 0;
+
+    for sha in &commit_shas {
+        // Ensure rewrite key exists for this commit.
+        let rewrite_key = compute_rewrite_key(&repo, sha).ok();
+        let _ = store_rewrite_key(
+            &db.0,
+            repo_id,
+            sha,
+            rewrite_key.as_deref(),
+            Some("patch-id"),
+        )
+        .await;
+
+        // Try recover attribution (this copies line_attributions if possible).
+        if ensure_line_attributions_for_commit(&db.0, repo_id, sha)
+            .await
+            .is_ok()
+        {
+            recovered_attribution += 1;
+        }
+
+        // Recover sessions by rewrite key.
+        if let Some(key) = rewrite_key.as_deref() {
+            if let Ok(Some(source_commit)) = find_commit_by_rewrite_key(&db.0, repo_id, key, sha).await
+            {
+                let copied = copy_commit_session_links(&db.0, repo_id, &source_commit, sha).await?;
+                if copied > 0 {
+                    recovered_sessions += copied;
+                }
+            }
+        }
+
+        if write_recovered_notes {
+            let a = export_attribution_note(&db.0, repo_id, sha.to_string()).await;
+            let s = export_sessions_note(&db.0, repo_id, sha).await;
+            if a.is_ok() || s.is_ok() {
+                wrote_notes += 1;
+            }
+        }
+    }
+
+    Ok(ReconcileSummary {
+        total: commit_shas.len() as u32,
+        recovered_sessions,
+        recovered_attribution,
+        wrote_notes,
+    })
+}
+
+async fn find_commit_by_rewrite_key(
+    db: &sqlx::SqlitePool,
+    repo_id: i64,
+    rewrite_key: &str,
+    exclude_commit: &str,
+) -> Result<Option<String>, String> {
+    sqlx::query_scalar(
+        r#"
+        SELECT commit_sha
+        FROM commit_rewrite_keys
+        WHERE repo_id = ? AND rewrite_key = ? AND commit_sha != ?
+        ORDER BY updated_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(repo_id)
+    .bind(rewrite_key)
+    .bind(exclude_commit)
+    .fetch_optional(db)
+    .await
+    .map_err(|e| e.to_string())
+}
+
+async fn copy_commit_session_links(
+    db: &sqlx::SqlitePool,
+    repo_id: i64,
+    source_commit: &str,
+    target_commit: &str,
+) -> Result<u32, String> {
+    let session_ids: Vec<String> = sqlx::query_scalar(
+        r#"
+        SELECT session_id
+        FROM commit_session_links
+        WHERE repo_id = ? AND commit_sha = ?
+        "#,
+    )
+    .bind(repo_id)
+    .bind(source_commit)
+    .fetch_all(db)
+    .await
+    .unwrap_or_default();
+
+    let mut copied = 0;
+    for sid in session_ids {
+        sqlx::query(
+            r#"
+            INSERT INTO commit_session_links (repo_id, commit_sha, session_id, source, confidence)
+            VALUES (?, ?, ?, 'recovered', 0.8)
+            ON CONFLICT(repo_id, commit_sha, session_id) DO UPDATE SET
+              source = 'recovered',
+              confidence = 0.8,
+              updated_at = CURRENT_TIMESTAMP
+            "#,
+        )
+        .bind(repo_id)
+        .bind(target_commit)
+        .bind(&sid)
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+        copied += 1;
+    }
+
+    Ok(copied)
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn install_repo_hooks(
+    app: tauri::AppHandle,
+    db: State<'_, DbState>,
+    repo_id: i64,
+) -> Result<(), String> {
+    let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let db_path = app_data_dir.join("narrative.db");
+    let db_path_str = db_path.to_string_lossy().to_string();
+    hooks_impl::install_repo_hooks_by_id(&db.0, repo_id, &db_path_str).await
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn uninstall_repo_hooks(
+    db: State<'_, DbState>,
+    repo_id: i64,
+) -> Result<(), String> {
+    hooks_impl::uninstall_repo_hooks_by_id(&db.0, repo_id).await
+}

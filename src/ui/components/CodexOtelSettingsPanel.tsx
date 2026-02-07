@@ -145,7 +145,7 @@ export function CodexOtelSettingsPanel(props: {
         <div>
           <div className="text-xs font-semibold text-text-secondary">Attribution Notes</div>
           <div className="text-[11px] text-text-muted">
-            Control git-ai metadata caching and Source Lens overlays for this repo.
+            Control attribution metadata caching and Source Lens overlays for this repo.
           </div>
         </div>
 

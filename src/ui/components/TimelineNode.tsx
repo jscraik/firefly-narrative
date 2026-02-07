@@ -52,7 +52,7 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
         <div className="mt-2 flex flex-col items-center gap-1">
           {node.badges
             .filter(b => b.type !== 'session') // Don't show session badges below
-            .slice(0, 2)
+            .slice(0, 3)
             .map((badge) => (
               <BadgePill key={`${badge.type}-${badge.label ?? badge.status ?? 'badge'}`} badge={badge} />
             ))}

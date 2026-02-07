@@ -7,7 +7,8 @@ use super::note_meta::{
 };
 use super::notes::{
     build_attribution_note, parse_attribution_note, NoteFile, NoteRange, NoteSourceMeta,
-    ParsedAttributionNote, ATTRIBUTION_NOTES_REF, LEGACY_ATTRIBUTION_NOTES_REF,
+    ParsedAttributionNote, ATTRIBUTION_NOTES_REF,
+    LEGACY_NARRATIVE_ATTRIBUTION_NOTES_REF,
 };
 use super::prefs::fetch_or_create_prefs;
 use super::stats::compute_contribution_from_attributions;
@@ -119,8 +120,8 @@ pub async fn import_attribution_note_internal(
 
         let note_pair = match repo.find_note(Some(ATTRIBUTION_NOTES_REF), oid) {
             Ok(note) => Some((note, ATTRIBUTION_NOTES_REF)),
-            Err(_) => match repo.find_note(Some(LEGACY_ATTRIBUTION_NOTES_REF), oid) {
-                Ok(note) => Some((note, LEGACY_ATTRIBUTION_NOTES_REF)),
+            Err(_) => match repo.find_note(Some(LEGACY_NARRATIVE_ATTRIBUTION_NOTES_REF), oid) {
+                Ok(note) => Some((note, LEGACY_NARRATIVE_ATTRIBUTION_NOTES_REF)),
                 Err(_) => None,
             },
         };
@@ -172,8 +173,8 @@ pub async fn import_attribution_note_internal(
         repo_id,
         commit_sha,
         AttributionNoteMetaInput {
-            note_ref,
-            note_hash,
+            note_ref: note_ref.clone(),
+            note_hash: note_hash.clone(),
             schema_version: parsed.schema_version.clone(),
             metadata_available,
             metadata_cached: false,
@@ -181,6 +182,25 @@ pub async fn import_attribution_note_internal(
         },
     )
     .await?;
+
+    // Also track in generic story_anchor_note_meta (best-effort; used by Story Anchors UI/status).
+    let _ = sqlx::query(
+        r#"
+        INSERT INTO story_anchor_note_meta (repo_id, commit_sha, note_kind, note_ref, note_hash, schema_version)
+        VALUES (?, ?, 'attribution', ?, ?, ?)
+        ON CONFLICT(repo_id, commit_sha, note_kind, note_ref) DO UPDATE SET
+            note_hash = excluded.note_hash,
+            schema_version = excluded.schema_version,
+            updated_at = CURRENT_TIMESTAMP
+        "#,
+    )
+    .bind(repo_id)
+    .bind(commit_sha)
+    .bind(&note_ref)
+    .bind(&note_hash)
+    .bind(parsed.schema_version.clone())
+    .execute(db)
+    .await;
 
     let prefs = fetch_or_create_prefs(db, repo_id).await?;
     let metadata_cached = if prefs.cache_prompt_metadata {
@@ -502,22 +522,46 @@ async fn export_attribution_note_internal(
         rewrite_key.as_deref(),
         Some(REWRITE_KEY_ALGORITHM),
     );
+    let note_hash = compute_note_hash(&note_text);
     let oid = Oid::from_str(commit_sha).map_err(|e| e.to_string())?;
 
-    let signature = repo
-        .signature()
-        .or_else(|_| Signature::now("Narrative", "narrative@local"))
-        .map_err(|e| e.to_string())?;
+    {
+        let signature = repo
+            .signature()
+            .or_else(|_| Signature::now("Narrative", "narrative@local"))
+            .map_err(|e| e.to_string())?;
 
-    repo.note(
-        &signature,
-        &signature,
-        Some(ATTRIBUTION_NOTES_REF),
-        oid,
-        &note_text,
-        true,
+        repo.note(
+            &signature,
+            &signature,
+            Some(ATTRIBUTION_NOTES_REF),
+            oid,
+            &note_text,
+            true,
+        )
+        .map_err(|e| e.to_string())?;
+        // signature dropped here (git2 types are not Send across await)
+    }
+    drop(repo);
+
+    // Track generic story anchor note meta (best-effort).
+    let _ = sqlx::query(
+        r#"
+        INSERT INTO story_anchor_note_meta (repo_id, commit_sha, note_kind, note_ref, note_hash, schema_version)
+        VALUES (?, ?, 'attribution', ?, ?, ?)
+        ON CONFLICT(repo_id, commit_sha, note_kind, note_ref) DO UPDATE SET
+            note_hash = excluded.note_hash,
+            schema_version = excluded.schema_version,
+            updated_at = CURRENT_TIMESTAMP
+        "#,
     )
-    .map_err(|e| e.to_string())?;
+    .bind(repo_id)
+    .bind(commit_sha)
+    .bind(ATTRIBUTION_NOTES_REF)
+    .bind(note_hash)
+    .bind(super::notes::ATTRIBUTION_SCHEMA_VERSION)
+    .execute(db)
+    .await;
 
     Ok(AttributionNoteExportSummary {
         commit_sha: commit_sha.to_string(),

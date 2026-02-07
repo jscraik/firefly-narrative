@@ -5,12 +5,11 @@ import {
   getCommitContributionStats,
   getAttributionNoteSummary,
   getAttributionPrefs,
-  getGitAiCliStatus,
   importAttributionNote,
   setAttributionPrefs,
   type ContributionStats
 } from '../core/attribution-api';
-import type { AttributionNoteSummary, AttributionPrefs, GitAiCliStatus } from '../core/attribution-api';
+import type { AttributionNoteSummary, AttributionPrefs } from '../core/attribution-api';
 import type { SourceLine } from '../ui/components/AuthorBadge';
 
 const LIMIT = 200; // Balance between UX (context) and render cost for large files.
@@ -33,7 +32,6 @@ export interface UseSourceLensDataReturn {
   stats: ContributionStats | null;
   noteSummary: AttributionNoteSummary | null;
   prefs: AttributionPrefs | null;
-  cliStatus: GitAiCliStatus | null;
   // Loading states
   loading: boolean;
   syncing: boolean;
@@ -68,7 +66,6 @@ export function useSourceLensData({
   const [noteSummary, setNoteSummary] = useState<AttributionNoteSummary | null>(null);
   const [noteSummaryError, setNoteSummaryError] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<AttributionPrefs | null>(null);
-  const [cliStatus, setCliStatus] = useState<GitAiCliStatus | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
@@ -130,23 +127,13 @@ export function useSourceLensData({
     }
   }, [repoId]);
 
-  const loadCliStatus = useCallback(async () => {
-    try {
-      const result = await getGitAiCliStatus();
-      setCliStatus(result);
-    } catch {
-      setCliStatus({ available: false });
-    }
-  }, []);
-
   useEffect(() => {
     setOffset(0);
     loadAttribution(0);
     loadStats();
     loadNoteSummary();
     loadPrefs();
-    loadCliStatus();
-  }, [loadAttribution, loadStats, loadNoteSummary, loadPrefs, loadCliStatus]);
+  }, [loadAttribution, loadStats, loadNoteSummary, loadPrefs]);
 
   const loadMore = useCallback(() => {
     const nextOffset = offset + LIMIT;
@@ -216,7 +203,6 @@ export function useSourceLensData({
     stats,
     noteSummary,
     prefs,
-    cliStatus,
     loading,
     syncing,
     offset,

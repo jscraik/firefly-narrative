@@ -60,13 +60,18 @@ export type SessionExcerpt = {
 export type TimelineStatus = 'ok' | 'warn' | 'error';
 
 export type TimelineBadge = {
-  type: 'file' | 'test' | 'trace' | 'contribution' | 'session';
+  type: 'file' | 'test' | 'trace' | 'contribution' | 'session' | 'anchor';
   label: string;
   status?: 'passed' | 'failed' | 'mixed';
   stats?: {
     aiPercentage: number;
     tool?: string;
     model?: string;
+  };
+  anchor?: {
+    hasAttributionNote: boolean;
+    hasSessionsNote: boolean;
+    hasLineageNote: boolean;
   };
 };
 

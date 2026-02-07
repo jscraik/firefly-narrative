@@ -127,6 +127,23 @@ export async function deleteSessionLinkBySessionId(repoId: number, sessionId: st
 }
 
 /**
+ * Delete a session link by session ID and return the commit SHA (if any).
+ *
+ * Useful when you need to update derived artifacts (e.g. Story Anchor notes)
+ * after unlinking.
+ */
+export async function deleteSessionLinkBySessionIdWithCommit(
+  repoId: number,
+  sessionId: string
+): Promise<string | null> {
+  const links = await getSessionLinksForRepo(repoId);
+  const link = links.find((l) => l.sessionId === sessionId);
+  if (!link) return null;
+  await deleteSessionLink(link.id);
+  return link.commitSha;
+}
+
+/**
  * Session link record from database.
  */
 export type SessionLink = {

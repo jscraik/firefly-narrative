@@ -6,6 +6,7 @@ import { SessionExcerpts } from './SessionExcerpts';
 import { TraceTranscriptPanel } from './TraceTranscriptPanel';
 import { AgentTraceSummary } from './AgentTraceSummary';
 import { CodexOtelSettingsPanel } from './CodexOtelSettingsPanel';
+import { StoryAnchorsPanel } from './StoryAnchorsPanel';
 import { AutoIngestSetupPanel } from './AutoIngestSetupPanel';
 import { TestResultsPanel } from './TestResultsPanel';
 import { DiffViewer } from './DiffViewer';
@@ -73,6 +74,7 @@ interface RightPanelTabsProps {
   // Diff data
   selectedCommitSha: string | null;
   repoId?: number;
+  indexedCommitShas?: string[] | null;
   diffText: string | null;
   loadingDiff: boolean;
   traceRanges: TraceRange[];
@@ -119,6 +121,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
     onImportJUnit,
     selectedCommitSha,
     repoId,
+    indexedCommitShas,
     diffText,
     loadingDiff,
     traceRanges,
@@ -340,6 +343,12 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
               attributionPrefs={attributionPrefs}
               onUpdateAttributionPrefs={onUpdateAttributionPrefs}
               onPurgeAttributionMetadata={onPurgeAttributionMetadata}
+            />
+            <StoryAnchorsPanel
+              repoId={repoId ?? null}
+              repoRoot={repoRoot ?? null}
+              selectedCommitSha={selectedCommitSha}
+              indexedCommitShas={indexedCommitShas ?? null}
             />
           </div>
         )}

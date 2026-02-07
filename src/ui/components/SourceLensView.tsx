@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import type { AttributionPrefs } from '../../core/attribution-api';
 import { SourceLensEmptyStates } from './SourceLensEmptyStates';
 import { SourceLensLineTable } from './SourceLensLineTable';
 import { SourceLensStats } from './SourceLensStats';
 import { useSourceLensData } from '../../hooks/useSourceLensData';
 import type { SourceLine } from './AuthorBadge';
+import { getStoryAnchorStatus, type StoryAnchorCommitStatus } from '../../core/story-anchors-api';
 
 export interface SourceLensViewProps {
   repoId: number;
@@ -20,12 +22,32 @@ export function SourceLensView({
   prefsOverride,
   showHeader = true
 }: SourceLensViewProps) {
+  const [anchorStatus, setAnchorStatus] = useState<StoryAnchorCommitStatus | null>(null);
+  const [anchorStatusError, setAnchorStatusError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAnchorStatus(null);
+    setAnchorStatusError(null);
+    getStoryAnchorStatus(repoId, [commitSha])
+      .then((rows) => {
+        if (cancelled) return;
+        setAnchorStatus(rows[0] ?? null);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setAnchorStatusError(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [repoId, commitSha]);
+
   const {
     lines,
     stats,
     noteSummary,
     prefs,
-    cliStatus,
     loading,
     syncing,
     hasMore,
@@ -38,6 +60,16 @@ export function SourceLensView({
     handleExportNote,
     handleEnableMetadata,
   } = useSourceLensData({ repoId, commitSha, filePath });
+
+  const anchorsText = (() => {
+    if (anchorStatus) {
+      return `Story Anchors: attribution ${anchorStatus.hasAttributionNote ? '✓' : '—'} · sessions ${
+        anchorStatus.hasSessionsNote ? '✓' : '—'
+      } · lineage ${anchorStatus.hasLineageNote ? '✓' : '—'}`;
+    }
+    if (anchorStatusError) return 'Story Anchors: status unavailable';
+    return null;
+  })();
 
   if ((loading && lines.length === 0) || error || lines.length === 0) {
     return (
@@ -64,11 +96,12 @@ export function SourceLensView({
           </>
         ) : null}
         <div className="mt-3 text-sm text-text-secondary">
-          Source Lens only works when your tools write attribution notes. It does not guess.
+          Source Lens only works when Narrative has attribution data (notes or local cache). It does not guess.
         </div>
+        {anchorsText ? <div className="mt-2 text-[11px] text-text-muted">{anchorsText}</div> : null}
         <ol className="mt-3 list-decimal pl-5 text-xs text-text-tertiary space-y-1">
-          <li>Enable Codex telemetry in Settings (or import notes from your tool).</li>
-          <li>Click “Import note” to pull attribution data.</li>
+          <li>Install Story Anchors hooks in Settings (recommended) or generate attribution notes via your workflow.</li>
+          <li>Click “Import note” to pull attribution data for this commit.</li>
           <li>Re-open this file to see AI vs human lines.</li>
         </ol>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -94,12 +127,12 @@ export function SourceLensView({
   return (
     <div className="card overflow-hidden">
       <div className="p-5 border-b border-border-subtle">
+        {anchorsText ? <div className="mb-2 text-[11px] text-text-muted">{anchorsText}</div> : null}
         <SourceLensStats
           lines={lines}
           stats={stats}
           noteSummary={noteSummary}
           prefs={effectivePrefs}
-          cliStatus={cliStatus}
           statsError={statsError}
           noteSummaryError={noteSummaryError}
           syncStatus={syncStatus}

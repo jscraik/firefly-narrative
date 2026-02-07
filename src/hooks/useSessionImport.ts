@@ -3,7 +3,7 @@ import { mergeSanitizerHits, sanitizePayloadMessages } from './sessionUtils';
 import { useCallback } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { importAgentTraceFile } from '../core/repo/agentTrace';
-import { linkSessionToCommit, deleteSessionLinkBySessionId } from '../core/repo/sessionLinking';
+import { linkSessionToCommit, deleteSessionLinkBySessionIdWithCommit } from '../core/repo/sessionLinking';
 import { refreshSessionBadges } from '../core/repo/sessionBadges';
 import { parseKimiContextJsonl } from '../core/repo/kimiAdapter';
 import { sha256Hex } from '../core/security/hash';
@@ -11,6 +11,7 @@ import { redactSecrets } from '../core/security/redact';
 import { sanitizeToolText, type ToolSanitizerHit } from '../core/security/toolSanitizer';
 import { isoStampForFile } from './isoStampForFile';
 import { readTextFile, writeNarrativeFile } from '../core/tauri/narrativeFs';
+import { exportSessionLinkNote } from '../core/story-anchors-api';
 import { scanAgentTraceRecords } from '../core/repo/agentTrace';
 import type { BranchViewModel, SessionExcerpt, SessionMessage, SessionTool } from '../core/types';
 
@@ -114,7 +115,13 @@ export function useSessionImport({
       };
 
       // Link to best matching commit
-      await linkSessionToCommit(repoId, sessionExcerpt);
+      const link = await linkSessionToCommit(repoId, sessionExcerpt);
+      // Best-effort: keep Story Anchors sessions note updated.
+      try {
+        await exportSessionLinkNote(repoId, link.commitSha);
+      } catch (e) {
+        console.warn('[Sessions] Export sessions note failed:', e);
+      }
 
       // Reload excerpts and update badges
       await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { limit: 10 });
@@ -191,7 +198,13 @@ export function useSessionImport({
       };
 
       // Link to best matching commit
-      await linkSessionToCommit(repoId, sessionExcerpt);
+      const link = await linkSessionToCommit(repoId, sessionExcerpt);
+      // Best-effort: keep Story Anchors sessions note updated.
+      try {
+        await exportSessionLinkNote(repoId, link.commitSha);
+      } catch (e) {
+        console.warn('[Sessions] Export sessions note failed:', e);
+      }
 
       // Reload excerpts and update badges
       await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { limit: 10 });
@@ -228,7 +241,14 @@ export function useSessionImport({
       setActionError(null);
 
       try {
-        await deleteSessionLinkBySessionId(repoId, sessionId);
+        const commitSha = await deleteSessionLinkBySessionIdWithCommit(repoId, sessionId);
+        if (commitSha) {
+          try {
+            await exportSessionLinkNote(repoId, commitSha);
+          } catch (e) {
+            console.warn('[Sessions] Export sessions note failed:', e);
+          }
+        }
 
         // Reload excerpts and update badges
         await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { unlinkMode: true, limit: 10 });

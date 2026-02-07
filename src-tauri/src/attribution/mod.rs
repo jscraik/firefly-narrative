@@ -17,13 +17,12 @@
 //! - `line_attribution.rs` - Line attribution storage and retrieval
 //! - `git_utils.rs` - Git operations (diff, patch-id, file listing)
 //! - `utils.rs` - Shared utilities (repo root fetching, session metadata)
-//! - `cli.rs` - git-ai CLI detection
+//! - (removed) legacy external CLI detection
 //! - `coverage.rs` - Attribution coverage computation
 //! - `note_meta.rs` - Note metadata persistence
 //! - `prefs.rs` - Attribution preferences storage
 //! - `dashboard.rs` - Dashboard analytics aggregation
 
-pub mod cli;
 pub mod commands;
 pub mod coverage;
 pub mod dashboard;

@@ -1,4 +1,4 @@
-mod attribution;
+pub mod attribution;
 mod activity;
 mod commands;
 mod file_watcher;
@@ -13,6 +13,7 @@ mod rules;
 mod session_hash;
 mod session_links;
 mod secret_store;
+pub mod story_anchors;
 mod trace_commands;
 
 use notify::RecommendedWatcher;
@@ -173,6 +174,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             sql: include_str!("../migrations/010_test_runs.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 11,
+            description: "add_story_anchors",
+            sql: include_str!("../migrations/011_story_anchors.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -213,7 +220,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             attribution::commands::get_attribution_prefs,
             attribution::commands::set_attribution_prefs,
             attribution::commands::purge_attribution_prompt_meta,
-            attribution::commands::get_git_ai_cli_status,
             attribution::dashboard::get_dashboard_stats,
             // OTLP receiver commands
             otlp_receiver::set_active_repo_root,
@@ -241,6 +247,15 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             ingest_config::discover_capture_sources,
             ingest_config::configure_codex_otel,
             import::commands::backfill_recent_sessions,
+            // Story Anchors (Git Notes + hooks)
+            story_anchors::commands::get_story_anchor_status,
+            story_anchors::commands::import_session_link_notes_batch,
+            story_anchors::commands::export_session_link_note,
+            story_anchors::commands::link_sessions_to_commit,
+            story_anchors::commands::migrate_attribution_notes_ref,
+            story_anchors::commands::reconcile_after_rewrite,
+            story_anchors::commands::install_repo_hooks,
+            story_anchors::commands::uninstall_repo_hooks,
         ])
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())

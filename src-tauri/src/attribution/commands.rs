@@ -4,7 +4,6 @@
 //! the appropriate internal modules. Each command is a small facade
 //! over the actual implementation logic.
 
-use super::cli::{detect_git_ai_cli, GitAiCliStatus};
 use super::coverage::compute_attribution_coverage;
 use super::models::{AttributionNoteSummary, ContributionStats};
 use super::note_meta::fetch_attribution_note_meta;
@@ -217,11 +216,6 @@ pub async fn purge_attribution_prompt_meta(
     Ok(AttributionPromptPurgeSummary {
         removed: removed.rows_affected() as u32,
     })
-}
-
-#[tauri::command(rename_all = "camelCase")]
-pub async fn get_git_ai_cli_status() -> Result<GitAiCliStatus, String> {
-    Ok(detect_git_ai_cli().await)
 }
 
 /// Compute and cache stats for a batch of commits

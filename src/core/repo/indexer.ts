@@ -13,6 +13,7 @@ import { loadSessionExcerpts } from './sessions';
 import { ingestCodexOtelLogFile, scanAgentTraceRecords } from './agentTrace';
 import { loadTraceConfig } from './traceConfig';
 import { importAttributionNotesBatch } from '../attribution-api';
+import { getStoryAnchorStatus, importSessionLinkNotesBatch, type StoryAnchorCommitStatus } from '../story-anchors-api';
 import { getLatestTestRunSummaryByCommit } from './testRuns';
 
 export type IndexingProgress = {
@@ -96,6 +97,23 @@ export async function indexRepo(
     console.error('[Indexer] Attribution notes import failed:', e);
   }
 
+  // Story Anchors (sessions) are also best-effort.
+  try {
+    await importSessionLinkNotesBatch(repoId, commits.map((c) => c.sha));
+  } catch (e) {
+    console.error('[Indexer] Session link notes import failed:', e);
+  }
+
+  // Story Anchors status hydration is best-effort (used for timeline indicators).
+  let anchorStatusBySha: Record<string, StoryAnchorCommitStatus> = {};
+  try {
+    const rows = await getStoryAnchorStatus(repoId, commits.map((c) => c.sha));
+    anchorStatusBySha = Object.fromEntries(rows.map((r) => [r.commitSha, r]));
+  } catch (e) {
+    console.warn('[Indexer] Story Anchors status hydration failed:', e);
+  }
+  const hasAnchorStatus = Object.keys(anchorStatusBySha).length > 0;
+
   reportProgress('intent', 'Preparing intent summaries…');
   const intent: IntentItem[] = commits.slice(0, 6).map((c, idx) => ({
     id: `c-${idx}`,
@@ -157,7 +175,31 @@ export async function indexRepo(
           }
         : null;
 
-      const badges = [testBadge, traceBadge].filter(Boolean) as NonNullable<TimelineNode['badges']>;
+      const anchorBadge = hasAnchorStatus
+        ? (() => {
+            const anchor = anchorStatusBySha[c.sha];
+            const anchorPresentCount =
+              Number(anchor?.hasAttributionNote ?? 0) +
+              Number(anchor?.hasSessionsNote ?? 0) +
+              Number(anchor?.hasLineageNote ?? 0);
+            const anchorStatus: 'passed' | 'failed' | 'mixed' =
+              anchorPresentCount === 3 ? 'passed' : anchorPresentCount === 0 ? 'failed' : 'mixed';
+            return {
+              type: 'anchor' as const,
+              label: 'Anchors',
+              status: anchorStatus,
+              anchor: {
+                hasAttributionNote: anchor?.hasAttributionNote ?? false,
+                hasSessionsNote: anchor?.hasSessionsNote ?? false,
+                hasLineageNote: anchor?.hasLineageNote ?? false
+              }
+            };
+          })()
+        : null;
+
+      const badges = [anchorBadge, testBadge, traceBadge].filter(Boolean) as NonNullable<
+        TimelineNode['badges']
+      >;
 
       return {
         id: c.sha,
