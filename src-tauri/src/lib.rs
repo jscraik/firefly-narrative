@@ -245,11 +245,19 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         .setup(|app| {
             // Create a separate sqlx pool for backend Rust operations
             // Use the same database as tauri_plugin_sql to avoid duplication
-            let home = dirs::home_dir().ok_or_else(|| {
-                eprintln!("Narrative: Failed to determine home directory. Please ensure HOME environment variable is set.");
-                "Could not determine home directory. Please ensure HOME environment variable is set."
+            let app_data_dir = app.path().app_data_dir().map_err(|e| {
+                eprintln!("Narrative: Failed to resolve app data dir: {}", e);
+                format!("Could not determine app data directory: {}", e)
             })?;
-            let path = home.join("Library/Application Support/com.jamie.narrative-mvp/narrative.db");
+            std::fs::create_dir_all(&app_data_dir).map_err(|e| {
+                eprintln!(
+                    "Narrative: Failed to create app data dir at {:?}: {}",
+                    app_data_dir, e
+                );
+                format!("Failed to create app data directory: {}", e)
+            })?;
+
+            let path = app_data_dir.join("narrative.db");
 
             // Use blocking connect since setup is not async
             let pool = tauri::async_runtime::block_on(async {

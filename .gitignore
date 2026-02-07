@@ -39,3 +39,9 @@ src-tauri/icons/*.ico
 
 # Generated artifacts
 artifacts/
+
+# Release artifacts should be published via GitHub Releases (not committed)
+*.dmg
+
+# Local SQLite cache placeholder (should never be committed)
+sqlite:narrative.db
