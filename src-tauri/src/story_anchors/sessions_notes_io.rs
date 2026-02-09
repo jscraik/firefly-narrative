@@ -230,17 +230,18 @@ pub async fn export_sessions_note(
     // Optional-but-implemented: include minimal session hints (tool/model/imported_at).
     let mut session_hints: Vec<SessionHint> = Vec::new();
     for sid in &session_ids {
-        if let Ok(Some((tool, model, imported_at))) = sqlx::query_as::<_, (String, Option<String>, String)>(
-            r#"
+        if let Ok(Some((tool, model, imported_at))) =
+            sqlx::query_as::<_, (String, Option<String>, String)>(
+                r#"
             SELECT tool, model, imported_at
             FROM sessions
             WHERE repo_id = ? AND id = ?
             "#,
-        )
-        .bind(repo_id)
-        .bind(sid)
-        .fetch_optional(db)
-        .await
+            )
+            .bind(repo_id)
+            .bind(sid)
+            .fetch_optional(db)
+            .await
         {
             session_hints.push(SessionHint {
                 session_id: sid.clone(),

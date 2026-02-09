@@ -62,4 +62,3 @@ pub fn masked_preview(value: &str) -> String {
     }
     format!("{}…{}", &v[..4], &v[v.len() - 4..])
 }
-

@@ -77,7 +77,10 @@ pub fn redact_value(value: &Value) -> (Value, RedactionSummary) {
                 merge_hits(&mut hits, summary.hits);
                 redacted_items.push(redacted);
             }
-            (Value::Array(redacted_items), RedactionSummary { total, hits })
+            (
+                Value::Array(redacted_items),
+                RedactionSummary { total, hits },
+            )
         }
         Value::Object(map) => {
             let mut total = 0;
@@ -89,9 +92,18 @@ pub fn redact_value(value: &Value) -> (Value, RedactionSummary) {
                 merge_hits(&mut hits, summary.hits);
                 redacted_map.insert(key.clone(), redacted);
             }
-            (Value::Object(redacted_map), RedactionSummary { total, hits })
+            (
+                Value::Object(redacted_map),
+                RedactionSummary { total, hits },
+            )
         }
-        _ => (value.clone(), RedactionSummary { total: 0, hits: vec![] }),
+        _ => (
+            value.clone(),
+            RedactionSummary {
+                total: 0,
+                hits: vec![],
+            },
+        ),
     }
 }
 

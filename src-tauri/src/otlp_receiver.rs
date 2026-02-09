@@ -399,7 +399,10 @@ fn get_expected_api_key() -> Result<String, String> {
         return Ok(DEFAULT_API_KEY.to_string());
     }
 
-    Err("Missing Narrative OTLP API key. Configure Codex telemetry in Narrative settings.".to_string())
+    Err(
+        "Missing Narrative OTLP API key. Configure Codex telemetry in Narrative settings."
+            .to_string(),
+    )
 }
 
 // Validate API key from headers
@@ -431,6 +434,7 @@ async fn resolve_repo_id(db: &sqlx::SqlitePool, repo_root: &str) -> Option<i64> 
     row.map(|r| r.get::<i64, _>("id"))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn log_otlp_activity(
     db: &sqlx::SqlitePool,
     repo_id: i64,
@@ -556,7 +560,11 @@ async fn handle_request(
         Err(err) => {
             // Log activity (best effort) so the UI can surface failed capture attempts.
             if let Some(repo_root) = context.state.repo_root.lock().ok().and_then(|g| g.clone()) {
-                if let Some(db) = context.app_handle.try_state::<DbState>().map(|s| s.0.clone()) {
+                if let Some(db) = context
+                    .app_handle
+                    .try_state::<DbState>()
+                    .map(|s| s.0.clone())
+                {
                     if let Some(repo_id) = resolve_repo_id(&db, &repo_root).await {
                         log_otlp_activity(&db, repo_id, "failed", &[], 0, 0, &[], Some(&err)).await;
                     }
@@ -587,7 +595,11 @@ async fn handle_request(
         Ok(outcome) => {
             // Log activity (best effort)
             if let Some(repo_root) = context.state.repo_root.lock().ok().and_then(|g| g.clone()) {
-                if let Some(db) = context.app_handle.try_state::<DbState>().map(|s| s.0.clone()) {
+                if let Some(db) = context
+                    .app_handle
+                    .try_state::<DbState>()
+                    .map(|s| s.0.clone())
+                {
                     if let Some(repo_id) = resolve_repo_id(&db, &repo_root).await {
                         log_otlp_activity(
                             &db,
@@ -615,9 +627,23 @@ async fn handle_request(
         }
         Err(err) => {
             if let Some(repo_root) = context.state.repo_root.lock().ok().and_then(|g| g.clone()) {
-                if let Some(db) = context.app_handle.try_state::<DbState>().map(|s| s.0.clone()) {
+                if let Some(db) = context
+                    .app_handle
+                    .try_state::<DbState>()
+                    .map(|s| s.0.clone())
+                {
                     if let Some(repo_id) = resolve_repo_id(&db, &repo_root).await {
-                        log_otlp_activity(&db, repo_id, "failed", &[], 0, 0, &[], Some(&err.to_string())).await;
+                        log_otlp_activity(
+                            &db,
+                            repo_id,
+                            "failed",
+                            &[],
+                            0,
+                            0,
+                            &[],
+                            Some(&err.to_string()),
+                        )
+                        .await;
                     }
                 }
             }

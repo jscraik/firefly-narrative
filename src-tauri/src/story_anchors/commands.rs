@@ -6,16 +6,16 @@ use super::sessions_notes_io::{
     SessionsNoteExportSummary,
 };
 use super::status::{get_commit_story_anchor_status, StoryAnchorCommitStatus};
-use crate::attribution::line_attribution::{ensure_line_attributions_for_commit, store_rewrite_key};
-use crate::attribution::utils::fetch_repo_root;
-use crate::story_anchors::refs::{
-    ATTRIBUTION_REF_CANONICAL, ATTRIBUTION_REF_LEGACY_NARRATIVE,
+use crate::attribution::line_attribution::{
+    ensure_line_attributions_for_commit, store_rewrite_key,
 };
+use crate::attribution::utils::fetch_repo_root;
+use crate::story_anchors::refs::{ATTRIBUTION_REF_CANONICAL, ATTRIBUTION_REF_LEGACY_NARRATIVE};
 use crate::DbState;
 use git2::{Oid, Repository, Signature};
 use serde::Serialize;
-use tauri::State;
 use tauri::Manager;
+use tauri::State;
 
 #[tauri::command(rename_all = "camelCase")]
 pub async fn get_story_anchor_status(
@@ -157,14 +157,17 @@ pub async fn migrate_attribution_notes_ref(
             continue;
         };
 
-        if let Err(_) = repo.note(
-            &signature,
-            &signature,
-            Some(ATTRIBUTION_REF_CANONICAL),
-            oid,
-            message,
-            true,
-        ) {
+        if repo
+            .note(
+                &signature,
+                &signature,
+                Some(ATTRIBUTION_REF_CANONICAL),
+                oid,
+                message,
+                true,
+            )
+            .is_err()
+        {
             failed += 1;
             continue;
         }
@@ -233,7 +236,8 @@ pub async fn reconcile_after_rewrite(
 
         // Recover sessions by rewrite key.
         if let Some(key) = rewrite_key.as_deref() {
-            if let Ok(Some(source_commit)) = find_commit_by_rewrite_key(&db.0, repo_id, key, sha).await
+            if let Ok(Some(source_commit)) =
+                find_commit_by_rewrite_key(&db.0, repo_id, key, sha).await
             {
                 let copied = copy_commit_session_links(&db.0, repo_id, &source_commit, sha).await?;
                 if copied > 0 {
@@ -338,9 +342,6 @@ pub async fn install_repo_hooks(
 }
 
 #[tauri::command(rename_all = "camelCase")]
-pub async fn uninstall_repo_hooks(
-    db: State<'_, DbState>,
-    repo_id: i64,
-) -> Result<(), String> {
+pub async fn uninstall_repo_hooks(db: State<'_, DbState>, repo_id: i64) -> Result<(), String> {
     hooks_impl::uninstall_repo_hooks_by_id(&db.0, repo_id).await
 }

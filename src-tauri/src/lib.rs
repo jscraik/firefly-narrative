@@ -1,18 +1,19 @@
-pub mod attribution;
 mod activity;
+mod atlas;
+pub mod attribution;
 mod commands;
 mod file_watcher;
 mod git_diff;
-mod ingest_config;
 mod import;
+mod ingest_config;
 mod link_commands;
 mod linking;
 mod models;
 mod otlp_receiver;
 mod rules;
+mod secret_store;
 mod session_hash;
 mod session_links;
-mod secret_store;
 pub mod story_anchors;
 mod trace_commands;
 
@@ -180,6 +181,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             sql: include_str!("../migrations/011_story_anchors.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 12,
+            description: "add_atlas",
+            sql: include_str!("../migrations/012_atlas.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -207,6 +214,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             import::commands::scan_for_session_files,
             import::commands::get_recent_sessions,
             import::commands::purge_expired_sessions,
+            atlas::commands::atlas_capabilities,
+            atlas::commands::atlas_introspect,
+            atlas::commands::atlas_search,
+            atlas::commands::atlas_get_session,
+            atlas::commands::atlas_doctor_report,
+            atlas::commands::atlas_doctor_rebuild_derived,
             // Git diff commands
             git_diff::get_commit_added_ranges,
             // Attribution commands

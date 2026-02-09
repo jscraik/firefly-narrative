@@ -494,17 +494,11 @@ async fn auto_import_session_file_inner(
         }
     };
 
-    let (link_result, link_error) = match link_session_to_commit_internal(
-        db,
-        repo_id,
-        &redacted_session,
-        &session_id,
-    )
-    .await
-    {
-        Ok(result) => (Some(result), None),
-        Err(err) => (None, Some(err)),
-    };
+    let (link_result, link_error) =
+        match link_session_to_commit_internal(db, repo_id, &redacted_session, &session_id).await {
+            Ok(result) => (Some(result), None),
+            Err(err) => (None, Some(err)),
+        };
 
     log_auto_ingest(
         db,
@@ -522,7 +516,9 @@ async fn auto_import_session_file_inner(
         redacted_session.origin.tool,
         session_id,
         redaction.total as i64,
-        link_result.map(|result| result.needs_review).unwrap_or(false),
+        link_result
+            .map(|result| result.needs_review)
+            .unwrap_or(false),
     ))
 }
 
@@ -560,7 +556,9 @@ fn collect_recent_files(
         if out.len() >= max_scan {
             return;
         }
-        let Ok(entries) = std::fs::read_dir(dir) else { return; };
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
         for entry in entries.flatten() {
             if out.len() >= max_scan {
                 return;
@@ -606,7 +604,10 @@ pub async fn backfill_recent_sessions(
     // Claude session files
     let claude = collect_recent_files(
         &config.watch_paths.claude,
-        |p| p.extension().map(|e| e == "jsonl").unwrap_or(false) && p.to_string_lossy().contains(".claude"),
+        |p| {
+            p.extension().map(|e| e == "jsonl").unwrap_or(false)
+                && p.to_string_lossy().contains(".claude")
+        },
         5000,
     );
     candidates.extend(
@@ -676,6 +677,22 @@ pub async fn purge_expired_sessions(
     .execute(&*db.0)
     .await
     .map_err(|e| e.to_string())?;
+
+    let _ = sqlx::query(
+        r#"
+        DELETE FROM atlas_chunks
+        WHERE repo_id = ?
+          AND session_id IN (
+            SELECT id
+            FROM sessions
+            WHERE repo_id = ? AND purged_at IS NOT NULL
+          )
+        "#,
+    )
+    .bind(repo_id)
+    .bind(repo_id)
+    .execute(&*db.0)
+    .await;
 
     Ok(result.rows_affected())
 }
@@ -755,7 +772,7 @@ async fn store_session(
     .bind(message_count)
     .bind(files_json)
     .bind(&session.origin.conversation_id)
-    .bind(trace_json)
+    .bind(&trace_json)
     .execute(db)
     .await?;
 
@@ -787,8 +804,10 @@ async fn store_session_with_meta(
     });
 
     let trace_json = serde_json::to_string(&session.trace).unwrap_or_else(|_| "{}".to_string());
-    let files_json = serde_json::to_string(&session.files_touched).unwrap_or_else(|_| "[]".to_string());
-    let redaction_types = serde_json::to_string(&redaction.hits).unwrap_or_else(|_| "[]".to_string());
+    let files_json =
+        serde_json::to_string(&session.files_touched).unwrap_or_else(|_| "[]".to_string());
+    let redaction_types =
+        serde_json::to_string(&redaction.hits).unwrap_or_else(|_| "[]".to_string());
 
     let result = query(
         r#"
@@ -822,7 +841,7 @@ async fn store_session_with_meta(
     .bind(message_count)
     .bind(files_json)
     .bind(&session.origin.conversation_id)
-    .bind(trace_json)
+    .bind(&trace_json)
     .bind(source_path)
     .bind(&session.origin.session_id)
     .bind(redaction.total as i64)
@@ -834,6 +853,17 @@ async fn store_session_with_meta(
 
     if result.rows_affected() == 0 {
         return Err(StoreSessionError::Duplicate);
+    }
+
+    if let Err(err) =
+        crate::atlas::projection::upsert_chunks_for_session(db, repo_id, &session_id, &trace_json)
+            .await
+    {
+        eprintln!(
+            "Narrative: Atlas projection failed during import (repo_id={}, session_id={}): {}",
+            repo_id, session_id, err
+        );
+        crate::atlas::projection::mark_index_error(db, repo_id, &err).await;
     }
 
     Ok(session_id)
@@ -850,7 +880,12 @@ pub struct AutoImportResult {
 }
 
 impl AutoImportResult {
-    pub fn imported(tool: String, session_id: String, redaction_count: i64, needs_review: bool) -> Self {
+    pub fn imported(
+        tool: String,
+        session_id: String,
+        redaction_count: i64,
+        needs_review: bool,
+    ) -> Self {
         Self {
             status: "imported".to_string(),
             tool,
@@ -914,16 +949,30 @@ fn redact_session(mut session: ParsedSession) -> (ParsedSession, RedactionSummar
                     timestamp,
                 });
             }
-            super::parser::TraceMessage::ToolCall { tool_name, input, timestamp } => {
+            super::parser::TraceMessage::ToolCall {
+                tool_name,
+                input,
+                timestamp,
+            } => {
                 let (redacted_input, summary) = match input {
                     Some(value) => redact_value(&value),
-                    None => (Value::Null, RedactionSummary { total: 0, hits: vec![] }),
+                    None => (
+                        Value::Null,
+                        RedactionSummary {
+                            total: 0,
+                            hits: vec![],
+                        },
+                    ),
                 };
                 total += summary.total;
                 merge_hits(&mut hits, summary.hits);
                 messages.push(super::parser::TraceMessage::ToolCall {
                     tool_name,
-                    input: if redacted_input.is_null() { None } else { Some(redacted_input) },
+                    input: if redacted_input.is_null() {
+                        None
+                    } else {
+                        Some(redacted_input)
+                    },
                     timestamp,
                 });
             }
@@ -934,7 +983,10 @@ fn redact_session(mut session: ParsedSession) -> (ParsedSession, RedactionSummar
     (session, RedactionSummary { total, hits })
 }
 
-fn merge_hits(target: &mut Vec<super::redactor::RedactionHit>, incoming: Vec<super::redactor::RedactionHit>) {
+fn merge_hits(
+    target: &mut Vec<super::redactor::RedactionHit>,
+    incoming: Vec<super::redactor::RedactionHit>,
+) {
     for hit in incoming {
         if let Some(existing) = target.iter_mut().find(|h| h.kind == hit.kind) {
             existing.count += hit.count;
@@ -947,7 +999,10 @@ fn merge_hits(target: &mut Vec<super::redactor::RedactionHit>, incoming: Vec<sup
 fn build_dedupe_key(session: &ParsedSession) -> String {
     use sha2::{Digest, Sha256};
     let trace_json = serde_json::to_string(&session.trace).unwrap_or_default();
-    let input = format!("{}:{}:{}", session.origin.tool, session.origin.session_id, trace_json);
+    let input = format!(
+        "{}:{}:{}",
+        session.origin.tool, session.origin.session_id, trace_json
+    );
     let mut hasher = Sha256::new();
     hasher.update(input.as_bytes());
     let result = hasher.finalize();
@@ -960,7 +1015,10 @@ async fn link_session_to_commit_internal(
     session: &ParsedSession,
     stored_session_id: &str,
 ) -> Result<crate::linking::LinkResult, String> {
-    use crate::linking::{link_session_to_commits_with_options, LinkOptions, SessionMessage, SessionMessageRole, SessionTool};
+    use crate::linking::{
+        link_session_to_commits_with_options, LinkOptions, SessionMessage, SessionMessageRole,
+        SessionTool,
+    };
 
     let imported_at_iso = session
         .ended_at
@@ -1006,11 +1064,9 @@ async fn link_session_to_commit_internal(
             "cursor" => SessionTool::Cursor,
             _ => SessionTool::Unknown,
         },
-        duration_min: session.started_at.and_then(|start| {
-            session
-                .ended_at
-                .map(|end| (end - start).num_minutes() as i64)
-        }),
+        duration_min: session
+            .started_at
+            .and_then(|start| session.ended_at.map(|end| (end - start).num_minutes())),
         imported_at_iso,
         messages,
     };
@@ -1035,9 +1091,13 @@ async fn link_session_to_commit_internal(
     .await
     .map_err(|e| e.to_string())?;
 
-    let result = link_session_to_commits_with_options(&session_excerpt, &commits, LinkOptions {
-        skip_secret_scan: true,
-    })
+    let result = link_session_to_commits_with_options(
+        &session_excerpt,
+        &commits,
+        LinkOptions {
+            skip_secret_scan: true,
+        },
+    )
     .map_err(|e| format!("{:?}", e))?;
 
     sqlx::query(
@@ -1064,6 +1124,7 @@ async fn link_session_to_commit_internal(
     Ok(result)
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn log_auto_ingest(
     db: &sqlx::SqlitePool,
     repo_id: i64,

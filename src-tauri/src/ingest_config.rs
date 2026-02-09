@@ -70,22 +70,13 @@ impl Default for CodexConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ConsentState {
     #[serde(default)]
     pub codex_telemetry_granted: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub granted_at_iso: Option<String>,
-}
-
-impl Default for ConsentState {
-    fn default() -> Self {
-        Self {
-            codex_telemetry_granted: false,
-            granted_at_iso: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

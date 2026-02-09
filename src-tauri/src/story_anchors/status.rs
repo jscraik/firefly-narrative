@@ -86,4 +86,3 @@ pub async fn get_commit_story_anchor_status(
 
     out
 }
-

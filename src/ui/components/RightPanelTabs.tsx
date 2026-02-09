@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useEffect, useState } from 'react';
-import { MessageSquare, Activity, Settings, TestTube, FileCode } from 'lucide-react';
+import { MessageSquare, Activity, Settings, TestTube, FileCode, Search } from 'lucide-react';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
 import type { SessionExcerpt, TestRun, TraceCommitSummary, TraceCollectorStatus, TraceCollectorConfig, TraceRange } from '../../core/types';
 import { SessionExcerpts } from './SessionExcerpts';
@@ -12,9 +12,10 @@ import { TestResultsPanel } from './TestResultsPanel';
 import { DiffViewer } from './DiffViewer';
 import { SourceLensView } from './SourceLensView';
 import { StepsSummaryCard } from './StepsSummaryCard';
+import { AtlasSearchPanel } from './AtlasSearchPanel';
 import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
 
-type TabId = 'session' | 'attribution' | 'settings' | 'tests';
+type TabId = 'session' | 'attribution' | 'atlas' | 'settings' | 'tests';
 
 interface TabConfig {
   id: TabId;
@@ -25,6 +26,7 @@ interface TabConfig {
 const TABS: TabConfig[] = [
   { id: 'session', label: 'Session', icon: MessageSquare },
   { id: 'attribution', label: 'AI Attribution', icon: Activity },
+	{ id: 'atlas', label: 'Atlas Search', icon: Search },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'tests', label: 'Tests', icon: TestTube },
 ];
@@ -130,6 +132,8 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
   // Determine which tabs have content
   const hasSessionContent = sessionExcerpts && sessionExcerpts.length > 0;
   const hasAttributionContent = traceSummary || traceStatus;
+	// Atlas tab is always enabled; the panel itself shows a repo-required empty state when repoId is null.
+	const hasAtlasContent = true;
   const hasTestContent = Boolean(testRun) || Boolean(selectedCommitSha);
 
   // Auto-switch to attribution tab if no session but has attribution
@@ -196,29 +200,30 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
             const hasContent =
               (tab.id === 'session' && hasSessionContent) ||
               (tab.id === 'attribution' && hasAttributionContent) ||
+				(tab.id === 'atlas' && hasAtlasContent) ||
               (tab.id === 'tests' && hasTestContent) ||
               tab.id === 'settings';
 
-	            return (
-	              <button
-	                key={tab.id}
-	                id={`tab-${tab.id}`}
-	                type="button"
-	                onClick={() => setActiveTab(tab.id)}
-	                className={`
-	                  flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium
-	                  transition-all duration-150
-	                  ${isActive
-	                    ? 'bg-accent-blue-light text-accent-blue'
-	                    : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary'
-	                  }
-	                  ${!hasContent && tab.id !== 'settings' ? 'opacity-60' : ''}
-	                `}
-	                aria-selected={isActive}
-	                aria-controls={`panel-${tab.id}`}
-	                role="tab"
-	                tabIndex={isActive ? 0 : -1}
-	              >
+				return (
+					<button
+					key={tab.id}
+					id={`tab-${tab.id}`}
+					type="button"
+					onClick={() => setActiveTab(tab.id)}
+					className={`
+						flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium
+						transition-all duration-150
+						${isActive
+						? 'bg-accent-blue-light text-accent-blue'
+						: 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary'
+						}
+						${!hasContent && tab.id !== 'settings' ? 'opacity-60' : ''}
+					`}
+					aria-selected={isActive}
+					aria-controls={`panel-${tab.id}`}
+					role="tab"
+					tabIndex={isActive ? 0 : -1}
+					>
                 <Icon className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{tab.label}</span>
               </button>
@@ -320,6 +325,12 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
             )}
           </div>
         )}
+
+		{effectiveTab === 'atlas' && (
+			<div id="panel-atlas" role="tabpanel" aria-labelledby="tab-atlas" className="flex flex-col gap-4">
+			<AtlasSearchPanel repoId={repoId ?? null} />
+			</div>
+		)}
 
         {effectiveTab === 'settings' && (
           <div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">

@@ -12,9 +12,7 @@ fn ensure_executable(path: &Path) -> Result<(), String> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(path)
-            .map_err(|e| e.to_string())?
-            .permissions();
+        let mut perms = fs::metadata(path).map_err(|e| e.to_string())?.permissions();
         perms.set_mode(0o755);
         fs::set_permissions(path, perms).map_err(|e| e.to_string())?;
     }
@@ -126,11 +124,7 @@ pub async fn install_repo_hooks_by_id(
     install_repo_hooks(&repo_root, db_path).await
 }
 
-pub async fn uninstall_repo_hooks_by_id(
-    db: &sqlx::SqlitePool,
-    repo_id: i64,
-) -> Result<(), String> {
+pub async fn uninstall_repo_hooks_by_id(db: &sqlx::SqlitePool, repo_id: i64) -> Result<(), String> {
     let repo_root = fetch_repo_root(db, repo_id).await?;
     uninstall_repo_hooks(&repo_root).await
 }
-

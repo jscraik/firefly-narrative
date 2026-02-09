@@ -44,7 +44,7 @@ fn tool_label(tool: &str) -> String {
         "codex" => "Codex".to_string(),
         "codex_otlp" => "Codex".to_string(),
         other => {
-            let mut c = other.replace('_', " ").replace('-', " ");
+            let mut c = other.replace(['_', '-'], " ");
             if let Some(r) = c.get_mut(0..1) {
                 r.make_ascii_uppercase();
             }
@@ -123,7 +123,10 @@ fn parse_messages_lite(raw_json: &str, limit: usize) -> Vec<LinkedSessionMessage
     let mut out = Vec::new();
     for m in msgs.iter().take(limit) {
         let role = m.get("role").and_then(|r| r.as_str()).unwrap_or("unknown");
-        let tool_name = m.get("tool_name").and_then(|t| t.as_str()).map(|s| s.to_string());
+        let tool_name = m
+            .get("tool_name")
+            .and_then(|t| t.as_str())
+            .map(|s| s.to_string());
 
         // Text field differs by variant; we store `text` for user/assistant/thinking/plan.
         // Some tool/adapter variants may use `content` or `input`.
@@ -131,8 +134,16 @@ fn parse_messages_lite(raw_json: &str, limit: usize) -> Vec<LinkedSessionMessage
             .get("text")
             .and_then(|t| t.as_str())
             .map(|s| s.to_string())
-            .or_else(|| m.get("content").and_then(|t| t.as_str()).map(|s| s.to_string()))
-            .or_else(|| m.get("input").and_then(|t| t.as_str()).map(|s| s.to_string()))
+            .or_else(|| {
+                m.get("content")
+                    .and_then(|t| t.as_str())
+                    .map(|s| s.to_string())
+            })
+            .or_else(|| {
+                m.get("input")
+                    .and_then(|t| t.as_str())
+                    .map(|s| s.to_string())
+            })
             .unwrap_or_default();
 
         out.push(LinkedSessionMessage {
@@ -226,7 +237,9 @@ pub async fn get_ingest_activity(
                                 .unwrap_or_default()
                         );
                     }
-                    "skipped" => message = format!("Skipped duplicate {} session", tool_label(&source_tool)),
+                    "skipped" => {
+                        message = format!("Skipped duplicate {} session", tool_label(&source_tool))
+                    }
                     "failed" => {
                         let err = error_message
                             .as_deref()
@@ -234,7 +247,10 @@ pub async fn get_ingest_activity(
                             .lines()
                             .next()
                             .unwrap_or("Unknown error");
-                        message = format!("Failed to import {} session · {err}", tool_label(&source_tool));
+                        message = format!(
+                            "Failed to import {} session · {err}",
+                            tool_label(&source_tool)
+                        );
                     }
                     _ => message = format!("{} session ingest: {status}", tool_label(&source_tool)),
                 }
