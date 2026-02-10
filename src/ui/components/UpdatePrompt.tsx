@@ -23,26 +23,79 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
     return null;
   }
 
-  // Error state
+  /**
+ * Maps technical errors to user-friendly messages
+ */
+function getUserFriendlyError(error: string): { title: string; message: string; isWebMode?: boolean } {
+  const lowerError = error.toLowerCase();
+  
+  // Tauri API unavailable (running in browser mode)
+  if (lowerError.includes('cannot read properties of undefined') && lowerError.includes('invoke')) {
+    return {
+      title: 'Desktop Features Unavailable',
+      message: 'Auto-updates are only available in the desktop app. Please download the latest version from our releases page.',
+      isWebMode: true,
+    };
+  }
+  
+  // Network errors
+  if (lowerError.includes('network') || lowerError.includes('fetch') || lowerError.includes('connection')) {
+    return {
+      title: 'Connection Issue',
+      message: 'Unable to check for updates. Please check your internet connection and try again.',
+    };
+  }
+  
+  // Server errors
+  if (lowerError.includes('500') || lowerError.includes('502') || lowerError.includes('503')) {
+    return {
+      title: 'Server Error',
+      message: 'Our update server is temporarily unavailable. Please try again later.',
+    };
+  }
+  
+  // Default error
+  return {
+    title: 'Update Error',
+    message: 'Something went wrong while checking for updates. Please try again.',
+  };
+}
+
+// Error state
   if (status.type === 'error') {
+    const { title, message, isWebMode } = getUserFriendlyError(status.error);
+    
     return (
       <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
         <div className="rounded-xl border border-accent-red-light bg-accent-red-bg shadow-lg p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-accent-red mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-accent-red text-sm">Update Error</div>
-              <p className="text-xs text-text-secondary mt-1">{status.error}</p>
-              {onCheckAgain && (
-                <button
-                  type="button"
-                  onClick={onCheckAgain}
-                  className="mt-2 text-xs font-medium text-text-secondary hover:text-text-primary flex items-center gap-1"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  Try Again
-                </button>
-              )}
+              <div className="font-semibold text-accent-red text-sm">{title}</div>
+              <p className="text-xs text-text-secondary mt-1">{message}</p>
+              <div className="flex gap-2 mt-3">
+                {onCheckAgain && !isWebMode && (
+                  <button
+                    type="button"
+                    onClick={onCheckAgain}
+                    className="text-xs font-medium text-text-secondary hover:text-text-primary flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Try Again
+                  </button>
+                )}
+                {isWebMode && (
+                  <a
+                    href="https://github.com/jscraik/narrative/releases"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-accent-blue hover:text-accent-blue/80 flex items-center gap-1"
+                  >
+                    <Download className="w-3 h-3" />
+                    Download App
+                  </a>
+                )}
+              </div>
             </div>
             {handleClose ? (
               <button

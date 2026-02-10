@@ -52,10 +52,10 @@ export function FilesChanged({
               }}
               type="button"
               aria-pressed={selectedFile === f.path}
-              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all ${
+              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all duration-150 ${
                 selectedFile === f.path 
-                  ? 'bg-accent-blue-bg border-l-2 border-l-accent-blue -ml-[2px] pl-[18px]' 
-                  : 'hover:bg-bg-subtle border-l-2 border-l-transparent'
+                  ? 'bg-accent-blue-bg border-l-[3px] border-l-accent-blue -ml-[3px] pl-[18px] shadow-sm' 
+                  : 'hover:bg-bg-subtle border-l-[3px] border-l-transparent'
               }`}
               onClick={() => selectFile(f.path)}
             >

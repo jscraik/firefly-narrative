@@ -1,4 +1,4 @@
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen, Search, Link2 } from 'lucide-react';
 
 export function RepoEmptyState({ onOpenRepo }: { onOpenRepo: () => void }) {
     return (
@@ -11,24 +11,37 @@ export function RepoEmptyState({ onOpenRepo }: { onOpenRepo: () => void }) {
                 Open a git repository to visualize its narrative history, sessions, and intent.
             </p>
 
-            <div className="mt-8 grid grid-cols-2 gap-4 text-xs">
-                <button
-                    type="button"
-                    onClick={onOpenRepo}
-                    className="rounded-lg border border-border-light bg-white p-3 text-left hover:border-border-light hover:shadow-sm transition-all w-full group"
-                >
-                    <div className="font-semibold text-text-secondary group-hover:text-text-primary">Explore History</div>
-                    <div className="mt-1 text-text-muted">View commits & timeline</div>
-                </button>
-                <button
-                    type="button"
-                    onClick={onOpenRepo}
-                    className="rounded-lg border border-border-light bg-white p-3 text-left hover:border-border-light hover:shadow-sm transition-all w-full group"
-                >
-                    <div className="font-semibold text-text-secondary group-hover:text-text-primary">Link Sessions</div>
-                    <div className="mt-1 text-text-muted">Import Claude/Cursor logs</div>
-                </button>
+            {/* Primary CTA - Consistent with Dashboard empty state */}
+            <button
+                type="button"
+                onClick={onOpenRepo}
+                className="mt-6 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-surface-strong text-white text-sm font-medium hover:bg-surface-strong-hover transition-colors shadow-sm"
+            >
+                <Search className="w-4 h-4" />
+                Open Repository
+            </button>
+
+            {/* Secondary options with consistent styling */}
+            <div className="mt-8 grid grid-cols-2 gap-4 text-xs max-w-md">
+                <div className="rounded-lg border border-border-light bg-white p-4 text-left opacity-60">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Search className="w-3.5 h-3.5 text-text-muted" />
+                        <span className="font-semibold text-text-secondary">Explore History</span>
+                    </div>
+                    <div className="text-text-muted">View commits & timeline</div>
+                </div>
+                <div className="rounded-lg border border-border-light bg-white p-4 text-left opacity-60">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Link2 className="w-3.5 h-3.5 text-text-muted" />
+                        <span className="font-semibold text-text-secondary">Link Sessions</span>
+                    </div>
+                    <div className="text-text-muted">Import Claude/Cursor logs</div>
+                </div>
             </div>
+            
+            <p className="mt-6 text-xs text-text-muted italic">
+                Your code stories are waiting.
+            </p>
         </div>
     );
 }
