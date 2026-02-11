@@ -43,6 +43,7 @@ const DEFAULT_API_KEY: &str = "narrative-otel-dev-key-change-in-production";
 // Security: Rate limiting configuration
 const RATE_LIMIT_MAX_REQUESTS: u32 = 30; // Max requests per window
 const RATE_LIMIT_WINDOW_SECONDS: u64 = 1; // 1 second sliding window
+const RATE_LIMIT_MAX_ENTRIES: usize = 1000; // Cap to prevent memory exhaustion under attack
 
 const COMMIT_KEYS: &[&str] = &[
     "commit_sha",
@@ -101,6 +102,11 @@ impl RateLimiter {
 
         // Remove timestamps outside the current window
         self.requests.retain(|&t| t > window_start);
+
+        // Security: Cap total entries to prevent memory exhaustion under attack
+        if self.requests.len() > RATE_LIMIT_MAX_ENTRIES {
+            self.requests.truncate(RATE_LIMIT_MAX_ENTRIES);
+        }
 
         // Check if under the limit
         if self.requests.len() < RATE_LIMIT_MAX_REQUESTS as usize {

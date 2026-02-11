@@ -9,10 +9,13 @@ export type Stats = {
   responses: number;
 };
 
+export type IntentType = 'feature' | 'fix' | 'refactor' | 'test' | 'docs' | 'other';
+
 export type IntentItem = {
   id: string;
   text: string;
   tag?: string;
+  type?: IntentType;
 };
 
 export type FileChange = {

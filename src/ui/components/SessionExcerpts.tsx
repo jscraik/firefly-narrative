@@ -1,4 +1,4 @@
-import { Link2, Link2Off, Upload, CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
+import { Link2, Link2Off, Upload, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import type { SessionExcerpt } from '../../core/types';
 import { Dialog } from './Dialog';
@@ -10,16 +10,38 @@ function truncateText(text: string, limit = 160) {
   return `${trimmed.slice(0, limit).trim()}…`;
 }
 
-function formatDuration(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes} min`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (mins === 0) {
-    return `${hours} hr`;
-  }
-  return `${hours} hr ${mins} min`;
+function ExpandableHighlight({ text, id }: { text: string; id: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const limit = 120;
+  const needsExpansion = text.length > limit;
+  const displayText = expanded || !needsExpansion ? text : `${text.slice(0, limit).trim()}…`;
+  
+  return (
+    <li key={id} className="text-xs text-text-secondary">
+      <span id={`${id}-text`}>{displayText}</span>
+      {needsExpansion && (
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="ml-1 text-accent-blue hover:text-accent-blue/80 text-[10px] font-medium inline-flex items-center gap-0.5"
+          aria-expanded={expanded}
+          aria-controls={`${id}-text`}
+        >
+          {expanded ? (
+            <>
+              <ChevronUp className="w-3 h-3" />
+              Show less
+            </>
+          ) : (
+            <>
+              <ChevronDown className="w-3 h-3" />
+              Read more
+            </>
+          )}
+        </button>
+      )}
+    </li>
+  );
 }
 
 function ToolPill({
@@ -392,9 +414,9 @@ export function SessionExcerpts({
           <div>
             <div className="text-[10px] uppercase tracking-wider text-text-muted">AI-suggested highlights</div>
             {highlights.length > 0 ? (
-              <ul className="mt-2 list-disc pl-4 text-xs text-text-secondary space-y-1">
+              <ul className="mt-2 list-disc pl-4 space-y-2">
                 {highlights.map((highlight) => (
-                  <li key={highlight.id}>{highlight.text}</li>
+                  <ExpandableHighlight key={highlight.id} id={highlight.id} text={highlight.text} />
                 ))}
               </ul>
             ) : (
