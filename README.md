@@ -1,136 +1,135 @@
-# Narrative Desktop MVP (tauri v2 + React + Vite + Tailwind v4 + TS)
+<p align="center">
+  <img src=".agent/ui-final-1-demo.png" width="700" alt="Narrative Desktop - Version control as a narrative medium">
+</p>
 
-Desktop MVP for exploring **version control as a narrative medium**.
+<h1 align="center">Narrative</h1>
 
-Includes:
+<p align="center">
+  <strong>Version control as a narrative medium</strong><br>
+  Capture the story behind your code — from AI prompts to commits
+</p>
 
-- **Demo mode** mirroring the “branch narrative” layout (intent → session excerpts → files → diff → timeline).
-- **repo mode**:
-  - pick a local git repo
-  - index recent commits
-  - timeline navigation + per-commit files/diff on selection
-  - caches commit metadata + file-change lists in **SQLite**
-  - writes **committable** narrative metadata into `.narrative/meta/**`
-  - supports **manual session import** into `.narrative/sessions/**` (with basic secret scrubbing)
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#features">Features</a> •
+  <a href="docs/README.md">Docs</a> •
+  <a href="#contributing">Contributing</a>
+</p>
 
 ---
 
-## prereqs
+## The Problem
 
-- Node.js + pnpm
-- Rust toolchain
-- tauri system deps for your OS (see tauri docs)
-- `git` available on PATH (repo mode executes `git` via `tauri-plugin-shell`)
+When you code with AI (Claude Code, Codex, Cursor), the rich context — your intent, the conversation, dead ends, reasoning — disappears into the void. Your git commit only shows *what* changed, not *why*.
+
+**Narrative captures the full story:** AI sessions → intent → commits → timeline.
+
+<p align="center">
+  <img src=".agent/ui-final-2-repo.png" width="600" alt="Repository timeline view">
+</p>
+
+---
+
+## Features
+
+- **📖 Timeline View** — Navigate commits with context, not just diffs
+- **🤖 AI Session Import** — Import Claude Code, Codex CLI, Cursor sessions
+- **🔗 Session-to-Commit Linking** — See which AI conversations led to which commits
+- **📊 Dashboard** — Insights into your AI-assisted workflow
+- **🔍 Atlas Search** — Full-text search across all sessions and commits
+- **💾 Local-First** — All data stays on your machine (`.narrative/` folder)
 
 ---
 
 ## Quick Start
 
-1. **Install dependencies**:
+### Download
 
-   ```bash
-   pnpm install
-   ```
+Grab the latest release for macOS, Linux, or Windows from the [Releases page](../../releases).
 
-2. **Run the app**:
+### Build from Source
 
-   ```bash
-   pnpm tauri dev
-   ```
-
-3. **Open a repository**:
-   - Click "Open repo..." and select a git repository
-   - Navigate commits and see files changed
-
-4. **Import a session** (optional):
-   - Click "Import session..." and select a JSON session file
-   - See session excerpts in the right panel
-
-## Docs
-
-- `docs/README.md` — docs index (start here)
-- `docs/agents/development.md` — dev prerequisites + run/build commands
-- `docs/agents/testing.md` — lint, Typecheck, and test commands
-- `docs/agents/tauri.md` — tauri permissions + data locations
-- `docs/agents/repo-structure.md` — repo layout overview
-- `docs/agents/repair-agent.md` — autonomous CI repair agent workflow
-- `pnpm docs:lint` — run Vale + markdownlint for docs
-
----
-
-## Run (dev)
+**Prerequisites:** Node.js + pnpm, Rust toolchain, git
 
 ```bash
 pnpm install
 pnpm tauri dev
 ```
 
----
-
-## tauri v2 permissions (important)
-
-tauri v2 requires explicit permissions for plugins.
-
-This MVP enables (see `src-tauri/capabilities/default.json`):
-
-- `dialog:allow-open` — choose a repo folder / import a session file
-- `shell:allow-execute` — scoped to only the `git` program
-- `sql:default` + `sql:allow-execute` — SQLite caching
+Then open a git repository and see your commit history with narrative context.
 
 ---
 
-## What gets written to your repo
+## Documentation
 
-When you open a repo, the app creates:
-
-- `.narrative/meta/repo.json`
-- `.narrative/meta/branches/<branch>.json`
-- `.narrative/meta/commits/<sha>.json` for indexed commits
-- (lazy) `.narrative/meta/commits/<sha>.files.json` once you click a commit
-
-These files are **committable** (shareable narrative layer).
+- [`docs/README.md`](docs/README.md) — Documentation index
+- [`docs/agents/development.md`](docs/agents/development.md) — Development setup
+- [`docs/agents/testing.md`](docs/agents/testing.md) — Testing commands
+- [`docs/agents/repo-structure.md`](docs/agents/repo-structure.md) — Codebase layout
 
 ---
 
-## Sessions
+## Contributing
 
-Use **Import session…** (repo tab) to import a JSON file.
+We'd love your help! Narrative is built with **Tauri v2** (Rust backend + React frontend).
 
-Example schema: `examples/session.example.json`.
+### Quick Setup
 
-- The importer performs basic secret redaction before writing into `.narrative/sessions/imported/*`.
-- The UI will show the latest imported session in the “Session Excerpts” panel (MVP: branch-level, not commit-linked yet).
+```bash
+pnpm install
+pnpm tauri dev
+```
 
----
+### Ways to Contribute
 
-## Local cache
-
-SQLite file: `sqlite:narrative.db` (managed by `tauri-plugin-sql`)
-
-Schema/migration: `src-tauri/migrations/001_init.sql`
-
-Do **not** commit this cache file.
-
----
-
-## Next expansions
-
-- Parse Claude Code / Codex CLI native logs and auto-link sessions to commits.
-- Commit–session linking via trailers, git notes, and timestamp+file overlap heuristics.
-- Multi-level abstraction: commit → session → milestone → branch narrative.
-- “Speculate” mode: simulate alternative future paths using constraints learned from history.
+- **🐛 Bug Reports** — [Open an issue](../../issues/new?template=bug_report.yml)
+- **💡 Feature Requests** — [Request a feature](../../issues/new?template=feature_request.yml)
+- **🔧 Code** — Look for [good first issues](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+- **📖 Documentation** — Help improve our docs
+- **🧪 Testing** — Try it out and report your experience
 
 ---
 
-<img
-  src="./brand/brand-mark.webp"
-  srcset="./brand/brand-mark.webp 1x, ./brand/brand-mark@2x.webp 2x"
-  alt="brAInwav"
-  height="28"
-  align="left"
-/>
+## Tech Stack
 
-<br clear="left" />
+- **Frontend:** React 18 + TypeScript + Tailwind CSS v4 + Vite
+- **Backend:** Rust (Tauri v2) + sqlx + git2
+- **Database:** SQLite (tauri-plugin-sql)
+- **Build:** Cargo (Rust) + pnpm (Node)
 
-**brAInwav**
-_from demo to duty_
+---
+
+## What Gets Written to Your Repo
+
+When you open a repo, Narrative creates a `.narrative/` folder:
+
+```
+.narrative/
+├── meta/
+│   ├── repo.json
+│   ├── branches/<branch>.json
+│   └── commits/<sha>.json
+└── sessions/
+    └── imported/*.json
+```
+
+These files are **committable** — share the narrative layer with your team.
+
+---
+
+## Roadmap
+
+- [x] Session import and viewing
+- [x] Commit timeline with file changes
+- [x] Session-to-commit linking
+- [x] Atlas search (full-text session search)
+- [ ] Auto-import from Claude Code / Codex CLI logs
+- [ ] Git notes integration for team sync
+- [ ] Multi-level narrative (commits → sessions → milestones)
+- [ ] "Speculate" mode — predict file changes from history
+
+---
+
+<p align="center">
+  Built with ❤️ by <strong>brAInwav</strong>
+</p>
