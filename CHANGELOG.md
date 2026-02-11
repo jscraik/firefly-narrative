@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.4.0...narrative-desktop-mvp-v0.5.0) (2026-02-11)
+
+
+### Features
+
+* **redaction:** expand secret detection patterns and add tests ([b62e209](https://github.com/jscraik/narrative/commit/b62e209b4c962841c7b0ff8c9f2af0826e24f038))
+* **session-badges:** enhance with tool icons, colors, and labels ([fa5093f](https://github.com/jscraik/narrative/commit/fa5093f6c7cea41e05a581ee43fcc0d94889f560))
+
+
+### Bug Fixes
+
+* **cargo:** add default-run key to enable dev server ([3aeee16](https://github.com/jscraik/narrative/commit/3aeee16f8a114c5c7fad52adbdd50aa6ff6c1fc3))
+
 ## [0.4.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.3.1...narrative-desktop-mvp-v0.4.0) (2026-02-09)
 
 
