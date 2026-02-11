@@ -38,7 +38,7 @@ export function AutoIngestSetupPanel(props: {
     return (
       <div className="card p-5">
         <div className="section-header">AUTO‑INGEST SETUP</div>
-        <div className="section-subheader mt-0.5">connect once</div>
+        <div className="section-subheader">connect once</div>
         <div className="mt-3 text-xs text-text-tertiary">Open a repo to configure auto‑ingest.</div>
       </div>
     );

@@ -99,14 +99,14 @@ export function CaptureActivityStrip(props: {
       </div>
 
       {drawerOpen ? (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 animate-in fade-in duration-200">
           <button
             type="button"
             className="absolute inset-0 bg-black/40"
             onClick={closeDrawer}
             aria-label="Close"
           />
-          <div className="absolute right-0 top-0 h-full w-full max-w-[520px] bg-bg-page shadow-xl border-l border-border-light p-5 overflow-y-auto">
+          <div className="absolute right-0 top-0 h-full w-full max-w-[520px] bg-bg-page shadow-xl border-l border-border-light p-5 overflow-y-auto animate-in slide-in-from-right duration-300">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-text-secondary">Capture activity</div>

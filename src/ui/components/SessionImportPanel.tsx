@@ -94,7 +94,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
           disabled={scanning}
           className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary bg-bg-subtle border border-border-light rounded-md hover:bg-bg-hover disabled:opacity-50 transition-colors"
         >
-          <RefreshCw className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${scanning ? 'motion-safe:animate-spin' : ''}`} />
           {scanning ? 'Scanning...' : 'Scan for Sessions'}
         </button>
       </div>
@@ -129,8 +129,12 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
             {sessions.map((session) => {
               const isSelected = selectedPaths.has(session.path);
               const fileName = session.path.split('/').pop() || session.path;
+              // Show relative path from home directory
+              const displayPath = session.path.startsWith('/Users/') || session.path.startsWith('/home/')
+                ? session.path.replace(/^\/(?:Users|home)\/[^/]+/, '~')
+                : session.path;
               const checkboxId = `session-${session.path.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-              
+
               return (
                 <div
                   key={session.path}
@@ -146,9 +150,9 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
                       onChange={() => toggleSelection(session.path)}
                       className="w-4 h-4 text-sky-600 border-border-light rounded focus:ring-sky-500"
                     />
-                    <label htmlFor={checkboxId} className="cursor-pointer">
+                    <label htmlFor={checkboxId} className="cursor-pointer" title={session.path}>
                       <p className="text-sm font-medium text-text-primary">{fileName}</p>
-                      <p className="text-xs text-text-tertiary">{session.tool}</p>
+                      <p className="text-xs text-text-tertiary">{displayPath}</p>
                     </label>
                   </div>
                   <button

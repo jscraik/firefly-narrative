@@ -76,7 +76,7 @@ export function SourceLensStats({
           {showHeader ? (
             <>
               <div className="section-header">SOURCE LENS</div>
-              <div className="section-subheader mt-0.5">Line-by-line attribution</div>
+              <div className="section-subheader">Line-by-line attribution</div>
             </>
           ) : null}
           {!hasNote ? (

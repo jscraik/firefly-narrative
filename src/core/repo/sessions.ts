@@ -126,7 +126,8 @@ async function loadSessionExcerptsFromDisk(repoRoot: string, limit: number): Pro
     }
 
     return excerpts;
-  } catch {
+  } catch (err) {
+    console.error('Failed to load sessions from disk:', err);
     return [];
   }
 }
@@ -135,7 +136,8 @@ async function loadSessionExcerptsFromDb(repoId: number, limit: number): Promise
   try {
     const sessions = await invoke<SessionPayload[]>('get_recent_sessions', { repoId, limit });
     return sessions.map((payload, idx) => normalizeExcerpt(payload.id ?? `session-${idx}`, payload));
-  } catch {
+  } catch (err) {
+    console.error('Failed to load sessions from DB:', err);
     return [];
   }
 }

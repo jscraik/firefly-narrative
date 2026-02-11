@@ -195,7 +195,7 @@ function MessageCard({
   const config = ROLE_CONFIG[message.role];
 
   return (
-    <div className={`rounded-xl border px-4 py-3 transition-all hover:shadow-sm min-w-0 ${
+    <div className={`rounded-xl border px-4 py-4 transition-all hover:shadow-sm min-w-0 ${
       message.role === 'user' ? 'bg-sky-50/50 border-sky-200' :
       message.role === 'thinking' ? 'bg-amber-50/50 border-amber-200' :
       message.role === 'plan' ? 'bg-violet-50/50 border-violet-200' :
@@ -255,7 +255,7 @@ function EmptyState() {
       <div className="flex items-center justify-between">
         <div>
           <div className="section-header">CONVERSATION</div>
-          <div className="section-subheader mt-0.5">Session context</div>
+          <div className="section-subheader">Session context</div>
         </div>
       </div>
       <div className="mt-6 flex flex-col items-center text-center py-4">

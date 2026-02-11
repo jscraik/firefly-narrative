@@ -92,7 +92,7 @@ export function SourceLensView({
         {showHeader ? (
           <>
             <div className="section-header">SOURCE LENS</div>
-            <div className="section-subheader mt-0.5">Line-by-line attribution</div>
+            <div className="section-subheader">Line-by-line attribution</div>
           </>
         ) : null}
         <div className="mt-3 text-sm text-text-secondary">

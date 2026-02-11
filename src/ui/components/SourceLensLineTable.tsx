@@ -46,7 +46,7 @@ export function SourceLensLineTable({ lines, showLineOverlays = true }: SourceLe
               key={line.lineNumber}
               tabIndex={0}
               aria-label={getLineAriaLabel(line)}
-              className={`border-b border-border-subtle last:border-0 transition-colors motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${showLineOverlays ? getLineColor(line.authorType) : ''}`}
+              className={`border-b border-border-subtle last:border-0 transition-colors motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-blue ${showLineOverlays ? getLineColor(line.authorType) : ''}`}
             >
               <td className="w-10 text-right text-text-muted select-none align-top px-4 py-1.5">
                 {line.lineNumber}
