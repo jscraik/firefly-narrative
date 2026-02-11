@@ -43,13 +43,9 @@ export function IntentList({ items }: { items: IntentItem[] }) {
                 <span className="text-sm text-text-secondary leading-relaxed">{it.text}</span>
               </div>
               {it.tag ? (
-                <button
-                  type="button"
-                  className="pill-file shrink-0"
-                  title={`Filter by ${it.tag}`}
-                >
+                <span className="pill-file shrink-0" title={`Tag: ${it.tag}`}>
                   {it.tag}
-                </button>
+                </span>
               ) : null}
             </div>
           );

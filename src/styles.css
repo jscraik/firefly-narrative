@@ -772,6 +772,13 @@ body {
     transition: none;
   }
 
+  [role="tabpanel"],
+  .card-entry,
+  .stagger-children > * {
+    animation: none;
+    transition: none;
+  }
+
   /* Disable skeleton animations */
   .animate-pulse {
     animation: none;

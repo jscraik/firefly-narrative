@@ -18,12 +18,14 @@ function ExpandableHighlight({ text, id }: { text: string; id: string }) {
   
   return (
     <li key={id} className="text-xs text-text-secondary">
-      <span>{displayText}</span>
+      <span id={`${id}-text`}>{displayText}</span>
       {needsExpansion && (
         <button
           type="button"
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => setExpanded((prev) => !prev)}
           className="ml-1 text-accent-blue hover:text-accent-blue/80 text-[10px] font-medium inline-flex items-center gap-0.5"
+          aria-expanded={expanded}
+          aria-controls={`${id}-text`}
         >
           {expanded ? (
             <>

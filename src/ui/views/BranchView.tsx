@@ -14,7 +14,7 @@ import { NeedsAttentionList } from '../components/NeedsAttentionList';
 import { RightPanelTabs } from '../components/RightPanelTabs';
 import { Timeline } from '../components/Timeline';
 import { IngestToast } from '../components/IngestToast';
-import { SkeletonFiles, SkeletonCard } from '../components/Skeleton';
+import { SkeletonFiles } from '../components/Skeleton';
 import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
 import type { IngestConfig, OtlpKeyStatus, DiscoveredSources } from '../../core/tauri/ingestConfig';
 import { useTestImport } from '../../hooks/useTestImport';
@@ -359,7 +359,13 @@ function BranchViewInner(props: {
 
             <div>
               {loadingFiles ? (
-                <SkeletonFiles count={5} />
+                <div className="card p-5">
+                  <div className="section-header">FILES CHANGED</div>
+                  <div className="section-subheader mt-0.5">loading…</div>
+                  <div className="mt-4">
+                    <SkeletonFiles count={5} />
+                  </div>
+                </div>
               ) : (
                 <FilesChanged
                   files={files}

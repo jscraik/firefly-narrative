@@ -3,7 +3,7 @@ import { ChevronRight, GitBranch, GitCommit } from 'lucide-react';
 export interface BreadcrumbSegment {
   label: string;
   href?: string;
-  icon?: 'branch' | 'commit' | 'folder';
+  icon?: 'branch' | 'commit';
 }
 
 interface BreadcrumbProps {
