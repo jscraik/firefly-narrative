@@ -232,7 +232,7 @@ export function SessionExcerpts({
         <div className="flex items-center justify-between">
           <div>
             <div className="section-header">SESSION SUMMARY</div>
-            <div className="section-subheader mt-0.5">Key moments from the session</div>
+            <div className="section-subheader">Key moments from the session</div>
           </div>
         </div>
         <div className="mt-6 flex flex-col items-center text-center py-4">
@@ -278,7 +278,7 @@ export function SessionExcerpts({
         <div className="flex items-center justify-between">
           <div>
             <div className="section-header">SESSION SUMMARY</div>
-            <div className="section-subheader mt-0.5">Key moments from the session</div>
+            <div className="section-subheader">Key moments from the session</div>
           </div>
           <div className="flex flex-col items-end gap-1">
             <ToolPill
@@ -301,21 +301,27 @@ export function SessionExcerpts({
 
         {allExcerpts.length > 1 ? (
           <div className="mt-3 flex flex-wrap gap-2">
-            {allExcerpts.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onSelectSession?.(item.id)}
-                className={`px-2 py-1 rounded-md text-[11px] border ${
-                  item.id === excerpt.id
-                    ? 'bg-sky-50 border-sky-200 text-sky-700'
-                    : 'bg-white border-border-light text-text-secondary hover:bg-bg-subtle'
-                }`}
-              >
-                {item.tool}
-                {item.redactionCount ? ` · ${item.redactionCount} redactions` : ''}
-              </button>
-            ))}
+            {allExcerpts.map((item) => {
+              const isActive = item.id === excerpt.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onSelectSession?.(item.id)}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-150
+                    ${isActive
+                      ? 'bg-accent-blue-light border-accent-blue text-accent-blue shadow-sm ring-1 ring-accent-blue/20'
+                      : 'bg-bg-card border-border-light text-text-secondary hover:bg-bg-hover hover:border-border-medium'
+                    }
+                  `}
+                  aria-pressed={isActive}
+                >
+                  {item.tool}
+                  {item.redactionCount ? ` · ${item.redactionCount} redactions` : ''}
+                </button>
+              );
+            })}
           </div>
         ) : null}
 

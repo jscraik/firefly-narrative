@@ -10,7 +10,7 @@ export function NeedsAttentionList(props: {
   return (
     <div className="card p-4">
       <div className="section-header">NEEDS ATTENTION</div>
-      <div className="section-subheader mt-0.5">Auto‑import issues requiring action</div>
+      <div className="section-subheader">Auto‑import issues requiring action</div>
       <div className="mt-3 space-y-3">
         {issues.map((issue) => (
           <div key={issue.id} className="rounded-lg border border-amber-200 bg-amber-50 p-3">

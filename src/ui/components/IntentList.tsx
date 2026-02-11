@@ -4,7 +4,7 @@ export function IntentList({ items }: { items: IntentItem[] }) {
   return (
     <div className="card p-5">
       <div className="section-header">INTENT</div>
-      <div className="section-subheader mt-0.5">based on prompts / commit messages</div>
+      <div className="section-subheader">based on prompts / commit messages</div>
 
       <div className="mt-4 space-y-3">
         {items.map((it) => (

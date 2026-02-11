@@ -77,7 +77,7 @@ export function StepsSummaryCard(props: {
   return (
     <div className="card p-5">
       <div className="section-header">STEPS</div>
-      <div className="section-subheader mt-0.5">What the assistant did for this commit.</div>
+      <div className="section-subheader">What the assistant did for this commit.</div>
 
       {loading ? (
         <div className="mt-3 text-xs text-text-tertiary">Loading…</div>

@@ -94,7 +94,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
           disabled={scanning}
           className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary bg-bg-subtle border border-border-light rounded-md hover:bg-bg-hover disabled:opacity-50 transition-colors"
         >
-          <RefreshCw className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${scanning ? 'motion-safe:animate-spin' : ''}`} />
           {scanning ? 'Scanning...' : 'Scan for Sessions'}
         </button>
       </div>

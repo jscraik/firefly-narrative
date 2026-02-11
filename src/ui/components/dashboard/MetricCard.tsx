@@ -26,16 +26,16 @@ export function MetricCard({ label, value, trend, icon, index }: MetricCardProps
 
   return (
     <section
-      className="metric-card group relative p-6 border border-slate-200 rounded-lg bg-white transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 focus-within:ring-2 focus-within:ring-sky-500 focus-within:ring-offset-2 focus-within:-translate-y-0.5 focus-within:shadow-md animate-in slide-in-from-bottom-2 fade-in duration-300 fill-mode-forwards"
+      className="metric-card group relative p-6 border border-border-light rounded-lg bg-bg-card transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-border-medium focus-within:ring-2 focus-within:ring-accent-blue focus-within:ring-offset-2 focus-within:-translate-y-0.5 focus-within:shadow-md animate-in slide-in-from-bottom-2 fade-in duration-300 fill-mode-forwards"
       style={cardStyle}
       aria-label={`${label}: ${value}${trend ? `, ${trend.label}` : ''}`}
     >
       {/* Label */}
-      <div className="text-sm font-medium text-slate-600 mb-2">{label}</div>
+      <div className="text-sm font-medium text-text-secondary mb-2">{label}</div>
 
       {/* Value + Trend */}
       <div className="flex items-baseline gap-3">
-        <div className="text-3xl font-bold text-slate-900 tracking-tight">
+        <div className="text-3xl font-bold text-text-primary tracking-tight">
           {value}
         </div>
 
@@ -76,7 +76,7 @@ export function MetricCard({ label, value, trend, icon, index }: MetricCardProps
           }
           .metric-card:active {
             transform: none;
-            background-color: rgb(248 250 252); /* slate-50 */
+            background-color: var(--bg-hover);
           }
         }
       `}</style>

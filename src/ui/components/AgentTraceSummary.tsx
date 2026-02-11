@@ -80,7 +80,7 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
       <div className="flex items-center justify-between">
         <div>
           <div className="section-header">AI ATTRIBUTION</div>
-          <div className="section-subheader mt-0.5">AI vs human contributions</div>
+          <div className="section-subheader">AI vs human contributions</div>
         </div>
         <div className="flex items-center gap-2">
           {status ? (

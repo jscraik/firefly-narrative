@@ -179,7 +179,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="card p-4">
+      <div className="card p-5">
         <div className="section-header">ATLAS SEARCH</div>
         <div className="mt-1 text-xs text-text-tertiary">Search your imported sessions (lexical, prefix-based).</div>
 
@@ -267,7 +267,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
         </div>
       </div>
 
-      <div className="card p-4">
+      <div className="card p-5">
         <div className="section-header">RESULTS</div>
 
         {searchError ? (
@@ -311,7 +311,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
       </div>
 
       {selectedHit ? (
-        <div className="card p-4">
+        <div className="card p-5">
           <div className="section-header">SESSION PREVIEW</div>
           <div className="mt-1 text-xs text-text-tertiary">
             Selected: {selectedHit.sessionId} · {selectedHit.chunkUid}

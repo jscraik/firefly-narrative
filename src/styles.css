@@ -73,14 +73,19 @@
   --color-accent-red-bg: var(--semantic-accent-red-bg);
   --color-accent-amber: var(--semantic-accent-amber);
   --color-accent-amber-light: var(--semantic-accent-amber-light);
+  --color-accent-amber-bg: var(--semantic-accent-amber-bg);
+
+  --color-accent-violet: var(--semantic-accent-violet);
+  --color-accent-violet-light: var(--semantic-accent-violet-light);
+  --color-accent-violet-bg: var(--semantic-accent-violet-bg);
 }
 
-/* Narrative Version Control - Light Theme
+/* Narrative Version Control - Light Theme (default)
  * Matches the video aesthetic: warm grays, soft shadows, rounded corners
  */
 
 :root {
-  /* Semantic tokens (mirrors assets/tokens.json) */
+  /* Semantic tokens (mirrors assets/tokens.json) - Light Theme */
   --semantic-background-page: #f5f5f4;
   --semantic-background-card: #ffffff;
   --semantic-background-hover: #f0efed;
@@ -110,7 +115,53 @@
   --semantic-accent-amber: #f59e0b;
   --semantic-accent-amber-light: #fef3c7;
 
-  /* Background colors - warm grays */
+  /* Violet tokens for plans/anchors */
+  --semantic-accent-violet: #8b5cf6;
+  --semantic-accent-violet-light: #ede9fe;
+  --semantic-accent-violet-bg: #f5f3ff;
+}
+
+/* Dark Theme - respects prefers-color-scheme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --semantic-background-page: #0c0a09;
+    --semantic-background-card: #1c1917;
+    --semantic-background-hover: #292524;
+    --semantic-background-subtle: #1c1917;
+
+    --semantic-surface-strong: #fafaf9;
+    --semantic-surface-strong-hover: #e7e5e4;
+
+    --semantic-text-primary: #fafaf9;
+    --semantic-text-secondary: #a8a29e;
+    --semantic-text-tertiary: #78716c;
+    --semantic-text-muted: #57534e;
+
+    --semantic-border-light: #292524;
+    --semantic-border-subtle: #1c1917;
+    --semantic-border-medium: #44403c;
+
+    --semantic-accent-blue: #38bdf8;
+    --semantic-accent-blue-light: #0c4a6e;
+    --semantic-accent-blue-bg: #082f49;
+    --semantic-accent-green: #34d399;
+    --semantic-accent-green-light: #064e3b;
+    --semantic-accent-green-bg: #064e3b;
+    --semantic-accent-red: #f87171;
+    --semantic-accent-red-light: #7f1d1d;
+    --semantic-accent-red-bg: #450a0a;
+    --semantic-accent-amber: #fbbf24;
+    --semantic-accent-amber-light: #78350f;
+
+    /* Violet dark tokens */
+    --semantic-accent-violet: #a78bfa;
+    --semantic-accent-violet-light: #5b21b6;
+    --semantic-accent-violet-bg: #4c1d95;
+  }
+}
+
+/* Background colors - warm grays */
+:root {
   --bg-page: var(--semantic-background-page);
   /* warm gray-100 */
   --bg-card: var(--semantic-background-card);
@@ -153,6 +204,13 @@
   /* amber-500 */
   --accent-amber-light: var(--semantic-accent-amber-light);
   /* amber-100 */
+
+  --accent-violet: var(--semantic-accent-violet);
+  /* violet-500 */
+  --accent-violet-light: var(--semantic-accent-violet-light);
+  /* violet-100 */
+  --accent-violet-bg: var(--semantic-accent-violet-bg);
+  /* violet-50 */
 
   /* Border colors */
   --border-light: var(--semantic-border-light);
@@ -384,6 +442,7 @@ body {
   letter-spacing: 0.03em;
   color: var(--text-primary);
   text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
 .section-subheader {
@@ -562,6 +621,10 @@ body {
   --narrative-enter-scale: 0.98;
 }
 
+.zoom-in-95 {
+  --narrative-enter-scale: 0.95;
+}
+
 /* Exit helpers (used alongside `.animate-out`) */
 .fade-out {
   --narrative-exit-opacity: 0;
@@ -632,6 +695,18 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
+@media (prefers-color-scheme: dark) {
+  .message-user {
+    background: #082f49;
+    border-color: #0c4a6e;
+  }
+
+  .message-assistant {
+    background: #064e3b;
+    border-color: #065f46;
+  }
+}
+
 /* Diff viewer */
 .diff-line-hunk {
   color: #0ea5e9;
@@ -646,6 +721,23 @@ body {
 .diff-line-del {
   color: #dc2626;
   background: #fef2f2;
+}
+
+@media (prefers-color-scheme: dark) {
+  .diff-line-hunk {
+    color: #38bdf8;
+    background: #0c4a6e;
+  }
+
+  .diff-line-add {
+    color: #34d399;
+    background: #064e3b;
+  }
+
+  .diff-line-del {
+    color: #f87171;
+    background: #450a0a;
+  }
 }
 
 /* Diff attribution highlights */

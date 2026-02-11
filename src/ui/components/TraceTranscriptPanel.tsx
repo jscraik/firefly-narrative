@@ -255,7 +255,7 @@ function EmptyState() {
       <div className="flex items-center justify-between">
         <div>
           <div className="section-header">CONVERSATION</div>
-          <div className="section-subheader mt-0.5">Session context</div>
+          <div className="section-subheader">Session context</div>
         </div>
       </div>
       <div className="mt-6 flex flex-col items-center text-center py-4">
