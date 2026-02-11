@@ -56,7 +56,7 @@ export function CodexOtelSettingsPanel(props: {
     return (
       <div className="card p-5">
         <div className="section-header">CODEX OTEL SETTINGS</div>
-        <div className="section-subheader mt-0.5">telemetry inputs</div>
+        <div className="section-subheader">telemetry inputs</div>
         <div className="mt-4 text-xs text-text-tertiary">Open a repo to configure Codex OTel settings.</div>
       </div>
     );
@@ -67,7 +67,7 @@ export function CodexOtelSettingsPanel(props: {
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="section-header">CODEX OTEL SETTINGS</div>
-          <div className="section-subheader mt-0.5">telemetry inputs</div>
+          <div className="section-subheader">telemetry inputs</div>
         </div>
         {onOpenCodexOtelDocs ? (
           <button

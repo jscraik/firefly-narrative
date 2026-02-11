@@ -125,10 +125,11 @@ pub async fn get_recent_sessions(
     .await
     .map_err(|e| e.to_string())?;
 
-    let payloads = rows
+    let payloads: Vec<SessionExcerptPayload> = rows
         .into_iter()
         .map(|row| {
-            let trace = serde_json::from_str::<SessionTrace>(&row.raw_json).unwrap_or_default();
+            let trace = serde_json::from_str::<SessionTrace>(&row.raw_json)
+                .map_err(|e| format!("Failed to deserialize session: {}", e))?;
             let messages = trace
                 .messages
                 .iter()
@@ -191,7 +192,7 @@ pub async fn get_recent_sessions(
                 })
                 .collect::<Vec<_>>();
 
-            SessionExcerptPayload {
+            Ok(SessionExcerptPayload {
                 id: row.id,
                 tool: row.tool,
                 agent_name: None,
@@ -203,9 +204,9 @@ pub async fn get_recent_sessions(
                 auto_linked: row.auto_linked.map(|value| value != 0),
                 needs_review: row.needs_review.map(|value| value != 0),
                 redaction_count: row.redaction_count,
-            }
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, String>>()?;
 
     Ok(payloads)
 }

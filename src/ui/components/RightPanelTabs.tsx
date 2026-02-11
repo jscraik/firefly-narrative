@@ -139,14 +139,9 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
   const hasAtlasContent = true;
   const hasTestContent = Boolean(testRun) || Boolean(selectedCommitSha);
 
-  // Auto-switch to attribution tab if no session but has attribution
-  // This is a one-time effect that runs when content becomes available
-  const effectiveTab = (() => {
-    if (activeTab === 'session' && !hasSessionContent && hasAttributionContent) {
-      return 'attribution';
-    }
-    return activeTab;
-  })();
+  // Use active tab directly - no auto-switch to prevent jarring UX
+  // Users can manually switch between tabs
+  const effectiveTab = activeTab;
 
   const tabIds = TABS.map((tab) => tab.id);
 
@@ -314,7 +309,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
 
             <div>
               <div className="section-header">SOURCE LENS</div>
-              <div className="section-subheader mt-0.5">
+              <div className="section-subheader">
                 Line-by-line attribution for the selected file
               </div>
               <div className="text-xs text-text-tertiary">

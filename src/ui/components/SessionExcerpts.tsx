@@ -62,7 +62,7 @@ function ToolPill({
       </span>
       {agentName ? <span className="text-text-tertiary">· {agentName}</span> : null}
       {typeof durationMin === 'number' && (
-        <span>{durationMin} min</span>
+        <span>{formatDuration(durationMin)}</span>
       )}
       {typeof redactionCount === 'number' && redactionCount > 0 ? (
         <span className="px-1.5 py-0.5 bg-amber-50 rounded text-amber-700">Redacted {redactionCount}</span>
@@ -131,7 +131,10 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
       >
         Linked to <span className="font-mono">{shortSha}</span>
       </button>
-      <span className="px-1.5 py-0.5 bg-bg-page rounded text-text-tertiary">
+      <span
+        className="px-1.5 py-0.5 bg-bg-page rounded text-text-tertiary cursor-help"
+        title={`Link confidence: ${confidencePercent}% — Estimated match quality between session activity and commit changes. Higher values indicate stronger correlation.`}
+      >
         {confidencePercent}%
       </span>
       {isAutoLinked && (
@@ -170,13 +173,33 @@ function FilePill({
   const variantClass =
     variant === 'not-found' ? 'not-found' : variant === 'best-effort' ? 'best-effort' : '';
 
+  const StatusIcon = () => {
+    switch (variant) {
+      case 'default':
+        return <CheckCircle2 className="w-3 h-3 text-accent-green shrink-0" aria-hidden="true" />;
+      case 'best-effort':
+        return <HelpCircle className="w-3 h-3 text-accent-amber shrink-0" aria-hidden="true" />;
+      case 'not-found':
+        return <XCircle className="w-3 h-3 text-accent-red shrink-0" aria-hidden="true" />;
+      default:
+        return null;
+    }
+  };
+
+  const content = (
+    <>
+      <StatusIcon />
+      <span className="truncate">{file}</span>
+    </>
+  );
+
   if (!onClick) {
     return (
       <span
         title={title ?? file}
-        className={`pill-file max-w-full truncate ${variantClass} ${isSelected ? 'selected' : ''}`}
+        className={`pill-file max-w-full truncate inline-flex items-center gap-1.5 ${variantClass} ${isSelected ? 'selected' : ''}`}
       >
-        {file}
+        {content}
       </span>
     );
   }
@@ -188,9 +211,9 @@ function FilePill({
       aria-label={isSelected ? `View file ${file} (selected)` : `View file ${file}`}
       aria-pressed={isSelected}
       title={title ?? file}
-      className={`pill-file max-w-full truncate ${variantClass} ${isSelected ? 'selected' : ''}`}
+      className={`pill-file max-w-full truncate inline-flex items-center gap-1.5 ${variantClass} ${isSelected ? 'selected' : ''}`}
     >
-      {file}
+      {content}
     </button>
   );
 }
@@ -266,7 +289,7 @@ export function SessionExcerpts({
         <div className="flex items-center justify-between">
           <div>
             <div className="section-header">SESSION SUMMARY</div>
-            <div className="section-subheader mt-0.5">Key moments from the session</div>
+            <div className="section-subheader">Key moments from the session</div>
           </div>
         </div>
         <div className="mt-6 flex flex-col items-center text-center py-4">
@@ -275,6 +298,17 @@ export function SessionExcerpts({
           </div>
           <p className="text-sm text-text-tertiary mb-1">No sessions imported yet</p>
           <p className="text-xs text-text-muted mb-4">Import from Claude, Cursor, or Kimi</p>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-blue text-white text-sm font-medium hover:bg-accent-blue transition-colors shadow-sm"
+            onClick={() => {
+              // Dispatch custom event to open import panel
+              window.dispatchEvent(new CustomEvent('narrative:open-import'));
+            }}
+          >
+            <Upload className="w-4 h-4" />
+            Import Session
+          </button>
         </div>
       </div>
     );
@@ -312,7 +346,7 @@ export function SessionExcerpts({
         <div className="flex items-center justify-between">
           <div>
             <div className="section-header">SESSION SUMMARY</div>
-            <div className="section-subheader mt-0.5">Key moments from the session</div>
+            <div className="section-subheader">Key moments from the session</div>
           </div>
           <div className="flex flex-col items-end gap-1">
             <ToolPill
@@ -335,21 +369,27 @@ export function SessionExcerpts({
 
         {allExcerpts.length > 1 ? (
           <div className="mt-3 flex flex-wrap gap-2">
-            {allExcerpts.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onSelectSession?.(item.id)}
-                className={`px-2 py-1 rounded-md text-[11px] border ${
-                  item.id === excerpt.id
-                    ? 'bg-sky-50 border-sky-200 text-sky-700'
-                    : 'bg-white border-border-light text-text-secondary hover:bg-bg-subtle'
-                }`}
-              >
-                {item.tool}
-                {item.redactionCount ? ` · ${item.redactionCount} redactions` : ''}
-              </button>
-            ))}
+            {allExcerpts.map((item) => {
+              const isActive = item.id === excerpt.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onSelectSession?.(item.id)}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-150
+                    ${isActive
+                      ? 'bg-accent-blue-light border-accent-blue text-accent-blue shadow-sm ring-1 ring-accent-blue/20'
+                      : 'bg-bg-card border-border-light text-text-secondary hover:bg-bg-hover hover:border-border-medium'
+                    }
+                  `}
+                  aria-pressed={isActive}
+                >
+                  {item.tool}
+                  {item.redactionCount ? ` · ${item.redactionCount} redactions` : ''}
+                </button>
+              );
+            })}
           </div>
         ) : null}
 

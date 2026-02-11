@@ -60,12 +60,12 @@ export function DiffViewer(props: DiffViewerProps) {
       <div className="flex-1 overflow-auto px-4 py-3 bg-white">
         {loading ? (
           <div className="space-y-2">
-            <div className="h-4 bg-bg-page rounded animate-pulse w-1/4" />
-            <div className="h-4 bg-bg-page rounded animate-pulse w-full" />
-            <div className="h-4 bg-bg-page rounded animate-pulse w-5/6" />
-            <div className="h-4 bg-bg-page rounded animate-pulse w-3/4" />
-            <div className="h-4 bg-bg-page rounded animate-pulse w-full" />
-            <div className="h-4 bg-bg-page rounded animate-pulse w-2/3" />
+            <div className="h-4 bg-bg-page rounded skeleton-shimmer w-1/4" style={{ animationDelay: '0ms' }} />
+            <div className="h-4 bg-bg-page rounded skeleton-shimmer w-full" style={{ animationDelay: '80ms' }} />
+            <div className="h-4 bg-bg-page rounded skeleton-shimmer w-5/6" style={{ animationDelay: '160ms' }} />
+            <div className="h-4 bg-bg-page rounded skeleton-shimmer w-3/4" style={{ animationDelay: '240ms' }} />
+            <div className="h-4 bg-bg-page rounded skeleton-shimmer w-full" style={{ animationDelay: '320ms' }} />
+            <div className="h-4 bg-bg-page rounded skeleton-shimmer w-2/3" style={{ animationDelay: '400ms' }} />
           </div>
         ) : !diffText ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -80,7 +80,7 @@ export function DiffViewer(props: DiffViewerProps) {
             </p>
           </div>
         ) : (
-          <pre className="text-[12px] leading-relaxed text-text-secondary font-mono">
+          <pre className="text-[12px] leading-loose text-text-secondary font-mono">
             {(() => {
               let currentLineNumber = 0;
               let inHunk = false;

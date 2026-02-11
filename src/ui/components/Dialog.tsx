@@ -96,17 +96,21 @@ export function Dialog({
     }, 0);
   }, [open]);
 
-  // Handle exit animation
+  // Handle exit animation using onTransitionEnd for reliability
   useEffect(() => {
     if (open) {
       setIsClosing(false);
       setShouldRender(true);
     } else {
       setIsClosing(true);
-      const timer = setTimeout(() => setShouldRender(false), 150);
-      return () => clearTimeout(timer);
     }
   }, [open]);
+
+  const handleTransitionEnd = () => {
+    if (isClosing) {
+      setShouldRender(false);
+    }
+  };
 
   if (!shouldRender) return null;
 
@@ -130,18 +134,19 @@ export function Dialog({
       <div
         ref={dialogRef}
         className={clsx(
-          'w-[400px] max-w-full rounded-xl border border-white/10 bg-zinc-900 p-5 shadow-xl transition-all duration-150 ease-out',
+          'w-[400px] max-w-full rounded-xl border border-border-light bg-bg-card p-5 shadow-xl transition-all duration-150 ease-out',
           isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
         )}
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
         aria-describedby="dialog-message"
+        onTransitionEnd={handleTransitionEnd}
       >
-        <h2 id="dialog-title" className="text-lg font-semibold text-white">
+        <h2 id="dialog-title" className="text-lg font-semibold text-text-primary">
           {title}
         </h2>
-        <p id="dialog-message" className="mt-3 text-sm text-zinc-300">
+        <p id="dialog-message" className="mt-3 text-sm text-text-secondary">
           {message}
         </p>
 
@@ -150,7 +155,7 @@ export function Dialog({
             type="button"
             className={clsx(
               'rounded-md px-3 py-1.5 text-sm transition',
-              'bg-white/5 text-zinc-200 hover:bg-white/10'
+              'bg-bg-subtle text-text-secondary hover:bg-bg-hover border border-border-light'
             )}
             onClick={onCancel}
           >
@@ -161,8 +166,8 @@ export function Dialog({
             className={clsx(
               'rounded-md px-3 py-1.5 text-sm transition',
               isDestructive
-                ? 'bg-rose-500/20 text-rose-200 hover:bg-rose-500/30 border border-rose-500/30'
-                : 'bg-white/10 text-white hover:bg-white/15'
+                ? 'bg-accent-red-bg text-accent-red hover:bg-accent-red-light border border-accent-red-light'
+                : 'bg-surface-strong text-white hover:bg-surface-strong-hover'
             )}
             onClick={onConfirm}
           >

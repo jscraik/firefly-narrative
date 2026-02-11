@@ -27,7 +27,7 @@ export function TopFilesTable({
 }: TopFilesTableProps) {
   if (files.length === 0) {
     return (
-      <div className="text-center py-12 text-slate-500 text-sm">
+      <div className="text-center py-12 text-text-muted text-sm">
         No files data available for this time range.
       </div>
     );
@@ -35,34 +35,34 @@ export function TopFilesTable({
 
   return (
     <section data-top-files-table>
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">
+      <h2 className="text-lg font-semibold text-text-primary mb-4">
         Top AI-Contributed Files
       </h2>
 
-      <div className="overflow-hidden rounded-lg border border-slate-200">
+      <div className="overflow-hidden rounded-lg border border-border-light">
         <table className="w-full border-collapse">
-          <thead className="bg-slate-50 border-b border-slate-200">
+          <thead className="bg-bg-subtle border-b border-border-light">
             <tr>
               <th
-                className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase text-left"
+                className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-left"
                 scope="col"
               >
                 File
               </th>
               <th
-                className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase text-right"
+                className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-right"
                 scope="col"
               >
                 AI %
               </th>
               <th
-                className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase text-right"
+                className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-right"
                 scope="col"
               >
                 AI Lines
               </th>
               <th
-                className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase text-right"
+                className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-right"
                 scope="col"
               >
                 Commits
@@ -127,22 +127,22 @@ function TableRow({ file, index, onClick }: TableRowProps) {
 
   return (
     <tr
-      className="border-b border-slate-100 last:border-b-0 hover:bg-sky-50 focus-visible:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 cursor-pointer transition-colors duration-150 ease-out animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-forwards"
+      className="border-b border-border-subtle last:border-b-0 hover:bg-accent-blue-bg focus-visible:bg-accent-blue-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-blue cursor-pointer transition-colors duration-150 ease-out animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-forwards"
       style={rowStyle}
       onClick={onClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      <td className="px-4 py-3 text-sm text-slate-700 font-medium truncate max-w-[200px]" title={file.filePath}>
+      <td className="px-4 py-3 text-sm text-text-secondary font-medium truncate max-w-[200px]" title={file.filePath}>
         {file.filePath}
       </td>
-      <td className="px-4 py-3 text-sm text-slate-700 text-right tabular-nums">
+      <td className="px-4 py-3 text-sm text-text-secondary text-right tabular-nums">
         {file.aiPercentage.toFixed(0)}%
       </td>
-      <td className="px-4 py-3 text-sm text-slate-700 text-right tabular-nums">
+      <td className="px-4 py-3 text-sm text-text-secondary text-right tabular-nums">
         {file.aiLines.toLocaleString()}
       </td>
-      <td className="px-4 py-3 text-sm text-slate-700 text-right tabular-nums">
+      <td className="px-4 py-3 text-sm text-text-secondary text-right tabular-nums">
         {file.commitCount}
       </td>
     </tr>
@@ -172,8 +172,8 @@ function LoadMoreButton({ onClick, isLoading }: LoadMoreButtonProps) {
         text-sm font-medium transition-all duration-150 ease-out
         ${
           isLoading
-            ? 'text-slate-400 cursor-not-allowed bg-slate-50 opacity-50'
-            : 'text-sky-500 hover:text-sky-600 hover:bg-sky-50 active:bg-sky-100'
+            ? 'text-text-muted cursor-not-allowed bg-bg-subtle opacity-50'
+            : 'text-accent-blue hover:text-accent-blue hover:bg-accent-blue-bg active:bg-accent-blue-light'
         }
       `}
       aria-label={isLoading ? 'Loading more files...' : 'Load more files'}

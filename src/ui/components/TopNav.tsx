@@ -33,10 +33,10 @@ export function TopNav(props: {
       aria-selected={mode === p.id}
       tabIndex={mode === p.id ? 0 : -1}
       className={clsx(
-        'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+        'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150',
         mode === p.id
           ? 'bg-white text-text-primary shadow-sm'
-          : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary'
+          : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary hover:scale-[1.02] active:scale-95'
       )}
       onClick={() => onModeChange(p.id)}
       type="button"
@@ -153,7 +153,7 @@ function ImportMenu(props: {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border-light bg-white p-1 shadow-lg z-50 flex flex-col gap-0.5">
+        <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border-light bg-bg-card p-1 shadow-lg z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 zoom-in-95 duration-150 origin-top-right">
           {onImportSession && (
             <button
               type="button"
@@ -161,7 +161,7 @@ function ImportMenu(props: {
                 onImportSession();
                 setIsOpen(false);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover text-left"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover text-left transition-colors"
             >
               Import session JSON…
             </button>
@@ -173,7 +173,7 @@ function ImportMenu(props: {
                 onImportKimiSession();
                 setIsOpen(false);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover text-left"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover text-left transition-colors"
             >
               Import Kimi log…
             </button>
@@ -185,7 +185,7 @@ function ImportMenu(props: {
                 onImportAgentTrace();
                 setIsOpen(false);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover text-left"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover text-left transition-colors"
             >
               Import Agent Trace…
             </button>

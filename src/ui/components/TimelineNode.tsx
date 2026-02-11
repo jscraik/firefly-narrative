@@ -19,7 +19,7 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
     <div
       data-node-id={node.id}
       className="relative flex flex-col items-center"
-      style={{ minWidth: '80px' }}
+      style={{ minWidth: '100px' }}
     >
       {/* Label above with tooltip for truncated text */}
       {showLabel && node.label ? (

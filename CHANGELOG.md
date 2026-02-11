@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.3.1...narrative-desktop-mvp-v0.4.0) (2026-02-09)
+
+
+### Features
+
+* add story anchors ([50df540](https://github.com/jscraik/narrative/commit/50df540bd47d67b554f51f4badfe05ffb1d71fb4))
+* **atlas:** add repo-scoped session search ([d5e6e41](https://github.com/jscraik/narrative/commit/d5e6e413378681093b5b5325760a662920427f7b))
+* **capture:** activity feed, steps summary, and refreshed icon ([dc0bad8](https://github.com/jscraik/narrative/commit/dc0bad8b70807ddfb6f6ca4227f8dcdbd835c4c5))
+* **capture:** auto-detect sources, codex fallback, and keychain OTLP key ([07797f9](https://github.com/jscraik/narrative/commit/07797f990d4d62af13c32dc61170c19cd7a5276d))
+
 ## [0.3.1](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.3.0...narrative-desktop-mvp-v0.3.1) (2026-02-07)
 
 
