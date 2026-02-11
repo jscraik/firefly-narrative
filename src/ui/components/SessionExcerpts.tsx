@@ -10,6 +10,18 @@ function truncateText(text: string, limit = 160) {
   return `${trimmed.slice(0, limit).trim()}…`;
 }
 
+function formatDuration(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (mins === 0) {
+    return `${hours} hr`;
+  }
+  return `${hours} hr ${mins} min`;
+}
+
 function ToolPill({
   tool,
   durationMin,
@@ -28,7 +40,7 @@ function ToolPill({
       </span>
       {agentName ? <span className="text-text-tertiary">· {agentName}</span> : null}
       {typeof durationMin === 'number' && (
-        <span>{durationMin} min</span>
+        <span>{formatDuration(durationMin)}</span>
       )}
       {typeof redactionCount === 'number' && redactionCount > 0 ? (
         <span className="px-1.5 py-0.5 bg-amber-50 rounded text-amber-700">Redacted {redactionCount}</span>
