@@ -20,12 +20,13 @@ export function FilesChanged({
   const { selectedFile, selectFile } = useFileSelection();
   const fileRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  // Scroll selected file into view
+  // Scroll selected file into view with reduced-motion support
   useEffect(() => {
     if (selectedFile) {
       const el = fileRefs.current.get(selectedFile);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'nearest' });
       }
     }
   }, [selectedFile]);

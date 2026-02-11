@@ -625,6 +625,34 @@ body {
   --narrative-enter-scale: 0.95;
 }
 
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-subtle) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+    background: var(--bg-subtle);
+  }
+}
+
 /* Exit helpers (used alongside `.animate-out`) */
 .fade-out {
   --narrative-exit-opacity: 0;
@@ -868,5 +896,34 @@ body {
   .animate-pulse {
     animation: none;
     opacity: 0.6;
+  }
+}
+
+/* MetricCard styles */
+.metric-card {
+  --metric-card-index: 0;
+  animation-delay: calc(var(--metric-card-index) * 50ms);
+}
+
+.metric-card .trend-badge {
+  animation-delay: calc(300ms + var(--metric-card-index) * 50ms);
+}
+
+.metric-card:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metric-card {
+    animation: none;
+    transition: background-color 150ms ease-out, box-shadow 150ms ease-out;
+  }
+  .metric-card:hover,
+  .metric-card:focus-within {
+    transform: none;
+  }
+  .metric-card:active {
+    transform: none;
+    background-color: var(--bg-hover);
   }
 }
