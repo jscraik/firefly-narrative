@@ -1,8 +1,22 @@
 import { Link2, Link2Off, Upload, CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import type { SessionExcerpt } from '../../core/types';
+import type { SessionExcerpt, SessionTool } from '../../core/types';
 import { Dialog } from './Dialog';
 import { useRepoFileExistence } from '../../hooks/useRepoFileExistence';
+
+/**
+ * Display names for session tools
+ */
+const TOOL_DISPLAY_NAMES: Record<SessionTool, string> = {
+  'claude-code': 'Claude',
+  'codex': 'Codex',
+  'cursor': 'Cursor',
+  'gemini': 'Gemini',
+  'copilot': 'Copilot',
+  'continue': 'Continue',
+  'kimi': 'Kimi',
+  'unknown': 'AI'
+};
 
 function truncateText(text: string, limit = 160) {
   const trimmed = text.trim().replace(/\s+/g, ' ');
@@ -28,15 +42,17 @@ function ToolPill({
   agentName,
   redactionCount
 }: {
-  tool: string;
+  tool: SessionTool;
   durationMin?: number;
   agentName?: string;
   redactionCount?: number;
 }) {
+  const displayName = TOOL_DISPLAY_NAMES[tool] ?? tool;
+
   return (
     <div className="flex items-center gap-2 text-[11px] text-text-muted">
-      <span className="px-2 py-1 bg-bg-page rounded-md font-mono text-text-tertiary">
-        {tool}
+      <span className="px-2 py-1 bg-bg-page rounded-md font-medium text-text-secondary">
+        {displayName}
       </span>
       {agentName ? <span className="text-text-tertiary">· {agentName}</span> : null}
       {typeof durationMin === 'number' && (
@@ -363,7 +379,7 @@ export function SessionExcerpts({
                   `}
                   aria-pressed={isActive}
                 >
-                  {item.tool}
+                  {TOOL_DISPLAY_NAMES[item.tool] ?? item.tool}
                   {item.redactionCount ? ` · ${item.redactionCount} redactions` : ''}
                 </button>
               );

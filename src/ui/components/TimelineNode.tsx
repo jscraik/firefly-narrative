@@ -1,5 +1,5 @@
-import { Link2 } from 'lucide-react';
-import type { TimelineNode } from '../../core/types';
+import { Link2, Sparkles, Terminal, Code2, Wand2, Bot, MessageSquare, Cpu } from 'lucide-react';
+import type { TimelineNode, SessionBadgeTool } from '../../core/types';
 import { BadgePill } from './BadgePill';
 
 export interface TimelineNodeProps {
@@ -9,11 +9,38 @@ export interface TimelineNodeProps {
   onSelect: () => void;
 }
 
+/**
+ * Get the icon component for a session tool (for overlay)
+ */
+function getToolOverlayIcon(tool: SessionBadgeTool) {
+  const className = "w-2.5 h-2.5";
+  switch (tool) {
+    case 'claude-code':
+      return <Sparkles className={className} />;
+    case 'codex':
+      return <Terminal className={className} />;
+    case 'cursor':
+      return <Code2 className={className} />;
+    case 'gemini':
+      return <Wand2 className={className} />;
+    case 'copilot':
+      return <Bot className={className} />;
+    case 'continue':
+      return <MessageSquare className={className} />;
+    case 'kimi':
+      return <Cpu className={className} />;
+    default:
+      return <Link2 className={className} />;
+  }
+}
+
 export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: TimelineNodeProps) {
+  // Always show labels now that we have truncation, to ensure Repo view matches Demo view density
   // Always show labels now that we have truncation, to ensure Repo view matches Demo view density
   const showLabel = true;
   const sessionBadge = node.badges?.find(b => b.type === 'session');
   const hasSession = !!sessionBadge;
+  const primaryTool = sessionBadge?.sessionTools?.[0] ?? null;
 
   return (
     <div
@@ -42,7 +69,7 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
         {/* Session badge overlay on dot */}
         {sessionBadge && (
           <span className="session-badge-overlay">
-            <Link2 className="w-2.5 h-2.5" />
+            {primaryTool ? getToolOverlayIcon(primaryTool) : <Link2 className="w-2.5 h-2.5" />}
           </span>
         )}
       </button>
@@ -51,7 +78,6 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
       {node.badges && node.badges.length > 0 && (
         <div className="mt-2 flex flex-col items-center gap-1">
           {node.badges
-            .filter(b => b.type !== 'session') // Don't show session badges below
             .slice(0, 3)
             .map((badge) => (
               <BadgePill key={`${badge.type}-${badge.label ?? badge.status ?? 'badge'}`} badge={badge} />
