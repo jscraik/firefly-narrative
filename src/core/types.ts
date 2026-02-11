@@ -62,6 +62,16 @@ export type SessionExcerpt = {
 
 export type TimelineStatus = 'ok' | 'warn' | 'error';
 
+export type SessionBadgeTool =
+  | 'claude-code'
+  | 'codex'
+  | 'cursor'
+  | 'gemini'
+  | 'copilot'
+  | 'continue'
+  | 'kimi'
+  | 'unknown';
+
 export type TimelineBadge = {
   type: 'file' | 'test' | 'trace' | 'contribution' | 'session' | 'anchor';
   label: string;
@@ -76,6 +86,7 @@ export type TimelineBadge = {
     hasSessionsNote: boolean;
     hasLineageNote: boolean;
   };
+  sessionTools?: SessionBadgeTool[];
 };
 
 export type TraceContributorType = 'human' | 'ai' | 'mixed' | 'unknown';

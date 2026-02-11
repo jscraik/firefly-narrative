@@ -4,6 +4,7 @@ version = "0.4.0"
 description = "Narrative MVP desktop app"
 authors = ["you"]
 edition = "2021"
+default-run = "narrative-desktop-mvp"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

@@ -1,0 +1,242 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: Narrative
+      - tablist "View mode" [ref=e7]:
+        - tab "Demo" [selected] [ref=e1211]:
+          - img [ref=e1212]
+          - generic [ref=e1217]: Demo
+        - tab "Repo" [ref=e1218]:
+          - img [ref=e1219]
+          - generic [ref=e1223]: Repo
+        - tab "Dashboard" [ref=e1224]:
+          - img [ref=e1225]
+          - generic [ref=e1227]: Dashboard
+        - tab "Docs" [ref=e1228]:
+          - img [ref=e1229]
+          - generic [ref=e1231]: Docs
+    - button "Open repo…" [ref=e30]:
+      - img [ref=e31]
+      - text: Open repo…
+  - generic [ref=e788]:
+    - generic [ref=e790]:
+      - generic [ref=e791]:
+        - generic [ref=e792]:
+          - generic [ref=e794]:
+            - generic [ref=e795]:
+              - heading "feature/nearby-grid" [level=1] [ref=e796]
+              - generic [ref=e797]: open
+            - paragraph [ref=e798]: Redesign the nearby users grid with distance sorting, online indicators, and swipeable profile cards.
+          - generic [ref=e799]:
+            - generic [ref=e800]:
+              - generic [ref=e801]: Code
+              - generic [ref=e802]:
+                - generic [ref=e804]:
+                  - generic [ref=e805]: "+847"
+                  - generic [ref=e806]: added
+                - generic [ref=e808]:
+                  - generic [ref=e809]: "-203"
+                  - generic [ref=e810]: removed
+                - generic [ref=e811]:
+                  - img [ref=e812]
+                  - generic [ref=e815]:
+                    - generic [ref=e816]: "12"
+                    - generic [ref=e817]: files
+            - generic [ref=e818]:
+              - generic [ref=e819]: Git
+              - generic [ref=e821]:
+                - img [ref=e822]
+                - generic [ref=e824]:
+                  - generic [ref=e825]: "6"
+                  - generic [ref=e826]: commits
+            - generic [ref=e827]:
+              - generic [ref=e828]: AI
+              - generic [ref=e829]:
+                - generic [ref=e830]:
+                  - img [ref=e831]
+                  - generic [ref=e833]:
+                    - generic [ref=e834]: "14"
+                    - generic [ref=e835]: prompts
+                - generic [ref=e837]:
+                  - generic [ref=e838]: "14"
+                  - generic [ref=e839]: responses
+        - generic [ref=e840]:
+          - generic [ref=e841]:
+            - generic [ref=e842]:
+              - generic [ref=e843]: CAPTURE
+              - generic [ref=e844]: Off · Turn on to capture sessions and traces automatically.
+            - generic [ref=e845]:
+              - checkbox "Auto‑capture" [active] [ref=e846]
+              - text: Auto‑capture
+          - generic [ref=e847]:
+            - generic [ref=e848]:
+              - generic [ref=e849]: RECENT
+              - button "View all" [ref=e850]
+            - generic [ref=e851]: No recent capture activity yet.
+        - generic [ref=e1232]:
+          - generic [ref=e1233]: NEEDS ATTENTION
+          - generic [ref=e1234]: Auto‑import issues requiring action
+          - generic [ref=e1236]:
+            - generic [ref=e1237]: Auto-ingest toggle failed
+            - generic [ref=e1238]: Cannot read properties of undefined (reading 'invoke')
+            - button "Dismiss" [ref=e1240]
+        - generic [ref=e852]:
+          - generic [ref=e853]: INTENT
+          - generic [ref=e854]: based on prompts / commit messages
+          - generic [ref=e855]:
+            - generic [ref=e856]:
+              - generic [ref=e857]:
+                - generic [ref=e858]: →
+                - generic [ref=e859]: Replaced distance calculation with Haversine formula for accuracy at short ranges
+              - generic [ref=e860] [cursor=pointer]: distance.ts
+            - generic [ref=e861]:
+              - generic [ref=e862]:
+                - generic [ref=e863]: →
+                - generic [ref=e864]: Separated online status into its own component for reuse in chat list
+              - generic [ref=e865] [cursor=pointer]: OnlineIndicator.vue
+            - generic [ref=e866]:
+              - generic [ref=e867]:
+                - generic [ref=e868]: →
+                - generic [ref=e869]: User requested feet/miles toggle based on locale, not just distance threshold
+              - generic [ref=e870] [cursor=pointer]: "session #2"
+            - generic [ref=e871]:
+              - generic [ref=e872]:
+                - generic [ref=e873]: →
+                - generic [ref=e874]: Extracted geolocation to composable to handle permission flow consistently
+              - generic [ref=e875] [cursor=pointer]: useGeolocation.ts
+            - generic [ref=e876]:
+              - generic [ref=e877]:
+                - generic [ref=e878]: →
+                - generic [ref=e879]: Added grid virtualization after profiling showed lag with 50+ nearby users
+              - generic [ref=e880] [cursor=pointer]: "session #3"
+        - generic [ref=e882]:
+          - generic [ref=e883]: FILES CHANGED
+          - generic [ref=e884]: "From git: files changed in this commit"
+          - generic [ref=e885]:
+            - button "src/components/NearbyGrid.vue +312 -45" [pressed] [ref=e886]:
+              - generic [ref=e887]: src/components/NearbyGrid.vue
+              - generic [ref=e888]:
+                - generic [ref=e889]: "+312"
+                - generic [ref=e890]: "-45"
+            - button "src/components/ProfileCard.vue +186 -0" [ref=e891]:
+              - generic [ref=e892]: src/components/ProfileCard.vue
+              - generic [ref=e893]:
+                - generic [ref=e894]: "+186"
+                - generic [ref=e895]: "-0"
+            - button "src/composables/useGeolocation.ts +94 -12" [ref=e896]:
+              - generic [ref=e897]: src/composables/useGeolocation.ts
+              - generic [ref=e898]:
+                - generic [ref=e899]: "+94"
+                - generic [ref=e900]: "-12"
+            - button "src/services/LocationService.ts +78 -34" [ref=e901]:
+              - generic [ref=e902]: src/services/LocationService.ts
+              - generic [ref=e903]:
+                - generic [ref=e904]: "+78"
+                - generic [ref=e905]: "-34"
+            - button "src/stores/nearbyUsers.ts +67 -23" [ref=e906]:
+              - generic [ref=e907]: src/stores/nearbyUsers.ts
+              - generic [ref=e908]:
+                - generic [ref=e909]: "+67"
+                - generic [ref=e910]: "-23"
+            - button "src/types/User.ts +45 -8" [ref=e911]:
+              - generic [ref=e912]: src/types/User.ts
+              - generic [ref=e913]:
+                - generic [ref=e914]: "+45"
+                - generic [ref=e915]: "-8"
+            - button "src/parser/validate.ts +124 -32" [ref=e916]:
+              - generic [ref=e917]: src/parser/validate.ts
+              - generic [ref=e918]:
+                - generic [ref=e919]: "+124"
+                - generic [ref=e920]: "-32"
+            - button "src/parser/schema.ts +89 -15" [ref=e921]:
+              - generic [ref=e922]: src/parser/schema.ts
+              - generic [ref=e923]:
+                - generic [ref=e924]: "+89"
+                - generic [ref=e925]: "-15"
+      - generic [ref=e927]:
+        - tablist "Right panel tabs" [ref=e929]:
+          - tab "Session" [ref=e930]:
+            - img [ref=e931]
+            - generic [ref=e933]: Session
+          - tab "AI Attribution" [ref=e934]:
+            - img [ref=e935]
+            - generic [ref=e937]: AI Attribution
+          - tab "Atlas Search" [ref=e938]:
+            - img [ref=e939]
+            - generic [ref=e942]: Atlas Search
+          - tab "Settings" [ref=e943]:
+            - img [ref=e944]
+            - generic [ref=e947]: Settings
+          - tab "Tests" [selected] [ref=e948]:
+            - img [ref=e949]
+            - generic [ref=e951]: Tests
+        - tabpanel "Tests" [ref=e1241]:
+          - generic [ref=e1242]:
+            - generic [ref=e1243]: TEST RESULTS
+            - generic [ref=e1244]:
+              - img [ref=e1246]
+              - paragraph [ref=e1248]: Select a commit to view tests
+              - paragraph [ref=e1249]: Narrative doesn’t fetch CI automatically. Import a JUnit XML file to attach results here.
+        - generic [ref=e1136]:
+          - button "NearbyGrid.vue ▼" [ref=e1137]:
+            - generic [ref=e1138]:
+              - img [ref=e1139]
+              - text: NearbyGrid.vue
+            - generic [ref=e1144]: ▼
+          - generic [ref=e1150]: (no demo diff for this file)
+    - generic [ref=e1152]:
+      - button "Previous commit" [ref=e1153]:
+        - img [ref=e1154]
+      - button "Next commit" [disabled] [ref=e1156]:
+        - img [ref=e1157]
+      - listbox "Commit timeline" [ref=e1159]:
+        - generic [ref=e1161]:
+          - generic [ref=e1162]:
+            - generic [ref=e1163]: Branch created
+            - button "Branch created" [ref=e1164] [cursor=pointer]
+            - generic [ref=e1165]: Jan 17
+          - generic [ref=e1166]:
+            - generic [ref=e1167]: Created the parsing foundation
+            - button "Created the parsing foundation" [ref=e1168] [cursor=pointer]
+            - generic [ref=e1169]:
+              - generic [ref=e1170]:
+                - generic [ref=e1171]: ✕
+                - text: 4 failed
+              - generic [ref=e1172] [cursor=pointer]: validate.ts
+            - generic [ref=e1173]: Jan 17
+          - generic [ref=e1174]:
+            - generic [ref=e1175]: Set up memory-efficient streaming
+            - button "Set up memory-efficient streaming" [ref=e1176] [cursor=pointer]
+            - generic [ref=e1177]:
+              - generic [ref=e1178]:
+                - generic [ref=e1179]: ✓
+                - text: 12 passed
+              - generic [ref=e1180] [cursor=pointer]: schema.ts
+            - generic [ref=e1181]: Jan 18
+          - generic [ref=e1182]:
+            - generic [ref=e1183]: Built lazy-loading for commit history
+            - button "Built lazy-loading for commit history" [ref=e1184] [cursor=pointer]
+            - generic [ref=e1185]:
+              - generic [ref=e1186] [cursor=pointer]: NearbyGrid.vue
+              - generic [ref=e1187] [cursor=pointer]: ProfileCard.vue
+            - generic [ref=e1188]: Jan 18
+          - generic [ref=e1189]:
+            - generic [ref=e1190]: Added crash recovery & rollback
+            - button "Added crash recovery & rollback" [ref=e1191] [cursor=pointer]
+            - generic [ref=e1192]: Jan 19
+          - generic [ref=e1193]:
+            - generic [ref=e1194]: Improved popup accessibility
+            - button "Improved popup accessibility" [ref=e1195] [cursor=pointer]
+            - generic [ref=e1196]: Jan 19
+          - generic [ref=e1197]:
+            - generic [ref=e1198]: Pivoted to browser-based parsing
+            - button "Pivoted to browser-based parsing" [ref=e1199] [cursor=pointer]
+            - generic [ref=e1200]: Jan 20
+          - generic [ref=e1201]:
+            - generic [ref=e1202]: Parser complete
+            - button "Parser complete" [ref=e1203] [cursor=pointer]
+            - generic [ref=e1204]: Jan 20
+      - button "Previous commit" [ref=e1205]:
+        - img [ref=e1206]
+      - button "Next commit" [disabled] [ref=e1208]:
+        - img [ref=e1209]
