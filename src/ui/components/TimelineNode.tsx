@@ -48,10 +48,13 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
       className="relative flex flex-col items-center"
       style={{ minWidth: '100px' }}
     >
-      {/* Label above */}
+      {/* Label above with tooltip for truncated text */}
       {showLabel && node.label ? (
-        <div className="mb-2 w-32 text-center text-[11px] font-medium text-text-secondary leading-tight truncate px-1">
-          {node.label}
+        <div 
+          className="mb-2 w-32 text-center text-[11px] font-medium text-text-secondary leading-tight px-1"
+          title={node.label}
+        >
+          <span className="block truncate">{node.label}</span>
         </div>
       ) : (
         <div className="mb-2 h-4" />

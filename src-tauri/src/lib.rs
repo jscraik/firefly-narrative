@@ -18,7 +18,10 @@ pub mod story_anchors;
 mod trace_commands;
 
 use notify::RecommendedWatcher;
-use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqliteJournalMode},
+    Row, SqlitePool,
+};
 use std::sync::Arc;
 use tauri::Manager;
 use tauri_plugin_sql::{Migration, MigrationKind};
@@ -269,6 +272,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             story_anchors::commands::reconcile_after_rewrite,
             story_anchors::commands::install_repo_hooks,
             story_anchors::commands::uninstall_repo_hooks,
+            story_anchors::commands::check_git_notes_fetch_config,
+            story_anchors::commands::configure_git_notes_fetch,
         ])
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
@@ -299,8 +304,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             // Use blocking connect since setup is not async
             let pool = tauri::async_runtime::block_on(async {
                 // Create database if it doesn't exist, then connect
+                // WAL mode enables better concurrency for reads/writes
                 let options = SqliteConnectOptions::new()
                     .filename(&path)
+                    .journal_mode(SqliteJournalMode::Wal)
                     .create_if_missing(true);
 
                 let pool = SqlitePool::connect_with(options)
