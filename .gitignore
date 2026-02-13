@@ -45,3 +45,18 @@ artifacts/
 
 # Local SQLite cache placeholder (should never be committed)
 sqlite:narrative.db
+
+# Local tooling artifacts
+.playwright-mcp/
+*.bak.*
+app-state.png
+app-working.png
+.agents/
+agentation-open.md
+annotation-form.md
+docs/exec-plans/
+scripts/_agent_first_runtime_common.sh
+scripts/dev
+scripts/obs
+scripts/qa
+scripts/test

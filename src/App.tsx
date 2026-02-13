@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from '@design-studio/ui/base';
+import { IconCheckmark } from '@design-studio/ui/icons';
+import { colorTokens, spaceTokens, typographyTokens } from '@design-studio/tokens';
 import { setOtelReceiverEnabled } from './core/tauri/otelReceiver';
 import type {
   BranchViewModel,
@@ -18,6 +21,8 @@ import { useAutoIngest } from './hooks/useAutoIngest';
 import { useCommitData } from './hooks/useCommitData';
 import { UpdatePrompt, UpdateIndicator } from './ui/components/UpdatePrompt';
 import { indexRepo } from './core/repo/indexer';
+
+type AgentationComponentType = (typeof import('agentation'))['Agentation'];
 
 const EMPTY_MODEL: BranchViewModel = {
   source: 'git',
@@ -104,6 +109,26 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('demo');
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter | null>(null);
   const [isExitingFilteredView, setIsExitingFilteredView] = useState(false);
+  const [AgentationComponent, setAgentationComponent] = useState<AgentationComponentType | null>(null);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
+    let cancelled = false;
+    import('agentation')
+      .then((mod) => {
+        if (!cancelled) {
+          setAgentationComponent(() => mod.Agentation);
+        }
+      })
+      .catch((error) => {
+        console.warn('[Agentation] Failed to load dev panel:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Clear dashboard filter when switching away from repo mode (optional UX enhancement)
   useEffect(() => {
@@ -263,6 +288,26 @@ export default function App() {
         <UpdateIndicator status={updateStatus} onClick={checkForUpdates} />
       </TopNav>
 
+      <div className="border-b border-border-light bg-bg-card px-4 py-2">
+        <div className="flex items-center justify-between" style={{ gap: `${spaceTokens.s12}px` }}>
+          <p
+            style={{
+              fontSize: `${typographyTokens.paragraphSm.size}px`,
+              lineHeight: `${typographyTokens.paragraphSm.lineHeight}px`,
+              color: colorTokens.text.light.secondary
+            }}
+          >
+            Design System primitives are active in Narrative.
+          </p>
+          <Button type="button" onClick={() => setMode('repo')}>
+            <span className="inline-flex items-center gap-2">
+              <IconCheckmark className="size-4" />
+              Open repo view
+            </span>
+          </Button>
+        </div>
+      </div>
+
       <div className="flex-1 overflow-hidden">
         {mode === 'dashboard' ? (
           <DashboardView
@@ -353,6 +398,15 @@ export default function App() {
           <RepoEmptyState onOpenRepo={openRepo} />
         )}
       </div>
+      {import.meta.env.DEV && AgentationComponent && (
+        <AgentationComponent
+          endpoint="http://localhost:4747"
+          webhookUrl={import.meta.env.VITE_AGENTATION_WEBHOOK_URL}
+          onSessionCreated={(sessionId) => {
+            console.log('Session started:', sessionId);
+          }}
+        />
+      )}
     </div>
   );
 }
