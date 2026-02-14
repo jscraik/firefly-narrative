@@ -66,7 +66,7 @@
   },
   {
     "kind": "PASSWORD_ASSIGNMENT",
-    "pattern": "(?i)(password|passwd|pwd|secret|api_key|apikey)\\s*[=:]\\s*['\"][^'\"]{8,}['\"]",
-    "flags": "g"
+    "pattern": "(password|passwd|pwd|secret|api_key|apikey)\\s*[=:]\\s*['\"][^'\"]{8,}['\"]",
+    "flags": "gi"
   }
 ]

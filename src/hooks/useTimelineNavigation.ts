@@ -9,7 +9,7 @@ export interface UseTimelineNavigationProps {
 
 export interface UseTimelineNavigationReturn {
   // Ref for the scroll container
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   // Sorted nodes
   sorted: TimelineNode[];
   // Navigation state

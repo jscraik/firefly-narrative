@@ -1,4 +1,4 @@
-import { Link2, Link2Off, Upload, ChevronDown, ChevronUp } from 'lucide-react';
+import { Link2, Link2Off, Upload, ChevronDown, ChevronUp, CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import type { SessionExcerpt } from '../../core/types';
 import { Dialog } from './Dialog';
@@ -8,6 +8,13 @@ function truncateText(text: string, limit = 160) {
   const trimmed = text.trim().replace(/\s+/g, ' ');
   if (trimmed.length <= limit) return trimmed;
   return `${trimmed.slice(0, limit).trim()}…`;
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
 function ExpandableHighlight({ text, id }: { text: string; id: string }) {
