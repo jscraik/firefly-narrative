@@ -32,6 +32,8 @@ pub fn split_note_sections(message: &str) -> (String, String) {
         }
     }
 
-    (fast_lines.join("\n"), json_lines.join("\n").trim().to_string())
+    (
+        fast_lines.join("\n"),
+        json_lines.join("\n").trim().to_string(),
+    )
 }
-

@@ -1,23 +1,27 @@
-pub mod attribution;
 mod activity;
+mod atlas;
+pub mod attribution;
 mod commands;
 mod file_watcher;
 mod git_diff;
-mod ingest_config;
 mod import;
+mod ingest_config;
 mod link_commands;
 mod linking;
 mod models;
 mod otlp_receiver;
 mod rules;
+mod secret_store;
 mod session_hash;
 mod session_links;
-mod secret_store;
 pub mod story_anchors;
 mod trace_commands;
 
 use notify::RecommendedWatcher;
-use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqliteJournalMode},
+    Row, SqlitePool,
+};
 use std::sync::Arc;
 use tauri::Manager;
 use tauri_plugin_sql::{Migration, MigrationKind};
@@ -180,6 +184,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             sql: include_str!("../migrations/011_story_anchors.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 12,
+            description: "add_atlas",
+            sql: include_str!("../migrations/012_atlas.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -207,6 +217,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             import::commands::scan_for_session_files,
             import::commands::get_recent_sessions,
             import::commands::purge_expired_sessions,
+            atlas::commands::atlas_capabilities,
+            atlas::commands::atlas_introspect,
+            atlas::commands::atlas_search,
+            atlas::commands::atlas_get_session,
+            atlas::commands::atlas_doctor_report,
+            atlas::commands::atlas_doctor_rebuild_derived,
             // Git diff commands
             git_diff::get_commit_added_ranges,
             // Attribution commands
@@ -256,6 +272,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             story_anchors::commands::reconcile_after_rewrite,
             story_anchors::commands::install_repo_hooks,
             story_anchors::commands::uninstall_repo_hooks,
+            story_anchors::commands::check_git_notes_fetch_config,
+            story_anchors::commands::configure_git_notes_fetch,
         ])
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
@@ -286,8 +304,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             // Use blocking connect since setup is not async
             let pool = tauri::async_runtime::block_on(async {
                 // Create database if it doesn't exist, then connect
+                // WAL mode enables better concurrency for reads/writes
                 let options = SqliteConnectOptions::new()
                     .filename(&path)
+                    .journal_mode(SqliteJournalMode::Wal)
                     .create_if_missing(true);
 
                 let pool = SqlitePool::connect_with(options)

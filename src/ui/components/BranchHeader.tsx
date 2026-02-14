@@ -58,21 +58,17 @@ export function BranchHeader({ model, dashboardFilter, onClearFilter }: { model:
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-3 pt-4 border-t border-border-subtle">
+      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 pt-4 border-t border-border-subtle">
         <StatGroup label="Code">
           <Stat value={`+${model.stats.added}`} label="added" tone="good" />
           <Stat value={`-${model.stats.removed}`} label="removed" tone="bad" />
           <Stat value={`${model.stats.files}`} label="files" icon={FileText} />
         </StatGroup>
-        
-        <div className="h-5 w-px bg-border-light" />
-        
+
         <StatGroup label="Git">
           <Stat value={`${model.stats.commits}`} label="commits" icon={GitCommit} />
         </StatGroup>
-        
-        <div className="h-5 w-px bg-border-light" />
-        
+
         <StatGroup label="AI">
           <Stat value={`${model.stats.prompts}`} label="prompts" icon={MessageSquare} />
           <Stat value={`${model.stats.responses}`} label="responses" />

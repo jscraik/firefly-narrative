@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.5.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.4.0...narrative-desktop-mvp-v0.5.0) (2026-02-11)
+
+
+### Features
+
+* **redaction:** expand secret detection patterns and add tests ([b62e209](https://github.com/jscraik/narrative/commit/b62e209b4c962841c7b0ff8c9f2af0826e24f038))
+* **session-badges:** enhance with tool icons, colors, and labels ([fa5093f](https://github.com/jscraik/narrative/commit/fa5093f6c7cea41e05a581ee43fcc0d94889f560))
+
+
+### Bug Fixes
+
+* **cargo:** add default-run key to enable dev server ([3aeee16](https://github.com/jscraik/narrative/commit/3aeee16f8a114c5c7fad52adbdd50aa6ff6c1fc3))
+
+## [0.4.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.3.1...narrative-desktop-mvp-v0.4.0) (2026-02-09)
+
+
+### Features
+
+* add story anchors ([50df540](https://github.com/jscraik/narrative/commit/50df540bd47d67b554f51f4badfe05ffb1d71fb4))
+* **atlas:** add repo-scoped session search ([d5e6e41](https://github.com/jscraik/narrative/commit/d5e6e413378681093b5b5325760a662920427f7b))
+* **capture:** activity feed, steps summary, and refreshed icon ([dc0bad8](https://github.com/jscraik/narrative/commit/dc0bad8b70807ddfb6f6ca4227f8dcdbd835c4c5))
+* **capture:** auto-detect sources, codex fallback, and keychain OTLP key ([07797f9](https://github.com/jscraik/narrative/commit/07797f990d4d62af13c32dc61170c19cd7a5276d))
+
 ## [0.3.1](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.3.0...narrative-desktop-mvp-v0.3.1) (2026-02-07)
 
 

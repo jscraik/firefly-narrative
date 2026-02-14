@@ -54,10 +54,9 @@ impl SessionParser for CodexLogParser {
             .to_string();
 
         let re_msg = Regex::new(r"^(?i)(user|assistant|tool):\s*(.*)$").unwrap();
-        let re_file = Regex::new(
-            r"(?i)(?:modified|created|deleted|changed)[\\s:]+([^\\s]+\\.[A-Za-z0-9_]+)",
-        )
-        .unwrap();
+        let re_file =
+            Regex::new(r"(?i)(?:modified|created|deleted|changed)[\\s:]+([^\\s]+\\.[A-Za-z0-9_]+)")
+                .unwrap();
 
         for (idx, line) in content.lines().enumerate() {
             if line.trim().is_empty() {
@@ -91,12 +90,19 @@ impl SessionParser for CodexLogParser {
             // Message extraction
             if let Some(caps) = re_msg.captures(line) {
                 let role = caps.get(1).map(|m| m.as_str().to_lowercase());
-                let text = caps.get(2).map(|m| m.as_str().to_string()).unwrap_or_default();
+                let text = caps
+                    .get(2)
+                    .map(|m| m.as_str().to_string())
+                    .unwrap_or_default();
                 match role.as_deref() {
-                    Some("user") => trace.add_message(TraceMessage::User { text, timestamp: None }),
-                    Some("assistant") => {
-                        trace.add_message(TraceMessage::Assistant { text, timestamp: None })
-                    }
+                    Some("user") => trace.add_message(TraceMessage::User {
+                        text,
+                        timestamp: None,
+                    }),
+                    Some("assistant") => trace.add_message(TraceMessage::Assistant {
+                        text,
+                        timestamp: None,
+                    }),
                     Some("tool") => trace.add_message(TraceMessage::ToolCall {
                         tool_name: "tool".to_string(),
                         input: Some(serde_json::json!({ "raw": text })),
@@ -130,4 +136,3 @@ impl SessionParser for CodexLogParser {
         }
     }
 }
-

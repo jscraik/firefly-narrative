@@ -7,8 +7,7 @@ use super::note_meta::{
 };
 use super::notes::{
     build_attribution_note, parse_attribution_note, NoteFile, NoteRange, NoteSourceMeta,
-    ParsedAttributionNote, ATTRIBUTION_NOTES_REF,
-    LEGACY_NARRATIVE_ATTRIBUTION_NOTES_REF,
+    ParsedAttributionNote, ATTRIBUTION_NOTES_REF, LEGACY_NARRATIVE_ATTRIBUTION_NOTES_REF,
 };
 use super::prefs::fetch_or_create_prefs;
 use super::stats::compute_contribution_from_attributions;

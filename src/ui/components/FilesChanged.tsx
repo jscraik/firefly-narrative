@@ -20,12 +20,13 @@ export function FilesChanged({
   const { selectedFile, selectFile } = useFileSelection();
   const fileRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  // Scroll selected file into view
+  // Scroll selected file into view with reduced-motion support
   useEffect(() => {
     if (selectedFile) {
       const el = fileRefs.current.get(selectedFile);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'nearest' });
       }
     }
   }, [selectedFile]);
@@ -33,7 +34,7 @@ export function FilesChanged({
   return (
     <div className="card p-5">
       <div className="section-header">{title ?? 'FILES CHANGED'}</div>
-      <div className="section-subheader mt-0.5">From git: files changed in this commit</div>
+      <div className="section-subheader">From git: files changed in this commit</div>
       <div className="mt-4 divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden">
         {files.length === 0 ? (
           <div className="p-6 flex flex-col items-center text-center">
@@ -52,10 +53,10 @@ export function FilesChanged({
               }}
               type="button"
               aria-pressed={selectedFile === f.path}
-              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all ${
+              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all duration-150 ${
                 selectedFile === f.path 
-                  ? 'bg-accent-blue-bg border-l-2 border-l-accent-blue -ml-[2px] pl-[18px]' 
-                  : 'hover:bg-bg-subtle border-l-2 border-l-transparent'
+                  ? 'bg-accent-blue-bg border-l-[3px] border-l-accent-blue -ml-[3px] pl-[18px] shadow-sm' 
+                  : 'hover:bg-bg-subtle border-l-[3px] border-l-transparent'
               }`}
               onClick={() => selectFile(f.path)}
             >

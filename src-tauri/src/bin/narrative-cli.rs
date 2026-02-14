@@ -24,7 +24,8 @@ fn arg_value(args: &[String], name: &str) -> Option<String> {
 }
 
 fn default_db_path() -> Option<PathBuf> {
-    let identifier = env::var("NARRATIVE_APP_ID").unwrap_or_else(|_| "com.jamie.narrative-mvp".into());
+    let identifier =
+        env::var("NARRATIVE_APP_ID").unwrap_or_else(|_| "com.jamie.narrative-mvp".into());
     dirs::data_dir().map(|base| base.join(identifier).join("narrative.db"))
 }
 
@@ -73,7 +74,9 @@ async fn ensure_repo_id(db: &SqlitePool, repo_path: &str) -> Result<i64, String>
 fn head_sha(repo_root: &str) -> Result<String, String> {
     let repo = Repository::open(repo_root).map_err(|e| e.to_string())?;
     let head = repo.head().map_err(|e| e.to_string())?;
-    let oid = head.target().ok_or_else(|| "HEAD has no target".to_string())?;
+    let oid = head
+        .target()
+        .ok_or_else(|| "HEAD has no target".to_string())?;
     Ok(oid.to_string())
 }
 
@@ -86,9 +89,7 @@ async fn export_head_notes(db: &SqlitePool, repo_id: i64, sha: &str) -> Result<(
     )
     .await;
     let _ = narrative_desktop_mvp::story_anchors::sessions_notes_io::export_sessions_note(
-        db,
-        repo_id,
-        sha,
+        db, repo_id, sha,
     )
     .await;
     Ok(())
@@ -102,20 +103,15 @@ async fn reconcile_commits(
     write_recovered_notes: bool,
 ) -> Result<(), String> {
     use narrative_desktop_mvp::attribution::git_utils::compute_rewrite_key;
-    use narrative_desktop_mvp::attribution::line_attribution::{ensure_line_attributions_for_commit, store_rewrite_key};
+    use narrative_desktop_mvp::attribution::line_attribution::{
+        ensure_line_attributions_for_commit, store_rewrite_key,
+    };
 
     let repo = Repository::open(repo_root).map_err(|e| e.to_string())?;
 
     for sha in commit_shas {
         let rewrite_key = compute_rewrite_key(&repo, sha).ok();
-        let _ = store_rewrite_key(
-            db,
-            repo_id,
-            sha,
-            rewrite_key.as_deref(),
-            Some("patch-id"),
-        )
-        .await;
+        let _ = store_rewrite_key(db, repo_id, sha, rewrite_key.as_deref(), Some("patch-id")).await;
 
         let _ = ensure_line_attributions_for_commit(db, repo_id, sha).await;
 
@@ -191,7 +187,9 @@ async fn run_hook(args: Vec<String>) -> Result<(), String> {
             if sub == "post-merge" {
                 // Record lineage event (implemented even though optional in the plan)
                 let payload = narrative_desktop_mvp::story_anchors::lineage::LineageEventPayload {
-                    schema_version: narrative_desktop_mvp::story_anchors::refs::LINEAGE_SCHEMA_VERSION.to_string(),
+                    schema_version:
+                        narrative_desktop_mvp::story_anchors::refs::LINEAGE_SCHEMA_VERSION
+                            .to_string(),
                     event_type: "merge".to_string(),
                     head_sha: Some(sha.clone()),
                     rewritten_pairs: Vec::new(),
@@ -215,8 +213,8 @@ async fn run_hook(args: Vec<String>) -> Result<(), String> {
         }
         "post-rewrite" => {
             let cmd = arg_value(&args, "--command").unwrap_or_else(|| "rewrite".into());
-            let rewritten_path =
-                arg_value(&args, "--rewritten").ok_or_else(|| "--rewritten required".to_string())?;
+            let rewritten_path = arg_value(&args, "--rewritten")
+                .ok_or_else(|| "--rewritten required".to_string())?;
 
             let content = tokio::fs::read_to_string(&rewritten_path)
                 .await
@@ -236,7 +234,8 @@ async fn run_hook(args: Vec<String>) -> Result<(), String> {
             let sha = head_sha(&repo_root).ok();
 
             let payload = narrative_desktop_mvp::story_anchors::lineage::LineageEventPayload {
-                schema_version: narrative_desktop_mvp::story_anchors::refs::LINEAGE_SCHEMA_VERSION.to_string(),
+                schema_version: narrative_desktop_mvp::story_anchors::refs::LINEAGE_SCHEMA_VERSION
+                    .to_string(),
                 event_type: cmd.clone(),
                 head_sha: sha.clone(),
                 rewritten_pairs: pairs.clone(),
@@ -299,4 +298,3 @@ async fn main() {
         std::process::exit(1);
     }
 }
-

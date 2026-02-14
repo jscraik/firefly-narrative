@@ -54,7 +54,7 @@ export function AuthorBadge({ line }: AuthorBadgeProps) {
     case 'ai_agent':
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent-green-light text-accent-green"
           title={formatBadgeTitle('AI-generated', title)}
         >
           <Bot className="w-3 h-3" />
@@ -64,7 +64,7 @@ export function AuthorBadge({ line }: AuthorBadgeProps) {
     case 'ai_tab':
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent-blue-light text-accent-blue"
           title={formatBadgeTitle('Assist suggestions', title)}
         >
           <Bot className="w-3 h-3" />
@@ -74,7 +74,7 @@ export function AuthorBadge({ line }: AuthorBadgeProps) {
     case 'mixed':
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent-amber-light text-accent-amber"
           title={formatBadgeTitle('Modified lines (AI + human edits)', title)}
         >
           <Users className="w-3 h-3" />

@@ -23,5 +23,50 @@
     "kind": "BEARER_TOKEN",
     "pattern": "\\bBearer\\s+[A-Za-z0-9._-]+\\b",
     "flags": "g"
+  },
+  {
+    "kind": "STRIPE_KEY",
+    "pattern": "\\bsk_(live|test)_[A-Za-z0-9]{24,}\\b",
+    "flags": "g"
+  },
+  {
+    "kind": "SLACK_TOKEN",
+    "pattern": "\\bxox[baprs]-[A-Za-z0-9]{10,}\\b",
+    "flags": "g"
+  },
+  {
+    "kind": "NPM_TOKEN",
+    "pattern": "\\bnpm_[A-Za-z0-9]{36}\\b",
+    "flags": "g"
+  },
+  {
+    "kind": "JWT_TOKEN",
+    "pattern": "\\beyJ[A-Za-z0-9_-]*\\.eyJ[A-Za-z0-9_-]*\\.[A-Za-z0-9_-]*\\b",
+    "flags": "g"
+  },
+  {
+    "kind": "DATABASE_URL",
+    "pattern": "\\b(mysql|postgres|mongodb|redis)://[^:]+:[^@]+@[^/]+\\b",
+    "flags": "gi"
+  },
+  {
+    "kind": "SENDGRID_KEY",
+    "pattern": "\\bSG\\.[A-Za-z0-9_-]{22}\\.[A-Za-z0-9_-]{43}",
+    "flags": "g"
+  },
+  {
+    "kind": "TWILIO_SID",
+    "pattern": "\\bAC[a-f0-9]{32}\\b",
+    "flags": "g"
+  },
+  {
+    "kind": "GOOGLE_API_KEY",
+    "pattern": "\\bAIza[0-9A-Za-z_-]{35}\\b",
+    "flags": "g"
+  },
+  {
+    "kind": "PASSWORD_ASSIGNMENT",
+    "pattern": "(?i)(password|passwd|pwd|secret|api_key|apikey)\\s*[=:]\\s*['\"][^'\"]{8,}['\"]",
+    "flags": "g"
   }
 ]

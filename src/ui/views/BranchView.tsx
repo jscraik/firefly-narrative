@@ -5,6 +5,7 @@ import type { BranchViewModel, FileChange, TestRun, TraceRange, DashboardFilter 
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
 import type { ActivityEvent } from '../../core/tauri/activity';
 import { BranchHeader } from '../components/BranchHeader';
+import { Breadcrumb } from '../components/Breadcrumb';
 import { CaptureActivityStrip } from '../components/CaptureActivityStrip';
 import { FilesChanged } from '../components/FilesChanged';
 import { ImportErrorBanner } from '../components/ImportErrorBanner';
@@ -13,6 +14,7 @@ import { NeedsAttentionList } from '../components/NeedsAttentionList';
 import { RightPanelTabs } from '../components/RightPanelTabs';
 import { Timeline } from '../components/Timeline';
 import { IngestToast } from '../components/IngestToast';
+import { SkeletonFiles } from '../components/Skeleton';
 import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
 import type { IngestConfig, OtlpKeyStatus, DiscoveredSources } from '../../core/tauri/ingestConfig';
 import { useTestImport } from '../../hooks/useTestImport';
@@ -343,20 +345,25 @@ function BranchViewInner(props: {
               <NeedsAttentionList issues={ingestIssues} onDismiss={onDismissIngestIssue} />
             ) : null}
             <IntentList items={model.intent} />
+            {/* Breadcrumb navigation */}
+            {selectedNode && (
+              <div className="flex items-center gap-2 px-1">
+                <Breadcrumb
+                  segments={[
+                    { label: model.meta?.branchName || 'main', icon: 'branch' },
+                    { label: selectedNode.label || selectedNode.id.slice(0, 8), icon: 'commit' },
+                  ]}
+                />
+              </div>
+            )}
+
             <div>
               {loadingFiles ? (
                 <div className="card p-5">
                   <div className="section-header">FILES CHANGED</div>
-                  <div className="mt-4 space-y-2">
-                    {['s1', 's2', 's3', 's4', 's5'].map((key) => (
-                      <div key={key} className="flex items-center justify-between py-2">
-                        <div className="h-4 bg-border-light rounded animate-pulse w-3/4" />
-                        <div className="flex gap-2">
-                          <div className="h-4 w-12 bg-border-light rounded animate-pulse" />
-                          <div className="h-4 w-12 bg-border-light rounded animate-pulse" />
-                        </div>
-                      </div>
-                    ))}
+                  <div className="section-subheader mt-0.5">loading…</div>
+                  <div className="mt-4">
+                    <SkeletonFiles count={5} />
                   </div>
                 </div>
               ) : (

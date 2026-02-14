@@ -104,4 +104,3 @@ pub async fn write_lineage_note_for_head(
 
     Ok(())
 }
-

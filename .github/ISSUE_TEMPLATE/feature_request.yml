@@ -1,0 +1,55 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea to make Narrative better? We'd love to hear it!
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the pain point or limitation
+      placeholder: I often struggle with... when using AI coding tools
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What solution would you like?
+      description: Describe what you'd like to see
+      placeholder: It would be great if Narrative could...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you tried other ways to solve this?
+      placeholder: I've tried using... but it doesn't work because...
+
+  - type: dropdown
+    id: ai-tool
+    attributes:
+      label: Which AI tools do you use?
+      description: Select all that apply
+      multiple: true
+      options:
+        - Claude Code
+        - OpenAI Codex
+        - Cursor
+        - GitHub Copilot
+        - Continue.dev
+        - Other
+
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Are you willing to help?
+      options:
+        - label: I'm willing to test this feature
+        - label: I'm willing to contribute code

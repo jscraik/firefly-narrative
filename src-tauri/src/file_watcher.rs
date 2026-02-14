@@ -42,7 +42,7 @@ pub fn start_session_watcher(
         loop {
             match rx.recv_timeout(tick) {
                 Ok(path) => {
-                    let entry = pending.entry(path.clone()).or_insert_with(PendingEntry::default);
+                    let entry = pending.entry(path.clone()).or_default();
                     entry.last_seen = Instant::now();
                     entry.last_sig = file_signature(&path);
                 }

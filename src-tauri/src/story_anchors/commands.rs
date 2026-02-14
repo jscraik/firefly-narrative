@@ -6,16 +6,163 @@ use super::sessions_notes_io::{
     SessionsNoteExportSummary,
 };
 use super::status::{get_commit_story_anchor_status, StoryAnchorCommitStatus};
-use crate::attribution::line_attribution::{ensure_line_attributions_for_commit, store_rewrite_key};
-use crate::attribution::utils::fetch_repo_root;
-use crate::story_anchors::refs::{
-    ATTRIBUTION_REF_CANONICAL, ATTRIBUTION_REF_LEGACY_NARRATIVE,
+use crate::attribution::line_attribution::{
+    ensure_line_attributions_for_commit, store_rewrite_key,
 };
+use crate::attribution::utils::fetch_repo_root;
+use crate::story_anchors::refs::{ATTRIBUTION_REF_CANONICAL, ATTRIBUTION_REF_LEGACY_NARRATIVE};
 use crate::DbState;
 use git2::{Oid, Repository, Signature};
 use serde::Serialize;
-use tauri::State;
 use tauri::Manager;
+use tauri::State;
+
+/// Check result for git notes fetch configuration
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotesFetchCheckResult {
+    pub is_configured: bool,
+    pub remote_name: String,
+    pub fetch_refspec: Option<String>,
+    pub notes_refspec: Option<String>,
+    pub message: String,
+}
+
+/// Check if git notes fetch is configured for the given remote.
+/// Git notes don't auto-fetch by default, which can cause narrative
+/// data to appear "lost" when clones/fetches happen.
+#[tauri::command(rename_all = "camelCase")]
+pub async fn check_git_notes_fetch_config(
+    db: State<'_, DbState>,
+    repo_id: i64,
+) -> Result<NotesFetchCheckResult, String> {
+    let repo_root = fetch_repo_root(&db.0, repo_id).await?;
+    let repo = Repository::open(&repo_root).map_err(|e| e.to_string())?;
+
+    // Default to "origin" if it exists, otherwise use first remote
+    let remote_name = repo
+        .remotes()
+        .ok()
+        .and_then(|remotes| {
+            if remotes.is_empty() {
+                None
+            } else {
+                // Prefer "origin", fall back to first remote
+                remotes
+                    .iter()
+                    .find(|r| *r == Some("origin"))
+                    .or_else(|| remotes.iter().next())
+                    .flatten()
+                    .map(|s| s.to_string())
+            }
+        })
+        .unwrap_or_else(|| "origin".to_string());
+
+    let remote = repo.find_remote(&remote_name).ok();
+
+    let fetch_refspec = remote.as_ref().and_then(|r| {
+        r.fetch_refspecs()
+            .ok()
+            .and_then(|specs| specs.iter().next().flatten().map(|s| s.to_string()))
+    });
+
+    // Check if notes refspec is configured
+    let notes_refspec = format!("+refs/notes/*:refs/notes/*");
+    let notes_configured = remote.as_ref().map_or(false, |r| {
+        r.fetch_refspecs()
+            .ok()
+            .map(|specs| {
+                specs.iter().any(|spec| {
+                    spec.map_or(false, |s| {
+                        s.contains("refs/notes") || s.contains("refs/notes/*")
+                    })
+                })
+            })
+            .unwrap_or(false)
+    });
+
+    let message = if notes_configured {
+        format!(
+            "Git notes fetch is configured for remote '{}'. Narrative data will sync automatically.",
+            remote_name
+        )
+    } else {
+        format!(
+            "Git notes fetch is NOT configured for remote '{}'. \
+             Narrative data (session links, attribution) won't sync on fetch/clone. \
+             To fix: git config --add remote.{}.fetch '+refs/notes/*:refs/notes/*'",
+            remote_name, remote_name
+        )
+    };
+
+    Ok(NotesFetchCheckResult {
+        is_configured: notes_configured,
+        remote_name,
+        fetch_refspec,
+        notes_refspec: if notes_configured {
+            Some(notes_refspec)
+        } else {
+            None
+        },
+        message,
+    })
+}
+
+/// Configure git notes fetch for the given remote.
+#[tauri::command(rename_all = "camelCase")]
+pub async fn configure_git_notes_fetch(
+    db: State<'_, DbState>,
+    repo_id: i64,
+    remote: Option<String>,
+) -> Result<String, String> {
+    use std::process::Command;
+
+    let repo_root = fetch_repo_root(&db.0, repo_id).await?;
+
+    // Determine remote name
+    let remote_name = if let Some(r) = remote {
+        r
+    } else {
+        let repo = Repository::open(&repo_root).map_err(|e| e.to_string())?;
+        repo.remotes()
+            .ok()
+            .and_then(|remotes| {
+                if remotes.is_empty() {
+                    None
+                } else {
+                    remotes
+                        .iter()
+                        .find(|r| *r == Some("origin"))
+                        .or_else(|| remotes.iter().next())
+                        .flatten()
+                        .map(|s| s.to_string())
+                }
+            })
+            .ok_or_else(|| "No remote configured for repository".to_string())?
+    };
+
+    // Run git config to add notes fetch refspec
+    let output = Command::new("git")
+        .args([
+            "config",
+            "--add",
+            &format!("remote.{}.fetch", remote_name),
+            "+refs/notes/*:refs/notes/*",
+        ])
+        .current_dir(&repo_root)
+        .output()
+        .map_err(|e| format!("Failed to run git config: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Git config failed: {}", stderr));
+    }
+
+    Ok(format!(
+        "Successfully configured git notes fetch for remote '{}'",
+        remote_name
+    ))
+}
 
 #[tauri::command(rename_all = "camelCase")]
 pub async fn get_story_anchor_status(
@@ -157,14 +304,17 @@ pub async fn migrate_attribution_notes_ref(
             continue;
         };
 
-        if let Err(_) = repo.note(
-            &signature,
-            &signature,
-            Some(ATTRIBUTION_REF_CANONICAL),
-            oid,
-            message,
-            true,
-        ) {
+        if repo
+            .note(
+                &signature,
+                &signature,
+                Some(ATTRIBUTION_REF_CANONICAL),
+                oid,
+                message,
+                true,
+            )
+            .is_err()
+        {
             failed += 1;
             continue;
         }
@@ -233,7 +383,8 @@ pub async fn reconcile_after_rewrite(
 
         // Recover sessions by rewrite key.
         if let Some(key) = rewrite_key.as_deref() {
-            if let Ok(Some(source_commit)) = find_commit_by_rewrite_key(&db.0, repo_id, key, sha).await
+            if let Ok(Some(source_commit)) =
+                find_commit_by_rewrite_key(&db.0, repo_id, key, sha).await
             {
                 let copied = copy_commit_session_links(&db.0, repo_id, &source_commit, sha).await?;
                 if copied > 0 {
@@ -338,9 +489,6 @@ pub async fn install_repo_hooks(
 }
 
 #[tauri::command(rename_all = "camelCase")]
-pub async fn uninstall_repo_hooks(
-    db: State<'_, DbState>,
-    repo_id: i64,
-) -> Result<(), String> {
+pub async fn uninstall_repo_hooks(db: State<'_, DbState>, repo_id: i64) -> Result<(), String> {
     hooks_impl::uninstall_repo_hooks_by_id(&db.0, repo_id).await
 }

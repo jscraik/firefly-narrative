@@ -1,5 +1,5 @@
-import { type KeyboardEvent, useEffect, useState } from 'react';
-import { MessageSquare, Activity, Settings, TestTube, FileCode } from 'lucide-react';
+import { type KeyboardEvent, useEffect, useState, Fragment } from 'react';
+import { MessageSquare, Activity, Settings, TestTube, FileCode, Search } from 'lucide-react';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
 import type { SessionExcerpt, TestRun, TraceCommitSummary, TraceCollectorStatus, TraceCollectorConfig, TraceRange } from '../../core/types';
 import { SessionExcerpts } from './SessionExcerpts';
@@ -12,21 +12,26 @@ import { TestResultsPanel } from './TestResultsPanel';
 import { DiffViewer } from './DiffViewer';
 import { SourceLensView } from './SourceLensView';
 import { StepsSummaryCard } from './StepsSummaryCard';
+import { AtlasSearchPanel } from './AtlasSearchPanel';
 import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
 
-type TabId = 'session' | 'attribution' | 'settings' | 'tests';
+type TabId = 'session' | 'attribution' | 'atlas' | 'settings' | 'tests';
+type TabCategory = 'analyze' | 'tools' | 'config';
 
 interface TabConfig {
   id: TabId;
   label: string;
+  shortLabel: string;
   icon: typeof MessageSquare;
+  category: TabCategory;
 }
 
 const TABS: TabConfig[] = [
-  { id: 'session', label: 'Session', icon: MessageSquare },
-  { id: 'attribution', label: 'AI Attribution', icon: Activity },
-  { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'tests', label: 'Tests', icon: TestTube },
+  { id: 'session', label: 'Session', shortLabel: 'Session', icon: MessageSquare, category: 'analyze' },
+  { id: 'attribution', label: 'AI Attribution', shortLabel: 'Attribution', icon: Activity, category: 'analyze' },
+  { id: 'atlas', label: 'Atlas Search', shortLabel: 'Atlas', icon: Search, category: 'tools' },
+  { id: 'tests', label: 'Tests', shortLabel: 'Tests', icon: TestTube, category: 'tools' },
+  { id: 'settings', label: 'Settings', shortLabel: 'Settings', icon: Settings, category: 'config' },
 ];
 
 interface RightPanelTabsProps {
@@ -130,16 +135,13 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
   // Determine which tabs have content
   const hasSessionContent = sessionExcerpts && sessionExcerpts.length > 0;
   const hasAttributionContent = traceSummary || traceStatus;
+  // Atlas tab is always enabled; the panel itself shows a repo-required empty state when repoId is null.
+  const hasAtlasContent = true;
   const hasTestContent = Boolean(testRun) || Boolean(selectedCommitSha);
 
-  // Auto-switch to attribution tab if no session but has attribution
-  // This is a one-time effect that runs when content becomes available
-  const effectiveTab = (() => {
-    if (activeTab === 'session' && !hasSessionContent && hasAttributionContent) {
-      return 'attribution';
-    }
-    return activeTab;
-  })();
+  // Use active tab directly - no auto-switch to prevent jarring UX
+  // Users can manually switch between tabs
+  const effectiveTab = activeTab;
 
   const tabIds = TABS.map((tab) => tab.id);
 
@@ -187,41 +189,51 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
 
   return (
     <div className="flex flex-col h-full gap-4">
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Grouped by category with visual separators */}
       <div className="card p-2">
-        <div className="flex gap-1" role="tablist" aria-label="Right panel tabs" onKeyDown={handleTabKeyDown}>
-          {TABS.map((tab) => {
+        <div className="flex gap-1 items-center" role="tablist" aria-label="Right panel tabs" onKeyDown={handleTabKeyDown}>
+          {TABS.map((tab, index) => {
             const Icon = tab.icon;
             const isActive = effectiveTab === tab.id;
             const hasContent =
               (tab.id === 'session' && hasSessionContent) ||
               (tab.id === 'attribution' && hasAttributionContent) ||
+              (tab.id === 'atlas' && hasAtlasContent) ||
               (tab.id === 'tests' && hasTestContent) ||
               tab.id === 'settings';
 
-	            return (
-	              <button
-	                key={tab.id}
-	                id={`tab-${tab.id}`}
-	                type="button"
-	                onClick={() => setActiveTab(tab.id)}
-	                className={`
-	                  flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium
-	                  transition-all duration-150
-	                  ${isActive
-	                    ? 'bg-accent-blue-light text-accent-blue'
-	                    : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary'
-	                  }
-	                  ${!hasContent && tab.id !== 'settings' ? 'opacity-60' : ''}
-	                `}
-	                aria-selected={isActive}
-	                aria-controls={`panel-${tab.id}`}
-	                role="tab"
-	                tabIndex={isActive ? 0 : -1}
-	              >
-                <Icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
+            // Check if we need a separator before this tab (category change)
+            const prevTab = index > 0 ? TABS[index - 1] : null;
+            const needsSeparator = prevTab && prevTab.category !== tab.category;
+
+            return (
+              <Fragment key={tab.id}>
+                {needsSeparator && (
+                  <div className="w-px h-5 bg-border-light mx-1" aria-hidden="true" />
+                )}
+                <button
+                  id={`tab-${tab.id}`}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium
+                    transition-all duration-150 min-w-0
+                    ${isActive
+                      ? 'bg-accent-blue-light text-accent-blue'
+                      : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary'
+                    }
+                    ${!hasContent && tab.id !== 'settings' ? 'opacity-60' : ''}
+                  `}
+                  aria-selected={isActive}
+                  aria-controls={`panel-${tab.id}`}
+                  role="tab"
+                  tabIndex={isActive ? 0 : -1}
+                  title={tab.label}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{tab.shortLabel}</span>
+                </button>
+              </Fragment>
             );
           })}
         </div>
@@ -297,7 +309,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
 
             <div>
               <div className="section-header">SOURCE LENS</div>
-              <div className="section-subheader mt-0.5">
+              <div className="section-subheader">
                 Line-by-line attribution for the selected file
               </div>
               <div className="text-xs text-text-tertiary">
@@ -318,6 +330,12 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                 Select a file in the diff to see Source Lens attribution.
               </div>
             )}
+          </div>
+        )}
+
+        {effectiveTab === 'atlas' && (
+          <div id="panel-atlas" role="tabpanel" aria-labelledby="tab-atlas" className="flex flex-col gap-4">
+            <AtlasSearchPanel repoId={repoId ?? null} />
           </div>
         )}
 
