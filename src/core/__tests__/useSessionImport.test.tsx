@@ -105,8 +105,8 @@ describe('useSessionImport', () => {
       mockReadTextFile.mockResolvedValue(mockContent);
       mockRedactSecrets.mockReturnValue({ redacted: mockContent, hits: [] });
       mockSha256Hex.mockResolvedValue(mockSha);
-      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9 });
-      mockExportSessionLinkNote.mockResolvedValue(undefined);
+      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9, autoLinked: false, temporalScore: 0.5, fileScore: 0.4, needsReview: false });
+      mockExportSessionLinkNote.mockResolvedValue({ commitSha: 'abc123', status: 'exported' });
       mockRefreshSessionBadges.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useSessionImport(defaultProps));
@@ -160,8 +160,8 @@ describe('useSessionImport', () => {
       mockReadTextFile.mockResolvedValue(invalidContent);
       mockRedactSecrets.mockReturnValue({ redacted: invalidContent, hits: [] });
       mockSha256Hex.mockResolvedValue(mockSha);
-      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9 });
-      mockExportSessionLinkNote.mockResolvedValue(undefined);
+      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9, autoLinked: false, temporalScore: 0.5, fileScore: 0.4, needsReview: false });
+      mockExportSessionLinkNote.mockResolvedValue({ commitSha: 'abc123', status: 'exported' });
       mockRefreshSessionBadges.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useSessionImport(defaultProps));
@@ -200,8 +200,8 @@ describe('useSessionImport', () => {
       mockReadTextFile.mockResolvedValue(mockContent);
       mockRedactSecrets.mockReturnValue({ redacted: mockContent, hits: [] });
       mockSha256Hex.mockResolvedValue(mockSha);
-      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9 });
-      mockExportSessionLinkNote.mockResolvedValue(undefined);
+      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9, autoLinked: false, temporalScore: 0.5, fileScore: 0.4, needsReview: false });
+      mockExportSessionLinkNote.mockResolvedValue({ commitSha: 'abc123', status: 'exported' });
       mockRefreshSessionBadges.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useSessionImport(defaultProps));
@@ -231,8 +231,8 @@ describe('useSessionImport', () => {
       mockReadTextFile.mockResolvedValue(mockContent);
       mockRedactSecrets.mockReturnValue({ redacted: mockContent, hits: [] });
       mockSha256Hex.mockResolvedValue(mockSha);
-      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9 });
-      mockExportSessionLinkNote.mockResolvedValue(undefined);
+      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9, autoLinked: false, temporalScore: 0.5, fileScore: 0.4, needsReview: false });
+      mockExportSessionLinkNote.mockResolvedValue({ commitSha: 'abc123', status: 'exported' });
       mockRefreshSessionBadges.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useSessionImport(defaultProps));
@@ -261,8 +261,8 @@ describe('useSessionImport', () => {
       mockReadTextFile.mockResolvedValue(mockContent);
       mockRedactSecrets.mockReturnValue({ redacted: mockContent, hits: [] });
       mockSha256Hex.mockResolvedValue(mockSha);
-      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9 });
-      mockExportSessionLinkNote.mockResolvedValue(undefined);
+      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9, autoLinked: false, temporalScore: 0.5, fileScore: 0.4, needsReview: false });
+      mockExportSessionLinkNote.mockResolvedValue({ commitSha: 'abc123', status: 'exported' });
       mockRefreshSessionBadges.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useSessionImport(defaultProps));
@@ -284,7 +284,7 @@ describe('useSessionImport', () => {
       mockReadTextFile.mockResolvedValue(mockContent);
       mockRedactSecrets.mockReturnValue({ redacted: mockContent, hits: [] });
       mockSha256Hex.mockResolvedValue(mockSha);
-      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9 });
+      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9, autoLinked: false, temporalScore: 0.5, fileScore: 0.4, needsReview: false });
       mockExportSessionLinkNote.mockRejectedValue(new Error('Export failed'));
       mockRefreshSessionBadges.mockResolvedValue(undefined);
 
@@ -314,8 +314,8 @@ describe('useSessionImport', () => {
       mockReadTextFile.mockResolvedValue(mockContent);
       mockRedactSecrets.mockReturnValue({ redacted: mockContent, hits: [] });
       mockSha256Hex.mockResolvedValue(mockSha);
-      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9 });
-      mockExportSessionLinkNote.mockResolvedValue(undefined);
+      mockLinkSessionToCommit.mockResolvedValue({ commitSha: 'abc123', confidence: 0.9, autoLinked: false, temporalScore: 0.5, fileScore: 0.4, needsReview: false });
+      mockExportSessionLinkNote.mockResolvedValue({ commitSha: 'abc123', status: 'exported' });
       mockRefreshSessionBadges.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useSessionImport(defaultProps));
@@ -359,13 +359,13 @@ describe('useSessionImport', () => {
     it('should import an agent trace file successfully', async () => {
       const mockFilePath = '/path/to/trace.json';
       const mockTraceData = {
-        byCommit: { abc123: { aiLines: 10, humanLines: 5, mixedLines: 0, unknownLines: 0, aiPercent: 67 } },
+        byCommit: { abc123: { commitSha: 'abc123', aiLines: 10, humanLines: 5, mixedLines: 0, unknownLines: 0, aiPercent: 67, modelIds: ['gpt-4'], toolNames: ['codex'] } },
         byFileByCommit: {},
         totals: { conversations: 1, ranges: 10 },
       };
 
       mockOpen.mockResolvedValue(mockFilePath);
-      mockImportAgentTraceFile.mockResolvedValue(undefined);
+      mockImportAgentTraceFile.mockResolvedValue({ recordId: 'trace-1', storedPath: '/path/to/stored', redactions: [] });
       mockScanAgentTraceRecords.mockResolvedValue(mockTraceData);
 
       const mockSetRepoState = vi.fn();
@@ -400,7 +400,7 @@ describe('useSessionImport', () => {
   describe('unlinkSession', () => {
     it('should unlink a session successfully', async () => {
       mockDeleteSessionLinkBySessionId.mockResolvedValue('abc123');
-      mockExportSessionLinkNote.mockResolvedValue(undefined);
+      mockExportSessionLinkNote.mockResolvedValue({ commitSha: 'abc123', status: 'exported' });
       mockRefreshSessionBadges.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useSessionImport(defaultProps));

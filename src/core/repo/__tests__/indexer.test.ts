@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { indexRepo, getOrLoadCommitFiles, type RepoIndex } from '../indexer';
-import type { BranchViewModel } from '../types';
 
 // Mock all dependencies
 vi.mock('../db', () => ({
@@ -109,8 +108,8 @@ const mockBranchStatsPayload = vi.mocked(branchStatsPayload);
 
 describe('indexer', () => {
   const mockCommits = [
-    { sha: 'abc123', subject: 'First commit', authoredAtISO: '2024-01-01T00:00:00Z' },
-    { sha: 'def456', subject: 'Second commit', authoredAtISO: '2024-01-02T00:00:00Z' },
+    { sha: 'abc123', subject: 'First commit', author: 'Test Author', authoredAtISO: '2024-01-01T00:00:00Z' },
+    { sha: 'def456', subject: 'Second commit', author: 'Test Author', authoredAtISO: '2024-01-02T00:00:00Z' },
   ];
 
   const mockAggregateStats = {
@@ -121,19 +120,20 @@ describe('indexer', () => {
 
   const mockTraceData = {
     byCommit: {
-      abc123: { aiLines: 10, humanLines: 5, mixedLines: 0, unknownLines: 0, aiPercent: 67 },
+      abc123: { commitSha: 'abc123', aiLines: 10, humanLines: 5, mixedLines: 0, unknownLines: 0, aiPercent: 67, modelIds: ['gpt-4'], toolNames: ['codex'] },
     },
     byFileByCommit: {},
     totals: { conversations: 2, ranges: 15 },
   };
 
   const mockOtelIngest = {
-    status: { state: 'active', message: 'Connected' },
+    status: { state: 'active' as const, message: 'Connected' },
     recordsWritten: 100,
   };
 
   const mockTraceConfig = {
     codexOtelLogPath: '/path/to/otel.log',
+    codexOtelReceiverEnabled: false,
   };
 
   beforeEach(() => {
@@ -147,8 +147,8 @@ describe('indexer', () => {
     mockListCommits.mockResolvedValue(mockCommits);
     mockCacheCommitSummaries.mockResolvedValue(undefined);
     mockGetAggregateStatsForCommits.mockResolvedValue(mockAggregateStats);
-    mockImportAttributionNotesBatch.mockResolvedValue(undefined);
-    mockImportSessionLinkNotesBatch.mockResolvedValue(undefined);
+    mockImportAttributionNotesBatch.mockResolvedValue({ total: 0, imported: 0, missing: 0, failed: 0 });
+    mockImportSessionLinkNotesBatch.mockResolvedValue({ total: 0, imported: 0, missing: 0, failed: 0 });
     mockGetStoryAnchorStatus.mockResolvedValue([]);
     mockLoadSessionExcerpts.mockResolvedValue([]);
     mockLoadTraceConfig.mockResolvedValue(mockTraceConfig);
@@ -159,7 +159,7 @@ describe('indexer', () => {
     mockWriteRepoMeta.mockResolvedValue(undefined);
     mockWriteBranchMeta.mockResolvedValue(undefined);
     mockWriteCommitSummaryMeta.mockResolvedValue(undefined);
-    mockBranchStatsPayload.mockReturnValue({});
+    mockBranchStatsPayload.mockReturnValue({ repoRoot: '/test/repo', branch: 'main', headSha: 'head123', indexedAtISO: new Date().toISOString(), stats: { added: 100, removed: 50, files: 10, commits: 2, prompts: 2, responses: 15 }, commits: ['def456', 'abc123'] });
   });
 
   describe('indexRepo', () => {
@@ -300,7 +300,7 @@ describe('indexer', () => {
     it('should generate Unknown trace badge when only unknown lines', async () => {
       mockScanAgentTraceRecords.mockResolvedValue({
         byCommit: {
-          def456: { aiLines: 0, humanLines: 0, mixedLines: 0, unknownLines: 10, aiPercent: 0 },
+          def456: { commitSha: 'def456', aiLines: 0, humanLines: 0, mixedLines: 0, unknownLines: 10, aiPercent: 0, modelIds: [], toolNames: [] },
         },
         byFileByCommit: {},
         totals: { conversations: 1, ranges: 0 },
@@ -315,7 +315,7 @@ describe('indexer', () => {
 
     it('should include test badges when test data exists', async () => {
       mockGetLatestTestRunSummaryByCommit.mockResolvedValue({
-        def456: { runId: 1, passed: 10, failed: 2 },
+        def456: { runId: 'run-1', passed: 10, failed: 2, skipped: 0, durationSec: 30 },
       });
 
       const result = await indexRepo('/test/repo');
@@ -329,7 +329,7 @@ describe('indexer', () => {
 
     it('should show passed test badge when no failures', async () => {
       mockGetLatestTestRunSummaryByCommit.mockResolvedValue({
-        def456: { runId: 1, passed: 10, failed: 0 },
+        def456: { runId: 'run-1', passed: 10, failed: 0, skipped: 0, durationSec: 30 },
       });
 
       const result = await indexRepo('/test/repo');
@@ -380,6 +380,7 @@ describe('indexer', () => {
       const manyCommits = Array.from({ length: 10 }, (_, i) => ({
         sha: `commit${i}`,
         subject: `Commit ${i}`,
+        author: 'Test Author',
         authoredAtISO: `2024-01-${i + 1}T00:00:00Z`,
       }));
       mockListCommits.mockResolvedValue(manyCommits);
@@ -393,7 +394,7 @@ describe('indexer', () => {
 
     it('should handle commit with no subject', async () => {
       mockListCommits.mockResolvedValue([
-        { sha: 'abc123', subject: '', authoredAtISO: '2024-01-01T00:00:00Z' },
+        { sha: 'abc123', subject: '', author: 'Test Author', authoredAtISO: '2024-01-01T00:00:00Z' },
       ]);
 
       const result = await indexRepo('/test/repo');
@@ -440,8 +441,8 @@ describe('indexer', () => {
     };
 
     const mockFileChanges = [
-      { path: 'src/index.ts', changeType: 'modified', added: 10, removed: 5 },
-      { path: 'README.md', changeType: 'added', added: 20, removed: 0 },
+      { path: 'src/index.ts', changeType: 'modified', additions: 10, deletions: 5 },
+      { path: 'README.md', changeType: 'added', additions: 20, deletions: 0 },
     ];
 
     beforeEach(() => {
@@ -459,20 +460,20 @@ describe('indexer', () => {
 
     it('should fetch from git when not cached', async () => {
       vi.mocked(getCachedFileChanges).mockResolvedValue(null);
-      vi.mocked(getCommitDetails).mockResolvedValue({ fileChanges: mockFileChanges });
+      vi.mocked(getCommitDetails).mockResolvedValue({ sha: 'abc123', fileChanges: mockFileChanges });
       vi.mocked(cacheFileChanges).mockResolvedValue(undefined);
       vi.mocked(writeCommitFilesMeta).mockResolvedValue(undefined);
 
       const result = await getOrLoadCommitFiles(mockRepoIndex, 'abc123');
 
       expect(getCommitDetails).toHaveBeenCalledWith('/test/repo', 'abc123');
-      expect(cacheFileChanges).toHaveBeenCalledWith(1, { fileChanges: mockFileChanges });
+      expect(cacheFileChanges).toHaveBeenCalledWith(1, { sha: 'abc123', fileChanges: mockFileChanges });
       expect(result).toEqual(mockFileChanges);
     });
 
     it('should write metadata after fetching from git', async () => {
       vi.mocked(getCachedFileChanges).mockResolvedValue(null);
-      vi.mocked(getCommitDetails).mockResolvedValue({ fileChanges: mockFileChanges });
+      vi.mocked(getCommitDetails).mockResolvedValue({ sha: 'abc123', fileChanges: mockFileChanges });
       vi.mocked(cacheFileChanges).mockResolvedValue(undefined);
       vi.mocked(writeCommitFilesMeta).mockResolvedValue(undefined);
 
@@ -483,7 +484,7 @@ describe('indexer', () => {
 
     it('should handle metadata write failure gracefully', async () => {
       vi.mocked(getCachedFileChanges).mockResolvedValue(null);
-      vi.mocked(getCommitDetails).mockResolvedValue({ fileChanges: mockFileChanges });
+      vi.mocked(getCommitDetails).mockResolvedValue({ sha: 'abc123', fileChanges: mockFileChanges });
       vi.mocked(cacheFileChanges).mockResolvedValue(undefined);
       vi.mocked(writeCommitFilesMeta).mockRejectedValue(new Error('Write failed'));
 
