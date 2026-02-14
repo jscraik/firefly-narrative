@@ -10,7 +10,29 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
-    globals: true
+    globals: true,
+    exclude: ['node_modules/', 'src-tauri/', 'e2e/'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './coverage',
+      thresholds: {
+        lines: 55,
+        functions: 45,
+        branches: 40,
+        statements: 55
+      },
+      exclude: [
+        'node_modules/',
+        'src-tauri/',
+        'e2e/',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/__tests__/**',
+        '**/demo/**',
+        '**/types.ts'
+      ]
+    }
   },
   server: {
     port: 1420,

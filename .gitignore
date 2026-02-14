@@ -45,3 +45,4 @@ artifacts/
 
 # Local SQLite cache placeholder (should never be committed)
 sqlite:narrative.db
+coverage/
