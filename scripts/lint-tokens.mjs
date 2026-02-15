@@ -33,6 +33,11 @@ const CSS_RULES = [
   { name: 'prefers-color-scheme', re: /\bprefers-color-scheme\b/ },
 ];
 
+function normalizePathForMatch(p) {
+  // Allowlist entries use `/` separators; normalize runtime paths so matching works on Windows too.
+  return p.replace(/\\/g, '/');
+}
+
 async function fileExists(p) {
   try {
     await fs.stat(p);
@@ -61,7 +66,7 @@ function parseAllowlist(text) {
     const [pathPrefix, tokenRegex, ...reasonParts] = parts;
     const reason = reasonParts.join('\t').trim();
     entries.push({
-      pathPrefix: pathPrefix.trim(),
+      pathPrefix: normalizePathForMatch(pathPrefix.trim()),
       tokenRe: new RegExp(tokenRegex.trim()),
       reason,
     });
@@ -152,12 +157,12 @@ async function main() {
 
   for (const file of uiFiles) {
     const text = await fs.readFile(file, 'utf8');
-    const relPath = path.relative(ROOT, file);
+    const relPath = normalizePathForMatch(path.relative(ROOT, file));
     violations.push(...scanTextByLine({ relPath, text, rules: UI_RULES, allowlist }));
   }
 
   const cssText = await fs.readFile(CSS_FILE, 'utf8');
-  const cssRel = path.relative(ROOT, CSS_FILE);
+  const cssRel = normalizePathForMatch(path.relative(ROOT, CSS_FILE));
   const skipCssLine = buildCssSkipLineFn(cssText);
   violations.push(
     ...scanTextByLine({
@@ -184,4 +189,3 @@ async function main() {
 }
 
 await main();
-
