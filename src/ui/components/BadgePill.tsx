@@ -38,21 +38,21 @@ function getToolClasses(tool: SessionBadgeTool): string {
 
   switch (tool) {
     case 'claude-code':
-      return `${baseClasses} bg-orange-50 text-orange-700 border border-orange-200`;
+      return `${baseClasses} bg-accent-violet-bg text-accent-violet border border-accent-violet-light`;
     case 'codex':
-      return `${baseClasses} bg-emerald-50 text-emerald-700 border border-emerald-200`;
+      return `${baseClasses} bg-accent-green-bg text-accent-green border border-accent-green-light`;
     case 'cursor':
-      return `${baseClasses} bg-indigo-50 text-indigo-700 border border-indigo-200`;
+      return `${baseClasses} bg-accent-blue-bg text-accent-blue border border-accent-blue-light`;
     case 'gemini':
-      return `${baseClasses} bg-blue-50 text-blue-700 border border-blue-200`;
+      return `${baseClasses} bg-accent-amber-bg text-accent-amber border border-accent-amber-light`;
     case 'copilot':
-      return `${baseClasses} bg-purple-50 text-purple-700 border border-purple-200`;
+      return `${baseClasses} bg-accent-violet-bg text-accent-violet border border-accent-violet-light`;
     case 'continue':
-      return `${baseClasses} bg-cyan-50 text-cyan-700 border border-cyan-200`;
+      return `${baseClasses} bg-accent-blue-bg text-accent-blue border border-accent-blue-light`;
     case 'kimi':
-      return `${baseClasses} bg-rose-50 text-rose-700 border border-rose-200`;
+      return `${baseClasses} bg-accent-red-bg text-accent-red border border-accent-red-light`;
     default:
-      return `${baseClasses} bg-slate-50 text-slate-700 border border-slate-200`;
+      return `${baseClasses} bg-bg-subtle text-text-secondary border border-border-light`;
   }
 }
 
@@ -61,7 +61,7 @@ export function BadgePill({ badge }: BadgePillProps) {
     if (badge.status === 'failed') {
       return (
         <span className="pill-test-failed">
-          <span className="text-red-500">✕</span>
+          <span className="text-accent-red">✕</span>
           {badge.label}
         </span>
       );
@@ -69,7 +69,7 @@ export function BadgePill({ badge }: BadgePillProps) {
     if (badge.status === 'passed') {
       return (
         <span className="pill-test-passed">
-          <span className="text-emerald-500">✓</span>
+          <span className="text-accent-green">✓</span>
           {badge.label}
         </span>
       );
@@ -144,7 +144,7 @@ export function BadgePill({ badge }: BadgePillProps) {
     // Multiple tools: show generic with mixed indicator
     return (
       <span
-        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-gradient-to-r from-orange-50 via-purple-50 to-blue-50 text-slate-700 border border-slate-200"
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-bg-subtle text-text-secondary border border-border-light"
         title={`Sessions: ${badge.sessionTools.join(', ')}`}
       >
         <Bot className="w-3 h-3" />

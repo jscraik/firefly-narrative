@@ -57,6 +57,8 @@
   --color-text-secondary: var(--semantic-text-secondary);
   --color-text-tertiary: var(--semantic-text-tertiary);
   --color-text-muted: var(--semantic-text-muted);
+  /* Text to use on "inverse"/high-contrast surfaces (e.g. bg-surface-strong, bg-accent-*) */
+  --color-text-inverse: var(--semantic-text-inverse);
 
   --color-border-light: var(--semantic-border-light);
   --color-border-subtle: var(--semantic-border-subtle);
@@ -78,6 +80,9 @@
   --color-accent-violet: var(--semantic-accent-violet);
   --color-accent-violet-light: var(--semantic-accent-violet-light);
   --color-accent-violet-bg: var(--semantic-accent-violet-bg);
+
+  /* Overlays */
+  --color-scrim: var(--semantic-scrim);
 }
 
 /* Narrative Version Control - Light Theme (default)
@@ -98,6 +103,7 @@
   --semantic-text-secondary: #57534e;
   --semantic-text-tertiary: #6b6560;
   --semantic-text-muted: #8c857f;
+  --semantic-text-inverse: #fafaf9;
 
   --semantic-border-light: #e7e5e4;
   --semantic-border-subtle: #f5f5f4;
@@ -114,11 +120,15 @@
   --semantic-accent-red-bg: #fef2f2;
   --semantic-accent-amber: #f59e0b;
   --semantic-accent-amber-light: #fef3c7;
+  --semantic-accent-amber-bg: #fffbeb;
 
   /* Violet tokens for plans/anchors */
   --semantic-accent-violet: #8b5cf6;
   --semantic-accent-violet-light: #ede9fe;
   --semantic-accent-violet-bg: #f5f3ff;
+
+  /* Overlays */
+  --semantic-scrim: rgba(0, 0, 0, 0.4);
 }
 
 /* Dark Theme - respects prefers-color-scheme */
@@ -136,6 +146,7 @@
     --semantic-text-secondary: #a8a29e;
     --semantic-text-tertiary: #78716c;
     --semantic-text-muted: #57534e;
+    --semantic-text-inverse: #1c1917;
 
     --semantic-border-light: #292524;
     --semantic-border-subtle: #1c1917;
@@ -152,11 +163,15 @@
     --semantic-accent-red-bg: #450a0a;
     --semantic-accent-amber: #fbbf24;
     --semantic-accent-amber-light: #78350f;
+    --semantic-accent-amber-bg: #451a03;
 
     /* Violet dark tokens */
     --semantic-accent-violet: #a78bfa;
     --semantic-accent-violet-light: #5b21b6;
     --semantic-accent-violet-bg: #4c1d95;
+
+    /* Overlays */
+    --semantic-scrim: rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -177,6 +192,7 @@
   /* stone-500 */
   --text-muted: var(--semantic-text-muted);
   /* stone-400 */
+  --text-inverse: var(--semantic-text-inverse);
 
   /* Accent colors */
   --accent-blue: var(--semantic-accent-blue);
@@ -204,6 +220,8 @@
   /* amber-500 */
   --accent-amber-light: var(--semantic-accent-amber-light);
   /* amber-100 */
+  --accent-amber-bg: var(--semantic-accent-amber-bg);
+  /* amber-50 */
 
   --accent-violet: var(--semantic-accent-violet);
   /* violet-500 */
@@ -255,8 +273,8 @@ body {
   align-items: center;
   padding: 2px 10px;
   background: var(--accent-blue-bg);
-  color: #0284c7;
-  border: 1px solid #bae6fd;
+  color: var(--accent-blue);
+  border: 1px solid var(--accent-blue-light);
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 500;
@@ -267,25 +285,26 @@ body {
 }
 
 .pill-file:hover {
-  background: #bae6fd;
-  border-color: #7dd3fc;
+  background: var(--accent-blue-light);
+  border-color: var(--accent-blue);
   transform: scale(1.02);
 }
 
 .pill-file:active {
   transform: scale(0.95);
-  background: #7dd3fc;
+  background: var(--accent-blue);
+  color: var(--text-inverse);
 }
 
 .pill-file.selected {
   background: var(--accent-blue);
-  color: white;
+  color: var(--text-inverse);
   border-color: var(--accent-blue);
 }
 
 .pill-file.selected:hover {
-  background: #0284c7;
-  border-color: #0284c7;
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
 }
 
 .pill-file.best-effort {
@@ -302,19 +321,19 @@ body {
 
 .pill-file.not-found {
   background: var(--accent-amber-light);
-  color: #92400e;
-  border-color: #fcd34d;
+  color: var(--accent-amber);
+  border-color: var(--accent-amber);
 }
 
 .pill-file.not-found:hover {
-  background: #fde68a;
-  border-color: #f59e0b;
+  background: var(--accent-amber-bg);
+  border-color: var(--accent-amber);
   transform: none;
 }
 
 .pill-file:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--accent-blue), 0 0 0 3px white;
+  box-shadow: 0 0 0 2px var(--accent-blue), 0 0 0 3px var(--bg-card);
 }
 
 /* Test pill - red/green variants */
@@ -324,8 +343,8 @@ body {
   gap: 4px;
   padding: 2px 10px;
   background: var(--accent-red-bg);
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  color: var(--accent-red);
+  border: 1px solid var(--accent-red-light);
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 500;
@@ -337,8 +356,8 @@ body {
   gap: 4px;
   padding: 2px 10px;
   background: var(--accent-green-bg);
-  color: #047857;
-  border: 1px solid #059669;
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green-light);
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 600;
@@ -358,21 +377,21 @@ body {
 }
 
 .pill-anchor-passed {
-  background: #f5f3ff; /* violet-50 */
-  color: #6d28d9; /* violet-700 */
-  border: 1px solid #ddd6fe; /* violet-200 */
+  background: var(--accent-violet-bg);
+  color: var(--accent-violet);
+  border: 1px solid var(--accent-violet-light);
 }
 
 .pill-anchor-partial {
-  background: #fffbeb; /* amber-50 */
-  color: #b45309; /* amber-700 */
-  border: 1px solid #fde68a; /* amber-200 */
+  background: var(--accent-amber-bg);
+  color: var(--accent-amber);
+  border: 1px solid var(--accent-amber-light);
 }
 
 .pill-anchor-missing {
-  background: #f5f5f4;
-  color: #78716c;
-  border: 1px solid #e7e5e4;
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-light);
 }
 
 /* Trace pills */
@@ -390,33 +409,27 @@ body {
 }
 
 .pill-trace-ai {
-  background: #ecfeff;
-  /* cyan-50 */
-  color: #0891b2;
-  /* cyan-600 */
-  border: 1px solid #cffafe;
-  /* cyan-100 */
+  background: var(--accent-green-bg);
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green-light);
 }
 
 .pill-trace-human {
-  background: #e0f2fe;
-  color: #0284c7;
-  border: 1px solid #bae6fd;
+  background: var(--accent-blue-bg);
+  color: var(--accent-blue);
+  border: 1px solid var(--accent-blue-light);
 }
 
 .pill-trace-mixed {
-  background: #ffedd5;
-  /* orange-50 */
-  color: #ea580c;
-  /* orange-600 */
-  border: 1px solid #fed7aa;
-  /* orange-200 */
+  background: var(--accent-amber-bg);
+  color: var(--accent-amber);
+  border: 1px solid var(--accent-amber-light);
 }
 
 .pill-trace-unknown {
-  background: #f5f5f4;
-  color: #78716c;
-  border: 1px solid #e7e5e4;
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-light);
 }
 
 /* Status badge - green for open */
@@ -425,8 +438,8 @@ body {
   align-items: center;
   padding: 3px 12px;
   background: var(--accent-green-bg);
-  color: #059669;
-  border: 1px solid #a7f3d0;
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green-light);
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 600;
@@ -703,8 +716,8 @@ body {
 
 /* Message bubbles */
 .message-user {
-  background: #f0f9ff;
-  border: 1px solid #e0f2fe;
+  background: var(--accent-blue-bg);
+  border: 1px solid var(--accent-blue-light);
   border-radius: 12px;
   border-bottom-left-radius: 4px;
   overflow-wrap: anywhere;
@@ -713,8 +726,8 @@ body {
 }
 
 .message-assistant {
-  background: #f0fdf4;
-  border: 1px solid #dcfce7;
+  background: var(--accent-green-bg);
+  border: 1px solid var(--accent-green-light);
   border-radius: 12px;
   border-bottom-left-radius: 4px;
   overflow-wrap: anywhere;
@@ -722,70 +735,41 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-@media (prefers-color-scheme: dark) {
-  .message-user {
-    background: #082f49;
-    border-color: #0c4a6e;
-  }
-
-  .message-assistant {
-    background: #064e3b;
-    border-color: #065f46;
-  }
-}
-
 /* Diff viewer */
 .diff-line-hunk {
-  color: #0ea5e9;
-  background: #f0f9ff;
+  color: var(--accent-blue);
+  background: var(--accent-blue-bg);
 }
 
 .diff-line-add {
-  color: #059669;
-  background: #ecfdf5;
+  color: var(--accent-green);
+  background: var(--accent-green-bg);
 }
 
 .diff-line-del {
-  color: #dc2626;
-  background: #fef2f2;
-}
-
-@media (prefers-color-scheme: dark) {
-  .diff-line-hunk {
-    color: #38bdf8;
-    background: #0c4a6e;
-  }
-
-  .diff-line-add {
-    color: #34d399;
-    background: #064e3b;
-  }
-
-  .diff-line-del {
-    color: #f87171;
-    background: #450a0a;
-  }
+  color: var(--accent-red);
+  background: var(--accent-red-bg);
 }
 
 /* Diff attribution highlights */
 .diff-line-trace-ai {
-  background: #ecfdf5;
-  box-shadow: inset 4px 0 0 #10b981;
+  background: var(--accent-green-bg);
+  box-shadow: inset 4px 0 0 var(--accent-green);
 }
 
 .diff-line-trace-human {
-  background: #f0f9ff;
-  box-shadow: inset 4px 0 0 #0ea5e9;
+  background: var(--accent-blue-bg);
+  box-shadow: inset 4px 0 0 var(--accent-blue);
 }
 
 .diff-line-trace-mixed {
-  background: #fef3c7;
-  box-shadow: inset 4px 0 0 #f59e0b;
+  background: var(--accent-amber-bg);
+  box-shadow: inset 4px 0 0 var(--accent-amber);
 }
 
 .diff-line-trace-unknown {
-  background: #f5f5f4;
-  box-shadow: inset 4px 0 0 #a8a29e;
+  background: var(--bg-page);
+  box-shadow: inset 4px 0 0 var(--text-muted);
 }
 
 /* Agent trace bar */
@@ -794,26 +778,26 @@ body {
   height: 8px;
   flex: 1;
   border-radius: 9999px;
-  background: #f5f5f4;
-  border: 1px solid #e7e5e4;
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
   overflow: hidden;
 }
 
 .trace-bar-fill {
   height: 100%;
-  background: #06b6d4;
+  background: var(--accent-blue);
 }
 
 /* Global focus styles (keyboard only) - standardized ring */
 *:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--accent-blue), 0 0 0 4px white;
+  box-shadow: 0 0 0 2px var(--accent-blue), 0 0 0 4px var(--bg-card);
 }
 
 @supports not selector(:focus-visible) {
   *:focus {
     outline: none;
-    box-shadow: 0 0 0 2px var(--accent-blue), 0 0 0 4px white;
+    box-shadow: 0 0 0 2px var(--accent-blue), 0 0 0 4px var(--bg-card);
   }
 }
 

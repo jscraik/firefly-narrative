@@ -2,11 +2,11 @@ import type { IntentItem, IntentType } from '../../core/types';
 
 // Intent type icons and labels
 const INTENT_CONFIG: Record<IntentType, { icon: string; label: string; className: string }> = {
-  feature: { icon: '✨', label: 'New feature', className: 'text-amber-500' },
-  fix: { icon: '🔧', label: 'Bug fix', className: 'text-red-500' },
-  refactor: { icon: '♻️', label: 'Refactor', className: 'text-emerald-500' },
-  test: { icon: '🧪', label: 'Tests', className: 'text-violet-500' },
-  docs: { icon: '📚', label: 'Documentation', className: 'text-blue-500' },
+  feature: { icon: '✨', label: 'New feature', className: 'text-accent-amber' },
+  fix: { icon: '🔧', label: 'Bug fix', className: 'text-accent-red' },
+  refactor: { icon: '♻️', label: 'Refactor', className: 'text-accent-green' },
+  test: { icon: '🧪', label: 'Tests', className: 'text-accent-violet' },
+  docs: { icon: '📚', label: 'Documentation', className: 'text-accent-blue' },
   other: { icon: '→', label: 'Change', className: 'text-text-muted' },
 };
 

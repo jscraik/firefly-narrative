@@ -85,7 +85,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
   }, []);
 
   return (
-    <div className="bg-white rounded-lg border border-border-light p-4">
+    <div className="bg-bg-card rounded-lg border border-border-light p-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-medium text-text-primary">Import AI Sessions</h3>
         <button
@@ -100,9 +100,9 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="mb-4 p-3 bg-accent-red-bg border border-accent-red-light rounded-md flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-accent-red mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-text-secondary">{error}</p>
         </div>
       )}
 
@@ -117,7 +117,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
                 type="button"
                 onClick={handleImportSelected}
                 disabled={importing}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-sky-600 rounded-md hover:bg-sky-700 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-inverse bg-surface-strong rounded-md hover:bg-surface-strong-hover disabled:opacity-50 transition-colors"
               >
                 <Upload className="w-4 h-4" />
                 {importing ? 'Importing...' : `Import ${selectedPaths.size} Selected`}
@@ -139,7 +139,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
                 <div
                   key={session.path}
                   className={`flex items-center justify-between p-3 hover:bg-bg-subtle transition-colors ${
-                    isSelected ? 'bg-sky-50' : ''
+                    isSelected ? 'bg-accent-blue-bg' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -148,7 +148,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleSelection(session.path)}
-                      className="w-4 h-4 text-sky-600 border-border-light rounded focus:ring-sky-500"
+                      className="w-4 h-4 text-accent-blue border-border-light rounded focus:ring-2 focus:ring-accent-blue"
                     />
                     <label htmlFor={checkboxId} className="cursor-pointer" title={session.path}>
                       <p className="text-sm font-medium text-text-primary">{fileName}</p>
@@ -159,7 +159,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
                     type="button"
                     onClick={() => handleImportSingle(session.path)}
                     disabled={importing}
-                    className="text-xs font-medium text-sky-600 hover:text-sky-700 disabled:opacity-50"
+                    className="text-xs font-medium text-accent-blue hover:text-text-primary disabled:opacity-50"
                   >
                     Import
                   </button>
@@ -173,21 +173,21 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
       {result && (
         <div className={`p-3 rounded-md border ${
           result.failed.length === 0 
-            ? 'bg-emerald-50 border-emerald-200' 
-            : 'bg-amber-50 border-amber-200'
+            ? 'bg-accent-green-bg border-accent-green-light' 
+            : 'bg-accent-amber-bg border-accent-amber-light'
         }`}>
           <div className="flex items-center gap-2 mb-2">
             {result.failed.length === 0 ? (
               <>
-                <CheckCircle className="w-4 h-4 text-emerald-500" />
-                <p className="text-sm font-medium text-emerald-800">
+                <CheckCircle className="w-4 h-4 text-accent-green" />
+                <p className="text-sm font-medium text-text-primary">
                   Successfully imported {result.succeeded.length} session{result.succeeded.length !== 1 ? 's' : ''}
                 </p>
               </>
             ) : (
               <>
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <p className="text-sm font-medium text-amber-800">
+                <AlertTriangle className="w-4 h-4 text-accent-amber" />
+                <p className="text-sm font-medium text-text-primary">
                   Imported {result.succeeded.length} of {result.total} sessions
                 </p>
               </>
@@ -199,7 +199,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
               {result.succeeded
                 .filter(s => s.warnings.length > 0)
                 .map((s) => (
-                  <p key={s.path} className="text-xs text-amber-700">
+                  <p key={s.path} className="text-xs text-accent-amber">
                     {s.path.split('/').pop()}: {s.warnings.length} warning{s.warnings.length !== 1 ? 's' : ''}
                   </p>
                 ))}
@@ -210,12 +210,12 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
             <div className="mt-2 space-y-1">
               {result.failed.map((f) => (
                 <div key={f.path} className="flex items-start gap-1.5">
-                  <XCircle className="w-3 h-3 text-red-500 mt-0.5 flex-shrink-0" />
+                  <XCircle className="w-3 h-3 text-accent-red mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs font-medium text-red-700">
+                    <p className="text-xs font-medium text-text-primary">
                       {f.path.split('/').pop()}
                     </p>
-                    <p className="text-xs text-red-600">{f.error}</p>
+                    <p className="text-xs text-text-secondary">{f.error}</p>
                   </div>
                 </div>
               ))}

@@ -22,6 +22,7 @@ interface DashboardViewProps {
   setActionError: (error: string | null) => void;
   onDrillDown: (filter: DashboardFilter) => void;
   onModeChange: (mode: Mode) => void;
+  onOpenRepo: () => void;
 }
 
 export function DashboardView({
@@ -30,6 +31,7 @@ export function DashboardView({
   setActionError,
   onDrillDown,
   onModeChange: _onModeChange,
+  onOpenRepo,
 }: DashboardViewProps) {
   // Helper to get repo name from path
   const getRepoName = (path: string): string => {
@@ -120,7 +122,7 @@ export function DashboardView({
   }, []);
 
   if (repoState.status !== 'ready') {
-    return <DashboardEmptyState reason="no-repo" />;
+    return <DashboardEmptyState reason="no-repo" onOpenRepo={onOpenRepo} />;
   }
 
   if (error) {

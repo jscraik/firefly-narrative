@@ -4,39 +4,33 @@ import type { SessionExcerpt, SessionMessage, SessionMessageRole } from '../../c
 
 const ROLE_CONFIG: Record<SessionMessageRole, {
   label: string;
-  badgeClass: string;
   icon: typeof User;
-  description: string;
+  colorClass: string;
 }> = {
   user: {
     label: 'You',
-    badgeClass: 'bg-sky-100 text-sky-700 border-sky-200',
     icon: User,
-    description: 'User prompt'
+    colorClass: 'text-accent-blue'
   },
   assistant: {
     label: 'Assistant',
-    badgeClass: 'bg-bg-page text-text-secondary border-border-light',
     icon: Bot,
-    description: 'Assistant response'
+    colorClass: 'text-text-secondary'
   },
   thinking: {
     label: 'Thinking',
-    badgeClass: 'bg-amber-100 text-amber-700 border-amber-200',
     icon: Lightbulb,
-    description: 'Model reasoning process'
+    colorClass: 'text-accent-amber'
   },
   plan: {
     label: 'Plan',
-    badgeClass: 'bg-violet-100 text-violet-700 border-violet-200',
     icon: Sparkles,
-    description: 'Execution plan'
+    colorClass: 'text-accent-violet'
   },
   tool_call: {
     label: 'Tool',
-    badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
     icon: Wrench,
-    description: 'Tool invocation'
+    colorClass: 'text-accent-green'
   }
 };
 
@@ -58,7 +52,7 @@ function roleBadge(role: SessionMessageRole) {
   const Icon = config.icon;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium border ${config.badgeClass}`}>
+    <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${config.colorClass}`}>
       <Icon className="h-3 w-3" />
       {config.label}
     </span>
@@ -93,7 +87,7 @@ function formatToolInput(message: SessionMessage): string {
 }
 
 function ToolCallDetails({ message }: { message: SessionMessage }) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const toolInput = formatToolInput(message);
   const hasInput = toolInput && toolInput.length > 0;
@@ -109,11 +103,11 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/50 overflow-hidden">
+    <div className="mt-2 rounded border border-border-light bg-bg-subtle overflow-hidden">
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-emerald-800 hover:bg-emerald-100/50 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-text-secondary hover:bg-bg-hover transition-colors"
       >
         <span className="flex items-center gap-2">
           <Terminal className="w-3.5 h-3.5" />
@@ -123,15 +117,15 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
       </button>
       
       {isExpanded && (
-        <div className="border-t border-emerald-200">
-          <div className="flex items-center justify-between px-3 py-1.5 bg-emerald-100/30 border-b border-emerald-200">
-            <span className="text-[10px] uppercase tracking-wide text-emerald-600">
+        <div className="border-t border-border-light">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-bg-page border-b border-border-light">
+            <span className="text-[10px] uppercase tracking-wide text-text-muted">
               Arguments
             </span>
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1 text-[10px] text-emerald-600 hover:text-emerald-800 transition-colors"
+              className="inline-flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary transition-colors"
             >
               {copied ? (
                 <><Check className="w-3 h-3" /> Copied</>
@@ -142,11 +136,11 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
           </div>
           <div className="p-3">
             {hasInput ? (
-              <pre className="text-[11px] text-emerald-900 whitespace-pre-wrap break-words font-mono leading-relaxed">
+              <pre className="text-[11px] text-text-secondary whitespace-pre-wrap break-words font-mono leading-relaxed">
                 {toolInput}
               </pre>
             ) : (
-              <span className="text-[11px] text-emerald-600 italic">No input recorded</span>
+              <span className="text-[11px] text-text-muted italic">No input recorded</span>
             )}
           </div>
         </div>
@@ -163,14 +157,14 @@ function ThinkingBlock({ message }: { message: SessionMessage }) {
 
   return (
     <div className="mt-2">
-      <div className="text-sm text-amber-800 leading-relaxed whitespace-pre-wrap break-words">
+      <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap break-words">
         {displayText}
       </div>
       {isLong && (
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="mt-2 text-xs text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1 transition-colors"
+          className="mt-2 text-xs text-accent-amber hover:text-text-primary font-medium flex items-center gap-1 transition-colors"
         >
           {isExpanded ? (
             <><ChevronUp className="w-3.5 h-3.5" /> Show less</>
@@ -192,36 +186,28 @@ function MessageCard({
   selectedFile?: string | null;
   onFileClick?: (path: string) => void;
 }) {
-  const config = ROLE_CONFIG[message.role];
+  const isUser = message.role === 'user';
+  const isTool = message.role === 'tool_call';
 
   return (
-    <div className={`rounded-xl border px-4 py-4 transition-all hover:shadow-sm min-w-0 ${
-      message.role === 'user' ? 'bg-sky-50/50 border-sky-200' :
-      message.role === 'thinking' ? 'bg-amber-50/50 border-amber-200' :
-      message.role === 'plan' ? 'bg-violet-50/50 border-violet-200' :
-      message.role === 'tool_call' ? 'bg-emerald-50/50 border-emerald-200' :
-      'bg-white border-border-light'
-    }`}>
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
+    <div className="py-3 border-b border-border-light last:border-b-0">
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-2">
           {roleBadge(message.role)}
-          <span className={`text-xs font-semibold truncate ${config.badgeClass.split(' ')[1]}`}>
-            {messageTitle(message)}
-          </span>
+          {isTool && message.toolName && (
+            <span className="text-[11px] text-text-muted">{message.toolName}</span>
+          )}
         </div>
-        <span className="text-[10px] text-text-muted">
-          {config.description}
-        </span>
       </div>
 
-      {/* Content based on role */}
+      {/* Content */}
       {message.role === 'thinking' ? (
         <ThinkingBlock message={message} />
       ) : message.role === 'tool_call' ? (
         <ToolCallDetails message={message} />
       ) : (
-        <div className="mt-2 text-sm text-text-secondary leading-relaxed whitespace-pre-wrap break-words">
+        <div className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${isUser ? 'text-text-primary' : 'text-text-secondary'}`}>
           {message.text || (
             <span className="text-text-muted italic">No message content</span>
           )}
@@ -230,7 +216,7 @@ function MessageCard({
 
       {/* File pills */}
       {message.files && message.files.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {message.files.map((file) => (
             <button
               key={file}
@@ -238,9 +224,13 @@ function MessageCard({
               onClick={() => onFileClick?.(file)}
               aria-pressed={selectedFile === file}
               title={file}
-              className={`pill-file max-w-full truncate ${selectedFile === file ? 'selected' : ''}`}
+              className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] max-w-full truncate transition-colors ${
+                selectedFile === file 
+                  ? 'bg-accent-blue text-white' 
+                  : 'bg-bg-page text-text-secondary hover:bg-bg-hover'
+              }`}
             >
-              {file}
+              {file.split('/').pop()}
             </button>
           ))}
         </div>
@@ -251,20 +241,20 @@ function MessageCard({
 
 function EmptyState() {
   return (
-    <div className="card p-5 overflow-x-hidden">
+    <div className="card p-5">
       <div className="flex items-center justify-between">
         <div>
-          <div className="section-header">CONVERSATION</div>
-          <div className="section-subheader">Session context</div>
+          <div className="section-header">Conversation</div>
+          <div className="section-subheader">Session messages and context</div>
         </div>
       </div>
       <div className="mt-6 flex flex-col items-center text-center py-4">
         <div className="w-12 h-12 rounded-full bg-bg-page flex items-center justify-center mb-3">
           <Sparkles className="w-5 h-5 text-text-muted" />
         </div>
-        <p className="text-sm text-text-tertiary mb-1">No conversation loaded</p>
+        <p className="text-sm text-text-secondary mb-1">No conversation loaded</p>
         <p className="text-xs text-text-muted max-w-[280px]">
-          Import a session to see the full conversation including thinking, planning, and tool calls.
+          Import a session to see the full conversation
         </p>
       </div>
     </div>
@@ -273,19 +263,17 @@ function EmptyState() {
 
 function StatsBar({ stats }: { stats: Record<SessionMessageRole, number> }) {
   const items = [
-    { count: stats.user, label: 'user', color: 'text-sky-600' },
-    { count: stats.assistant, label: 'assistant', color: 'text-text-secondary' },
-    { count: stats.thinking, label: 'thinking', color: 'text-amber-600' },
-    { count: stats.plan, label: 'plan', color: 'text-violet-600' },
-    { count: stats.tool_call, label: 'tools', color: 'text-emerald-600' },
+    { count: stats.user, label: 'prompts', color: 'text-accent-blue' },
+    { count: stats.assistant, label: 'responses', color: 'text-text-secondary' },
+    { count: stats.tool_call, label: 'tools', color: 'text-accent-green' },
   ].filter(item => item.count > 0);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+    <div className="flex items-center gap-3 text-[11px]">
       {items.map(({ count, label, color }) => (
-        <span key={label} className="flex items-center gap-1">
+        <span key={label} className="flex items-center gap-1 text-text-muted">
           <span className={`font-semibold ${color}`}>{count}</span>
-          <span className="text-text-muted">{label}</span>
+          <span>{label}</span>
         </span>
       ))}
     </div>
@@ -307,7 +295,7 @@ export function TraceTranscriptPanel({
 
   const messages = excerpt?.messages ?? [];
   const stats = useMemo(() => roleSummary(messages), [messages]);
-  const visibleMessages = showAll ? messages : messages.slice(0, 8);
+  const visibleMessages = showAll ? messages : messages.slice(0, 6);
   const hiddenCount = messages.length - visibleMessages.length;
 
   useEffect(() => {
@@ -330,20 +318,20 @@ export function TraceTranscriptPanel({
   }
 
   return (
-    <div className="card p-5">
+    <div className="card p-4">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex items-center justify-between gap-4 mb-3 pb-3 border-b border-border-light">
         <div>
-          <div className="section-header">CONVERSATION</div>
+          <div className="section-header">Conversation</div>
           <div className="section-subheader mt-0.5">
-            {excerpt.tool} · {messages.length} messages
+            {messages.length} messages
           </div>
         </div>
         <StatsBar stats={stats} />
       </div>
 
       {/* Messages */}
-      <div className="space-y-3">
+      <div>
         {visibleMessages.map((message) => (
           <MessageCard
             key={message.id}
@@ -356,27 +344,27 @@ export function TraceTranscriptPanel({
 
       {/* Show more/less */}
       {hiddenCount > 0 && (
-        <div className="mt-4 flex flex-col items-center justify-center gap-2 sm:flex-row">
+        <div className="mt-4 flex items-center justify-center gap-2 pt-3 border-t border-border-light">
           <button
             type="button"
             onClick={() => setShowAll(!showAll)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-bg-page text-text-secondary text-xs font-medium hover:bg-border-light transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-bg-page text-text-secondary text-xs font-medium hover:bg-bg-hover transition-colors"
           >
             {showAll ? (
               <><ChevronUp className="w-3.5 h-3.5" /> Show less</>
             ) : (
-              <><ChevronDown className="w-3.5 h-3.5" /> Show {hiddenCount} more messages</>
+              <><ChevronDown className="w-3.5 h-3.5" /> Show {hiddenCount} more</>
             )}
           </button>
-          {!showAll ? (
+          {!showAll && (
             <button
               type="button"
               onClick={handleJumpToLatest}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-subtle transition-colors"
+              className="text-xs text-text-muted hover:text-text-secondary transition-colors"
             >
               Jump to latest
             </button>
-          ) : null}
+          )}
         </div>
       )}
 

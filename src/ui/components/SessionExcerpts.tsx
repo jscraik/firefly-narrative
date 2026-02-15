@@ -62,17 +62,23 @@ function ToolPill({
   agentName?: string;
   redactionCount?: number;
 }) {
+  // Format tool name for display (e.g., 'claude-code' -> 'Claude Code')
+  const displayTool = tool
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+  
   return (
-    <div className="flex items-center gap-2 text-[11px] text-text-muted">
-      <span className="px-2 py-1 bg-bg-page rounded-md font-mono text-text-tertiary">
-        {tool}
+    <div className="flex items-center gap-2 text-[11px] text-text-secondary">
+      <span className="px-2 py-1 bg-bg-page rounded-md font-medium text-text-secondary">
+        {displayTool}
       </span>
-      {agentName ? <span className="text-text-tertiary">· {agentName}</span> : null}
+      {agentName ? <span className="text-text-muted">· {agentName}</span> : null}
       {typeof durationMin === 'number' && (
-        <span>{formatDuration(durationMin)}</span>
+        <span className="text-text-muted">{formatDuration(durationMin)}</span>
       )}
       {typeof redactionCount === 'number' && redactionCount > 0 ? (
-        <span className="px-1.5 py-0.5 bg-amber-50 rounded text-amber-700">Redacted {redactionCount}</span>
+        <span className="px-1.5 py-0.5 bg-accent-amber-bg rounded text-accent-amber font-medium">{redactionCount} redacted</span>
       ) : null}
     </div>
   );
@@ -112,9 +118,9 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
 }) {
   if (!excerpt.linkedCommitSha) {
     return (
-      <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
+      <div className="flex items-center gap-1.5 text-[11px] text-text-muted">
         <Link2Off className="w-3 h-3" />
-        <span>Not linked</span>
+        <span>Session not linked to commit</span>
       </div>
     );
   }
@@ -131,8 +137,8 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
         onClick={onClick}
         aria-label={`View commit ${shortSha} in timeline`}
         className={`
-          text-text-secondary hover:text-sky-600 transition-colors
-          ${isSelected ? 'text-sky-600 font-semibold' : ''}
+          text-text-secondary hover:text-accent-blue transition-colors
+          ${isSelected ? 'text-accent-blue font-semibold' : ''}
         `}
         title="Click to view this commit in the timeline"
       >
@@ -145,7 +151,7 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
         {confidencePercent}%
       </span>
       {isAutoLinked && (
-        <span className="px-1.5 py-0.5 bg-emerald-50 rounded text-emerald-600">
+        <span className="px-1.5 py-0.5 bg-accent-green-bg rounded text-accent-green">
           Auto
         </span>
       )}
@@ -154,7 +160,7 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
           type="button"
           onClick={onUnlink}
           aria-label="Unlink session from commit"
-          className="px-1.5 py-0.5 bg-red-50 hover:bg-red-100 rounded text-red-600 transition-colors"
+          className="px-1.5 py-0.5 bg-accent-red-bg hover:bg-bg-hover rounded text-accent-red transition-colors border border-accent-red-light"
           title="Unlink this session from the commit"
         >
           Unlink
@@ -369,7 +375,7 @@ export function SessionExcerpts({
               isSelected={selectedCommitId === linkedCommitSha}
             />
             {excerpt.needsReview ? (
-              <span className="px-1.5 py-0.5 bg-amber-50 rounded text-amber-700 text-[11px]">Needs review</span>
+              <span className="px-1.5 py-0.5 bg-accent-amber-bg rounded text-accent-amber text-[11px]">Needs review</span>
             ) : null}
           </div>
         </div>

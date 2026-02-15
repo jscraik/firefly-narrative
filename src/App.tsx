@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button } from '@design-studio/ui/base';
-import { IconCheckmark } from '@design-studio/ui/icons';
-import { colorTokens, spaceTokens, typographyTokens } from '@design-studio/tokens';
+import { BookOpen, FolderOpen, Loader2 } from 'lucide-react';
 import { setOtelReceiverEnabled } from './core/tauri/otelReceiver';
 import type {
   BranchViewModel,
@@ -49,8 +47,9 @@ function DocsView(props: {
   repoState: RepoState;
   setRepoState: React.Dispatch<React.SetStateAction<RepoState>>;
   onClose: () => void;
+  onOpenRepo: () => void;
 }) {
-  const { repoState, setRepoState, onClose } = props;
+  const { repoState, setRepoState, onClose, onOpenRepo } = props;
   const [isLoading, setIsLoading] = useState(false);
 
   // Auto-load current directory as repo when Docs is opened without a loaded repo
@@ -88,8 +87,37 @@ function DocsView(props: {
   if (repoState.status === 'loading' || isLoading) {
     return (
       <div className="h-full p-4 flex items-center justify-center">
-        <div className="text-center text-text-tertiary">
-          <div className="text-sm">Loading repository...</div>
+        <div className="text-center">
+          {/* Animated spinner with clearer visual hierarchy */}
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-bg-card border border-border-light shadow-sm">
+            <Loader2 className="h-6 w-6 animate-spin text-accent-blue" />
+          </div>
+          
+          <h3 className="text-base font-semibold text-text-primary">
+            Loading documentation…
+          </h3>
+          <p className="mt-2 text-sm text-text-secondary max-w-xs mx-auto leading-relaxed">
+            Indexing repository files and building navigation.
+          </p>
+          <p className="mt-4 text-xs text-text-tertiary">
+            This may take a moment for larger repositories.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (repoState.status !== 'ready') {
+    return (
+      <div className="h-full p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-border-light bg-bg-card shadow-sm">
+            <BookOpen className="h-10 w-10 text-text-secondary" />
+          </div>
+          <h2 className="text-xl font-semibold text-text-primary">No repository open</h2>
+          <p className="mt-2 text-base text-text-secondary max-w-sm mx-auto leading-relaxed">
+            Open a repository using the button in the top navigation to browse documentation.
+          </p>
         </div>
       </div>
     );
@@ -98,7 +126,7 @@ function DocsView(props: {
   return (
     <div className="h-full p-4 overflow-hidden">
       <DocsOverviewPanel 
-        repoRoot={repoState.status === 'ready' ? repoState.repo.root : ''}
+        repoRoot={repoState.repo.root}
         onClose={onClose}
       />
     </div>
@@ -288,26 +316,6 @@ export default function App() {
         <UpdateIndicator status={updateStatus} onClick={checkForUpdates} />
       </TopNav>
 
-      <div className="border-b border-border-light bg-bg-card px-4 py-2">
-        <div className="flex items-center justify-between" style={{ gap: `${spaceTokens.s12}px` }}>
-          <p
-            style={{
-              fontSize: `${typographyTokens.paragraphSm.size}px`,
-              lineHeight: `${typographyTokens.paragraphSm.lineHeight}px`,
-              color: colorTokens.text.light.secondary
-            }}
-          >
-            Design System primitives are active in Narrative.
-          </p>
-          <Button type="button" onClick={() => setMode('repo')}>
-            <span className="inline-flex items-center gap-2">
-              <IconCheckmark className="size-4" />
-              Open repo view
-            </span>
-          </Button>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-hidden">
         {mode === 'dashboard' ? (
           <DashboardView
@@ -316,12 +324,14 @@ export default function App() {
             setActionError={setActionError}
             onDrillDown={handleDrillDown}
             onModeChange={setMode}
+            onOpenRepo={openRepo}
           />
         ) : mode === 'docs' ? (
           <DocsView 
             repoState={repoState}
             setRepoState={setRepoState}
             onClose={() => setMode('repo')}
+            onOpenRepo={openRepo}
           />
         ) : mode === 'repo' && repoState.status === 'loading' ? (
           <div className="p-8 text-sm text-text-tertiary">

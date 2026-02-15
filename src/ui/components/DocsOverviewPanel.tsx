@@ -140,7 +140,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
     <div className="card p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-sky-600" />
+          <BookOpen className="w-5 h-5 text-accent-blue" />
           <h2 className="text-sm font-semibold text-text-primary">Documentation</h2>
         </div>
         {onClose && (
@@ -204,16 +204,16 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
               key={doc.path}
               type="button"
               onClick={() => setSelectedDoc(doc)}
-              className="w-full flex items-center gap-3 p-3 rounded-lg border border-border-light hover:border-sky-300 hover:bg-sky-50 transition-all text-left group"
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-border-light hover:border-accent-blue-light hover:bg-accent-blue-bg transition-all text-left group"
             >
-              <FileText className="w-5 h-5 text-text-muted group-hover:text-sky-500" />
+              <FileText className="w-5 h-5 text-text-muted group-hover:text-accent-blue" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-secondary group-hover:text-sky-700 truncate">
+                <p className="text-sm font-medium text-text-secondary group-hover:text-text-primary truncate">
                   {doc.title}
                 </p>
                 <p className="text-xs text-text-muted truncate">{doc.name}</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-sky-400" />
+              <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent-blue" />
             </button>
           ))}
         </div>

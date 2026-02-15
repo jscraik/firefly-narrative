@@ -35,7 +35,7 @@ export function TopNav(props: {
       className={clsx(
         'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150',
         mode === p.id
-          ? 'bg-white text-text-primary shadow-sm'
+          ? 'bg-bg-card text-text-primary shadow-sm'
           : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary hover:scale-[1.02] active:scale-95'
       )}
       onClick={() => onModeChange(p.id)}
@@ -102,11 +102,11 @@ export function TopNav(props: {
 
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-lg bg-surface-strong px-3 py-1.5 text-sm font-medium text-white hover:bg-surface-strong-hover transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg bg-accent-blue px-3 py-1.5 text-sm font-medium text-text-inverse shadow-sm transition-[filter] hover:brightness-95 active:brightness-90"
           onClick={onOpenRepo}
         >
           <FolderOpen className="h-4 w-4" />
-          Open repo…
+          {repoPath ? 'Switch repo…' : 'Open repo…'}
         </button>
       </div>
     </div>
@@ -142,10 +142,10 @@ function ImportMenu(props: {
         disabled={!importEnabled}
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+          'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150',
           importEnabled
-            ? 'bg-bg-page text-text-secondary hover:bg-border-light'
-            : 'bg-bg-subtle text-text-muted cursor-not-allowed'
+            ? 'bg-bg-page text-text-secondary hover:bg-bg-hover hover:text-text-primary'
+            : 'bg-bg-page text-text-muted cursor-not-allowed'
         )}
       >
         <FileText className="h-4 w-4" />

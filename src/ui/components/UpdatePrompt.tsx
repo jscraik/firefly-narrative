@@ -171,11 +171,11 @@ function getUserFriendlyError(error: string): { title: string; message: string; 
     const currentVersion = status.update.currentVersion;
 
     return (
-      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
-        <div className="rounded-xl border border-border-light bg-bg-card shadow-lg p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center shrink-0">
-              <Download className="w-5 h-5 text-white" />
+        <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
+          <div className="rounded-xl border border-border-light bg-bg-card shadow-lg p-4">
+            <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-accent-blue-bg border border-accent-blue-light flex items-center justify-center shrink-0">
+              <Download className="w-5 h-5 text-accent-blue" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-text-primary text-sm">
@@ -192,7 +192,7 @@ function getUserFriendlyError(error: string): { title: string; message: string; 
                 <button
                   type="button"
                   onClick={onUpdate}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-strong text-white text-xs font-medium hover:bg-surface-strong-hover transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-strong text-text-inverse text-xs font-medium hover:bg-surface-strong-hover transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download & Install
@@ -237,7 +237,7 @@ export function UpdateIndicator({
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-accent-amber-light text-amber-800 text-xs font-medium hover:bg-amber-200 transition-colors motion-safe:animate-pulse"
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-accent-amber-light bg-accent-amber-bg text-accent-amber text-xs font-medium hover:bg-bg-hover transition-colors motion-safe:animate-pulse"
         title={`Update available: ${status.update.version}`}
       >
         <Download className="w-3 h-3" />
@@ -251,7 +251,7 @@ export function UpdateIndicator({
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium hover:bg-emerald-200 transition-colors"
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-accent-green-light bg-accent-green-bg text-accent-green text-xs font-medium hover:bg-bg-hover transition-colors"
         title="Update ready to install"
       >
         <CheckCircle className="w-3 h-3" />

@@ -64,7 +64,7 @@ export function StoryAnchorsPanel(props: {
   }, [refresh]);
 
   return (
-    <div className="mt-6 flex flex-col gap-3 rounded-lg border border-border-light bg-white p-4">
+    <div className="mt-6 flex flex-col gap-3 rounded-lg border border-border-light bg-bg-card p-4">
       <div>
         <div className="text-xs font-semibold text-text-secondary">Story Anchors</div>
         <div className="text-[11px] text-text-muted">
@@ -83,7 +83,7 @@ export function StoryAnchorsPanel(props: {
             <button
               type="button"
               disabled={busy || !repoId}
-              className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
               onClick={async () => {
                 if (!repoId) return;
                 setBusy(true);
@@ -104,7 +104,7 @@ export function StoryAnchorsPanel(props: {
             <button
               type="button"
               disabled={busy || !repoId}
-              className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
               onClick={async () => {
                 if (!repoId) return;
                 setBusy(true);
@@ -125,7 +125,7 @@ export function StoryAnchorsPanel(props: {
             <button
               type="button"
               disabled={busy}
-              className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
               onClick={async () => {
                 setMessage(null);
                 await refresh();
@@ -154,7 +154,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -184,7 +184,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -205,7 +205,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -238,7 +238,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -259,7 +259,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -282,7 +282,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -323,7 +323,7 @@ export function StoryAnchorsPanel(props: {
                 <button
                   type="button"
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
-                  className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
                     if (!repoId || !selectedCommitSha) return;
                     setBusy(true);
@@ -344,7 +344,7 @@ export function StoryAnchorsPanel(props: {
                 <button
                   type="button"
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
-                  className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
                     if (!repoId || !selectedCommitSha) return;
                     setBusy(true);
@@ -365,7 +365,7 @@ export function StoryAnchorsPanel(props: {
                 <button
                   type="button"
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
-                  className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
                     if (!repoId || !selectedCommitSha) return;
                     setBusy(true);
@@ -388,7 +388,7 @@ export function StoryAnchorsPanel(props: {
                 <button
                   type="button"
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
-                  className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
                     if (!repoId || !selectedCommitSha) return;
                     setBusy(true);
@@ -411,7 +411,7 @@ export function StoryAnchorsPanel(props: {
                 <button
                   type="button"
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
-                  className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
                     if (!repoId || !selectedCommitSha) return;
                     setBusy(true);

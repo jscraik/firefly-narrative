@@ -57,7 +57,7 @@ export function DiffViewer(props: DiffViewerProps) {
 
       </div>
 
-      <div className="flex-1 overflow-auto px-4 py-3 bg-white">
+      <div className="flex-1 overflow-auto px-4 py-3 bg-bg-card">
         {loading ? (
           <div className="space-y-2">
             <div className="h-4 bg-bg-page rounded skeleton-shimmer w-1/4" style={{ animationDelay: '0ms' }} />

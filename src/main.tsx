@@ -5,6 +5,9 @@ import '@design-studio/tokens/foundations.css';
 import '@design-studio/ui/styles.css';
 import './styles.css';
 
+// Agentation annotation toolbar (dev only)
+import { Agentation } from 'agentation';
+
 const root = document.getElementById('root');
 
 if (!root) {
@@ -14,5 +17,6 @@ if (!root) {
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <App />
+    {process.env.NODE_ENV === 'development' && <Agentation />}
   </React.StrictMode>
 );

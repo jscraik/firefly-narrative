@@ -63,7 +63,7 @@ export function AutoIngestSetupPanel(props: {
         <label className="flex items-center gap-2 text-xs text-text-secondary">
           <input
             type="checkbox"
-            className="h-4 w-4 rounded border-border-light text-sky-600 focus:ring-sky-200"
+            className="h-4 w-4 rounded border-border-light text-accent-blue focus:ring-2 focus:ring-accent-blue"
             checked={config.autoIngestEnabled}
             onChange={(event) => onToggleAutoIngest(event.target.checked)}
           />
@@ -80,7 +80,7 @@ export function AutoIngestSetupPanel(props: {
           </label>
           <textarea
             id="claude-paths"
-            className="mt-2 w-full rounded-md border border-border-light bg-white p-2 text-xs text-text-secondary"
+            className="mt-2 w-full rounded-md border border-border-light bg-bg-card p-2 text-xs text-text-secondary"
             rows={3}
             value={claudePaths}
             onChange={(event) => setClaudePaths(event.target.value)}
@@ -90,7 +90,7 @@ export function AutoIngestSetupPanel(props: {
           </label>
           <textarea
             id="cursor-paths"
-            className="mt-2 w-full rounded-md border border-border-light bg-white p-2 text-xs text-text-secondary"
+            className="mt-2 w-full rounded-md border border-border-light bg-bg-card p-2 text-xs text-text-secondary"
             rows={3}
             value={cursorPaths}
             onChange={(event) => setCursorPaths(event.target.value)}
@@ -100,7 +100,7 @@ export function AutoIngestSetupPanel(props: {
           </label>
           <textarea
             id="codex-log-paths"
-            className="mt-2 w-full rounded-md border border-border-light bg-white p-2 text-xs text-text-secondary"
+            className="mt-2 w-full rounded-md border border-border-light bg-bg-card p-2 text-xs text-text-secondary"
             rows={2}
             value={codexLogPaths}
             onChange={(event) => setCodexLogPaths(event.target.value)}
@@ -109,7 +109,7 @@ export function AutoIngestSetupPanel(props: {
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
-              className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
               onClick={async () => {
                 const dir = await pickDir();
                 if (!dir) return;
@@ -120,7 +120,7 @@ export function AutoIngestSetupPanel(props: {
             </button>
             <button
               type="button"
-              className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
               onClick={async () => {
                 const dir = await pickDir();
                 if (!dir) return;
@@ -131,7 +131,7 @@ export function AutoIngestSetupPanel(props: {
             </button>
             <button
               type="button"
-              className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
               onClick={async () => {
                 const dir = await pickDir();
                 if (!dir) return;
@@ -143,7 +143,7 @@ export function AutoIngestSetupPanel(props: {
           </div>
           <button
             type="button"
-            className="mt-2 inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100"
+            className="mt-2 inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-bg-hover"
             onClick={() => {
               const next = {
                 claude: claudePaths.split(/\r?\n/).map((p) => p.trim()).filter(Boolean),
@@ -157,7 +157,7 @@ export function AutoIngestSetupPanel(props: {
           </button>
         </div>
 
-        <div className="rounded-lg border border-border-light bg-white p-3">
+        <div className="rounded-lg border border-border-light bg-bg-card p-3">
           <div className="text-xs font-semibold text-text-secondary">Codex telemetry</div>
           <div className="text-[11px] text-text-tertiary mt-1">
             Uses a local OTLP receiver with an API key stored securely on this machine.
@@ -167,14 +167,14 @@ export function AutoIngestSetupPanel(props: {
             <label className="mt-2 flex items-center gap-2 text-xs text-text-secondary">
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-border-light text-sky-600 focus:ring-sky-200"
+                className="h-4 w-4 rounded border-border-light text-accent-blue focus:ring-2 focus:ring-accent-blue"
                 checked={false}
                 onChange={onGrantConsent}
               />
               I consent to enabling Codex telemetry export
             </label>
           ) : (
-            <div className="mt-2 text-xs text-emerald-700">Consent granted</div>
+            <div className="mt-2 text-xs text-accent-green">Consent granted</div>
           )}
 
           <div className="mt-2 text-[11px] text-text-tertiary">
@@ -183,7 +183,7 @@ export function AutoIngestSetupPanel(props: {
 
           <button
             type="button"
-            className="mt-2 inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
+            className="mt-2 inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-bg-hover disabled:opacity-50"
             onClick={onConfigureCodex}
             disabled={!hasConsent}
           >
@@ -192,7 +192,7 @@ export function AutoIngestSetupPanel(props: {
 
           <button
             type="button"
-            className="mt-2 ml-2 inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+            className="mt-2 ml-2 inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
             onClick={onRotateOtlpKey}
             disabled={!hasConsent}
             title="Rotate the local receiver key (you will need to re-configure Codex telemetry afterwards)."

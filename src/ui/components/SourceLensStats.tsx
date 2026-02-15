@@ -62,8 +62,8 @@ export function SourceLensStats({
   })();
   const evidenceTone = (() => {
     if (!noteSummary?.hasNote) return 'bg-bg-page text-text-tertiary';
-    if (metadataCached) return 'bg-emerald-100 text-emerald-700';
-    return 'bg-amber-100 text-amber-700';
+    if (metadataCached) return 'bg-accent-green-bg text-accent-green';
+    return 'bg-accent-amber-bg text-accent-amber';
   })();
   const cacheEnabled = prefs?.cachePromptMetadata ?? false;
   const showMetadataOptIn = metadataAvailable && !metadataCached && !cacheEnabled;
@@ -101,11 +101,11 @@ export function SourceLensStats({
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            <div className="w-2 h-2 rounded-full bg-accent-green" />
             <span className="text-xs text-text-tertiary">{agentLines} Agent (AI generated)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-amber-500" />
+            <div className="w-2 h-2 rounded-full bg-accent-amber" />
             <span className="text-xs text-text-tertiary">{mixedLines} Mixed (AI + edits)</span>
           </div>
           <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export function SourceLensStats({
               type="button"
               onClick={onImportNote}
               disabled={syncing}
-              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-subtle disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-subtle disabled:opacity-50"
             >
               <RefreshCw className={`h-3 w-3 ${syncing ? 'motion-safe:animate-spin' : ''}`} />
               Import note
@@ -134,7 +134,7 @@ export function SourceLensStats({
               type="button"
               onClick={onExportNote}
               disabled={syncing}
-              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-subtle disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-subtle disabled:opacity-50"
             >
               <Save className="h-3 w-3" />
               Export note
@@ -147,13 +147,13 @@ export function SourceLensStats({
       <div className="mt-4 flex h-2 rounded-full overflow-hidden">
         {agentLines > 0 && (
           <div
-            className="bg-emerald-500"
+            className="bg-accent-green"
             style={{ width: `${(agentLines / lines.length) * 100}%` }}
           />
         )}
         {mixedLines > 0 && (
           <div
-            className="bg-amber-500"
+            className="bg-accent-amber"
             style={{ width: `${(mixedLines / lines.length) * 100}%` }}
           />
         )}
@@ -192,20 +192,20 @@ export function SourceLensStats({
         </ul>
       </div>
       {showMetadataPending ? (
-        <div className="mt-3 rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
-          <div className="font-semibold">Prompt metadata caching is enabled.</div>
+        <div className="mt-3 rounded-md border border-accent-amber-light bg-accent-amber-bg px-3 py-2 text-[11px] text-text-secondary">
+          <div className="font-semibold text-text-primary">Prompt metadata caching is enabled.</div>
           <div className="mt-1">Re-import the attribution note to cache prompt summaries.</div>
         </div>
       ) : null}
       {showMetadataOptIn ? (
-        <div className="mt-3 rounded-md border border-sky-100 bg-sky-50 px-3 py-2 text-[11px] text-sky-700">
-          <div className="font-semibold">Prompt metadata is available for this repo.</div>
+        <div className="mt-3 rounded-md border border-accent-blue-light bg-accent-blue-bg px-3 py-2 text-[11px] text-text-secondary">
+          <div className="font-semibold text-text-primary">Prompt metadata is available for this repo.</div>
           <div className="mt-1">Enable caching to view prompt summaries and tool/model details.</div>
           <button
             type="button"
             onClick={onEnableMetadata}
             disabled={syncing}
-            className="mt-2 inline-flex items-center gap-1 rounded-md border border-sky-200 bg-white px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
+            className="mt-2 inline-flex items-center gap-1 rounded-md border border-accent-blue-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-bg-hover disabled:opacity-50"
           >
             Enable metadata
           </button>
@@ -215,10 +215,10 @@ export function SourceLensStats({
         <div className="mt-2 text-[11px] text-text-muted text-right">{syncStatus}</div>
       ) : null}
       {statsError ? (
-        <div className="mt-2 text-[11px] text-amber-600 text-right">{statsError}</div>
+        <div className="mt-2 text-[11px] text-accent-amber text-right">{statsError}</div>
       ) : null}
       {noteSummaryError ? (
-        <div className="mt-2 text-[11px] text-amber-600 text-right">{noteSummaryError}</div>
+        <div className="mt-2 text-[11px] text-accent-amber text-right">{noteSummaryError}</div>
       ) : null}
       <div className="mt-3 text-[11px] text-text-muted">
         Attribution indicates how lines were generated or edited; it is not a legal ownership claim.

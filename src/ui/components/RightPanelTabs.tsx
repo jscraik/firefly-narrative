@@ -189,54 +189,57 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
 
   return (
     <div className="flex flex-col h-full gap-4">
-      {/* Tab Navigation - Grouped by category with visual separators */}
-      <div className="card p-2">
-        <div className="flex gap-1 items-center" role="tablist" aria-label="Right panel tabs" onKeyDown={handleTabKeyDown}>
-          {TABS.map((tab, index) => {
-            const Icon = tab.icon;
-            const isActive = effectiveTab === tab.id;
-            const hasContent =
-              (tab.id === 'session' && hasSessionContent) ||
-              (tab.id === 'attribution' && hasAttributionContent) ||
-              (tab.id === 'atlas' && hasAtlasContent) ||
-              (tab.id === 'tests' && hasTestContent) ||
-              tab.id === 'settings';
+      {/* Tab Navigation - Clean inline style */}
+      <div 
+        className="flex gap-1 items-center px-1 py-1 bg-bg-card border-b border-border-light" 
+        role="tablist" 
+        aria-label="Right panel tabs" 
+        onKeyDown={handleTabKeyDown}
+      >
+        {TABS.map((tab, index) => {
+          const Icon = tab.icon;
+          const isActive = effectiveTab === tab.id;
+          const hasContent =
+            (tab.id === 'session' && hasSessionContent) ||
+            (tab.id === 'attribution' && hasAttributionContent) ||
+            (tab.id === 'atlas' && hasAtlasContent) ||
+            (tab.id === 'tests' && hasTestContent) ||
+            tab.id === 'settings';
 
-            // Check if we need a separator before this tab (category change)
-            const prevTab = index > 0 ? TABS[index - 1] : null;
-            const needsSeparator = prevTab && prevTab.category !== tab.category;
+          // Check if we need a separator before this tab (category change)
+          const prevTab = index > 0 ? TABS[index - 1] : null;
+          const needsSeparator = prevTab && prevTab.category !== tab.category;
 
-            return (
-              <Fragment key={tab.id}>
-                {needsSeparator && (
-                  <div className="w-px h-5 bg-border-light mx-1" aria-hidden="true" />
-                )}
-                <button
-                  id={`tab-${tab.id}`}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium
-                    transition-all duration-150 min-w-0
-                    ${isActive
-                      ? 'bg-accent-blue-light text-accent-blue'
-                      : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary'
-                    }
-                    ${!hasContent && tab.id !== 'settings' ? 'opacity-60' : ''}
-                  `}
-                  aria-selected={isActive}
-                  aria-controls={`panel-${tab.id}`}
-                  role="tab"
-                  tabIndex={isActive ? 0 : -1}
-                  title={tab.label}
-                >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{tab.shortLabel}</span>
-                </button>
-              </Fragment>
-            );
-          })}
-        </div>
+          return (
+            <Fragment key={tab.id}>
+              {needsSeparator && (
+                <div className="w-px h-4 bg-border-light mx-1" aria-hidden="true" />
+              )}
+              <button
+                id={`tab-${tab.id}`}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium
+                  transition-all duration-150 min-w-0
+                  ${isActive
+                    ? 'bg-accent-blue text-white shadow-sm'
+                    : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary'
+                  }
+                  ${!hasContent && tab.id !== 'settings' ? 'opacity-50' : ''}
+                `}
+                aria-selected={isActive}
+                aria-controls={`panel-${tab.id}`}
+                role="tab"
+                tabIndex={isActive ? 0 : -1}
+                title={tab.label}
+              >
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{tab.shortLabel}</span>
+              </button>
+            </Fragment>
+          );
+        })}
       </div>
 
       {/* Tab Content */}
