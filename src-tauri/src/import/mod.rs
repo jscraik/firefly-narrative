@@ -5,6 +5,7 @@
 
 pub mod claude_parser;
 pub mod codex_parser;
+pub mod codex_sessions_parser;
 pub mod commands;
 pub mod continue_parser;
 pub mod copilot_parser;
@@ -18,6 +19,7 @@ pub mod tool_sanitizer;
 
 use claude_parser::ClaudeCodeParser;
 use codex_parser::CodexLogParser;
+use codex_sessions_parser::CodexSessionJsonlParser;
 use continue_parser::ContinueParser;
 use copilot_parser::CopilotParser;
 use cursor_parser::CursorParser;
@@ -38,6 +40,7 @@ impl ParserRegistry {
 
         // Register built-in parsers
         registry.register(Box::new(ClaudeCodeParser));
+        registry.register(Box::new(CodexSessionJsonlParser));
         registry.register(Box::new(CodexLogParser));
         registry.register(Box::new(CursorParser));
         registry.register(Box::new(GeminiParser));

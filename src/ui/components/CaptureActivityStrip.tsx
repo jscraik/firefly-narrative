@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { ActivityEvent } from '../../core/tauri/activity';
+import { Checkbox } from './Checkbox';
 
 function formatTime(iso?: string) {
   if (!iso) return '—';
@@ -59,15 +60,10 @@ export function CaptureActivityStrip(props: {
           </div>
 
           {onToggle ? (
-            <label className="flex items-center gap-2 text-xs text-text-secondary">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-border-light text-sky-600 focus:ring-sky-200"
-                checked={enabled}
-                onChange={(event) => onToggle(event.target.checked)}
-              />
+            <div className="flex items-center gap-2 text-xs text-text-secondary">
+              <Checkbox checked={enabled} onCheckedChange={(c) => onToggle(c)} aria-label="Auto-capture" />
               Auto‑capture
-            </label>
+            </div>
           ) : null}
         </div>
 

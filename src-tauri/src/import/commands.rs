@@ -579,6 +579,16 @@ fn collect_recent_files(
 
     for root in roots {
         let p = expand_home(root);
+        if p.exists() && p.is_file() {
+            if predicate(&p) {
+                if let Ok(meta) = std::fs::metadata(&p) {
+                    if let Ok(mtime) = meta.modified() {
+                        out.push((p, mtime));
+                    }
+                }
+            }
+            continue;
+        }
         if p.exists() && p.is_dir() {
             walk(&p, &predicate, &mut out, max_scan);
         }
@@ -622,7 +632,15 @@ pub async fn backfill_recent_sessions(
     if config.codex.mode == "logs" || config.codex.mode == "both" {
         let codex = collect_recent_files(
             &config.watch_paths.codex_logs,
-            |p| p.to_string_lossy().contains(".codex") && p.to_string_lossy().contains(".log"),
+            |p| {
+                let s = p.to_string_lossy();
+                // Prefer structured Codex sessions.
+                (s.contains(".codex/sessions/") && s.ends_with(".jsonl"))
+                    || (s.contains(".codex/archived_sessions/") && s.ends_with(".jsonl"))
+                    || s.ends_with("/.codex/history.jsonl")
+                    // Legacy fallback: logs
+                    || (s.contains(".codex/logs/") && s.contains(".log"))
+            },
             5000,
         );
         candidates.extend(
@@ -831,7 +849,9 @@ async fn store_session_with_meta(
             dedupe_key
         )
         VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(repo_id, dedupe_key) DO NOTHING
+        -- NOTE: idx_sessions_repo_dedupe is a *partial* unique index (dedupe_key IS NOT NULL),
+        -- so the upsert target must include the same WHERE clause to match it.
+        ON CONFLICT(repo_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING
         "#,
     )
     .bind(&session_id)

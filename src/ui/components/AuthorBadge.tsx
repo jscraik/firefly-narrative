@@ -107,11 +107,11 @@ export function AuthorBadge({ line }: AuthorBadgeProps) {
 export function getLineColor(authorType: string): string {
   switch (authorType) {
     case 'ai_agent':
-      return 'bg-emerald-50/30 hover:bg-emerald-50/50';
+      return 'bg-accent-green-bg/30 hover:bg-accent-green-bg/50';
     case 'ai_tab':
-      return 'bg-blue-50/30 hover:bg-blue-50/50';
+      return 'bg-accent-blue-bg/30 hover:bg-accent-blue-bg/50';
     case 'mixed':
-      return 'bg-amber-50/30 hover:bg-amber-50/50';
+      return 'bg-accent-amber-bg/30 hover:bg-accent-amber-bg/50';
     case 'human':
       return '';
     default:

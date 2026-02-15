@@ -87,6 +87,11 @@ export function useTraceCollector({
   const _repoStateRef = useRef({ repoRoot, repoId, timeline, model: null as BranchViewModel | null });
 
   useEffect(() => {
+    // These listeners can fire even when no repo is selected (e.g. receiver running in background).
+    // Avoid surfacing confusing "repo root does not exist:" errors by only wiring listeners when
+    // we have a valid repo context to apply updates into.
+    if (!repoRoot || repoId <= 0) return;
+
     let unlistenStatus: (() => void) | null = null;
     let unlistenIngest: (() => void) | null = null;
 
@@ -102,6 +107,7 @@ export function useTraceCollector({
 
       unlistenIngest = await listen<OtelIngestNotification>('otel-trace-ingested', async () => {
         try {
+          if (timeline.length === 0) return;
           const commitShas = timeline.map((node) => node.id);
           const trace = await scanAgentTraceRecords(repoRoot, repoId, commitShas);
 
@@ -125,6 +131,9 @@ export function useTraceCollector({
       setActionError(null);
 
       try {
+        if (!repoRoot || repoId <= 0) {
+          throw new Error('Open a repository before configuring trace ingestion.');
+        }
         // Get current trace config from model (will need to be passed in or stored)
         const baseConfig = defaultTraceConfig();
         const nextConfig = { ...baseConfig, codexOtelLogPath: path };
@@ -150,6 +159,9 @@ export function useTraceCollector({
       setActionError(null);
 
       try {
+        if (!repoRoot || repoId <= 0) {
+          throw new Error('Open a repository before exporting a trace.');
+        }
         const sessionId = await getSessionLinkForCommit(repoId, nodeId);
         const record = await generateDerivedTraceRecord({
           repoRoot,
@@ -175,6 +187,9 @@ export function useTraceCollector({
       setActionError(null);
 
       try {
+        if (!repoRoot || repoId <= 0) {
+          throw new Error('Open a repository before running the smoke test.');
+        }
         if (files.length === 0) {
           throw new Error('Select a commit with changed files to run the smoke test.');
         }

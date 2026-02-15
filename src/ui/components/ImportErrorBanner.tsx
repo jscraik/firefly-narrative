@@ -65,14 +65,14 @@ export function ImportErrorBanner({ error, onDismiss }: ImportErrorBannerProps) 
   const help = getErrorHelp(error);
 
   return (
-    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm">
+    <div className="rounded-xl border border-accent-red-light bg-accent-red-bg p-4 text-sm">
       <div className="flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+        <AlertCircle className="w-5 h-5 text-accent-red mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           {help ? (
             <>
-              <div className="font-semibold text-red-800 mb-1">{help.title}</div>
-              <div className="text-red-700 mb-3 leading-relaxed">{help.description}</div>
+              <div className="mb-1 font-semibold text-accent-red">{help.title}</div>
+              <div className="mb-3 leading-relaxed text-text-secondary">{help.description}</div>
               
               {help.actions.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -85,7 +85,7 @@ export function ImportErrorBanner({ error, onDismiss }: ImportErrorBannerProps) 
                         href={action.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-red-200 text-red-700 text-xs font-medium hover:bg-red-100 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-card border border-accent-red-light text-accent-red text-xs font-medium hover:bg-accent-red-light transition-colors"
                       >
                         <HelpCircle className="w-3.5 h-3.5" />
                         {action.label}
@@ -95,7 +95,7 @@ export function ImportErrorBanner({ error, onDismiss }: ImportErrorBannerProps) 
                         key={actionKey}
                         type="button"
                         onClick={action.action}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-red-200 text-red-700 text-xs font-medium hover:bg-red-100 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-card border border-accent-red-light text-accent-red text-xs font-medium hover:bg-accent-red-light transition-colors"
                       >
                         <FileJson className="w-3.5 h-3.5" />
                         {action.label}
@@ -106,14 +106,14 @@ export function ImportErrorBanner({ error, onDismiss }: ImportErrorBannerProps) 
               )}
             </>
           ) : (
-            <div className="text-red-700">{error}</div>
+            <div className="text-text-secondary">{error}</div>
           )}
         </div>
         {onDismiss && (
           <button
             type="button"
             onClick={onDismiss}
-            className="text-red-400 hover:text-red-600 transition-colors shrink-0"
+            className="shrink-0 text-accent-red/70 transition-colors hover:text-accent-red"
             aria-label="Dismiss error"
           >
             <X className="w-4 h-4" />

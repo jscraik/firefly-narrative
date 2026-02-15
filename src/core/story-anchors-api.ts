@@ -83,3 +83,11 @@ export async function uninstallRepoHooks(repoId: number): Promise<void> {
   return invoke('uninstall_repo_hooks', { repoId });
 }
 
+export type RepoHooksStatus = {
+  installed: boolean;
+  hooksDir: string;
+};
+
+export async function getRepoHooksStatus(repoId: number): Promise<RepoHooksStatus> {
+  return invoke('get_repo_hooks_status', { repoId });
+}

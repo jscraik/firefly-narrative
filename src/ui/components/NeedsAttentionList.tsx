@@ -13,14 +13,14 @@ export function NeedsAttentionList(props: {
       <div className="section-subheader">Auto‑import issues requiring action</div>
       <div className="mt-3 space-y-3">
         {issues.map((issue) => (
-          <div key={issue.id} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <div className="text-xs font-semibold text-amber-800">{issue.title}</div>
-            <div className="text-[11px] text-amber-700 mt-1 whitespace-pre-wrap">{issue.message}</div>
+          <div key={issue.id} className="rounded-lg border border-accent-amber-light bg-accent-amber-bg p-3">
+            <div className="text-xs font-semibold text-accent-amber">{issue.title}</div>
+            <div className="mt-1 whitespace-pre-wrap text-[11px] text-text-secondary">{issue.message}</div>
             <div className="mt-2 flex items-center gap-2">
               {issue.action ? (
                 <button
                   type="button"
-                  className="inline-flex items-center rounded-md border border-amber-300 bg-white px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100"
+                  className="inline-flex items-center rounded-md border border-accent-amber-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light"
                   onClick={issue.action.handler}
                 >
                   {issue.action.label}
@@ -28,7 +28,7 @@ export function NeedsAttentionList(props: {
               ) : null}
               <button
                 type="button"
-                className="inline-flex items-center rounded-md border border-border-light bg-white px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
                 onClick={() => onDismiss(issue.id)}
               >
                 Dismiss

@@ -16,6 +16,7 @@ use git2::{Oid, Repository, Signature};
 use serde::Serialize;
 use tauri::Manager;
 use tauri::State;
+use std::{fs, path::PathBuf};
 
 /// Check result for git notes fetch configuration
 #[derive(Debug, Serialize)]
@@ -485,10 +486,64 @@ pub async fn install_repo_hooks(
     let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let db_path = app_data_dir.join("narrative.db");
     let db_path_str = db_path.to_string_lossy().to_string();
-    hooks_impl::install_repo_hooks_by_id(&db.0, repo_id, &db_path_str).await
+
+    // Ensure we have a stable narrative-cli binary path for hooks.
+    // Prefer:
+    // 1) sibling "narrative-cli" next to current executable (dev + some bundles)
+    // 2) "narrative-cli" on PATH (cargo install)
+    //
+    // Then copy into app_data_dir so hooks can reference a stable absolute path.
+    let cli_dest = app_data_dir.join("narrative-cli");
+
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            candidates.push(dir.join("narrative-cli"));
+        }
+    }
+    if let Ok(out) = std::process::Command::new("which")
+        .arg("narrative-cli")
+        .output()
+    {
+        if out.status.success() {
+            let p = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !p.is_empty() {
+                candidates.push(PathBuf::from(p));
+            }
+        }
+    }
+
+    let source = candidates.into_iter().find(|p| p.exists()).ok_or_else(|| {
+        "Narrative CLI not found.\n\nTo enable Story Anchors hooks, install narrative-cli (one time):\n  cd src-tauri && cargo install --path . --bin narrative-cli\n\nThen click “Install hooks” again.".to_string()
+    })?;
+
+    // Always refresh the installed CLI on hook install so updates to Narrative keep hooks compatible.
+    fs::copy(&source, &cli_dest).map_err(|e| format!("Failed to install narrative-cli: {e}"))?;
+    hooks_impl::ensure_executable(&cli_dest)?;
+
+    hooks_impl::install_repo_hooks_by_id(&db.0, repo_id, &db_path_str, &cli_dest.to_string_lossy()).await
 }
 
 #[tauri::command(rename_all = "camelCase")]
 pub async fn uninstall_repo_hooks(db: State<'_, DbState>, repo_id: i64) -> Result<(), String> {
     hooks_impl::uninstall_repo_hooks_by_id(&db.0, repo_id).await
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RepoHooksStatusPayload {
+    pub installed: bool,
+    pub hooks_dir: String,
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn get_repo_hooks_status(
+    db: State<'_, DbState>,
+    repo_id: i64,
+) -> Result<RepoHooksStatusPayload, String> {
+    let status = hooks_impl::get_repo_hooks_status(&db.0, repo_id).await?;
+    Ok(RepoHooksStatusPayload {
+        installed: status.installed,
+        hooks_dir: status.hooks_dir.to_string_lossy().to_string(),
+    })
 }

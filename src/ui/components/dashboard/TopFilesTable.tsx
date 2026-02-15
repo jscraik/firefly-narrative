@@ -13,8 +13,8 @@ interface TopFilesTableProps {
  * TopFilesTable — Displays ranked list of files by AI contribution.
  *
  * Per dashboard-motion-spec.yml:
- * - Row hover: bg-sky-50, 150ms ease-out
- * - Row focus: box-shadow inset (2px 0 0 sky-500)
+ * - Row hover: bg-accent-blue-bg, 150ms ease-out
+ * - Row focus: inset highlight using accent-blue
  * - Load more: button opacity transition during loading
  * - Reduced motion: instant hover, no transition
  */
@@ -107,8 +107,8 @@ interface TableRowProps {
  * TableRow — Individual table row with hover/focus states.
  *
  * Motion per dashboard-motion-spec.yml:
- * - Row hover: bg-sky-50, 150ms ease-out
- * - Row focus: box-shadow inset (2px 0 0 sky-500), instant
+ * - Row hover: bg-accent-blue-bg, 150ms ease-out
+ * - Row focus: inset highlight using accent-blue, instant
  * - Reduced motion: instant bg change only
  *
  * Keyboard: Enter/Space triggers onClick, Tab navigates between rows

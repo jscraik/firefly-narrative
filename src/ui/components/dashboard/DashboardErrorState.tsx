@@ -10,24 +10,24 @@ export function DashboardErrorState({ error, onRetry }: DashboardErrorStateProps
     <div className="dashboard-error-state flex flex-col items-center justify-center min-h-[500px] px-6 py-12">
       {/* Error Icon */}
       <div
-        className="flex items-center justify-center w-16 h-16 rounded-full bg-rose-100 mb-6 animate-shake-once"
+        className="mb-6 flex h-16 w-16 animate-shake-once items-center justify-center rounded-full bg-accent-red-bg"
         aria-hidden="true"
       >
-        <AlertCircle className="w-8 h-8 text-rose-500" />
+        <AlertCircle className="h-8 w-8 text-accent-red" />
       </div>
 
       {/* Error Message */}
       <div className="max-w-md text-center">
-        <h2 className="text-xl font-semibold text-slate-900 mb-2">
+        <h2 className="mb-2 text-xl font-semibold text-text-primary">
           Failed to load dashboard
         </h2>
-        <p className="text-sm text-slate-600 mb-6">{error}</p>
+        <p className="mb-6 text-sm text-text-secondary">{error}</p>
 
         {/* Retry Button */}
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg px-4 py-2 font-medium text-text-secondary transition-colors hover:bg-bg-hover hover:text-text-primary"
         >
           <RefreshCw className="w-4 h-4" />
           <span>Try again</span>

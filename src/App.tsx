@@ -1,7 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button } from '@design-studio/ui/base';
-import { IconCheckmark } from '@design-studio/ui/icons';
-import { colorTokens, spaceTokens, typographyTokens } from '@design-studio/tokens';
 import { setOtelReceiverEnabled } from './core/tauri/otelReceiver';
 import type {
   BranchViewModel,
@@ -288,27 +285,8 @@ export default function App() {
         <UpdateIndicator status={updateStatus} onClick={checkForUpdates} />
       </TopNav>
 
-      <div className="border-b border-border-light bg-bg-card px-4 py-2">
-        <div className="flex items-center justify-between" style={{ gap: `${spaceTokens.s12}px` }}>
-          <p
-            style={{
-              fontSize: `${typographyTokens.paragraphSm.size}px`,
-              lineHeight: `${typographyTokens.paragraphSm.lineHeight}px`,
-              color: colorTokens.text.light.secondary
-            }}
-          >
-            Design System primitives are active in Narrative.
-          </p>
-          <Button type="button" onClick={() => setMode('repo')}>
-            <span className="inline-flex items-center gap-2">
-              <IconCheckmark className="size-4" />
-              Open repo view
-            </span>
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-hidden">
+      {/* `min-h-0` is critical so nested flex children can scroll instead of overflowing */}
+      <div className="flex-1 min-h-0 overflow-hidden">
         {mode === 'dashboard' ? (
           <DashboardView
             repoState={repoState}
@@ -331,7 +309,7 @@ export default function App() {
             </div>
             <div className="mt-3 h-2 w-64 max-w-full rounded-full bg-border-light overflow-hidden">
               <div
-                className="h-full bg-sky-500 transition-[width] duration-300"
+                className="h-full bg-accent-blue transition-[width] duration-300"
                 style={{ width: `${indexingProgress?.percent ?? 0}%` }}
               />
             </div>
@@ -343,7 +321,7 @@ export default function App() {
           </div>
         ) : mode === 'repo' && repoState.status === 'error' ? (
           <div className="p-8">
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div className="rounded-xl border border-accent-red-light bg-accent-red-bg p-4 text-sm text-text-secondary">
               {repoState.message}
             </div>
             <div className="mt-4 text-sm text-text-tertiary">

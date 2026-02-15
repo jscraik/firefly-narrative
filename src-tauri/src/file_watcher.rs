@@ -19,11 +19,40 @@ pub fn start_session_watcher(
     app_handle: tauri::AppHandle,
     watch_paths: Vec<String>,
 ) -> Result<RecommendedWatcher, String> {
-    let existing_paths: Vec<PathBuf> = watch_paths
+    let mut existing_paths: Vec<PathBuf> = watch_paths
         .into_iter()
-        .filter_map(|raw| expand_path(&raw))
+        .filter_map(|raw| {
+            let p = expand_path(&raw)?;
+
+            // Canonicalize noisy defaults / legacy config values.
+            //
+            // - Cursor: prefer ~/.cursor/composer (sessions live there).
+            // - Codex: prefer ~/.codex/logs (session-like logs live there; ~/.codex/log is internal).
+            let p_str = p.to_string_lossy();
+            if p_str.ends_with("/.cursor") {
+                let composer = p.join("composer");
+                if composer.exists() {
+                    return Some(composer);
+                }
+            }
+            if p_str.contains("/.codex/log") && !p_str.contains("/.codex/logs") {
+                if let Some(parent) = p.parent() {
+                    let logs = parent.join("logs");
+                    if logs.exists() {
+                        return Some(logs);
+                    }
+                }
+                // Drop invalid/unsupported codex log roots.
+                return None;
+            }
+
+            Some(p)
+        })
         .filter(|p| p.exists())
         .collect();
+
+    existing_paths.sort();
+    existing_paths.dedup();
 
     if existing_paths.is_empty() {
         return Err("No AI tool directories found to watch".to_string());
@@ -126,8 +155,13 @@ pub fn start_session_watcher(
 
     // Watch each path
     for path in existing_paths {
+        let mode = if path.is_dir() {
+            RecursiveMode::Recursive
+        } else {
+            RecursiveMode::NonRecursive
+        };
         watcher
-            .watch(&path, RecursiveMode::Recursive)
+            .watch(&path, mode)
             .map_err(|e| format!("Failed to watch {:?}: {}", path, e))?;
 
         println!("[FileWatcher] Watching: {:?}", path);
@@ -187,9 +221,27 @@ fn is_session_file(path: &Path) -> bool {
     let ext = path.extension().and_then(|e| e.to_str());
     let path_str = path.to_string_lossy();
 
+    // Codex sessions:
+    // - ~/.codex/sessions/**/*.jsonl
+    // - ~/.codex/archived_sessions/*.jsonl
+    // - ~/.codex/history.jsonl (pointer/index; used to discover latest session)
+    if path_str.contains(".codex/") {
+        if path_str.ends_with("/.codex/history.jsonl") {
+            return true;
+        }
+        if (path_str.contains(".codex/sessions/") || path_str.contains(".codex/archived_sessions/"))
+            && ext == Some("jsonl")
+        {
+            return true;
+        }
+    }
+
     // Codex logs: match anything under ~/.codex that looks like a log file.
     // Codex log files may have extensions like `.log`, `.log.1`, etc. so we can't rely solely on `Path::extension`.
-    if path_str.contains(".codex") && path_str.contains(".log") {
+    //
+    // IMPORTANT: Codex also writes internal logs under `~/.codex/log/` which are not session traces.
+    // Restrict auto-import to `~/.codex/logs/`.
+    if path_str.contains(".codex/logs") && path_str.contains(".log") {
         return true;
     }
 
@@ -201,14 +253,16 @@ fn is_session_file(path: &Path) -> bool {
         Some("json") => {
             // Various tools use .json
             path_str.contains(".claude")
-                || path_str.contains(".cursor")
+                // Cursor emits lots of non-session JSON (MCP tool defs, configs, etc).
+                // Restrict to composer artifacts.
+                || (path_str.contains(".cursor") && path_str.contains("/composer/"))
                 || path_str.contains("gemini")
                 || path_str.contains("copilot")
                 || path_str.contains(".continue")
         }
         Some("database") => {
-            // Cursor uses SQLite .database files
-            path_str.contains(".cursor")
+            // Cursor uses SQLite .database files; restrict to composer DB.
+            path_str.contains(".cursor") && path_str.contains("/composer/") && path_str.ends_with("composer.database")
         }
         _ => false,
     }

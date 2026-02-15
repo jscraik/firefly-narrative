@@ -37,10 +37,10 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-        <p className="font-medium">Diagram Error</p>
-        <p className="mt-1 text-red-600">{error}</p>
-        <pre className="mt-2 rounded bg-red-100 p-2 text-xs overflow-auto">{chart}</pre>
+      <div className="rounded-lg border border-accent-red-light bg-accent-red-bg p-4 text-sm text-text-secondary">
+        <p className="font-medium text-accent-red">Diagram Error</p>
+        <p className="mt-1 text-accent-red">{error}</p>
+        <pre className="mt-2 rounded bg-bg-subtle p-2 text-xs overflow-auto">{chart}</pre>
       </div>
     );
   }
@@ -48,7 +48,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   return (
     <div 
       ref={containerRef}
-      className="mermaid-diagram my-4 rounded-lg border border-border-light bg-white p-4 overflow-auto"
+      className="mermaid-diagram my-4 rounded-lg border border-border-light bg-bg-card p-4 overflow-auto"
     />
   );
 }

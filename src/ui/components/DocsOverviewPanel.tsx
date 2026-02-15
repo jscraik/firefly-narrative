@@ -1,9 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FileText, BookOpen, X, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import type { Components } from 'react-markdown';
-import { listNarrativeFiles, readNarrativeFile } from '../../core/tauri/narrativeFs';
+import {
+  ensureNarrativeDirs,
+  listNarrativeFiles,
+  readNarrativeFile,
+  writeNarrativeFile,
+} from '../../core/tauri/narrativeFs';
 import { MermaidDiagram } from './MermaidDiagram';
 
 interface DocFile {
@@ -45,52 +50,52 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
   const [_error, setError] = useState<string>('');
 
   // List available documentation files from .narrative/
-  useEffect(() => {
-    const listDocs = async () => {
-      if (!repoRoot) {
-        setDocs([]);
-        return;
-      }
+  const refreshDocs = useCallback(async () => {
+    if (!repoRoot) {
+      setDocs([]);
+      return;
+    }
 
-      try {
-        // Call Tauri to list files in .narrative/ using the wrapper
-        const files = await listNarrativeFiles(repoRoot, '');
+    try {
+      // Call Tauri to list files in .narrative/ using the wrapper
+      const files = await listNarrativeFiles(repoRoot, '');
 
-        // Filter to .md files and load their content to get titles
-        const mdFiles = files.filter((f) => f.endsWith('.md'));
-        
-        const docList: DocFile[] = await Promise.all(
-          mdFiles.map(async (filename) => {
-            try {
-              const content = await readNarrativeFile(repoRoot, filename);
-              return {
-                name: filename,
-                path: filename,
-                title: extractTitle(content, filename),
-              };
-            } catch {
-              // If we can't read it, just use the filename
-              return {
-                name: filename,
-                path: filename,
-                title: extractTitle('', filename),
-              };
-            }
-          })
-        );
+      // Filter to .md files and load their content to get titles
+      const mdFiles = files.filter((f) => f.endsWith('.md'));
 
-        setDocs(docList);
-        setError('');
-      } catch (err) {
-        console.error('Failed to list docs:', err);
-        // Don't show error for empty/no directory - just empty list
-        setDocs([]);
-        setError('');
-      }
-    };
+      const docList: DocFile[] = await Promise.all(
+        mdFiles.map(async (filename) => {
+          try {
+            const content = await readNarrativeFile(repoRoot, filename);
+            return {
+              name: filename,
+              path: filename,
+              title: extractTitle(content, filename),
+            };
+          } catch {
+            // If we can't read it, just use the filename
+            return {
+              name: filename,
+              path: filename,
+              title: extractTitle('', filename),
+            };
+          }
+        })
+      );
 
-    listDocs();
+      setDocs(docList);
+      setError('');
+    } catch (err) {
+      console.error('Failed to list docs:', err);
+      // Don't show error for empty/no directory - just empty list
+      setDocs([]);
+      setError('');
+    }
   }, [repoRoot]);
+
+  useEffect(() => {
+    refreshDocs();
+  }, [refreshDocs]);
 
   // Load selected document content
   useEffect(() => {
@@ -140,7 +145,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
     <div className="card p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-sky-600" />
+          <BookOpen className="w-5 h-5 text-accent-blue" />
           <h2 className="text-sm font-semibold text-text-primary">Documentation</h2>
         </div>
         {onClose && (
@@ -183,7 +188,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
                 <div className="text-sm text-text-tertiary">Loading...</div>
               </div>
             ) : (
-              <div className="prose prose-sm max-w-none prose-stone">
+              <div className="prose prose-sm max-w-none">
                 <ReactMarkdown rehypePlugins={[rehypeRaw]} components={components}>
                   {content}
                 </ReactMarkdown>
@@ -192,10 +197,50 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
           </div>
         </div>
       ) : docs.length === 0 ? (
-        <div className="text-center py-8 text-text-tertiary flex-1">
-          <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p className="text-sm">No documentation files found</p>
-          <p className="text-xs mt-1">Add .md files to .narrative/ directory</p>
+        <div className="text-center py-8 text-text-tertiary flex-1 flex flex-col items-center justify-center">
+          <FileText className="w-12 h-12 mb-3 opacity-50" />
+          <p className="text-sm font-medium text-text-secondary">No Narrative docs found</p>
+          <p className="text-xs mt-2 text-text-muted max-w-[52ch]">
+            Narrative renders markdown files inside <span className="font-mono">.narrative/</span>. Mermaid diagrams
+            render from fenced <span className="font-mono">```mermaid</span> blocks.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2 justify-center">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-card border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-hover"
+              onClick={async () => {
+	                try {
+                  await ensureNarrativeDirs(repoRoot);
+                  const rel = 'docs/overview.md';
+                  const starter = [
+                    '# Narrative Documentation',
+                    '',
+	                    '## System overview',
+	                    '',
+	                    '```mermaid',
+	                    'flowchart TD',
+	                    '  A[Auto-ingest] --> B[Sessions]',
+	                    '  A --> C[Traces]',
+	                    '  B --> D[Story Anchors]',
+	                    '  C --> D',
+	                    '```',
+	                    '',
+	                    '## Notes',
+	                    '',
+	                    '- Place docs in `.narrative/` so they can be shared alongside narratives.',
+                    ''
+                  ].join('\\n');
+                  await writeNarrativeFile(repoRoot, rel, starter);
+                  await refreshDocs();
+                } catch (e) {
+                  console.error('Failed to create starter doc:', e);
+                }
+              }}
+            >
+              <FileText className="w-4 h-4" />
+              Create starter doc
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-2 flex-1 overflow-y-auto">
@@ -204,16 +249,16 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
               key={doc.path}
               type="button"
               onClick={() => setSelectedDoc(doc)}
-              className="w-full flex items-center gap-3 p-3 rounded-lg border border-border-light hover:border-sky-300 hover:bg-sky-50 transition-all text-left group"
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-border-light hover:border-accent-blue-light hover:bg-accent-blue-bg transition-colors text-left group"
             >
-              <FileText className="w-5 h-5 text-text-muted group-hover:text-sky-500" />
+              <FileText className="w-5 h-5 text-text-muted group-hover:text-accent-blue" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-secondary group-hover:text-sky-700 truncate">
+                <p className="text-sm font-medium text-text-secondary group-hover:text-accent-blue truncate">
                   {doc.title}
                 </p>
                 <p className="text-xs text-text-muted truncate">{doc.name}</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-sky-400" />
+              <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent-blue" />
             </button>
           ))}
         </div>

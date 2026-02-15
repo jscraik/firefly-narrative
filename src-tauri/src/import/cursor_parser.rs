@@ -23,9 +23,13 @@ pub struct CursorParser;
 impl super::parser::SessionParser for CursorParser {
     fn can_parse(&self, path: &Path) -> bool {
         let path_str = path.to_string_lossy();
-        // Check for Cursor composer database or JSON files
-        (path_str.contains(".cursor") && path_str.ends_with(".database"))
-            || (path_str.contains(".cursor") && path_str.ends_with(".json"))
+        // Cursor produces *many* JSON files under ~/.cursor (MCP tool defs, configs, etc).
+        // For auto-ingest, restrict to the composer database.
+        //
+        // Cursor composer database location: ~/.cursor/composer/composer.database
+        path_str.contains(".cursor")
+            && path_str.contains("/composer/")
+            && path_str.ends_with("composer.database")
     }
 
     fn parse(&self, path: &Path) -> ParseResult<ParsedSession> {

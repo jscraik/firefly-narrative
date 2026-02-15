@@ -19,7 +19,9 @@ pub struct CodexLogParser;
 impl SessionParser for CodexLogParser {
     fn can_parse(&self, path: &Path) -> bool {
         let path_str = path.to_string_lossy();
-        path_str.contains(".codex") && path_str.contains(".log") && path.is_file()
+        // Only treat Codex session logs under `~/.codex/logs/` as import candidates.
+        // Codex also writes internal logs under `~/.codex/log/` that are not session traces.
+        path_str.contains(".codex/logs") && path_str.contains(".log") && path.is_file()
     }
 
     fn parse(&self, path: &Path) -> ParseResult<ParsedSession> {

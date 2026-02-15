@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useEffect, useState, Fragment } from 'react';
 import { MessageSquare, Activity, Settings, TestTube, FileCode, Search } from 'lucide-react';
+import { useTheme } from '@design-studio/tokens';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
 import type { SessionExcerpt, TestRun, TraceCommitSummary, TraceCollectorStatus, TraceCollectorConfig, TraceRange } from '../../core/types';
 import { SessionExcerpts } from './SessionExcerpts';
@@ -14,6 +15,7 @@ import { SourceLensView } from './SourceLensView';
 import { StepsSummaryCard } from './StepsSummaryCard';
 import { AtlasSearchPanel } from './AtlasSearchPanel';
 import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
+import { Select } from './Select';
 
 type TabId = 'session' | 'attribution' | 'atlas' | 'settings' | 'tests';
 type TabCategory = 'analyze' | 'tools' | 'config';
@@ -85,6 +87,36 @@ interface RightPanelTabsProps {
   traceRanges: TraceRange[];
 }
 
+function DevThemeToggleCard() {
+  const { theme, setTheme, effectiveTheme } = useTheme();
+
+  return (
+    <div className="card p-5 mb-4">
+      <div className="section-header">THEME</div>
+      <div className="section-subheader mt-0.5">dev-only override</div>
+
+      <div className="mt-3 flex items-center gap-3">
+        <span className="text-xs font-semibold text-text-secondary">
+          Mode
+        </span>
+        <Select
+          aria-label="Theme mode"
+          value={theme}
+          onValueChange={(v) => setTheme(v as 'system' | 'light' | 'dark')}
+          items={[
+            { value: 'system', label: 'System' },
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
+          ]}
+        />
+        <div className="text-[11px] text-text-tertiary">
+          Effective: <span className="font-mono">{effectiveTheme}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function RightPanelTabs(props: RightPanelTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('session');
   const [diffExpanded, setDiffExpanded] = useState(true);
@@ -150,10 +182,21 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
       setSelectedSessionId(null);
       return;
     }
+
+    // Prefer a session that is linked to the currently selected commit (when available).
+    // This makes auto-ingested sessions feel "attached" to the repo timeline by default.
+    if (selectedCommitId) {
+      const linked = sessionExcerpts.find((s) => s.linkedCommitSha === selectedCommitId);
+      if (linked && linked.id !== selectedSessionId) {
+        setSelectedSessionId(linked.id);
+        return;
+      }
+    }
+
     if (!selectedSessionId || !sessionExcerpts.some((s) => s.id === selectedSessionId)) {
       setSelectedSessionId(sessionExcerpts[0]?.id ?? null);
     }
-  }, [sessionExcerpts, selectedSessionId]);
+  }, [sessionExcerpts, selectedSessionId, selectedCommitId]);
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const currentIndex = tabIds.indexOf(effectiveTab);
@@ -341,6 +384,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
 
         {effectiveTab === 'settings' && (
           <div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
+            {import.meta.env.DEV ? <DevThemeToggleCard /> : null}
             <AutoIngestSetupPanel
               config={ingestConfig ?? null}
               otlpKey={otlpKeyStatus ?? null}

@@ -108,7 +108,7 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
           {onSmokeTest ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-secondary transition-all duration-150 hover:bg-bg-subtle disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-card px-3 py-1.5 text-xs font-semibold text-text-secondary transition-all duration-150 hover:bg-bg-subtle disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onSmokeTest}
               disabled={!hasFiles}
               aria-disabled={!hasFiles}
@@ -120,7 +120,7 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
           {onExport ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-secondary hover:bg-bg-subtle disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-card px-3 py-1.5 text-xs font-semibold text-text-secondary hover:bg-bg-subtle disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onExport}
               disabled={!hasFiles}
               aria-disabled={!hasFiles}

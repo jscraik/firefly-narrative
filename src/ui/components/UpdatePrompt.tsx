@@ -174,8 +174,8 @@ function getUserFriendlyError(error: string): { title: string; message: string; 
       <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
         <div className="rounded-xl border border-border-light bg-bg-card shadow-lg p-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center shrink-0">
-              <Download className="w-5 h-5 text-white" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-blue">
+              <Download className="h-5 w-5 text-text-inverted" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-text-primary text-sm">
@@ -237,7 +237,7 @@ export function UpdateIndicator({
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-accent-amber-light text-amber-800 text-xs font-medium hover:bg-amber-200 transition-colors motion-safe:animate-pulse"
+        className="inline-flex items-center gap-1.5 rounded-md bg-accent-amber-bg px-2 py-1 text-xs font-medium text-accent-amber transition-colors hover:bg-accent-amber-light motion-safe:animate-pulse"
         title={`Update available: ${status.update.version}`}
       >
         <Download className="w-3 h-3" />
@@ -251,7 +251,7 @@ export function UpdateIndicator({
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium hover:bg-emerald-200 transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-md bg-accent-green-bg px-2 py-1 text-xs font-medium text-accent-green transition-colors hover:bg-accent-green-light"
         title="Update ready to install"
       >
         <CheckCircle className="w-3 h-3" />

@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { BarChart3, BookOpen, FileText, FolderOpen, GitBranch, LayoutGrid } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import type { ReactNode } from 'react';
 
 export type Mode = 'demo' | 'repo' | 'docs' | 'dashboard';
 
@@ -120,78 +121,72 @@ function ImportMenu(props: {
   importEnabled?: boolean;
 }) {
   const { onImportSession, onImportKimiSession, onImportAgentTrace, importEnabled } = props;
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   if (!onImportSession && !onImportKimiSession && !onImportAgentTrace) return null;
 
   return (
-    <div className="relative" ref={menuRef}>
-      <button
-        type="button"
-        disabled={!importEnabled}
-        onClick={() => setIsOpen(!isOpen)}
-        className={clsx(
-          'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
-          importEnabled
-            ? 'bg-bg-page text-text-secondary hover:bg-border-light'
-            : 'bg-bg-subtle text-text-muted cursor-not-allowed'
-        )}
-      >
-        <FileText className="h-4 w-4" />
-        Import data…
-      </button>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button
+          type="button"
+          disabled={!importEnabled}
+          className={clsx(
+            'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+            importEnabled
+              ? 'bg-bg-page text-text-secondary hover:bg-border-light'
+              : 'bg-bg-subtle text-text-muted cursor-not-allowed'
+          )}
+        >
+          <FileText className="h-4 w-4" />
+          Import data…
+        </button>
+      </DropdownMenu.Trigger>
 
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border-light bg-bg-card p-1 shadow-lg z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 zoom-in-95 duration-150 origin-top-right">
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={8}
+          className={clsx(
+            'z-50 w-56 rounded-xl border border-border-light bg-bg-card p-1 shadow-lg',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95'
+          )}
+        >
           {onImportSession && (
-            <button
-              type="button"
-              onClick={() => {
-                onImportSession();
-                setIsOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover text-left transition-colors"
-            >
-              Import session JSON…
-            </button>
+            <DropdownMenu.Item asChild>
+              <button
+                type="button"
+                onClick={onImportSession}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary outline-none hover:bg-bg-hover text-left transition-colors"
+              >
+                Import session JSON…
+              </button>
+            </DropdownMenu.Item>
           )}
           {onImportKimiSession && (
-            <button
-              type="button"
-              onClick={() => {
-                onImportKimiSession();
-                setIsOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover text-left transition-colors"
-            >
-              Import Kimi log…
-            </button>
+            <DropdownMenu.Item asChild>
+              <button
+                type="button"
+                onClick={onImportKimiSession}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary outline-none hover:bg-bg-hover text-left transition-colors"
+              >
+                Import Kimi log…
+              </button>
+            </DropdownMenu.Item>
           )}
           {onImportAgentTrace && (
-            <button
-              type="button"
-              onClick={() => {
-                onImportAgentTrace();
-                setIsOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover text-left transition-colors"
-            >
-              Import Agent Trace…
-            </button>
+            <DropdownMenu.Item asChild>
+              <button
+                type="button"
+                onClick={onImportAgentTrace}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary outline-none hover:bg-bg-hover text-left transition-colors"
+              >
+                Import Agent Trace…
+              </button>
+            </DropdownMenu.Item>
           )}
-        </div>
-      )}
-    </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }

@@ -1,4 +1,5 @@
 import type { IngestStatus } from '../../hooks/useAutoIngest';
+import { Checkbox } from './Checkbox';
 
 export function IngestStatusStrip(props: {
   status: IngestStatus;
@@ -21,15 +22,10 @@ export function IngestStatusStrip(props: {
         ) : null}
       </div>
       {onToggle ? (
-        <label className="flex items-center gap-2 text-xs text-text-secondary">
-          <input
-            type="checkbox"
-            className="h-4 w-4 rounded border-border-light text-sky-600 focus:ring-sky-200"
-            checked={status.enabled}
-            onChange={(event) => onToggle(event.target.checked)}
-          />
+        <div className="flex items-center gap-2 text-xs text-text-secondary">
+          <Checkbox checked={status.enabled} onCheckedChange={(c) => onToggle(c)} aria-label="Auto-ingest" />
           Auto‑ingest
-        </label>
+        </div>
       ) : null}
     </div>
   );
