@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.5.0...narrative-desktop-mvp-v0.6.0) (2026-02-15)
+
+
+### Features
+
+* gold standard quality gates + git notes integration ([98ebf3a](https://github.com/jscraik/narrative/commit/98ebf3a5df0564a5b4d53d5af59c4948d6999f6a))
+* **Phase A:** documentation + performance tooling ([5040acf](https://github.com/jscraik/narrative/commit/5040acf228e041c0e72bbee0a1d8c57679f93f86))
+* **Phase B:** testing deep dive ([1ab22e9](https://github.com/jscraik/narrative/commit/1ab22e9e44d7ca886527624b873baded6b6904d9))
+* **Phase C:** accessibility improvements ([08458fa](https://github.com/jscraik/narrative/commit/08458fa76a096627e338c7a485924a119e54bb40))
+* **Phase D:** architecture cleanup - modularize agent trace ([30be006](https://github.com/jscraik/narrative/commit/30be006620ca998a05645cd171c15bd54ef0ea03))
+
+
+### Bug Fixes
+
+* post-merge type errors and regex compatibility ([32f5a5d](https://github.com/jscraik/narrative/commit/32f5a5dcb3af0fafc67fc41ac57d5c0b2c5d604b))
+
 ## [0.5.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.4.0...narrative-desktop-mvp-v0.5.0) (2026-02-11)
 
 
