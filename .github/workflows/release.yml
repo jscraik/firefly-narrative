@@ -18,6 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ensure GitHub CLI is installed
+        run: bash scripts/ensure-gh-cli.sh
       - name: Setup Python
         uses: actions/setup-python@v5
         with:

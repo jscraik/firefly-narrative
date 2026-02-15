@@ -26,6 +26,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ensure GitHub CLI is installed
+        run: bash scripts/ensure-gh-cli.sh
       - name: Brand assets check
         run: |
           python - <<'PY'

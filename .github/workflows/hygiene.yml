@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ensure GitHub CLI is installed
+        run: bash scripts/ensure-gh-cli.sh
       - name: Fail if release/local artifacts are committed
         shell: bash
         run: |
