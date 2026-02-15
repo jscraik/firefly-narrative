@@ -2,7 +2,7 @@
   "ci": {
     "collect": {
       "url": ["http://localhost:1420"],
-      "startServerCommand": "pnpm preview",
+      "startServerCommand": "pnpm preview -- --port 1420 --strictPort",
       "numberOfRuns": 3
     },
     "assert": {
