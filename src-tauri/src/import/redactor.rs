@@ -163,7 +163,8 @@ mod tests {
 
     #[test]
     fn test_redact_private_key() {
-        let input = "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----";
+        let input =
+            "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----";
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:PRIVATE_KEY_BLOCK⟧"));
@@ -291,7 +292,8 @@ mod tests {
 
     #[test]
     fn test_redact_sendgrid_key() {
-        let input = "SendGrid key: SG.aaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        let input =
+            "SendGrid key: SG.aaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:SENDGRID_KEY⟧"));
@@ -379,4 +381,3 @@ mod tests {
         assert_eq!(summary.total, 7);
     }
 }
-

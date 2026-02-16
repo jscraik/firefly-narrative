@@ -14,8 +14,52 @@ use crate::story_anchors::refs::{ATTRIBUTION_REF_CANONICAL, ATTRIBUTION_REF_LEGA
 use crate::DbState;
 use git2::{Oid, Repository, Signature};
 use serde::Serialize;
+use std::{env, fs, path::PathBuf};
 use tauri::Manager;
 use tauri::State;
+
+fn find_executable_on_path(candidates: &[&str]) -> Option<PathBuf> {
+    let path = env::var_os("PATH")?;
+    for dir in env::split_paths(&path) {
+        for name in candidates {
+            let p = dir.join(name);
+            if p.is_file() {
+                return Some(p);
+            }
+        }
+    }
+    None
+}
+
+fn find_packaged_narrative_cli(app: &tauri::AppHandle) -> Option<PathBuf> {
+    // If we bundled a prebuilt CLI (via `bundle.resources: ["bin/*"]`),
+    // it will be available under the app's resource directory.
+    let resource_dir = app.path().resource_dir().ok()?;
+    let bin_dir = resource_dir.join("bin");
+    let entries = fs::read_dir(&bin_dir).ok()?;
+
+    for entry in entries.flatten() {
+        let p = entry.path();
+        if !p.is_file() {
+            continue;
+        }
+        let name = p.file_name().and_then(|s| s.to_str()).unwrap_or("");
+        if !name.starts_with("narrative-cli-") {
+            continue;
+        }
+        if cfg!(windows) {
+            if p.extension().and_then(|s| s.to_str()) != Some("exe") {
+                continue;
+            }
+        } else if p.extension().is_some() {
+            // Non-Windows builds should produce an extension-less binary.
+            continue;
+        }
+        return Some(p);
+    }
+
+    None
+}
 
 /// Check result for git notes fetch configuration
 #[derive(Debug, Serialize)]
@@ -485,10 +529,79 @@ pub async fn install_repo_hooks(
     let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let db_path = app_data_dir.join("narrative.db");
     let db_path_str = db_path.to_string_lossy().to_string();
-    hooks_impl::install_repo_hooks_by_id(&db.0, repo_id, &db_path_str).await
+
+    // Ensure we have a stable narrative-cli binary path for hooks.
+    // Prefer:
+    // 1) sibling "narrative-cli" next to current executable (dev + some bundles)
+    // 2) "narrative-cli" on PATH (cargo install)
+    //
+    // Then copy into app_data_dir so hooks can reference a stable absolute path.
+    let exe_name = if cfg!(windows) {
+        "narrative-cli.exe"
+    } else {
+        "narrative-cli"
+    };
+    let cli_dest = app_data_dir.join(exe_name);
+
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            candidates.push(dir.join(exe_name));
+            // Some dev setups may have the binary without an extension even on Windows shells.
+            if cfg!(windows) {
+                candidates.push(dir.join("narrative-cli"));
+            }
+        }
+    }
+    if let Some(found) = find_executable_on_path(if cfg!(windows) {
+        &["narrative-cli.exe", "narrative-cli"]
+    } else {
+        &["narrative-cli"]
+    }) {
+        candidates.push(found);
+    }
+    if let Some(found) = find_packaged_narrative_cli(&app) {
+        candidates.push(found);
+    }
+
+    let source = candidates.into_iter().find(|p| p.is_file()).ok_or_else(|| {
+        "Narrative CLI not found.\n\nTo enable Story Anchors hooks, install narrative-cli (one time):\n  cd src-tauri && cargo install --path . --bin narrative-cli\n\nThen click “Install hooks” again.".to_string()
+    })?;
+
+    // Always refresh the installed CLI on hook install so updates to Narrative keep hooks compatible.
+    fs::copy(&source, &cli_dest).map_err(|e| format!("Failed to install narrative-cli: {e}"))?;
+    hooks_impl::ensure_executable(&cli_dest)?;
+
+    // Git hooks run under `sh`; prefer forward slashes for Windows compatibility (Git Bash / MSYS).
+    let cli_path_for_hook = if cfg!(windows) {
+        cli_dest.to_string_lossy().replace('\\', "/")
+    } else {
+        cli_dest.to_string_lossy().to_string()
+    };
+
+    hooks_impl::install_repo_hooks_by_id(&db.0, repo_id, &db_path_str, &cli_path_for_hook).await
 }
 
 #[tauri::command(rename_all = "camelCase")]
 pub async fn uninstall_repo_hooks(db: State<'_, DbState>, repo_id: i64) -> Result<(), String> {
     hooks_impl::uninstall_repo_hooks_by_id(&db.0, repo_id).await
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RepoHooksStatusPayload {
+    pub installed: bool,
+    pub hooks_dir: String,
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn get_repo_hooks_status(
+    db: State<'_, DbState>,
+    repo_id: i64,
+) -> Result<RepoHooksStatusPayload, String> {
+    let status = hooks_impl::get_repo_hooks_status(&db.0, repo_id).await?;
+    Ok(RepoHooksStatusPayload {
+        installed: status.installed,
+        hooks_dir: status.hooks_dir.to_string_lossy().to_string(),
+    })
 }

@@ -9,12 +9,12 @@ test.describe('Narrative Critical Flows', () => {
 
     test('should show demo mode option', async ({ page }) => {
       await page.goto('/');
-      await expect(page.locator('text=Demo')).toBeVisible();
+      await expect(page.getByRole('tab', { name: 'Demo' })).toBeVisible();
     });
 
     test('should show repo mode option', async ({ page }) => {
       await page.goto('/');
-      await expect(page.locator('text=Repo')).toBeVisible();
+      await expect(page.getByRole('tab', { name: 'Repo' })).toBeVisible();
     });
   });
 
@@ -22,13 +22,13 @@ test.describe('Narrative Critical Flows', () => {
     test('should show import button in repo view', async ({ page }) => {
       await page.goto('/');
       // Navigate to repo mode if not default
-      const repoButton = page.locator('text=Repo').first();
+      const repoButton = page.getByRole('tab', { name: 'Repo' });
       if (await repoButton.isVisible().catch(() => false)) {
         await repoButton.click();
       }
       
       // Import button should be visible
-      await expect(page.locator('text=Import')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Import data…' })).toBeVisible();
     });
 
     test('should show session panel when available', async ({ page }) => {

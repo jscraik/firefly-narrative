@@ -72,7 +72,7 @@ function ToolPill({
         <span>{formatDuration(durationMin)}</span>
       )}
       {typeof redactionCount === 'number' && redactionCount > 0 ? (
-        <span className="px-1.5 py-0.5 bg-amber-50 rounded text-amber-700">Redacted {redactionCount}</span>
+        <span className="rounded bg-accent-amber-bg px-1.5 py-0.5 text-accent-amber">Redacted {redactionCount}</span>
       ) : null}
     </div>
   );
@@ -131,8 +131,8 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
         onClick={onClick}
         aria-label={`View commit ${shortSha} in timeline`}
         className={`
-          text-text-secondary hover:text-sky-600 transition-colors
-          ${isSelected ? 'text-sky-600 font-semibold' : ''}
+          text-text-secondary hover:text-accent-blue transition-colors
+          ${isSelected ? 'text-accent-blue font-semibold' : ''}
         `}
         title="Click to view this commit in the timeline"
       >
@@ -145,7 +145,7 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
         {confidencePercent}%
       </span>
       {isAutoLinked && (
-        <span className="px-1.5 py-0.5 bg-emerald-50 rounded text-emerald-600">
+        <span className="rounded bg-accent-green-bg px-1.5 py-0.5 text-accent-green">
           Auto
         </span>
       )}
@@ -154,7 +154,7 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
           type="button"
           onClick={onUnlink}
           aria-label="Unlink session from commit"
-          className="px-1.5 py-0.5 bg-red-50 hover:bg-red-100 rounded text-red-600 transition-colors"
+          className="rounded bg-accent-red-bg px-1.5 py-0.5 text-accent-red transition-colors hover:bg-accent-red-light"
           title="Unlink this session from the commit"
         >
           Unlink
@@ -243,7 +243,7 @@ function UnlinkConfirmDialog({
       variant="destructive"
       open={isOpen}
       onConfirm={onConfirm}
-      onCancel={onClose}
+      onClose={onClose}
     />
   );
 }
@@ -292,7 +292,7 @@ export function SessionExcerpts({
 
   if (!hasExcerpts) {
     return (
-      <div className="card p-5 overflow-x-hidden">
+      <div className="card p-5 overflow-x-hidden max-h-[42vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div>
             <div className="section-header">SESSION SUMMARY</div>
@@ -349,7 +349,7 @@ export function SessionExcerpts({
 
   return (
     <>
-      <div className="card p-5 overflow-x-hidden">
+      <div className="card p-5 overflow-x-hidden max-h-[42vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div>
             <div className="section-header">SESSION SUMMARY</div>
@@ -369,7 +369,7 @@ export function SessionExcerpts({
               isSelected={selectedCommitId === linkedCommitSha}
             />
             {excerpt.needsReview ? (
-              <span className="px-1.5 py-0.5 bg-amber-50 rounded text-amber-700 text-[11px]">Needs review</span>
+              <span className="rounded bg-accent-amber-bg px-1.5 py-0.5 text-[11px] text-accent-amber">Needs review</span>
             ) : null}
           </div>
         </div>

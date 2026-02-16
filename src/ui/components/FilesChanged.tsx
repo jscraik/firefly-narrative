@@ -83,8 +83,8 @@ export function FilesChanged({
                     );
                   })()
                 ) : null}
-                <span className="text-emerald-600">{formatDelta(f.additions)}</span>
-                <span className="text-red-500">-{f.deletions}</span>
+                <span className="text-accent-green">{formatDelta(f.additions)}</span>
+                <span className="text-accent-red">-{f.deletions}</span>
               </div>
             </button>
           ))

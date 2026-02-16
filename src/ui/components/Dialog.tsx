@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import clsx from 'clsx';
 
 /**
@@ -24,7 +24,7 @@ export interface DialogProps {
   variant?: 'default' | 'destructive';
   open: boolean;
   onConfirm: () => void;
-  onCancel: () => void;
+  onClose: () => void;
 }
 
 export function Dialog({
@@ -35,146 +35,69 @@ export function Dialog({
   variant = 'default',
   open,
   onConfirm,
-  onCancel,
+  onClose,
 }: DialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
-  const [isClosing, setIsClosing] = useState(false);
-  const [shouldRender, setShouldRender] = useState(open);
-
-  // Focus trap: keep focus within dialog when open
-  useEffect(() => {
-    if (!open) return;
-
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
-
-    // Focus first focusable element
-    const focusable = Array.from(
-      dialog.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      )
-    );
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    first?.focus();
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!open) return;
-
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onCancel();
-        return;
-      }
-
-      if (e.key !== 'Tab') return;
-      if (!first || !last) return;
-
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onCancel]);
-
-  useEffect(() => {
-    if (open) return;
-    const previouslyFocused = previouslyFocusedRef.current;
-    if (!previouslyFocused) return;
-    window.setTimeout(() => {
-      previouslyFocused.focus();
-    }, 0);
-  }, [open]);
-
-  // Handle exit animation using onTransitionEnd for reliability
-  useEffect(() => {
-    if (open) {
-      setIsClosing(false);
-      setShouldRender(true);
-    } else {
-      setIsClosing(true);
-    }
-  }, [open]);
-
-  const handleTransitionEnd = () => {
-    if (isClosing) {
-      setShouldRender(false);
-    }
-  };
-
-  if (!shouldRender) return null;
-
   const isDestructive = variant === 'destructive';
 
   return (
-    <div
-      className={clsx(
-        'fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-150 ease-out',
-        isClosing ? 'opacity-0' : 'opacity-100'
-      )}
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+    <DialogPrimitive.Root
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && open) onClose();
+      }}
     >
-      <button
-        type="button"
-        className="absolute inset-0"
-        aria-hidden="true"
-        tabIndex={-1}
-        onClick={onCancel}
-      />
-      <div
-        ref={dialogRef}
-        className={clsx(
-          'w-[400px] max-w-full rounded-xl border border-border-light bg-bg-card p-5 shadow-xl transition-all duration-150 ease-out',
-          isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dialog-title"
-        aria-describedby="dialog-message"
-        onTransitionEnd={handleTransitionEnd}
-      >
-        <h2 id="dialog-title" className="text-lg font-semibold text-text-primary">
-          {title}
-        </h2>
-        <p id="dialog-message" className="mt-3 text-sm text-text-secondary">
-          {message}
-        </p>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay
+          className={clsx(
+            'fixed inset-0 z-50',
+            'bg-[var(--overlay)]',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0'
+          )}
+        />
+        <DialogPrimitive.Content
+          className={clsx(
+            'fixed left-1/2 top-1/2 z-50 w-[400px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2',
+            'rounded-xl border border-border-light bg-bg-card p-5 shadow-xl',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+            'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95'
+          )}
+        >
+          <DialogPrimitive.Title className="text-lg font-semibold text-text-primary">
+            {title}
+          </DialogPrimitive.Title>
+          <DialogPrimitive.Description className="mt-3 text-sm text-text-secondary">
+            {message}
+          </DialogPrimitive.Description>
 
-        <div className="mt-5 flex justify-end gap-3">
-          <button
-            type="button"
-            className={clsx(
-              'rounded-md px-3 py-1.5 text-sm transition',
-              'bg-bg-subtle text-text-secondary hover:bg-bg-hover border border-border-light'
-            )}
-            onClick={onCancel}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            className={clsx(
-              'rounded-md px-3 py-1.5 text-sm transition',
-              isDestructive
-                ? 'bg-accent-red-bg text-accent-red hover:bg-accent-red-light border border-accent-red-light'
-                : 'bg-surface-strong text-white hover:bg-surface-strong-hover'
-            )}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+          <div className="mt-5 flex justify-end gap-3">
+            <DialogPrimitive.Close asChild>
+              <button
+                type="button"
+                className={clsx(
+                  'rounded-md px-3 py-1.5 text-sm transition',
+                  'bg-bg-subtle text-text-secondary hover:bg-bg-hover border border-border-light'
+                )}
+              >
+                {cancelLabel}
+              </button>
+            </DialogPrimitive.Close>
+            <DialogPrimitive.Close asChild>
+              <button
+                type="button"
+                className={clsx(
+                  'rounded-md px-3 py-1.5 text-sm transition',
+                  isDestructive
+                    ? 'bg-accent-red-bg text-accent-red hover:bg-accent-red-light border border-accent-red-light'
+                    : 'bg-surface-strong text-text-inverted hover:bg-surface-strong-hover'
+                )}
+                onClick={onConfirm}
+              >
+                {confirmLabel}
+              </button>
+            </DialogPrimitive.Close>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

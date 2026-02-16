@@ -9,6 +9,10 @@ fn canonicalize_existing(path: &Path) -> Result<PathBuf, String> {
 }
 
 fn narrative_base(repo_root: &str) -> Result<PathBuf, String> {
+    let repo_root = repo_root.trim();
+    if repo_root.is_empty() {
+        return Err("repo root is empty (no repository selected)".into());
+    }
     let root = PathBuf::from(repo_root);
     if !root.exists() {
         return Err(format!("repo root does not exist: {repo_root}"));
@@ -46,6 +50,10 @@ pub fn ensure_narrative_dirs(repo_root: String) -> Result<(), String> {
 
 #[tauri::command(rename_all = "camelCase")]
 pub fn file_exists(repo_root: String, relative_path: String) -> Result<bool, String> {
+    let repo_root = repo_root.trim().to_string();
+    if repo_root.is_empty() {
+        return Err("repo root is empty (no repository selected)".into());
+    }
     let root = PathBuf::from(&repo_root);
     if !root.exists() {
         return Err(format!("repo root does not exist: {repo_root}"));

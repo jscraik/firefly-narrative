@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import '@design-studio/tokens/foundations.css';
+import { ThemeProvider } from '@design-studio/tokens';
+import '@design-studio/tokens/tokens.css';
 import '@design-studio/ui/styles.css';
 import './styles.css';
 
@@ -13,6 +14,8 @@ if (!root) {
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider defaultTheme="system">
+      <App />
+    </ThemeProvider>
   </React.StrictMode>
 );

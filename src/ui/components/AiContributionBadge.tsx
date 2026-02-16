@@ -28,24 +28,24 @@ export function AiContributionBadge({ stats, showZero = false }: AiContributionB
   const getBadgeStyle = () => {
     if (percentage >= 80) {
       return {
-        bg: 'bg-emerald-100',
-        text: 'text-emerald-700',
-        border: 'border-emerald-200',
-        icon: 'text-emerald-600',
+        bg: 'bg-accent-green-bg',
+        text: 'text-accent-green',
+        border: 'border-accent-green-light',
+        icon: 'text-accent-green',
       };
     } else if (percentage >= 40) {
       return {
-        bg: 'bg-amber-100',
-        text: 'text-amber-700',
-        border: 'border-amber-200',
-        icon: 'text-amber-600',
+        bg: 'bg-accent-amber-bg',
+        text: 'text-accent-amber',
+        border: 'border-accent-amber-light',
+        icon: 'text-accent-amber',
       };
     } else if (percentage > 0) {
       return {
-        bg: 'bg-blue-100',
-        text: 'text-blue-700',
-        border: 'border-blue-200',
-        icon: 'text-blue-600',
+        bg: 'bg-accent-blue-bg',
+        text: 'text-accent-blue',
+        border: 'border-accent-blue-light',
+        icon: 'text-accent-blue',
       };
     }
     return {

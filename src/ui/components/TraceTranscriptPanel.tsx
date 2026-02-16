@@ -10,7 +10,7 @@ const ROLE_CONFIG: Record<SessionMessageRole, {
 }> = {
   user: {
     label: 'You',
-    badgeClass: 'bg-sky-100 text-sky-700 border-sky-200',
+    badgeClass: 'bg-accent-blue-bg text-accent-blue border-accent-blue-light',
     icon: User,
     description: 'User prompt'
   },
@@ -22,19 +22,19 @@ const ROLE_CONFIG: Record<SessionMessageRole, {
   },
   thinking: {
     label: 'Thinking',
-    badgeClass: 'bg-amber-100 text-amber-700 border-amber-200',
+    badgeClass: 'bg-accent-amber-bg text-accent-amber border-accent-amber-light',
     icon: Lightbulb,
     description: 'Model reasoning process'
   },
   plan: {
     label: 'Plan',
-    badgeClass: 'bg-violet-100 text-violet-700 border-violet-200',
+    badgeClass: 'bg-accent-violet-bg text-accent-violet border-accent-violet-light',
     icon: Sparkles,
     description: 'Execution plan'
   },
   tool_call: {
     label: 'Tool',
-    badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    badgeClass: 'bg-accent-green-bg text-accent-green border-accent-green-light',
     icon: Wrench,
     description: 'Tool invocation'
   }
@@ -109,11 +109,11 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/50 overflow-hidden">
+    <div className="mt-3 rounded-lg border border-accent-green-light bg-accent-green-bg/50 overflow-hidden">
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-emerald-800 hover:bg-emerald-100/50 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-accent-green hover:bg-accent-green-bg/70 transition-colors"
       >
         <span className="flex items-center gap-2">
           <Terminal className="w-3.5 h-3.5" />
@@ -123,15 +123,15 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
       </button>
       
       {isExpanded && (
-        <div className="border-t border-emerald-200">
-          <div className="flex items-center justify-between px-3 py-1.5 bg-emerald-100/30 border-b border-emerald-200">
-            <span className="text-[10px] uppercase tracking-wide text-emerald-600">
+        <div className="border-t border-accent-green-light">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-accent-green-bg/40 border-b border-accent-green-light">
+            <span className="text-[10px] uppercase tracking-wide text-accent-green">
               Arguments
             </span>
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1 text-[10px] text-emerald-600 hover:text-emerald-800 transition-colors"
+              className="inline-flex items-center gap-1 text-[10px] text-accent-green hover:text-accent-green/80 transition-colors"
             >
               {copied ? (
                 <><Check className="w-3 h-3" /> Copied</>
@@ -142,11 +142,11 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
           </div>
           <div className="p-3">
             {hasInput ? (
-              <pre className="text-[11px] text-emerald-900 whitespace-pre-wrap break-words font-mono leading-relaxed">
+              <pre className="text-[11px] text-text-secondary whitespace-pre-wrap break-words font-mono leading-relaxed">
                 {toolInput}
               </pre>
             ) : (
-              <span className="text-[11px] text-emerald-600 italic">No input recorded</span>
+              <span className="text-[11px] text-text-tertiary italic">No input recorded</span>
             )}
           </div>
         </div>
@@ -163,14 +163,14 @@ function ThinkingBlock({ message }: { message: SessionMessage }) {
 
   return (
     <div className="mt-2">
-      <div className="text-sm text-amber-800 leading-relaxed whitespace-pre-wrap break-words">
+      <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap break-words">
         {displayText}
       </div>
       {isLong && (
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="mt-2 text-xs text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1 transition-colors"
+          className="mt-2 text-xs text-text-tertiary hover:text-text-secondary font-medium flex items-center gap-1 transition-colors"
         >
           {isExpanded ? (
             <><ChevronUp className="w-3.5 h-3.5" /> Show less</>
@@ -196,11 +196,11 @@ function MessageCard({
 
   return (
     <div className={`rounded-xl border px-4 py-4 transition-all hover:shadow-sm min-w-0 ${
-      message.role === 'user' ? 'bg-sky-50/50 border-sky-200' :
-      message.role === 'thinking' ? 'bg-amber-50/50 border-amber-200' :
-      message.role === 'plan' ? 'bg-violet-50/50 border-violet-200' :
-      message.role === 'tool_call' ? 'bg-emerald-50/50 border-emerald-200' :
-      'bg-white border-border-light'
+      message.role === 'user' ? 'bg-accent-blue-bg/50 border-accent-blue-light' :
+      message.role === 'thinking' ? 'bg-accent-amber-bg/50 border-accent-amber-light' :
+      message.role === 'plan' ? 'bg-accent-violet-bg/50 border-accent-violet-light' :
+      message.role === 'tool_call' ? 'bg-accent-green-bg/50 border-accent-green-light' :
+      'bg-bg-card border-border-light'
     }`}>
       {/* Header */}
       <div className="flex items-center justify-between gap-3 min-w-0">
@@ -273,11 +273,11 @@ function EmptyState() {
 
 function StatsBar({ stats }: { stats: Record<SessionMessageRole, number> }) {
   const items = [
-    { count: stats.user, label: 'user', color: 'text-sky-600' },
+    { count: stats.user, label: 'user', color: 'text-accent-blue' },
     { count: stats.assistant, label: 'assistant', color: 'text-text-secondary' },
-    { count: stats.thinking, label: 'thinking', color: 'text-amber-600' },
-    { count: stats.plan, label: 'plan', color: 'text-violet-600' },
-    { count: stats.tool_call, label: 'tools', color: 'text-emerald-600' },
+    { count: stats.thinking, label: 'thinking', color: 'text-accent-amber' },
+    { count: stats.plan, label: 'plan', color: 'text-accent-violet' },
+    { count: stats.tool_call, label: 'tools', color: 'text-accent-green' },
   ].filter(item => item.count > 0);
 
   return (

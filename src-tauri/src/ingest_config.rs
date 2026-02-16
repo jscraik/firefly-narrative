@@ -40,8 +40,16 @@ impl Default for WatchPaths {
     fn default() -> Self {
         Self {
             claude: vec!["~/.claude/projects".to_string()],
-            cursor: vec!["~/.cursor".to_string()],
-            codex_logs: vec!["~/.codex/logs".to_string()],
+            // Cursor stores composer sessions in ~/.cursor/composer/composer.database.
+            // Watching the entire ~/.cursor tree is noisy (many non-session JSON files).
+            cursor: vec!["~/.cursor/composer".to_string()],
+            // Codex sessions can be stored as per-session JSONL files plus an aggregated history file.
+            codex_logs: vec![
+                "~/.codex/sessions".to_string(),
+                "~/.codex/archived_sessions".to_string(),
+                "~/.codex/history.jsonl".to_string(),
+                "~/.codex/logs".to_string(), // legacy fallback
+            ],
         }
     }
 }
@@ -109,7 +117,13 @@ pub fn load_config() -> Result<IngestConfig, String> {
         return Ok(IngestConfig::default());
     }
     let raw = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let parsed = serde_json::from_str::<IngestConfig>(&raw).map_err(|e| e.to_string())?;
+    let mut parsed = serde_json::from_str::<IngestConfig>(&raw).map_err(|e| e.to_string())?;
+
+    // Best-effort migration / normalization:
+    // - Add newly supported Codex sources if present (sessions + archived_sessions + history.jsonl).
+    // - Remove legacy noisy Codex internal logs dir (~/.codex/log).
+    normalize_codex_watch_paths(&mut parsed.watch_paths);
+
     Ok(parsed)
 }
 
@@ -145,8 +159,63 @@ pub fn apply_update(update: IngestConfigUpdate) -> Result<IngestConfig, String> 
         config.consent = value;
     }
 
+    normalize_codex_watch_paths(&mut config.watch_paths);
+
     save_config(&config)?;
     Ok(config)
+}
+
+fn normalize_codex_watch_paths(paths: &mut WatchPaths) {
+    // De-dupe and upgrade Codex watch paths.
+    let mut out: Vec<String> = Vec::new();
+    for p in paths.codex_logs.iter() {
+        let mut p = p.trim().replace('\\', "/");
+        if p.is_empty() {
+            continue;
+        }
+        // Normalize legacy variants.
+        if p.ends_with("/.codex/log") || p.ends_with("~/.codex/log") {
+            continue; // never watch internal logs dir
+        }
+        if p.contains(".codex/archived-sessions") {
+            p = p.replace(".codex/archived-sessions", ".codex/archived_sessions");
+        }
+        if !out.contains(&p) {
+            out.push(p);
+        }
+    }
+
+    // Add recommended sources when they exist and are missing.
+    if let Some(home) = dirs::home_dir() {
+        let recommended = [
+            ("~/.codex/sessions", home.join(".codex/sessions").exists()),
+            (
+                "~/.codex/archived_sessions",
+                home.join(".codex/archived_sessions").exists(),
+            ),
+            (
+                "~/.codex/history.jsonl",
+                home.join(".codex/history.jsonl").exists(),
+            ),
+        ];
+        for (p, exists) in recommended {
+            if !exists {
+                continue;
+            }
+            if !out.iter().any(|v| v == p) {
+                out.push(p.to_string());
+            }
+        }
+    }
+
+    // Ensure legacy fallback is last (if present).
+    out.sort_by(|a, b| {
+        let a_legacy = a.contains(".codex/logs");
+        let b_legacy = b.contains(".codex/logs");
+        a_legacy.cmp(&b_legacy)
+    });
+
+    paths.codex_logs = out;
 }
 
 pub fn config_path() -> Result<PathBuf, String> {
@@ -281,14 +350,34 @@ pub fn discover_capture_sources() -> Result<DiscoveredSources, String> {
             claude.push(claude_dir.to_string_lossy().to_string());
         }
 
-        let cursor_dir = home.join(".cursor");
-        if cursor_dir.exists() {
-            cursor.push(cursor_dir.to_string_lossy().to_string());
+        let cursor_composer_dir = home.join(".cursor/composer");
+        if cursor_composer_dir.exists() {
+            cursor.push(cursor_composer_dir.to_string_lossy().to_string());
+        } else {
+            let cursor_dir = home.join(".cursor");
+            if cursor_dir.exists() {
+                cursor.push(cursor_dir.to_string_lossy().to_string());
+            }
         }
 
-        let codex_dir = home.join(".codex/logs");
-        if codex_dir.exists() {
-            codex_logs.push(codex_dir.to_string_lossy().to_string());
+        // Codex (preferred): per-session JSONL folders
+        let codex_sessions = home.join(".codex/sessions");
+        if codex_sessions.exists() {
+            codex_logs.push(codex_sessions.to_string_lossy().to_string());
+        }
+        let codex_archived = home.join(".codex/archived_sessions");
+        if codex_archived.exists() {
+            codex_logs.push(codex_archived.to_string_lossy().to_string());
+        }
+        // Codex (index/pointer): aggregated history file
+        let codex_history = home.join(".codex/history.jsonl");
+        if codex_history.exists() {
+            codex_logs.push(codex_history.to_string_lossy().to_string());
+        }
+        // Codex (legacy fallback): logs
+        let codex_logs_dir = home.join(".codex/logs");
+        if codex_logs_dir.exists() {
+            codex_logs.push(codex_logs_dir.to_string_lossy().to_string());
         }
     }
 

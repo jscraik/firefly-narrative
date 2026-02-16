@@ -1,0 +1,8 @@
+# Token lint allowlist
+#
+# Format (tab-separated):
+#   pathPrefix<TAB>tokenRegex<TAB>reason
+#
+# Example:
+#   src/ui/components/LegacyThing.tsx\t\\bbg-white\\b\tLegacy component pending refactor
+

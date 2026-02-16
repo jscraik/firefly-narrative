@@ -27,7 +27,7 @@ export function SourceLensLineTable({ lines, showLineOverlays = true }: SourceLe
   return (
     <div className="max-h-[400px] overflow-auto font-mono text-xs">
       <table className="w-full table-fixed border-separate border-spacing-0" aria-label="Line attribution">
-        <thead className="sticky top-0 bg-white z-10">
+        <thead className="sticky top-0 bg-bg-card z-10">
           <tr className="text-[11px] text-text-tertiary border-b border-border-light">
             <th scope="col" className="w-10 text-right font-medium px-4 py-2">
               Line

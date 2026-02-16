@@ -5,9 +5,9 @@ import type { BranchViewModel, DashboardFilter } from '../../core/types';
 function Stat({ value, label, tone, icon: Icon }: { value: string; label: string; tone?: 'neutral' | 'good' | 'bad'; icon?: React.ElementType }) {
   const valueClass =
     tone === 'good'
-      ? 'text-emerald-600'
+      ? 'text-accent-green'
       : tone === 'bad'
-        ? 'text-red-500'
+        ? 'text-accent-red'
         : 'text-text-secondary';
   
   return (
@@ -40,7 +40,7 @@ export function BranchHeader({ model, dashboardFilter, onClearFilter }: { model:
               <button
                 type="button"
                 onClick={onClearFilter}
-                className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                 <span>Back to dashboard</span>
@@ -49,7 +49,7 @@ export function BranchHeader({ model, dashboardFilter, onClearFilter }: { model:
             <h1 className="text-2xl font-semibold text-text-primary">{model.title}</h1>
             <span className="badge-open">{model.status}</span>
             {dashboardFilter && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-100 text-sky-700 text-xs font-medium">
+              <span className="inline-flex items-center rounded-md bg-accent-blue-bg px-2 py-0.5 text-xs font-medium text-accent-blue">
                 Filtered view
               </span>
             )}

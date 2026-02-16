@@ -5,6 +5,7 @@
 
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Arc};
@@ -19,11 +20,42 @@ pub fn start_session_watcher(
     app_handle: tauri::AppHandle,
     watch_paths: Vec<String>,
 ) -> Result<RecommendedWatcher, String> {
-    let existing_paths: Vec<PathBuf> = watch_paths
+    let mut existing_paths: Vec<PathBuf> = watch_paths
         .into_iter()
-        .filter_map(|raw| expand_path(&raw))
+        .filter_map(|raw| {
+            let p = expand_path(&raw)?;
+
+            // Canonicalize noisy defaults / legacy config values.
+            //
+            // - Cursor: prefer ~/.cursor/composer (sessions live there).
+            // - Codex: prefer ~/.codex/logs (session-like logs live there; ~/.codex/log is internal).
+            if p.file_name().and_then(|s| s.to_str()) == Some(".cursor") {
+                let composer = p.join("composer");
+                if composer.exists() {
+                    return Some(composer);
+                }
+            }
+            let is_codex_internal_log_root = p.file_name() == Some(OsStr::new("log"))
+                && p.parent()
+                    .and_then(|parent| parent.file_name())
+                    .and_then(|s| s.to_str())
+                    == Some(".codex");
+            if is_codex_internal_log_root {
+                let logs = p.parent().unwrap().join("logs");
+                if logs.exists() {
+                    return Some(logs);
+                }
+                // Drop invalid/unsupported codex log roots.
+                return None;
+            }
+
+            Some(p)
+        })
         .filter(|p| p.exists())
         .collect();
+
+    existing_paths.sort();
+    existing_paths.dedup();
 
     if existing_paths.is_empty() {
         return Err("No AI tool directories found to watch".to_string());
@@ -126,8 +158,13 @@ pub fn start_session_watcher(
 
     // Watch each path
     for path in existing_paths {
+        let mode = if path.is_dir() {
+            RecursiveMode::Recursive
+        } else {
+            RecursiveMode::NonRecursive
+        };
         watcher
-            .watch(&path, RecursiveMode::Recursive)
+            .watch(&path, mode)
             .map_err(|e| format!("Failed to watch {:?}: {}", path, e))?;
 
         println!("[FileWatcher] Watching: {:?}", path);
@@ -185,11 +222,29 @@ impl Default for PendingEntry {
 /// Check if a path is a session file we care about
 fn is_session_file(path: &Path) -> bool {
     let ext = path.extension().and_then(|e| e.to_str());
-    let path_str = path.to_string_lossy();
+    let path_str = path.to_string_lossy().replace('\\', "/");
+
+    // Codex sessions:
+    // - ~/.codex/sessions/**/*.jsonl
+    // - ~/.codex/archived_sessions/*.jsonl
+    // - ~/.codex/history.jsonl (pointer/index; used to discover latest session)
+    if path_str.contains(".codex/") {
+        if path_str.ends_with("/.codex/history.jsonl") {
+            return true;
+        }
+        if (path_str.contains(".codex/sessions/") || path_str.contains(".codex/archived_sessions/"))
+            && ext == Some("jsonl")
+        {
+            return true;
+        }
+    }
 
     // Codex logs: match anything under ~/.codex that looks like a log file.
     // Codex log files may have extensions like `.log`, `.log.1`, etc. so we can't rely solely on `Path::extension`.
-    if path_str.contains(".codex") && path_str.contains(".log") {
+    //
+    // IMPORTANT: Codex also writes internal logs under `~/.codex/log/` which are not session traces.
+    // Restrict auto-import to `~/.codex/logs/`.
+    if path_str.contains(".codex/logs") && path_str.contains(".log") {
         return true;
     }
 
@@ -201,14 +256,18 @@ fn is_session_file(path: &Path) -> bool {
         Some("json") => {
             // Various tools use .json
             path_str.contains(".claude")
-                || path_str.contains(".cursor")
+                // Cursor emits lots of non-session JSON (MCP tool defs, configs, etc).
+                // Restrict to composer artifacts.
+                || (path_str.contains(".cursor") && path_str.contains("/composer/"))
                 || path_str.contains("gemini")
                 || path_str.contains("copilot")
                 || path_str.contains(".continue")
         }
         Some("database") => {
-            // Cursor uses SQLite .database files
+            // Cursor uses SQLite .database files; restrict to composer DB.
             path_str.contains(".cursor")
+                && path_str.contains("/composer/")
+                && path_str.ends_with("composer.database")
         }
         _ => false,
     }
@@ -216,7 +275,7 @@ fn is_session_file(path: &Path) -> bool {
 
 /// Detect which AI tool a file belongs to based on its path
 fn detect_tool_from_path(path: &Path) -> String {
-    let path_str = path.to_string_lossy();
+    let path_str = path.to_string_lossy().replace('\\', "/");
 
     if path_str.contains(".claude") {
         "claude_code".to_string()
@@ -265,7 +324,8 @@ mod tests {
         assert!(is_session_file(&PathBuf::from(
             "/home/user/.cursor/composer/composer.database"
         )));
-        assert!(is_session_file(&PathBuf::from(
+        // Cursor produces many non-session JSON files; auto-ingest restricts to composer artifacts.
+        assert!(!is_session_file(&PathBuf::from(
             "/home/user/.cursor/sessions/session.json"
         )));
 

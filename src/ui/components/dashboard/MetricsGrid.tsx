@@ -73,7 +73,7 @@ export function MetricsGrid({
   // Top tool badge
   const topTool = toolBreakdown[0];
   const toolIcon = (
-    <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-medium">
+    <div className="flex items-center gap-1 rounded-md bg-bg-subtle px-2 py-1 text-xs font-medium text-text-secondary">
       <Cpu className="w-3 h-3" aria-hidden="true" />
       <span>{topTool?.tool ?? 'N/A'}</span>
     </div>

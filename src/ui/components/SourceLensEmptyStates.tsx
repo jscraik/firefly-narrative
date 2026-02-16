@@ -18,7 +18,7 @@ export function SourceLensEmptyStates({
       <div className="card p-5">
         {showHeader ? <div className="section-header">SOURCE LENS</div> : null}
         <div className="mt-4 flex items-center gap-2 text-sm text-text-tertiary">
-          <div className="w-4 h-4 border-2 border-border-light border-t-sky-500 rounded-full motion-safe:animate-spin motion-reduce:animate-none" />
+          <div className="w-4 h-4 border-2 border-border-light border-t-accent-blue rounded-full motion-safe:animate-spin motion-reduce:animate-none" />
           Loading source lens...
         </div>
       </div>
@@ -29,7 +29,7 @@ export function SourceLensEmptyStates({
     return (
       <div className="card p-5">
         {showHeader ? <div className="section-header">SOURCE LENS</div> : null}
-        <div className="mt-4 text-sm text-red-600">{error}</div>
+        <div className="mt-4 text-sm text-accent-red">{error}</div>
       </div>
     );
   }

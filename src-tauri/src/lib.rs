@@ -272,6 +272,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             story_anchors::commands::reconcile_after_rewrite,
             story_anchors::commands::install_repo_hooks,
             story_anchors::commands::uninstall_repo_hooks,
+            story_anchors::commands::get_repo_hooks_status,
             story_anchors::commands::check_git_notes_fetch_config,
             story_anchors::commands::configure_git_notes_fetch,
         ])
