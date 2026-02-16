@@ -120,13 +120,26 @@ exit 0
     )
 }
 
-pub async fn install_repo_hooks(repo_root: &str, db_path: &str, cli_path: &str) -> Result<(), String> {
+pub async fn install_repo_hooks(
+    repo_root: &str,
+    db_path: &str,
+    cli_path: &str,
+) -> Result<(), String> {
     let dir = resolve_hooks_dir(repo_root);
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
 
-    write_hook_file(&dir.join("post-commit"), &build_post_commit_hook(db_path, cli_path))?;
-    write_hook_file(&dir.join("post-rewrite"), &build_post_rewrite_hook(db_path, cli_path))?;
-    write_hook_file(&dir.join("post-merge"), &build_post_merge_hook(db_path, cli_path))?;
+    write_hook_file(
+        &dir.join("post-commit"),
+        &build_post_commit_hook(db_path, cli_path),
+    )?;
+    write_hook_file(
+        &dir.join("post-rewrite"),
+        &build_post_rewrite_hook(db_path, cli_path),
+    )?;
+    write_hook_file(
+        &dir.join("post-merge"),
+        &build_post_merge_hook(db_path, cli_path),
+    )?;
 
     Ok(())
 }
@@ -162,9 +175,15 @@ pub struct RepoHooksStatus {
     pub installed: bool,
 }
 
-pub async fn get_repo_hooks_status(db: &sqlx::SqlitePool, repo_id: i64) -> Result<RepoHooksStatus, String> {
+pub async fn get_repo_hooks_status(
+    db: &sqlx::SqlitePool,
+    repo_id: i64,
+) -> Result<RepoHooksStatus, String> {
     let repo_root = fetch_repo_root(db, repo_id).await?;
     let dir = resolve_hooks_dir(&repo_root);
     let installed = dir.join("post-commit").exists();
-    Ok(RepoHooksStatus { hooks_dir: dir, installed })
+    Ok(RepoHooksStatus {
+        hooks_dir: dir,
+        installed,
+    })
 }

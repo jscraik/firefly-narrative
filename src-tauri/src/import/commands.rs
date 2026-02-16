@@ -633,7 +633,7 @@ pub async fn backfill_recent_sessions(
         let codex = collect_recent_files(
             &config.watch_paths.codex_logs,
             |p| {
-                let s = p.to_string_lossy();
+                let s = p.to_string_lossy().replace('\\', "/");
                 // Prefer structured Codex sessions.
                 (s.contains(".codex/sessions/") && s.ends_with(".jsonl"))
                     || (s.contains(".codex/archived_sessions/") && s.ends_with(".jsonl"))

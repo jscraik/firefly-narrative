@@ -22,7 +22,7 @@ pub struct CursorParser;
 
 impl super::parser::SessionParser for CursorParser {
     fn can_parse(&self, path: &Path) -> bool {
-        let path_str = path.to_string_lossy();
+        let path_str = path.to_string_lossy().replace('\\', "/");
         // Cursor produces *many* JSON files under ~/.cursor (MCP tool defs, configs, etc).
         // For auto-ingest, restrict to the composer database.
         //
@@ -252,9 +252,9 @@ mod tests {
         let db_path = Path::new("/home/user/.cursor/composer/composer.database");
         assert!(parser.can_parse(db_path));
 
-        // Should parse Cursor JSON
+        // Cursor produces many JSON files under ~/.cursor; auto-ingest restricts to composer DB only.
         let json_path = Path::new("/home/user/.cursor/sessions/session.json");
-        assert!(parser.can_parse(json_path));
+        assert!(!parser.can_parse(json_path));
 
         // Should not parse other files
         let other_path = Path::new("/some/other/path.txt");

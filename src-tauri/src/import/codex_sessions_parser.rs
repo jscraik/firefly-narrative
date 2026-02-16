@@ -16,13 +16,20 @@ use super::{
 };
 use crate::session_hash::generate_session_hash;
 use serde_json::Value;
+use std::collections::VecDeque;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 pub struct CodexSessionJsonlParser;
 
+fn normalize_path_slashes(path: &Path) -> String {
+    // Many path heuristics below use '/' separators. Normalize so the code works on Windows too.
+    path.to_string_lossy().replace('\\', "/")
+}
+
 impl SessionParser for CodexSessionJsonlParser {
     fn can_parse(&self, path: &Path) -> bool {
-        let s = path.to_string_lossy();
+        let s = normalize_path_slashes(path);
 
         // Codex global history index (special handling).
         if s.ends_with("/.codex/history.jsonl") && path.is_file() {
@@ -51,7 +58,7 @@ impl SessionParser for CodexSessionJsonlParser {
             )));
         }
 
-        let s = path.to_string_lossy();
+        let s = normalize_path_slashes(path);
         if s.ends_with("/.codex/history.jsonl") {
             return self.parse_history_pointer(path);
         }
@@ -66,13 +73,26 @@ impl CodexSessionJsonlParser {
         // 1) read last ~N lines
         // 2) take the latest session_id
         // 3) resolve a matching session jsonl file and parse that.
-        let content = match std::fs::read_to_string(history_path) {
-            Ok(c) => c,
+        // Avoid reading the whole file into memory: keep a ring buffer of the last N lines.
+        let file = match std::fs::File::open(history_path) {
+            Ok(f) => f,
             Err(e) => return ParseResult::Failure(ParseError::Io(e)),
         };
+        let mut last_lines: VecDeque<String> = VecDeque::with_capacity(5000);
+        let reader = BufReader::new(file);
+        for line in reader.lines() {
+            let line = match line {
+                Ok(l) => l,
+                Err(e) => return ParseResult::Failure(ParseError::Io(e)),
+            };
+            if last_lines.len() == 5000 {
+                last_lines.pop_front();
+            }
+            last_lines.push_back(line);
+        }
 
         let mut latest_session_id: Option<String> = None;
-        for line in content.lines().rev().take(5000) {
+        for line in last_lines.iter().rev() {
             let line = line.trim();
             if line.is_empty() {
                 continue;
@@ -167,10 +187,16 @@ impl CodexSessionJsonlParser {
             match kind {
                 "session_meta" => {
                     if conversation_id.is_none() {
-                        conversation_id = payload.get("id").and_then(|v| v.as_str()).map(|s| s.to_string());
+                        conversation_id = payload
+                            .get("id")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string());
                     }
                     if model.is_none() {
-                        model = payload.get("model_provider").and_then(|v| v.as_str()).map(|s| s.to_string());
+                        model = payload
+                            .get("model_provider")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string());
                     }
                 }
                 "response_item" => {
@@ -185,7 +211,11 @@ impl CodexSessionJsonlParser {
         files_touched.dedup();
 
         let conversation_id = conversation_id
-            .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_string()))
+            .or_else(|| {
+                path.file_stem()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s.to_string())
+            })
             .unwrap_or_else(|| "unknown".to_string());
 
         let session_id = generate_session_hash("codex", &conversation_id);
@@ -216,7 +246,12 @@ impl CodexSessionJsonlParser {
         }
     }
 
-    fn parse_response_item(&self, payload: &Value, trace: &mut SessionTrace, files: &mut Vec<String>) {
+    fn parse_response_item(
+        &self,
+        payload: &Value,
+        trace: &mut SessionTrace,
+        files: &mut Vec<String>,
+    ) {
         // Tool call shape (no role, has name+arguments)
         if payload.get("name").is_some() && payload.get("arguments").is_some() {
             let tool_name = payload
@@ -256,12 +291,23 @@ impl CodexSessionJsonlParser {
         // Normal role+content messages
         let role = payload.get("role").and_then(|v| v.as_str());
         let text = extract_codex_content_text(payload)
-            .or_else(|| payload.get("summary").and_then(|v| v.as_str()).map(|s| s.to_string()))
+            .or_else(|| {
+                payload
+                    .get("summary")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+            })
             .unwrap_or_default();
 
         match role {
-            Some("user") => trace.add_message(TraceMessage::User { text, timestamp: None }),
-            Some("assistant") => trace.add_message(TraceMessage::Assistant { text, timestamp: None }),
+            Some("user") => trace.add_message(TraceMessage::User {
+                text,
+                timestamp: None,
+            }),
+            Some("assistant") => trace.add_message(TraceMessage::Assistant {
+                text,
+                timestamp: None,
+            }),
             Some("system") => {}
             _ => {}
         }
@@ -293,27 +339,34 @@ fn resolve_codex_session_file(session_id: &str) -> Option<PathBuf> {
         home.join(".codex/archived_sessions"),
     ];
 
+    let mut budget = 50_000usize;
     for base in candidates {
         if !base.exists() {
             continue;
         }
-        if let Some(found) = walk_find_first(&base, session_id, 0, 6, 50_000) {
+        if let Some(found) = walk_find_first(&base, session_id, 0, 6, &mut budget) {
             return Some(found);
         }
     }
     None
 }
 
-fn walk_find_first(dir: &Path, needle: &str, depth: usize, max_depth: usize, mut budget: usize) -> Option<PathBuf> {
-    if depth > max_depth || budget == 0 {
+fn walk_find_first(
+    dir: &Path,
+    needle: &str,
+    depth: usize,
+    max_depth: usize,
+    budget: &mut usize,
+) -> Option<PathBuf> {
+    if depth > max_depth || *budget == 0 {
         return None;
     }
     let entries = std::fs::read_dir(dir).ok()?;
     for entry in entries.flatten() {
-        if budget == 0 {
+        if *budget == 0 {
             return None;
         }
-        budget -= 1;
+        *budget -= 1;
         let p = entry.path();
         if p.is_dir() {
             if let Some(found) = walk_find_first(&p, needle, depth + 1, max_depth, budget) {

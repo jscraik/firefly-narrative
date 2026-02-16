@@ -14,9 +14,22 @@ use crate::story_anchors::refs::{ATTRIBUTION_REF_CANONICAL, ATTRIBUTION_REF_LEGA
 use crate::DbState;
 use git2::{Oid, Repository, Signature};
 use serde::Serialize;
+use std::{env, fs, path::PathBuf};
 use tauri::Manager;
 use tauri::State;
-use std::{fs, path::PathBuf};
+
+fn find_executable_on_path(candidates: &[&str]) -> Option<PathBuf> {
+    let path = env::var_os("PATH")?;
+    for dir in env::split_paths(&path) {
+        for name in candidates {
+            let p = dir.join(name);
+            if p.is_file() {
+                return Some(p);
+            }
+        }
+    }
+    None
+}
 
 /// Check result for git notes fetch configuration
 #[derive(Debug, Serialize)]
@@ -493,27 +506,32 @@ pub async fn install_repo_hooks(
     // 2) "narrative-cli" on PATH (cargo install)
     //
     // Then copy into app_data_dir so hooks can reference a stable absolute path.
-    let cli_dest = app_data_dir.join("narrative-cli");
+    let exe_name = if cfg!(windows) {
+        "narrative-cli.exe"
+    } else {
+        "narrative-cli"
+    };
+    let cli_dest = app_data_dir.join(exe_name);
 
     let mut candidates: Vec<PathBuf> = Vec::new();
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
-            candidates.push(dir.join("narrative-cli"));
-        }
-    }
-    if let Ok(out) = std::process::Command::new("which")
-        .arg("narrative-cli")
-        .output()
-    {
-        if out.status.success() {
-            let p = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if !p.is_empty() {
-                candidates.push(PathBuf::from(p));
+            candidates.push(dir.join(exe_name));
+            // Some dev setups may have the binary without an extension even on Windows shells.
+            if cfg!(windows) {
+                candidates.push(dir.join("narrative-cli"));
             }
         }
     }
+    if let Some(found) = find_executable_on_path(if cfg!(windows) {
+        &["narrative-cli.exe", "narrative-cli"]
+    } else {
+        &["narrative-cli"]
+    }) {
+        candidates.push(found);
+    }
 
-    let source = candidates.into_iter().find(|p| p.exists()).ok_or_else(|| {
+    let source = candidates.into_iter().find(|p| p.is_file()).ok_or_else(|| {
         "Narrative CLI not found.\n\nTo enable Story Anchors hooks, install narrative-cli (one time):\n  cd src-tauri && cargo install --path . --bin narrative-cli\n\nThen click “Install hooks” again.".to_string()
     })?;
 
@@ -521,7 +539,14 @@ pub async fn install_repo_hooks(
     fs::copy(&source, &cli_dest).map_err(|e| format!("Failed to install narrative-cli: {e}"))?;
     hooks_impl::ensure_executable(&cli_dest)?;
 
-    hooks_impl::install_repo_hooks_by_id(&db.0, repo_id, &db_path_str, &cli_dest.to_string_lossy()).await
+    // Git hooks run under `sh`; prefer forward slashes for Windows compatibility (Git Bash / MSYS).
+    let cli_path_for_hook = if cfg!(windows) {
+        cli_dest.to_string_lossy().replace('\\', "/")
+    } else {
+        cli_dest.to_string_lossy().to_string()
+    };
+
+    hooks_impl::install_repo_hooks_by_id(&db.0, repo_id, &db_path_str, &cli_path_for_hook).await
 }
 
 #[tauri::command(rename_all = "camelCase")]

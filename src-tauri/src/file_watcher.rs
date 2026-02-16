@@ -5,6 +5,7 @@
 
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Arc};
@@ -28,19 +29,21 @@ pub fn start_session_watcher(
             //
             // - Cursor: prefer ~/.cursor/composer (sessions live there).
             // - Codex: prefer ~/.codex/logs (session-like logs live there; ~/.codex/log is internal).
-            let p_str = p.to_string_lossy();
-            if p_str.ends_with("/.cursor") {
+            if p.file_name().and_then(|s| s.to_str()) == Some(".cursor") {
                 let composer = p.join("composer");
                 if composer.exists() {
                     return Some(composer);
                 }
             }
-            if p_str.contains("/.codex/log") && !p_str.contains("/.codex/logs") {
-                if let Some(parent) = p.parent() {
-                    let logs = parent.join("logs");
-                    if logs.exists() {
-                        return Some(logs);
-                    }
+            let is_codex_internal_log_root = p.file_name() == Some(OsStr::new("log"))
+                && p.parent()
+                    .and_then(|parent| parent.file_name())
+                    .and_then(|s| s.to_str())
+                    == Some(".codex");
+            if is_codex_internal_log_root {
+                let logs = p.parent().unwrap().join("logs");
+                if logs.exists() {
+                    return Some(logs);
                 }
                 // Drop invalid/unsupported codex log roots.
                 return None;
@@ -219,7 +222,7 @@ impl Default for PendingEntry {
 /// Check if a path is a session file we care about
 fn is_session_file(path: &Path) -> bool {
     let ext = path.extension().and_then(|e| e.to_str());
-    let path_str = path.to_string_lossy();
+    let path_str = path.to_string_lossy().replace('\\', "/");
 
     // Codex sessions:
     // - ~/.codex/sessions/**/*.jsonl
@@ -262,7 +265,9 @@ fn is_session_file(path: &Path) -> bool {
         }
         Some("database") => {
             // Cursor uses SQLite .database files; restrict to composer DB.
-            path_str.contains(".cursor") && path_str.contains("/composer/") && path_str.ends_with("composer.database")
+            path_str.contains(".cursor")
+                && path_str.contains("/composer/")
+                && path_str.ends_with("composer.database")
         }
         _ => false,
     }
@@ -270,7 +275,7 @@ fn is_session_file(path: &Path) -> bool {
 
 /// Detect which AI tool a file belongs to based on its path
 fn detect_tool_from_path(path: &Path) -> String {
-    let path_str = path.to_string_lossy();
+    let path_str = path.to_string_lossy().replace('\\', "/");
 
     if path_str.contains(".claude") {
         "claude_code".to_string()
@@ -319,7 +324,8 @@ mod tests {
         assert!(is_session_file(&PathBuf::from(
             "/home/user/.cursor/composer/composer.database"
         )));
-        assert!(is_session_file(&PathBuf::from(
+        // Cursor produces many non-session JSON files; auto-ingest restricts to composer artifacts.
+        assert!(!is_session_file(&PathBuf::from(
             "/home/user/.cursor/sessions/session.json"
         )));
 

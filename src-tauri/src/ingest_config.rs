@@ -169,7 +169,7 @@ fn normalize_codex_watch_paths(paths: &mut WatchPaths) {
     // De-dupe and upgrade Codex watch paths.
     let mut out: Vec<String> = Vec::new();
     for p in paths.codex_logs.iter() {
-        let mut p = p.trim().to_string();
+        let mut p = p.trim().replace('\\', "/");
         if p.is_empty() {
             continue;
         }
@@ -189,8 +189,14 @@ fn normalize_codex_watch_paths(paths: &mut WatchPaths) {
     if let Some(home) = dirs::home_dir() {
         let recommended = [
             ("~/.codex/sessions", home.join(".codex/sessions").exists()),
-            ("~/.codex/archived_sessions", home.join(".codex/archived_sessions").exists()),
-            ("~/.codex/history.jsonl", home.join(".codex/history.jsonl").exists()),
+            (
+                "~/.codex/archived_sessions",
+                home.join(".codex/archived_sessions").exists(),
+            ),
+            (
+                "~/.codex/history.jsonl",
+                home.join(".codex/history.jsonl").exists(),
+            ),
         ];
         for (p, exists) in recommended {
             if !exists {
