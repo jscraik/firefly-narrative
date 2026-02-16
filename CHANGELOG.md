@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.1](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.6.0...narrative-desktop-mvp-v0.6.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* **ci:** stabilize e2e selectors and lighthouse preview port ([52763aa](https://github.com/jscraik/narrative/commit/52763aa790e54ecac1f9a0168acb84f4f1bc1007))
+* **ingest:** codex lookup budget + hook shell escaping ([834dab9](https://github.com/jscraik/narrative/commit/834dab95d417b99e65bd4a137cd5ac1b29eedc2d))
+* **ingest:** windows-safe codex watch + hooks cli lookup ([065c4f3](https://github.com/jscraik/narrative/commit/065c4f34d4326cb0da5f5852ed195197bfbe0371))
+* **story-anchors:** bundle narrative-cli resource ([cd21a1d](https://github.com/jscraik/narrative/commit/cd21a1dcacc558b1ef33ade4550719bb5bd9ca24))
+* **tooling:** token lint allowlist windows path ([d6c521a](https://github.com/jscraik/narrative/commit/d6c521a127824596539c671e2bfd25bbf964b241))
+* **ui:** dialog close semantics + menu pointer ([98a936d](https://github.com/jscraik/narrative/commit/98a936dd54e59825910bf9b0909f92e884d41fcc))
+* **ui:** dropdown menu a11y + close confirm dialog ([6b71799](https://github.com/jscraik/narrative/commit/6b71799f612cd6cf0b32c75f9c3a4d14ced2322f))
+* **ui:** restore design system tokens in TopNav ([71a994b](https://github.com/jscraik/narrative/commit/71a994b61cdcda67a9d75ac86d267e229c0d3ef8))
+* **ui:** tokens + ingest + docs baseline ([b40293d](https://github.com/jscraik/narrative/commit/b40293d2ea7a9bbdc814b00116fe4be45aa43735))
+
 ## [0.6.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.5.0...narrative-desktop-mvp-v0.6.0) (2026-02-15)
 
 
