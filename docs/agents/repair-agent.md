@@ -44,11 +44,11 @@ pnpm repair:agent -- --mode=webhook --repo=https://github.com/OWNER/REPO.git --b
 - `REPAIR_REPO_URL` / `REPAIR_BRANCH`
 - `REPAIR_WORKDIR` (default: OS temp dir `repair-agent/`)
 - `REPAIR_LINT_FIX_CMD` (default: `pnpm biome check src src-tauri/src --write`)
-- `REPAIR_LLM_CMD` (optional) command that accepts JSON via stdin and emits JSON with a `patch` field
+- `REPAIR_LLM_CMD` (optional) command that accepts JSON via `stdin` and emits JSON with a `patch` field
 
 ### LLM command contract
 
-If `REPAIR_LLM_CMD` is set, the script will call it with JSON input:
+If you set `REPAIR_LLM_CMD`, the script calls it with JSON input:
 
 ```json
 {
@@ -72,10 +72,10 @@ The command must return JSON:
 }
 ```
 
-The patch is applied with `git apply` (Edit tool equivalent).
+The script applies the patch with `git apply` (like the Edit tool).
 
 ## Notes
 
 - Requires `git` and `gh` (GitHub CLI) for CI log access + PR creation.
-- Ensure `gh auth login` is configured in the environment running the agent.
-- Lint auto-fixes run before LLM fixes when lint failures are detected.
+- Run `gh auth login` in the environment running the agent.
+- Lint auto-fixes run before LLM fixes when the agent detects lint failures.

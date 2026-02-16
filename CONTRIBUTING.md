@@ -1,104 +1,110 @@
 # Contributing to Narrative
 
-Thank you for your interest in contributing! Narrative is a desktop app built with **Tauri v2** (Rust backend + React frontend) that helps developers capture the story behind their code.
+Thanks for your interest in contributing. Narrative is a desktop app built with **tauri v2** (Rust backend + React frontend) that helps developers capture the story behind their code.
 
-## Quick Start
+## Scope
+
+This guide covers how to propose, make, and submit changes safely.
+
+For behavior expectations, see [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+For security reporting, see [`SECURITY.md`](SECURITY.md).
+For user support channels, see [`SUPPORT.md`](SUPPORT.md).
+
+## Quick start
 
 ### Prerequisites
 
-- Node.js (18+) + pnpm
+- Node.js + pnpm
 - Rust toolchain (latest stable)
 - Git
 
-### Setup
+### Local setup
+
+1. Fork and clone the repo.
+2. Install dependencies.
+3. Start the app.
 
 ```bash
-# Clone the repository
 git clone https://github.com/jscraik/narrative.git
 cd narrative
-
-# Install dependencies
 pnpm install
-
-# Run in development mode
 pnpm tauri dev
 ```
 
-## Development Workflow
+## Development workflow
 
-### Project Structure
+### Branching
 
-```
-narrative/
-├── src/                    # React frontend
-│   ├── ui/                # UI components
-│   ├── core/              # Business logic
-│   └── lib/               # Utilities
-├── src-tauri/src/         # Rust backend
-│   ├── import/            # Session parsers
-│   ├── story_anchors/     # Git notes integration
-│   └── ...
-└── docs/                  # Documentation
-```
+- Create a focused branch for each change (`feature/...`, `fix/...`, or similar).
+- Keep pull requests small and reviewable.
 
-### Running Tests
+### Required checks
+
+Run these before opening a pull request:
 
 ```bash
-# TypeScript type check
 pnpm typecheck
-
-# Lint (Biome)
 pnpm lint
-
-# Rust checks
-cd src-tauri && cargo check && cargo clippy
+pnpm test
 ```
 
-### Making Changes
+If your change touches docs, also run:
 
-1. **Create a branch**: `git checkout -b feature/my-feature`
-2. **Make your changes** with clear, focused commits
-3. **Test**: Run the test commands above
-4. **Document**: Update relevant docs if needed
-5. **Submit**: Open a PR with a clear description
+```bash
+pnpm docs:lint
+```
 
-## What to Contribute
+If your change touches Rust backend behavior, run:
 
-### Good First Issues
+```bash
+cd src-tauri
+cargo check
+cargo clippy
+```
 
-Look for issues labeled [`good first issue`](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). These are specifically chosen for new contributors.
+## Pull request process
 
-### Areas We Need Help
+1. Make your change with clear, focused commits.
+2. Update documentation when behavior or commands change.
+3. Confirm checks pass locally.
+4. Open a PR using the project PR template.
+5. Respond to review feedback and keep scope tight.
 
-- **Parser Support**: Adding support for new AI tools (session log parsers)
-- **UI/UX**: Accessibility, responsive design, visual polish
-- **Documentation**: Tutorials, guides, API docs
-- **Testing**: Unit tests, integration tests, manual QA
-- **Bug Fixes**: Check the [bug label](../../issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+## What to contribute
 
-### Code Style
+### Good first issues
 
-- **Rust**: Follow `cargo fmt` and `cargo clippy` defaults
-- **TypeScript/React**: Biome handles formatting (run `pnpm lint`)
-- **Commits**: Use conventional commits (`feat:`, `fix:`, `docs:`, etc.)
+Look for issues labeled [`good first issue`](https://github.com/jscraik/narrative/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). Maintainers curate these for new contributors.
 
-## Getting Help
+### Areas we need help
 
-- **Discord**: [Join our server](https://discord.gg/YOUR_INVITE) for real-time chat
-- **Issues**: Open an issue for bugs or feature requests
-- **Discussions**: Use GitHub Discussions for questions
+- Parser support for new AI tools (session log parsers)
+- UI/UX accessibility and polish
+- Documentation and onboarding
+- Test coverage and regression prevention
+- Bug fixes from the [bug label](https://github.com/jscraik/narrative/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+
+### Code style
+
+- Rust: follow `cargo fmt` and `cargo clippy` defaults
+- TypeScript/React: Biome handles formatting (`pnpm lint`)
+- Commits: use conventional commits (`feat:`, `fix:`, `docs:`, etc.)
+
+## Verification
+
+After opening a PR, ensure CI passes and keep branch history clean.
+
+## Getting help
+
+- Bugs: open the bug report template
+- Features: open the feature request template
+- Security concerns: use [`SECURITY.md`](SECURITY.md) and avoid public issues
+- General support: use [`SUPPORT.md`](SUPPORT.md)
 
 ## Recognition
 
-Contributors will be:
-- Listed in the README
-- Mentioned in release notes
-- Given credit in relevant documentation
-
-## Code of Conduct
-
-Be respectful, constructive, and welcoming. We're building this together.
+We credit contributors in project history and release notes.
 
 ---
 
-Questions? Reach out to @jscraik or open a discussion.
+Questions? Open a support issue or tag [@jscraik](https://github.com/jscraik).

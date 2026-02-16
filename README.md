@@ -1,19 +1,21 @@
-<p align="center">
-  <img src=".agent/ui-final-1-demo.png" width="700" alt="Narrative Desktop - Version control as a narrative medium">
-</p>
+# Narrative
 
-<h1 align="center">Narrative</h1>
+<p align="center">
+  <img src=".agent/ui-demo-clean.png" width="700" alt="Narrative Desktop demo timeline and AI attribution panel">
+</p>
 
 <p align="center">
   <strong>Version control as a narrative medium</strong><br>
-  Capture the story behind your code — from AI prompts to commits
+  Capture the story behind your code - from AI prompts to commits
 </p>
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> •
+  <a href="#verify-your-setup">Verify</a> •
+  <a href="#troubleshooting">Troubleshooting</a> •
   <a href="#features">Features</a> •
   <a href="docs/README.md">Docs</a> •
-  <a href="#contributing">Contributing</a>
+  <a href="#community--support">Support</a>
 </p>
 
 ---
@@ -25,7 +27,7 @@ When you code with AI (Claude Code, Codex, Cursor), the rich context — your in
 **Narrative captures the full story:** AI sessions → intent → commits → timeline.
 
 <p align="center">
-  <img src=".agent/ui-final-2-repo.png" width="600" alt="Repository timeline view">
+  <img src=".agent/ui-repo.png" width="600" alt="Repository view with empty-state timeline">
 </p>
 
 ---
@@ -45,7 +47,7 @@ When you code with AI (Claude Code, Codex, Cursor), the rich context — your in
 
 ### Download
 
-Grab the latest release for macOS, Linux, or Windows from the [Releases page](../../releases).
+Grab the latest release for macOS, Linux, or Windows from the [GitHub Releases page](https://github.com/jscraik/narrative/releases).
 
 ### Build from Source
 
@@ -58,6 +60,23 @@ pnpm tauri dev
 
 Then open a git repository and see your commit history with narrative context.
 
+## Verify Your Setup
+
+Run these checks after install:
+
+```bash
+pnpm typecheck
+pnpm test
+```
+
+Expected result: both commands exit successfully.
+
+## Troubleshooting
+
+- `sh: tsc: command not found` -> run `pnpm install` from the repo root.
+- tauri build/runtime dependency issues -> follow [`docs/agents/tauri.md`](docs/agents/tauri.md).
+- App opens but no data appears -> open a valid git repository first, then import sessions.
+
 ---
 
 ## Documentation
@@ -69,9 +88,18 @@ Then open a git repository and see your commit history with narrative context.
 
 ---
 
+## Community & Support
+
+- Support channels and triage guidance: [`SUPPORT.md`](SUPPORT.md)
+- Security reporting process: [`SECURITY.md`](SECURITY.md)
+- Contributor workflow: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- Community behavior expectations: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+
+---
+
 ## Contributing
 
-We'd love your help! Narrative is built with **Tauri v2** (Rust backend + React frontend).
+We'd love your help. Narrative uses **tauri v2** (Rust backend + React frontend).
 
 ### Quick Setup
 
@@ -82,28 +110,28 @@ pnpm tauri dev
 
 ### Ways to Contribute
 
-- **🐛 Bug Reports** — [Open an issue](../../issues/new?template=bug_report.yml)
-- **💡 Feature Requests** — [Request a feature](../../issues/new?template=feature_request.yml)
-- **🔧 Code** — Look for [good first issues](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-- **📖 Documentation** — Help improve our docs
-- **🧪 Testing** — Try it out and report your experience
+- **Bug reports** - [Open an issue](https://github.com/jscraik/narrative/issues/new?template=bug_report.yml)
+- **Feature requests** - [Request a feature](https://github.com/jscraik/narrative/issues/new?template=feature_request.yml)
+- **Code** - Look for [good first issues](https://github.com/jscraik/narrative/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+- **Documentation** - Help improve docs and examples
+- **Testing** - Test behavior across platforms
 
 ---
 
-## Tech Stack
+## Tech stack
 
-- **Frontend:** React 18 + TypeScript + Tailwind CSS v4 + Vite
-- **Backend:** Rust (Tauri v2) + sqlx + git2
+- **Frontend:** React 19 + TypeScript + Tailwind CSS v4 + Vite
+- **Backend:** Rust (tauri v2) + git2
 - **Database:** SQLite (tauri-plugin-sql)
 - **Build:** Cargo (Rust) + pnpm (Node)
 
 ---
 
-## What Gets Written to Your Repo
+## What gets written to your repo
 
 When you open a repo, Narrative creates a `.narrative/` folder:
 
-```
+```text
 .narrative/
 ├── meta/
 │   ├── repo.json
@@ -129,6 +157,19 @@ These files are **committable** — share the narrative layer with your team.
 - [ ] "Speculate" mode — predict file changes from history
 
 ---
+
+## Maintainer
+
+- [@jscraik](https://github.com/jscraik)
+
+## License
+
+Use this project under the **Apache-2.0** license. See [`LICENSE`](LICENSE).
+
+## Metadata
+
+- Owner: @jscraik
+- Last updated: 2026-02-16
 
 <p align="center">
   Built with ❤️ by <strong>brAInwav</strong>

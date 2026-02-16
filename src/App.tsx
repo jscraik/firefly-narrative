@@ -21,6 +21,22 @@ import { indexRepo } from './core/repo/indexer';
 
 type AgentationComponentType = (typeof import('agentation'))['Agentation'];
 
+function normalizeWebhookUrl(url: string | undefined): string | undefined {
+  if (!url?.trim()) {
+    return undefined;
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return undefined;
+    }
+    return parsed.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 const EMPTY_MODEL: BranchViewModel = {
   source: 'git',
   title: '',
@@ -107,6 +123,8 @@ export default function App() {
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter | null>(null);
   const [isExitingFilteredView, setIsExitingFilteredView] = useState(false);
   const [AgentationComponent, setAgentationComponent] = useState<AgentationComponentType | null>(null);
+  const rawAgentationWebhookUrl = import.meta.env.VITE_AGENTATION_WEBHOOK_URL as string | undefined;
+  const agentationWebhookUrl = normalizeWebhookUrl(rawAgentationWebhookUrl);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -126,6 +144,19 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
+    if (!rawAgentationWebhookUrl) {
+      console.warn('[Agentation] VITE_AGENTATION_WEBHOOK_URL is not set. Webhook events are disabled.');
+      return;
+    }
+
+    if (!agentationWebhookUrl) {
+      console.warn('[Agentation] VITE_AGENTATION_WEBHOOK_URL is invalid. Use an http(s) URL.');
+    }
+  }, [rawAgentationWebhookUrl, agentationWebhookUrl]);
 
   // Clear dashboard filter when switching away from repo mode (optional UX enhancement)
   useEffect(() => {
@@ -379,7 +410,7 @@ export default function App() {
       {import.meta.env.DEV && AgentationComponent && (
         <AgentationComponent
           endpoint="http://localhost:4747"
-          webhookUrl={import.meta.env.VITE_AGENTATION_WEBHOOK_URL}
+          webhookUrl={agentationWebhookUrl}
           onSessionCreated={(sessionId) => {
             console.log('Session started:', sessionId);
           }}

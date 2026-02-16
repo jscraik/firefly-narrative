@@ -192,7 +192,7 @@ function getUserFriendlyError(error: string): { title: string; message: string; 
                 <button
                   type="button"
                   onClick={onUpdate}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-strong text-white text-xs font-medium hover:bg-surface-strong-hover transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-blue text-text-inverted text-xs font-medium hover:opacity-90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-1"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download & Install
@@ -201,7 +201,7 @@ function getUserFriendlyError(error: string): { title: string; message: string; 
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="px-3 py-1.5 rounded-lg border border-border-light text-text-secondary text-xs font-medium hover:bg-bg-subtle transition-colors"
+                    className="px-3 py-1.5 rounded-lg border border-border-light bg-bg-subtle text-text-primary text-xs font-medium hover:bg-bg-hover transition-colors"
                   >
                     Later
                   </button>
