@@ -7,7 +7,8 @@ dist
 src-tauri/target
 src-tauri/gen
 src-tauri/.cargo
-src-tauri/bin
+src-tauri/bin/*
+!src-tauri/bin/.gitkeep
 
 # Logs
 npm-debug.log*

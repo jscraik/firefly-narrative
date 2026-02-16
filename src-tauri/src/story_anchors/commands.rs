@@ -31,6 +31,36 @@ fn find_executable_on_path(candidates: &[&str]) -> Option<PathBuf> {
     None
 }
 
+fn find_packaged_narrative_cli(app: &tauri::AppHandle) -> Option<PathBuf> {
+    // If we bundled a prebuilt CLI (via `bundle.resources: ["bin/*"]`),
+    // it will be available under the app's resource directory.
+    let resource_dir = app.path().resource_dir().ok()?;
+    let bin_dir = resource_dir.join("bin");
+    let entries = fs::read_dir(&bin_dir).ok()?;
+
+    for entry in entries.flatten() {
+        let p = entry.path();
+        if !p.is_file() {
+            continue;
+        }
+        let name = p.file_name().and_then(|s| s.to_str()).unwrap_or("");
+        if !name.starts_with("narrative-cli-") {
+            continue;
+        }
+        if cfg!(windows) {
+            if p.extension().and_then(|s| s.to_str()) != Some("exe") {
+                continue;
+            }
+        } else if p.extension().is_some() {
+            // Non-Windows builds should produce an extension-less binary.
+            continue;
+        }
+        return Some(p);
+    }
+
+    None
+}
+
 /// Check result for git notes fetch configuration
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -528,6 +558,9 @@ pub async fn install_repo_hooks(
     } else {
         &["narrative-cli"]
     }) {
+        candidates.push(found);
+    }
+    if let Some(found) = find_packaged_narrative_cli(&app) {
         candidates.push(found);
     }
 
