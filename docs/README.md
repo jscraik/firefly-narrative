@@ -18,6 +18,11 @@ Short index of the repo’s documentation surfaces.
 - `docs/agents/tauri.md` — tauri permissions + data locations
 - `docs/agents/repo-structure.md` — repo layout overview
 - `docs/agents/repair-agent.md` — autonomous CI repair agent workflow
+- `docs/assets/screenshots/` — app screenshots for README/docs
+- `docs/assets/verification/` — verification captures and snapshots
+- `docs/reports/` — audit and post-merge review reports
+- `docs/notes/plans/` — project planning notes
+- `docs/notes/archive/` — archived root-note files preserved for history
 
 ## Doc tooling
 
@@ -50,4 +55,4 @@ npx -y markdownlint-cli2 README.md docs/**/*.md brand/README.md
 ## Meta
 
 - Owner: repo maintainers (update as needed)
-- Last updated: 2026-02-05
+- Last updated: 2026-02-16

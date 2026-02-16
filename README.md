@@ -1,7 +1,7 @@
 # Narrative
 
 <p align="center">
-  <img src=".agent/ui-demo-clean.png" width="700" alt="Narrative Desktop demo timeline and AI attribution panel">
+  <img src="docs/assets/screenshots/ui-demo-clean.png" width="700" alt="Narrative Desktop demo timeline and AI attribution panel">
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@ When you code with AI (Claude Code, Codex, Cursor), the rich context — your in
 **Narrative captures the full story:** AI sessions → intent → commits → timeline.
 
 <p align="center">
-  <img src=".agent/ui-repo.png" width="600" alt="Repository view with empty-state timeline">
+  <img src="docs/assets/screenshots/ui-repo.png" width="600" alt="Repository view with empty-state timeline">
 </p>
 
 ---

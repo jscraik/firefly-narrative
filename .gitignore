@@ -51,6 +51,8 @@ coverage/
 
 # Local tooling artifacts
 .playwright-mcp/
+.agent/
+tmp/
 *.bak.*
 app-state.png
 app-working.png
