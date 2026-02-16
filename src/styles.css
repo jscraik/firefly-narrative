@@ -69,9 +69,16 @@
 
   /* Surfaces */
   --background: var(--foundation-bg-light-1);
-  --card: var(--foundation-bg-light-1);
-  --secondary: var(--foundation-bg-light-2);
-  --muted: var(--foundation-bg-light-3);
+  /* Secondary/tertiary surface mapping
+   * Primary   → page/background (light-1)
+   * Secondary → card surfaces    (light-2)
+   * Tertiary  → hovers/subtle    (light-3)
+   */
+  --card: var(--foundation-bg-light-2);
+  --secondary: var(--foundation-bg-light-3);
+  /* Provide a slightly softer subtle background than pure light-3 to improve layering
+     while Design Studio exposes only 3 background steps. */
+  --muted: color-mix(in oklab, var(--foundation-bg-light-3) 60%, var(--foundation-bg-light-1) 40%);
 
   /* Text */
   --foreground: var(--foundation-text-light-primary);
@@ -134,15 +141,18 @@
 
   /* Shadow aliases used by a few custom components */
   --shadow-card: var(--shadow-sm);
-  --shadow-elevated: var(--shadow-md);
+  /* Reduce hover glow around cards: smaller offset/blur and slightly lower opacity */
+  --shadow-elevated: 0 6px 16px 0 color-mix(in oklab, var(--foreground) 10%, transparent);
 }
 
 :root[data-theme="dark"] {
   /* Surfaces */
   --background: var(--foundation-bg-dark-1);
-  --card: var(--foundation-bg-dark-1);
-  --secondary: var(--foundation-bg-dark-2);
-  --muted: var(--foundation-bg-dark-3);
+  /* Primary/Secondary/Tertiary mapping for dark mode mirrors light mode */
+  --card: var(--foundation-bg-dark-2);
+  --secondary: var(--foundation-bg-dark-3);
+  /* Slightly blend tertiary with primary to create a softer subtle layer in dark */
+  --muted: color-mix(in oklab, var(--foundation-bg-dark-3) 70%, var(--foundation-bg-dark-1) 30%);
 
   /* Text */
   --foreground: var(--foundation-text-dark-primary);

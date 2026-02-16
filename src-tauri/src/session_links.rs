@@ -21,7 +21,8 @@
 //! Resolution Summary Backend fix 2: "Wrap in transaction, UPDATE on SQLITE_CONSTRAINT."
 
 use crate::models::SessionLink;
-use sqlx::{Row, SqlitePool};
+use crate::DbState;
+use sqlx::Row;
 
 /// Create or update a session link (upsert).
 ///
@@ -49,7 +50,7 @@ use sqlx::{Row, SqlitePool};
 /// Build Plan "Concurrent Import Handling" section defines upsert pattern.
 #[tauri::command(rename_all = "camelCase")]
 pub async fn create_or_update_session_link(
-    pool: tauri::State<'_, SqlitePool>,
+    db_state: tauri::State<'_, DbState>,
     repo_id: i64,
     session_id: String,
     commit_sha: String,
@@ -73,7 +74,7 @@ pub async fn create_or_update_session_link(
         return Err("commit_sha must be at least 4 characters".into());
     }
 
-    let db = pool.inner();
+    let db = db_state.0.as_ref();
 
     // Perform upsert using ON CONFLICT with parameter binding
     let result = sqlx::query(
@@ -118,10 +119,10 @@ pub async fn create_or_update_session_link(
 /// Build Plan Epic 2 Story 2.2.
 #[tauri::command(rename_all = "camelCase")]
 pub async fn get_session_links_for_repo(
-    pool: tauri::State<'_, SqlitePool>,
+    db_state: tauri::State<'_, DbState>,
     repo_id: i64,
 ) -> Result<Vec<SessionLink>, String> {
-    let db = pool.inner();
+    let db = db_state.0.as_ref();
 
     let rows = sqlx::query(
         r#"
@@ -171,11 +172,11 @@ pub async fn get_session_links_for_repo(
 /// Build Plan Epic 2 Story 2.2.
 #[tauri::command(rename_all = "camelCase")]
 pub async fn get_session_links_for_commit(
-    pool: tauri::State<'_, SqlitePool>,
+    db_state: tauri::State<'_, DbState>,
     repo_id: i64,
     commit_sha: String,
 ) -> Result<Vec<SessionLink>, String> {
-    let db = pool.inner();
+    let db = db_state.0.as_ref();
 
     let rows = sqlx::query(
         r#"
@@ -229,11 +230,11 @@ pub async fn get_session_links_for_commit(
 /// Build Plan Epic 2 Story 2.2.
 #[tauri::command(rename_all = "camelCase")]
 pub async fn delete_session_link(
-    pool: tauri::State<'_, SqlitePool>,
+    db_state: tauri::State<'_, DbState>,
     repo_id: i64,
     session_id: String,
 ) -> Result<(), String> {
-    let db = pool.inner();
+    let db = db_state.0.as_ref();
 
     sqlx::query("DELETE FROM session_links WHERE repo_id = $1 AND session_id = $2")
         .bind(repo_id)

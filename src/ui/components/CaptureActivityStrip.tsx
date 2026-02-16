@@ -98,7 +98,7 @@ export function CaptureActivityStrip(props: {
         <div className="fixed inset-0 z-50 animate-in fade-in duration-200">
           <button
             type="button"
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-[var(--overlay)]"
             onClick={closeDrawer}
             aria-label="Close"
           />

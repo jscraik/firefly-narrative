@@ -204,14 +204,14 @@ describe('attribution-api', () => {
     it('should return AI badge for >= 80%', () => {
       const style = getBadgeStyle(80);
       expect(style.label).toBe('AI');
-      expect(style.bg).toBe('bg-emerald-100');
-      expect(style.text).toBe('text-emerald-700');
+      expect(style.bg).toBe('bg-accent-green-bg');
+      expect(style.text).toBe('text-accent-green');
     });
 
     it('should return Mixed badge for 40-79%', () => {
       const style = getBadgeStyle(40);
       expect(style.label).toBe('Mixed');
-      expect(style.bg).toBe('bg-amber-100');
+      expect(style.bg).toBe('bg-accent-amber-bg');
       
       const style2 = getBadgeStyle(79);
       expect(style2.label).toBe('Mixed');
@@ -220,7 +220,7 @@ describe('attribution-api', () => {
     it('should return Low AI badge for 1-39%', () => {
       const style = getBadgeStyle(1);
       expect(style.label).toBe('Low AI');
-      expect(style.bg).toBe('bg-blue-100');
+      expect(style.bg).toBe('bg-accent-blue-bg');
       
       const style2 = getBadgeStyle(39);
       expect(style2.label).toBe('Low AI');
@@ -229,8 +229,8 @@ describe('attribution-api', () => {
     it('should return Human badge for 0%', () => {
       const style = getBadgeStyle(0);
       expect(style.label).toBe('Human');
-      expect(style.bg).toBe('bg-stone-100');
-      expect(style.text).toBe('text-stone-600');
+      expect(style.bg).toBe('bg-bg-page');
+      expect(style.text).toBe('text-text-secondary');
     });
   });
 });

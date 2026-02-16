@@ -18,6 +18,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "otel:smoke": "node scripts/otel-smoke.mjs",
+    "agentation:autopilot": "node scripts/agentation-autopilot.mjs",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:prepare-cli": "node scripts/prepare-narrative-cli.mjs",

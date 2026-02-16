@@ -307,7 +307,7 @@ export function SessionExcerpts({
           <p className="text-xs text-text-muted mb-4">Import from Claude, Cursor, or Kimi</p>
           <button
             type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-blue text-white text-sm font-medium hover:bg-accent-blue transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-blue text-accent-foreground text-sm font-medium hover:bg-accent-blue transition-colors shadow-sm"
             onClick={() => {
               // Dispatch custom event to open import panel
               window.dispatchEvent(new CustomEvent('narrative:open-import'));
