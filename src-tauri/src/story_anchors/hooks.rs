@@ -5,6 +5,22 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+fn shell_quote_sh(value: &str) -> String {
+    // Safely quote a string for POSIX `sh` using single quotes, escaping embedded `'` as: '\''.
+    // This prevents accidental expansion (e.g. `$HOME`) when hook scripts run.
+    let mut out = String::with_capacity(value.len() + 2);
+    out.push('\'');
+    for ch in value.chars() {
+        if ch == '\'' {
+            out.push_str("'\"'\"'");
+        } else {
+            out.push(ch);
+        }
+    }
+    out.push('\'');
+    out
+}
+
 fn resolve_hooks_dir(repo_root: &str) -> PathBuf {
     // Respect core.hooksPath if configured. Git allows this to be absolute or relative to repo root.
     // If unset, default to .git/hooks.
@@ -50,6 +66,8 @@ fn write_hook_file(path: &Path, content: &str) -> Result<(), String> {
 }
 
 pub fn build_post_commit_hook(db_path: &str, cli_path: &str) -> String {
+    let db_path = shell_quote_sh(db_path);
+    let cli_path = shell_quote_sh(cli_path);
     format!(
         r#"#!/bin/sh
 set +e
@@ -58,8 +76,8 @@ if [ -n "$NARRATIVE_HOOK_RUNNING" ]; then
   exit 0
 fi
 export NARRATIVE_HOOK_RUNNING=1
-export NARRATIVE_DB_PATH="{db_path}"
-export NARRATIVE_CLI_PATH="{cli_path}"
+export NARRATIVE_DB_PATH={db_path}
+export NARRATIVE_CLI_PATH={cli_path}
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 mkdir -p "$repo_root/.narrative/meta" 2>/dev/null
@@ -72,6 +90,8 @@ exit 0
 }
 
 pub fn build_post_merge_hook(db_path: &str, cli_path: &str) -> String {
+    let db_path = shell_quote_sh(db_path);
+    let cli_path = shell_quote_sh(cli_path);
     format!(
         r#"#!/bin/sh
 set +e
@@ -80,8 +100,8 @@ if [ -n "$NARRATIVE_HOOK_RUNNING" ]; then
   exit 0
 fi
 export NARRATIVE_HOOK_RUNNING=1
-export NARRATIVE_DB_PATH="{db_path}"
-export NARRATIVE_CLI_PATH="{cli_path}"
+export NARRATIVE_DB_PATH={db_path}
+export NARRATIVE_CLI_PATH={cli_path}
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 mkdir -p "$repo_root/.narrative/meta" 2>/dev/null
@@ -94,6 +114,8 @@ exit 0
 }
 
 pub fn build_post_rewrite_hook(db_path: &str, cli_path: &str) -> String {
+    let db_path = shell_quote_sh(db_path);
+    let cli_path = shell_quote_sh(cli_path);
     format!(
         r#"#!/bin/sh
 set +e
@@ -102,8 +124,8 @@ if [ -n "$NARRATIVE_HOOK_RUNNING" ]; then
   exit 0
 fi
 export NARRATIVE_HOOK_RUNNING=1
-export NARRATIVE_DB_PATH="{db_path}"
-export NARRATIVE_CLI_PATH="{cli_path}"
+export NARRATIVE_DB_PATH={db_path}
+export NARRATIVE_CLI_PATH={cli_path}
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 mkdir -p "$repo_root/.narrative/meta" 2>/dev/null

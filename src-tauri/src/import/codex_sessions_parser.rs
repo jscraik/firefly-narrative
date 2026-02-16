@@ -339,11 +339,13 @@ fn resolve_codex_session_file(session_id: &str) -> Option<PathBuf> {
         home.join(".codex/archived_sessions"),
     ];
 
-    let mut budget = 50_000usize;
     for base in candidates {
         if !base.exists() {
             continue;
         }
+        // Apply a per-root scan budget so a large `sessions/` directory does not prevent searching
+        // `archived_sessions/`, while still preventing runaway directory walks.
+        let mut budget = 50_000usize;
         if let Some(found) = walk_find_first(&base, session_id, 0, 6, &mut budget) {
             return Some(found);
         }
