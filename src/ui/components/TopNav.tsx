@@ -156,7 +156,7 @@ function ImportMenu(props: {
             <DropdownMenu.Item
               onSelect={onImportSession}
               className={clsx(
-                'flex w-full cursor-default select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors text-left',
+                'flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors text-left',
                 'text-text-secondary',
                 'data-[highlighted]:bg-bg-hover data-[highlighted]:text-text-primary'
               )}
@@ -168,7 +168,7 @@ function ImportMenu(props: {
             <DropdownMenu.Item
               onSelect={onImportKimiSession}
               className={clsx(
-                'flex w-full cursor-default select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors text-left',
+                'flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors text-left',
                 'text-text-secondary',
                 'data-[highlighted]:bg-bg-hover data-[highlighted]:text-text-primary'
               )}
@@ -180,7 +180,7 @@ function ImportMenu(props: {
             <DropdownMenu.Item
               onSelect={onImportAgentTrace}
               className={clsx(
-                'flex w-full cursor-default select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors text-left',
+                'flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors text-left',
                 'text-text-secondary',
                 'data-[highlighted]:bg-bg-hover data-[highlighted]:text-text-primary'
               )}

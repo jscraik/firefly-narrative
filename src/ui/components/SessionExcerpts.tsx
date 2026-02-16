@@ -243,7 +243,7 @@ function UnlinkConfirmDialog({
       variant="destructive"
       open={isOpen}
       onConfirm={onConfirm}
-      onCancel={onClose}
+      onClose={onClose}
     />
   );
 }

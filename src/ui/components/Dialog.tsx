@@ -24,7 +24,7 @@ export interface DialogProps {
   variant?: 'default' | 'destructive';
   open: boolean;
   onConfirm: () => void;
-  onCancel: () => void;
+  onClose: () => void;
 }
 
 export function Dialog({
@@ -35,7 +35,7 @@ export function Dialog({
   variant = 'default',
   open,
   onConfirm,
-  onCancel,
+  onClose,
 }: DialogProps) {
   const isDestructive = variant === 'destructive';
 
@@ -43,7 +43,7 @@ export function Dialog({
     <DialogPrimitive.Root
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen && open) onCancel();
+        if (!nextOpen && open) onClose();
       }}
     >
       <DialogPrimitive.Portal>
@@ -81,21 +81,20 @@ export function Dialog({
                 {cancelLabel}
               </button>
             </DialogPrimitive.Close>
-            <button
-              type="button"
-              className={clsx(
-                'rounded-md px-3 py-1.5 text-sm transition',
-                isDestructive
-                  ? 'bg-accent-red-bg text-accent-red hover:bg-accent-red-light border border-accent-red-light'
-                  : 'bg-surface-strong text-text-inverted hover:bg-surface-strong-hover'
-              )}
-              onClick={() => {
-                onConfirm();
-                onCancel();
-              }}
-            >
-              {confirmLabel}
-            </button>
+            <DialogPrimitive.Close asChild>
+              <button
+                type="button"
+                className={clsx(
+                  'rounded-md px-3 py-1.5 text-sm transition',
+                  isDestructive
+                    ? 'bg-accent-red-bg text-accent-red hover:bg-accent-red-light border border-accent-red-light'
+                    : 'bg-surface-strong text-text-inverted hover:bg-surface-strong-hover'
+                )}
+                onClick={onConfirm}
+              >
+                {confirmLabel}
+              </button>
+            </DialogPrimitive.Close>
           </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
