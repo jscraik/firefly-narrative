@@ -133,8 +133,8 @@ importers:
         specifier: ^2.2.1
         version: 2.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       agentation-mcp:
-        specifier: ^1.1.1
-        version: 1.1.1
+        specifier: ^1.2.0
+        version: 1.2.0
       jsdom:
         specifier: ^27.4.0
         version: 27.4.0
@@ -2009,8 +2009,8 @@ packages:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
-  agentation-mcp@1.1.1:
-    resolution: {integrity: sha512-SyaojziqvhEwqHCfBrvl2FyN+Cj8I24fUkSgbpb7pPzyiVfKKY8LhxUGwRh2OGLTKpKwExqFTWWO1AiX3w1hsQ==}
+  agentation-mcp@1.2.0:
+    resolution: {integrity: sha512-BRHVm/YRyAHzJFM8i+ZbgpLgpnVptyKeUyauYd2pkOBX/oVFYGOjjLU+YtpNZD1Np+5/jJAp9xFbv1SE112Wwg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -3754,6 +3754,10 @@ packages:
 
   qs@6.14.2:
     resolution: {integrity: sha512-V/yCWTTF7VJ9hIh18Ugr2zhJMP01MY7c5kh4J870L7imm6/DIzBsNLTXzMwUA3yZ5b/KBqLx8Kp3uRvd7xSe3Q==}
+    engines: {node: '>=0.6'}
+
+  qs@6.15.0:
+    resolution: {integrity: sha512-mAZTtNCeetKMH+pSjrb76NAM8V9a05I9aBZOHztWy/UqcJdQYNsf59vrRKWnojAT9Y+GbIvoTBC++CPHqpDBhQ==}
     engines: {node: '>=0.6'}
 
   radix-ui@1.4.3:
@@ -6540,7 +6544,7 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  agentation-mcp@1.1.1:
+  agentation-mcp@1.2.0:
     dependencies:
       '@modelcontextprotocol/sdk': 1.26.0(zod@3.25.76)
       better-sqlite3: 12.6.2
@@ -6714,7 +6718,7 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.7.2
       on-finished: 2.4.1
-      qs: 6.14.2
+      qs: 6.15.0
       raw-body: 3.0.2
       type-is: 2.0.1
     transitivePeerDependencies:
@@ -7239,7 +7243,7 @@ snapshots:
       once: 1.4.0
       parseurl: 1.3.3
       proxy-addr: 2.0.7
-      qs: 6.14.2
+      qs: 6.15.0
       range-parser: 1.2.1
       router: 2.2.0
       send: 1.2.1
@@ -8615,6 +8619,10 @@ snapshots:
       - utf-8-validate
 
   qs@6.14.2:
+    dependencies:
+      side-channel: 1.1.0
+
+  qs@6.15.0:
     dependencies:
       side-channel: 1.1.0
 
