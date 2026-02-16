@@ -153,36 +153,39 @@ function ImportMenu(props: {
           )}
         >
           {onImportSession && (
-            <DropdownMenu.Item asChild>
-              <button
-                type="button"
-                onClick={onImportSession}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary outline-none hover:bg-bg-hover text-left transition-colors"
-              >
-                Import session JSON…
-              </button>
+            <DropdownMenu.Item
+              onSelect={onImportSession}
+              className={clsx(
+                'flex w-full cursor-default select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors text-left',
+                'text-text-secondary',
+                'data-[highlighted]:bg-bg-hover data-[highlighted]:text-text-primary'
+              )}
+            >
+              Import session JSON…
             </DropdownMenu.Item>
           )}
           {onImportKimiSession && (
-            <DropdownMenu.Item asChild>
-              <button
-                type="button"
-                onClick={onImportKimiSession}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary outline-none hover:bg-bg-hover text-left transition-colors"
-              >
-                Import Kimi log…
-              </button>
+            <DropdownMenu.Item
+              onSelect={onImportKimiSession}
+              className={clsx(
+                'flex w-full cursor-default select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors text-left',
+                'text-text-secondary',
+                'data-[highlighted]:bg-bg-hover data-[highlighted]:text-text-primary'
+              )}
+            >
+              Import Kimi log…
             </DropdownMenu.Item>
           )}
           {onImportAgentTrace && (
-            <DropdownMenu.Item asChild>
-              <button
-                type="button"
-                onClick={onImportAgentTrace}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary outline-none hover:bg-bg-hover text-left transition-colors"
-              >
-                Import Agent Trace…
-              </button>
+            <DropdownMenu.Item
+              onSelect={onImportAgentTrace}
+              className={clsx(
+                'flex w-full cursor-default select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors text-left',
+                'text-text-secondary',
+                'data-[highlighted]:bg-bg-hover data-[highlighted]:text-text-primary'
+              )}
+            >
+              Import Agent Trace…
             </DropdownMenu.Item>
           )}
         </DropdownMenu.Content>

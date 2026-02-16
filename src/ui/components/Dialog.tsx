@@ -89,7 +89,10 @@ export function Dialog({
                   ? 'bg-accent-red-bg text-accent-red hover:bg-accent-red-light border border-accent-red-light'
                   : 'bg-surface-strong text-text-inverted hover:bg-surface-strong-hover'
               )}
-              onClick={onConfirm}
+              onClick={() => {
+                onConfirm();
+                onCancel();
+              }}
             >
               {confirmLabel}
             </button>
