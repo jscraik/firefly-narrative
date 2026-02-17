@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn test_redact_github_token() {
-        let input = "Authorization: token ghp_abcdefghijklmnopqrstuvwxyz12";
+        let input = "Authorization: token ghp_abcdefghijklmnopqrstuvwxyz12"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:GITHUB_TOKEN⟧"));
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn test_redact_aws_key() {
-        let input = "Access key: AKIAIOSFODNN7EXAMPLE";
+        let input = "Access key: AKIAIOSFODNN7EXAMPLE"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:AWS_ACCESS_KEY⟧"));
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_redact_bearer_token() {
-        let input = "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
+        let input = "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:BEARER_TOKEN⟧"));
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_redact_multiple_secrets() {
-        let input = "OpenAI: sk-abc123xyz789foo456bar789baz01234567890\nGitHub: ghp_abcdefghijklmnopqrstuvwxyz12";
+        let input = "OpenAI: sk-abc123xyz789foo456bar789baz01234567890\nGitHub: ghp_abcdefghijklmnopqrstuvwxyz12"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:OPENAI_KEY⟧"));
@@ -204,9 +204,9 @@ mod tests {
     #[test]
     fn test_redact_json_value() {
         let value = json!({
-            "message": "API key: sk-abc123xyz789foo456bar789baz01234567890",
+            "message": "API key: sk-abc123xyz789foo456bar789baz01234567890", // gitleaks:allow
             "nested": {
-                "token": "ghp_abcdefghijklmnopqrstuvwxyz12"
+                "token": "ghp_abcdefghijklmnopqrstuvwxyz12" // gitleaks:allow
             }
         });
 
@@ -221,9 +221,9 @@ mod tests {
     #[test]
     fn test_redact_json_array() {
         let value = json!([
-            "sk-abc123xyz789foo456bar789baz01234567890",
+            "sk-abc123xyz789foo456bar789baz01234567890", // gitleaks:allow
             "normal text",
-            "ghp_abcdefghijklmnopqrstuvwxyz12"
+            "ghp_abcdefghijklmnopqrstuvwxyz12" // gitleaks:allow
         ]);
 
         let (redacted, summary) = redact_value(&value);
@@ -239,7 +239,7 @@ mod tests {
     fn test_redact_stripe_key() {
         // Use obviously fake test data to avoid GitHub secret scanning
         // Pattern: sk_live_[24+ chars] - using all 'a's (not a real key format)
-        let input = "Stripe key: sk_live_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let input = "Stripe key: sk_live_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:STRIPE_KEY⟧"));
@@ -252,7 +252,7 @@ mod tests {
     fn test_redact_slack_token() {
         // Use obviously fake test data to avoid GitHub secret scanning
         // Pattern: xoxb-[10+ chars] - using all 'a's (not a real token format)
-        let input = "Slack bot token: xoxb-aaaaaaaaaaaaaaaaaaaa";
+        let input = "Slack bot token: xoxb-aaaaaaaaaaaaaaaaaaaa"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:SLACK_TOKEN⟧"));
@@ -262,7 +262,7 @@ mod tests {
 
     #[test]
     fn test_redact_npm_token() {
-        let input = "NPM token: npm_abc123def456ghi789jkl012mno345pqr678";
+        let input = "NPM token: npm_abc123def456ghi789jkl012mno345pqr678"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:NPM_TOKEN⟧"));
@@ -272,7 +272,7 @@ mod tests {
 
     #[test]
     fn test_redact_jwt_token() {
-        let input = "Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";
+        let input = "Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:JWT_TOKEN⟧"));
@@ -315,7 +315,7 @@ mod tests {
 
     #[test]
     fn test_redact_google_api_key() {
-        let input = "Google API key: AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI";
+        let input = "Google API key: AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:GOOGLE_API_KEY⟧"));
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn test_redact_api_key_assignment() {
-        let input = "api_key: 'my_private_api_key_xyz789'";
+        let input = "api_key: 'my_private_api_key_xyz789'"; // gitleaks:allow
         let (redacted, summary) = redact_text(input);
 
         assert!(redacted.contains("⟦REDACTED:PASSWORD_ASSIGNMENT⟧"));
@@ -358,11 +358,11 @@ mod tests {
         // Use obviously fake test data to avoid GitHub secret scanning
         let input = r#"
             OpenAI: sk-abc123xyz789foo456bar789baz01234567890
-            GitHub: ghp_abcdefghijklmnopqrstuvwxyz12
-            AWS: AKIAIOSFODNN7EXAMPLE
-            Stripe: sk_live_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-            Slack: xoxb-aaaaaaaaaaaaaaaaaaaa
-            JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U
+            GitHub: ghp_abcdefghijklmnopqrstuvwxyz12 // gitleaks:allow
+            AWS: AKIAIOSFODNN7EXAMPLE // gitleaks:allow
+            Stripe: sk_live_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa // gitleaks:allow
+            Slack: xoxb-aaaaaaaaaaaaaaaaaaaa // gitleaks:allow
+            JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U // gitleaks:allow
             DB: postgres://user:pass@host/db
         "#;
 

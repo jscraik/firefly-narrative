@@ -133,7 +133,7 @@ mod tests {
     #[test]
     fn test_sanitizes_run_command() {
         let input = json!({
-            "command": "curl -H 'Authorization: Bearer secret-token' https://api.example.com"
+            "command": "curl -H 'Authorization: Bearer secret-token' https://api.example.com" // gitleaks:allow
         });
         let result = ToolSanitizer::sanitize("runCommand", &input);
 
