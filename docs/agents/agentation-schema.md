@@ -115,7 +115,6 @@ The Narrative app includes the `Agentation` React component in `src/App.tsx`:
 )}
 ```
 
-
 Configure the MCP server in `~/.claude/settings.json` for Claude Code integration.
 
 ---
@@ -128,25 +127,25 @@ Configure the MCP server in `~/.claude/settings.json` for Claude Code integratio
 cp .env.agentation.example .env.local
 ```
 
-2. Start `Agentation` MCP server (port `4747`):
+1. Start `Agentation` MCP server (port `4747`):
 
 ```bash
 pnpm exec agentation-mcp server
 ```
 
-3. Start webhook automation listener (port `8787`):
+1. Start webhook automation listener (port `8787`):
 
 ```bash
 pnpm agentation:autopilot
 ```
 
-4. Start the app:
+1. Start the app:
 
 ```bash
 pnpm tauri:dev
 ```
 
-5. In `Agentation` panel, verify:
+1. In `Agentation` panel, verify:
    - MCP connection is green (`endpoint="http://localhost:4747"`)
    - Webhook URL points to `http://localhost:8787`
 
