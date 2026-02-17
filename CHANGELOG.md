@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.7.0...narrative-desktop-mvp-v0.8.0) (2026-02-17)
+
+
+### Features
+
+* **firefly:** implement Firefly Signal System Phase 1 ([08391cf](https://github.com/jscraik/narrative/commit/08391cfba240aa639694342bbd7629caa3736a06))
+* polish UI states and harden session auto-ingest/linking ([f938510](https://github.com/jscraik/narrative/commit/f938510c3b7e428f54fc15f1da573c395a6f8cc4))
+
+
+### Bug Fixes
+
+* **lint:** remove unnecessary dependency from useEffect ([ec6b9f6](https://github.com/jscraik/narrative/commit/ec6b9f60cd0a60fa00beb5e425e99b96ead45cc2))
+
 ## [0.7.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.6.1...narrative-desktop-mvp-v0.7.0) (2026-02-16)
 
 
