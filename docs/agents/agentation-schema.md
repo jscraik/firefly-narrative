@@ -127,7 +127,7 @@ Configure the MCP server in `~/.claude/settings.json` for Claude Code integratio
 cp .env.agentation.example .env.local
 ```
 
-1. Start `Agentation` MCP server (port `4747`):
+2. Start `Agentation` MCP server (port `4747`):
 
 ```bash
 pnpm exec agentation-mcp server
