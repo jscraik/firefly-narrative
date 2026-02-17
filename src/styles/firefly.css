@@ -1,0 +1,80 @@
+/* Firefly Signal System — CSS tokens and animations */
+
+@theme {
+  /* Colors */
+  --color-firefly-glow: oklch(0.85 0.15 85);
+  --color-firefly-dim: oklch(0.6 0.05 85);
+
+  /* Durations */
+  --duration-slow: 8s;
+  --duration-medium: 350ms;
+  --duration-fast: 400ms;
+
+  /* Easings */
+  --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-bounce: cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* Keyframe animations */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Utility classes */
+.animate-breathe {
+  animation: breathe var(--duration-slow) ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring var(--duration-fast) var(--ease-bounce);
+}
+
+/* Firefly component styles */
+.firefly {
+  position: absolute;
+  pointer-events: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: #fbbf24; /* amber-400 */
+  box-shadow:
+    0 0 8px 2px rgba(251, 191, 36, 0.5),
+    0 0 16px 4px rgba(251, 191, 36, 0.3);
+  will-change: transform;
+  contain: layout paint;
+}
+
+.firefly-tracking {
+  transition: transform var(--duration-medium) var(--ease-smooth);
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .firefly {
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .firefly-tracking {
+    transition: none;
+  }
+}

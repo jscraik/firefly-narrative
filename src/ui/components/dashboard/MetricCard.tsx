@@ -22,7 +22,7 @@ interface MetricCardProps {
 export function MetricCard({ label, value, trend, icon, index }: MetricCardProps) {
   return (
     <section
-      className="metric-card group relative p-6 border border-border-light rounded-lg bg-bg-card transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-border-medium focus-within:ring-2 focus-within:ring-accent-blue focus-within:ring-offset-2 focus-within:-translate-y-0.5 focus-within:shadow-md animate-in slide-in-from-bottom-2 fade-in duration-300 fill-mode-forwards"
+      className="metric-card group relative p-6 border border-border-light rounded-lg bg-bg-secondary transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-border-medium focus-within:ring-2 focus-within:ring-accent-blue focus-within:ring-offset-2 focus-within:-translate-y-0.5 focus-within:shadow-md animate-in slide-in-from-bottom-2 fade-in duration-300 fill-mode-forwards"
       style={{ '--metric-card-index': index } as React.CSSProperties}
       aria-label={`${label}: ${value}${trend ? `, ${trend.label}` : ''}`}
     >

@@ -35,64 +35,66 @@ export function TopFilesTable({
 
   return (
     <section data-top-files-table>
-      <h2 className="text-lg font-semibold text-text-primary mb-4">
-        Top AI-Contributed Files
-      </h2>
+      <div className="card p-4">
+        <h2 className="text-lg font-semibold text-text-primary mb-4">
+          Top AI-Contributed Files
+        </h2>
 
-      <div className="overflow-hidden rounded-lg border border-border-light">
-        <table className="w-full border-collapse">
-          <thead className="bg-bg-subtle border-b border-border-light">
-            <tr>
-              <th
-                className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-left"
-                scope="col"
-              >
-                File
-              </th>
-              <th
-                className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-right"
-                scope="col"
-              >
-                AI %
-              </th>
-              <th
-                className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-right"
-                scope="col"
-              >
-                AI Lines
-              </th>
-              <th
-                className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-right"
-                scope="col"
-              >
-                Commits
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {files.map((file, index) => (
-              <TableRow
-                key={file.filePath}
-                file={file}
-                index={index}
-                onClick={() =>
-                  onFileClick({
-                    type: 'file',
-                    value: file.filePath,
-                    dateRange: undefined, // Caller should provide if needed
-                  })
-                }
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {hasMore && (
-        <div className="mt-4 text-center">
-          <LoadMoreButton onClick={onLoadMore} isLoading={isLoading} />
+        <div className="overflow-hidden rounded-lg border border-border-light bg-bg-secondary">
+          <table className="w-full border-collapse">
+            <thead className="bg-bg-tertiary border-b border-border-light">
+              <tr>
+                <th
+                  className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-left"
+                  scope="col"
+                >
+                  File
+                </th>
+                <th
+                  className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-right"
+                  scope="col"
+                >
+                  AI %
+                </th>
+                <th
+                  className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-right"
+                  scope="col"
+                >
+                  AI Lines
+                </th>
+                <th
+                  className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-right"
+                  scope="col"
+                >
+                  Commits
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {files.map((file, index) => (
+                <TableRow
+                  key={file.filePath}
+                  file={file}
+                  index={index}
+                  onClick={() =>
+                    onFileClick({
+                      type: 'file',
+                      value: file.filePath,
+                      dateRange: undefined, // Caller should provide if needed
+                    })
+                  }
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {hasMore && (
+          <div className="mt-4 text-center">
+            <LoadMoreButton onClick={onLoadMore} isLoading={isLoading} />
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -168,12 +170,12 @@ function LoadMoreButton({ onClick, isLoading }: LoadMoreButtonProps) {
       onClick={onClick}
       disabled={isLoading}
       className={`
-        inline-flex items-center gap-2 px-4 py-2 rounded-lg
+        btn-secondary-soft inline-flex items-center gap-2 px-4 py-2 rounded-lg
         text-sm font-medium transition-all duration-150 ease-out
         ${
           isLoading
-            ? 'text-text-muted cursor-not-allowed bg-bg-subtle opacity-50'
-            : 'text-accent-blue hover:text-accent-blue hover:bg-accent-blue-bg active:bg-accent-blue-light'
+            ? 'text-text-muted cursor-not-allowed opacity-50'
+            : 'text-text-secondary'
         }
       `}
       aria-label={isLoading ? 'Loading more files...' : 'Load more files'}

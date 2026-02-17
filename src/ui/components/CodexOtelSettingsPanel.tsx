@@ -82,7 +82,7 @@ export function CodexOtelSettingsPanel(props: {
         ) : null}
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border-light bg-bg-subtle p-3">
+      <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border-light bg-bg-tertiary p-3">
         <label htmlFor="codex-otel-path" className="text-xs font-semibold text-text-secondary">
           Codex OTel log file path
         </label>
@@ -92,7 +92,7 @@ export function CodexOtelSettingsPanel(props: {
             type="text"
             value={otelPath}
             onChange={(event) => setOtelPath(event.target.value)}
-            className="min-w-[220px] flex-1 rounded-md border border-border-light bg-bg-card px-2 py-1 text-xs text-text-secondary outline-none focus:border-border-medium"
+            className="min-w-[220px] flex-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-xs text-text-secondary outline-none focus:border-border-medium"
             placeholder="/tmp/codex-otel.json"
           />
           <button
@@ -100,7 +100,7 @@ export function CodexOtelSettingsPanel(props: {
             className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
               otelPath.trim() && otelPath !== (traceConfig?.codexOtelLogPath ?? '/tmp/codex-otel.json')
                 ? 'border-accent-blue-light bg-accent-blue-bg text-accent-blue hover:bg-accent-blue-light'
-                : 'border-border-light bg-bg-card text-text-secondary hover:bg-bg-hover'
+                : 'border-border-light bg-bg-secondary text-text-secondary hover:bg-bg-hover'
             }`}
             onClick={() => onUpdateCodexOtelPath?.(otelPath.trim())}
             disabled={!otelPath.trim()}
@@ -127,7 +127,7 @@ export function CodexOtelSettingsPanel(props: {
               <button
                 type="button"
                 onClick={handleCopyPromptSnippet}
-                className="inline-flex items-center rounded-md border border-accent-amber-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light"
+                className="inline-flex items-center rounded-md border border-accent-amber-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light"
               >
                 {copiedPromptSnippet ? 'Snippet copied' : 'Copy disable snippet'}
               </button>
@@ -137,7 +137,7 @@ export function CodexOtelSettingsPanel(props: {
         ) : null}
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 rounded-lg border border-border-light bg-bg-card p-4">
+      <div className="mt-6 flex flex-col gap-3 rounded-lg border border-border-light bg-bg-secondary p-4">
         <div>
           <div className="text-xs font-semibold text-text-secondary">Attribution Notes</div>
           <div className="text-[11px] text-text-muted">
@@ -182,12 +182,12 @@ export function CodexOtelSettingsPanel(props: {
             min={1}
             value={retentionDays}
             onChange={(event) => setRetentionDays(event.target.value)}
-            className="w-24 rounded-md border border-border-light bg-bg-card px-2 py-1 text-xs text-text-secondary"
+            className="w-24 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-xs text-text-secondary"
             placeholder="Days"
           />
           <button
             type="button"
-            className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+            className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
             onClick={() => {
               const trimmed = retentionDays.trim();
               if (!trimmed) {

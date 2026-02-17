@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RepoState } from '../../hooks/useRepoLoader';
 import {
   getDashboardStats,
@@ -29,7 +29,7 @@ export function DashboardView({
   setRepoState: _setRepoState,
   setActionError,
   onDrillDown,
-  onModeChange: _onModeChange,
+  onModeChange,
 }: DashboardViewProps) {
   // Helper to get repo name from path
   const getRepoName = (path: string): string => {
@@ -43,6 +43,9 @@ export function DashboardView({
   const [emptyReason, setEmptyReason] = useState<DashboardEmptyReason | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
+  const [commandQuery, setCommandQuery] = useState('');
+  const commandInputRef = useRef<HTMLInputElement>(null);
+  const sequenceRef = useRef<{ lastKey: string; ts: number }>({ lastKey: '', ts: 0 });
 
   // Fetch stats on repo/timeRange change
   const fetchStats = useCallback(async (isLoadMore = false) => {
@@ -119,6 +122,69 @@ export function DashboardView({
     // fetchStats will be called by the useEffect when filesOffset changes
   }, []);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTypingTarget = !!target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      );
+
+      if (event.key === '/' && !isTypingTarget) {
+        event.preventDefault();
+        commandInputRef.current?.focus();
+        return;
+      }
+
+      if (event.key === 'Escape' && document.activeElement === commandInputRef.current) {
+        setCommandQuery('');
+        commandInputRef.current?.blur();
+        return;
+      }
+
+      if (isTypingTarget) return;
+
+      const now = Date.now();
+      const key = event.key.toLowerCase();
+      const prev = sequenceRef.current;
+      const withinChordWindow = now - prev.ts < 800;
+
+      if (key === 'g') {
+        sequenceRef.current = { lastKey: 'g', ts: now };
+        return;
+      }
+
+      if (withinChordWindow && prev.lastKey === 'g' && key === 'd') {
+        onModeChange('dashboard');
+        sequenceRef.current = { lastKey: '', ts: 0 };
+        return;
+      }
+
+      if (withinChordWindow && prev.lastKey === 'g' && key === 'r') {
+        onModeChange('repo');
+        sequenceRef.current = { lastKey: '', ts: 0 };
+        return;
+      }
+
+      if (key === '1') handleTimeRangeChange('7d');
+      if (key === '2') handleTimeRangeChange('30d');
+      if (key === '3') handleTimeRangeChange('90d');
+      if (key === '4') handleTimeRangeChange('all');
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleTimeRangeChange, onModeChange]);
+
+  const visibleFiles = useMemo(() => {
+    if (!stats) return [];
+    const query = commandQuery.trim().toLowerCase();
+    if (!query) return stats.topFiles.files;
+    return stats.topFiles.files.filter((file) => file.filePath.toLowerCase().includes(query));
+  }, [stats, commandQuery]);
+
   if (repoState.status !== 'ready') {
     return <DashboardEmptyState reason="no-repo" />;
   }
@@ -133,7 +199,7 @@ export function DashboardView({
 
   if (emptyReason) {
     return (
-      <div className="dashboard-container">
+      <div className="dashboard-container animate-in fade-in slide-in-from-bottom-1 motion-page-enter">
         <DashboardHeader
           repoName={getRepoName(repoState.repo.root)}
           repoPath={repoState.repo.root}
@@ -151,7 +217,7 @@ export function DashboardView({
   }
 
   return (
-    <div className="dashboard-container h-full min-h-0 overflow-y-auto bg-bg-page">
+    <div className="dashboard-container h-full min-h-0 overflow-y-auto bg-bg-secondary animate-in fade-in slide-in-from-bottom-1 motion-page-enter">
       <DashboardHeader
         repoName={stats.repo.name}
         repoPath={stats.repo.path}
@@ -160,7 +226,47 @@ export function DashboardView({
         lastUpdated={lastUpdated}
       />
 
-      <main className="px-6 py-6" data-dashboard-content>
+      <main className="bg-bg-tertiary px-6 py-6" data-dashboard-content>
+        <section className="card mb-5 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
+              <span className="btn-tertiary-soft rounded-md px-2 py-1 font-medium text-text-secondary">
+                / focus
+              </span>
+              <span className="btn-tertiary-soft rounded-md px-2 py-1 font-medium text-text-secondary">
+                g then r repo
+              </span>
+              <span className="btn-tertiary-soft rounded-md px-2 py-1 font-medium text-text-secondary">
+                1-4 range
+              </span>
+            </div>
+            <input
+              ref={commandInputRef}
+              value={commandQuery}
+              onChange={(e) => setCommandQuery(e.target.value)}
+              placeholder="Quick filter files (e.g. src/ui)"
+              className="w-full rounded-lg border border-border-light bg-bg-tertiary px-3 py-2 text-sm text-text-secondary outline-none ring-0 transition-colors placeholder:text-text-muted focus:border-accent-blue lg:max-w-xs"
+              aria-label="Quick file filter"
+            />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={() => handleDrillDown({ type: 'ai-only' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
+              AI only
+            </button>
+            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'codex' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
+              Codex
+            </button>
+            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'claude-code' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
+              Claude
+            </button>
+            {commandQuery && (
+              <button type="button" onClick={() => setCommandQuery('')} className="btn-tertiary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
+                Clear filter
+              </button>
+            )}
+          </div>
+        </section>
+
         {/* Metrics Grid */}
         <MetricsGrid
           currentPeriod={stats.currentPeriod}
@@ -170,8 +276,8 @@ export function DashboardView({
 
         {/* Top Files Table */}
         <TopFilesTable
-          files={stats.topFiles.files}
-          hasMore={stats.topFiles.hasMore}
+          files={visibleFiles}
+          hasMore={!commandQuery && stats.topFiles.hasMore}
           isLoading={loadingMore}
           onFileClick={handleDrillDown}
           onLoadMore={handleLoadMoreWithState}

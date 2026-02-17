@@ -19,6 +19,7 @@ yarn-error.log*
 # Narrative traces and metadata (generated)
 .narrative/trace
 .narrative/meta/
+.narrative/agentation/
 
 # Internal docs (do not commit)
 FORJAMIE.md
@@ -33,6 +34,7 @@ src-tauri/icons/*.ico
 
 # Env
 .env
+.env.local
 .env.*.local
 
 # IDE

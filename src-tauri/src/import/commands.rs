@@ -869,8 +869,22 @@ async fn store_session_with_meta(
     .bind(redaction_types)
     .bind(dedupe_key)
     .execute(db)
-    .await
-    .map_err(|e| StoreSessionError::Db(e.to_string()))?;
+    .await;
+
+    let result = match result {
+        Ok(result) => result,
+        Err(e) => {
+            let msg = e.to_string();
+            // Treat duplicate primary-key inserts as a no-op duplicate for auto-import.
+            // This prevents noisy failures when the same upstream session is observed again.
+            if msg.contains("UNIQUE constraint failed: sessions.id")
+                || msg.contains("UNIQUE constraint failed: sessions.repo_id, sessions.dedupe_key")
+            {
+                return Err(StoreSessionError::Duplicate);
+            }
+            return Err(StoreSessionError::Db(msg));
+        }
+    };
 
     if result.rows_affected() == 0 {
         return Err(StoreSessionError::Duplicate);

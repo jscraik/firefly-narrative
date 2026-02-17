@@ -64,7 +64,7 @@ function ToolPill({
 }) {
   return (
     <div className="flex items-center gap-2 text-[11px] text-text-muted">
-      <span className="px-2 py-1 bg-bg-page rounded-md font-mono text-text-tertiary">
+      <span className="px-2 py-1 bg-bg-primary rounded-md font-mono text-text-tertiary">
         {tool}
       </span>
       {agentName ? <span className="text-text-tertiary">· {agentName}</span> : null}
@@ -112,9 +112,12 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
 }) {
   if (!excerpt.linkedCommitSha) {
     return (
-      <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
+      <div
+        className="flex items-center gap-2 text-[11px] text-text-tertiary"
+        title="Session imported successfully, but no confident commit match has been linked yet."
+      >
         <Link2Off className="w-3 h-3" />
-        <span>Not linked</span>
+        <span>Imported · awaiting link</span>
       </div>
     );
   }
@@ -139,7 +142,7 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
         Linked to <span className="font-mono">{shortSha}</span>
       </button>
       <span
-        className="px-1.5 py-0.5 bg-bg-page rounded text-text-tertiary cursor-help"
+        className="px-1.5 py-0.5 bg-bg-primary rounded text-text-tertiary cursor-help"
         title={`Link confidence: ${confidencePercent}% — Estimated match quality between session activity and commit changes. Higher values indicate stronger correlation.`}
       >
         {confidencePercent}%
@@ -237,7 +240,7 @@ function UnlinkConfirmDialog({
   return (
     <Dialog
       title="Unlink session from commit?"
-      message="This will remove the association between the AI session and the commit. The session will remain imported but will show as 'Not linked'."
+      message="This will remove the association between the AI session and the commit. The session will remain imported but will show as 'Imported · awaiting link'."
       confirmLabel="Unlink"
       cancelLabel="Cancel"
       variant="destructive"
@@ -245,6 +248,48 @@ function UnlinkConfirmDialog({
       onConfirm={onConfirm}
       onClose={onClose}
     />
+  );
+}
+
+function SessionLinkPipeline({ excerpt }: { excerpt: SessionExcerpt }) {
+  const isLinked = Boolean(excerpt.linkedCommitSha);
+  const needsReview = Boolean(excerpt.needsReview);
+  const activeStep = isLinked ? (needsReview ? 2 : 3) : 2;
+
+  const steps = [
+    { id: 1, label: 'Imported' },
+    { id: 2, label: 'Matching' },
+    { id: 3, label: needsReview ? 'Needs review' : 'Linked' },
+  ] as const;
+
+  return (
+    <div className="mt-1 w-full max-w-[220px]" title="Session link lifecycle">
+      <div className="flex items-center gap-1.5">
+        {steps.map((step, index) => {
+          const complete = step.id < activeStep;
+          const active = step.id === activeStep;
+          const dotClass = complete
+            ? 'bg-accent-green border-accent-green'
+            : active
+              ? 'bg-accent-amber border-accent-amber animate-pulse'
+              : 'bg-bg-tertiary border-border-light';
+
+          return (
+            <div key={step.id} className="flex min-w-0 items-center gap-1.5">
+              <span className={`h-2 w-2 shrink-0 rounded-full border ${dotClass}`} />
+              <span
+                className={`text-[10px] leading-4 ${active ? 'text-text-secondary font-semibold' : 'text-text-muted'}`}
+              >
+                {step.label}
+              </span>
+              {index < steps.length - 1 ? (
+                <span className="h-px w-3 bg-border-light" aria-hidden="true" />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -300,7 +345,7 @@ export function SessionExcerpts({
           </div>
         </div>
         <div className="mt-6 flex flex-col items-center text-center py-4">
-          <div className="w-12 h-12 rounded-full bg-bg-page flex items-center justify-center mb-3">
+          <div className="w-12 h-12 rounded-full bg-bg-primary flex items-center justify-center mb-3">
             <Upload className="w-5 h-5 text-text-muted" />
           </div>
           <p className="text-sm text-text-tertiary mb-1">No sessions imported yet</p>
@@ -371,6 +416,7 @@ export function SessionExcerpts({
             {excerpt.needsReview ? (
               <span className="rounded bg-accent-amber-bg px-1.5 py-0.5 text-[11px] text-accent-amber">Needs review</span>
             ) : null}
+            <SessionLinkPipeline excerpt={excerpt} />
           </div>
         </div>
 
@@ -387,7 +433,7 @@ export function SessionExcerpts({
                     px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-150
                     ${isActive
                       ? 'bg-accent-blue-light border-accent-blue text-accent-blue shadow-sm ring-1 ring-accent-blue/20'
-                      : 'bg-bg-card border-border-light text-text-secondary hover:bg-bg-hover hover:border-border-medium'
+                      : 'bg-bg-secondary border-border-light text-text-secondary hover:bg-bg-hover hover:border-border-medium'
                     }
                   `}
                   aria-pressed={isActive}
@@ -400,7 +446,7 @@ export function SessionExcerpts({
           </div>
         ) : null}
 
-        <div className="mt-4 grid gap-4 rounded-lg border border-border-subtle bg-bg-subtle p-4">
+        <div className="mt-4 grid gap-4 rounded-lg border border-border-subtle bg-bg-tertiary p-4">
           <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
             <div>
               <div className="text-[10px] uppercase tracking-wider text-text-muted">Messages</div>

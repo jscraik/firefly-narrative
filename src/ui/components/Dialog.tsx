@@ -57,7 +57,7 @@ export function Dialog({
         <DialogPrimitive.Content
           className={clsx(
             'fixed left-1/2 top-1/2 z-50 w-[400px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2',
-            'rounded-xl border border-border-light bg-bg-card p-5 shadow-xl',
+            'rounded-xl border border-border-light bg-bg-secondary p-5 shadow-xl',
             'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
             'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95'
           )}
@@ -75,7 +75,7 @@ export function Dialog({
                 type="button"
                 className={clsx(
                   'rounded-md px-3 py-1.5 text-sm transition',
-                  'bg-bg-subtle text-text-secondary hover:bg-bg-hover border border-border-light'
+                  'bg-bg-tertiary text-text-secondary hover:bg-bg-hover border border-border-light'
                 )}
               >
                 {cancelLabel}

@@ -8,7 +8,7 @@ const SKELETON_KEYS = Array.from({ length: 50 }, (_, idx) => `s-${idx}`);
 export function SkeletonLine({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`animate-pulse bg-bg-subtle rounded ${className}`}
+      className={`animate-pulse bg-bg-primary rounded ${className}`}
       aria-hidden="true"
     />
   );

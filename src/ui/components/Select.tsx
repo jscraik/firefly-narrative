@@ -16,7 +16,7 @@ export function Select(props: {
       <SelectPrimitive.Trigger
         aria-label={props['aria-label']}
         className={clsx(
-          'inline-flex items-center justify-between gap-2 rounded-md border border-border-light bg-bg-card px-2 py-1 text-xs text-text-secondary',
+          'inline-flex items-center justify-between gap-2 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-xs text-text-secondary',
           'min-w-[140px]',
           triggerClassName
         )}
@@ -30,7 +30,7 @@ export function Select(props: {
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
           className={clsx(
-            'z-50 overflow-hidden rounded-lg border border-border-light bg-bg-card shadow-lg',
+            'z-50 overflow-hidden rounded-lg border border-border-light bg-bg-secondary shadow-lg',
             'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
             'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95'
           )}

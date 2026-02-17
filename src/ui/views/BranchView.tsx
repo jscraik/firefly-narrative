@@ -19,6 +19,7 @@ import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
 import type { IngestConfig, OtlpKeyStatus, DiscoveredSources } from '../../core/tauri/ingestConfig';
 import { useTestImport } from '../../hooks/useTestImport';
 import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
+import type { FireflyEvent } from '../components/FireflySignal';
 
 function BranchViewInner(props: {
   model: BranchViewModel;
@@ -56,6 +57,10 @@ function BranchViewInner(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
+  // Firefly signal props
+  fireflyEnabled?: boolean;
+  fireflyEvent?: FireflyEvent;
+  onToggleFirefly?: () => void;
 }) {
   const {
     model,
@@ -92,7 +97,10 @@ function BranchViewInner(props: {
     onUpdateWatchPaths,
     onConfigureCodex,
     onRotateOtlpKey,
-    onGrantCodexConsent
+    onGrantCodexConsent,
+    fireflyEnabled,
+    fireflyEvent,
+    onToggleFirefly,
   } = props;
   const { selectedFile, selectFile } = useFileSelection();
 
@@ -317,15 +325,10 @@ function BranchViewInner(props: {
   };
 
   return (
-    <div className={`flex h-full flex-col bg-bg-page ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 duration-150 ease-out fill-mode-forwards' : ''}`}>
+    <div className={`flex h-full flex-col bg-bg-primary animate-in fade-in slide-in-from-bottom-1 motion-page-enter ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 motion-page-exit fill-mode-forwards' : ''}`}>
       <IngestToast toast={ingestToast ?? null} />
-      {/* Ensure primary page surface background is applied at this wrapper level too,
-          so large viewports (and grid gaps) never expose an unthemed root surface. */}
-      <div className="flex-1 overflow-hidden bg-bg-page">
-        {/* Page content area: explicit page-surface background to ensure correct theming in both light/dark.
-            Primary surface = bg-bg-page, Secondary = bg-bg-card, Tertiary = bg-bg-subtle/hover.
-            This wrapper previously relied on inheritance; make it explicit for consistency. */}
-        <div className="flex flex-col gap-5 p-6 lg:p-8 h-full overflow-y-auto lg:grid lg:grid-cols-12 lg:overflow-hidden bg-bg-page">
+      <div className="flex-1 overflow-hidden bg-bg-secondary">
+        <div className="flex flex-col gap-5 p-6 lg:p-8 h-full overflow-y-auto bg-bg-tertiary lg:grid lg:grid-cols-12 lg:overflow-hidden">
           {/* Left column */}
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
             <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />
@@ -435,6 +438,9 @@ function BranchViewInner(props: {
               diffText={diffText}
               loadingDiff={loadingDiff || loadingTrace}
               traceRanges={traceRanges}
+              // Firefly
+              fireflyEnabled={fireflyEnabled}
+              onToggleFirefly={onToggleFirefly}
             />
           </div>
         </div>
@@ -445,6 +451,8 @@ function BranchViewInner(props: {
         selectedId={selectedNodeId}
         onSelect={setSelectedNodeId}
         pulseCommitId={pulseCommitId}
+        fireflyEvent={fireflyEvent}
+        fireflyDisabled={!fireflyEnabled}
       />
     </div>
   );
@@ -486,6 +494,10 @@ export function BranchView(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
+  // Firefly signal props
+  fireflyEnabled?: boolean;
+  fireflyEvent?: FireflyEvent;
+  onToggleFirefly?: () => void;
 }) {
   return (
     <FileSelectionProvider>

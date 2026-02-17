@@ -108,7 +108,7 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
           {onSmokeTest ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-card px-3 py-1.5 text-xs font-semibold text-text-secondary transition-all duration-150 hover:bg-bg-subtle disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-secondary px-3 py-1.5 text-xs font-semibold text-text-secondary transition-all duration-150 hover:bg-bg-tertiary disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onSmokeTest}
               disabled={!hasFiles}
               aria-disabled={!hasFiles}
@@ -120,7 +120,7 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
           {onExport ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-card px-3 py-1.5 text-xs font-semibold text-text-secondary hover:bg-bg-subtle disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-secondary px-3 py-1.5 text-xs font-semibold text-text-secondary hover:bg-bg-tertiary disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onExport}
               disabled={!hasFiles}
               aria-disabled={!hasFiles}
@@ -145,9 +145,9 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
       ) : null}
 
       {!summary ? (
-        <div className="mt-5 rounded-xl border border-dashed border-border-light bg-bg-subtle/50 px-5 py-6">
+        <div className="mt-5 rounded-xl border border-dashed border-border-light bg-bg-tertiary/50 px-5 py-6">
           <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-bg-page flex items-center justify-center mb-3">
+            <div className="w-12 h-12 rounded-full bg-bg-primary flex items-center justify-center mb-3">
               <Activity className="w-5 h-5 text-text-muted" />
             </div>
             <p className="text-sm font-medium text-text-secondary mb-1">No Agent Trace yet</p>

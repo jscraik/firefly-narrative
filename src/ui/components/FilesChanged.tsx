@@ -38,7 +38,7 @@ export function FilesChanged({
       <div className="mt-4 divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden">
         {files.length === 0 ? (
           <div className="p-6 flex flex-col items-center text-center">
-            <div className="w-10 h-10 rounded-full bg-bg-page flex items-center justify-center mb-2">
+            <div className="w-10 h-10 rounded-full bg-bg-primary flex items-center justify-center mb-2">
               <FileCode className="w-4 h-4 text-text-muted" />
             </div>
             <p className="text-sm text-text-tertiary">No files changed</p>
@@ -56,7 +56,7 @@ export function FilesChanged({
               className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all duration-150 ${
                 selectedFile === f.path 
                   ? 'bg-accent-blue-bg border-l-[3px] border-l-accent-blue -ml-[3px] pl-[18px] shadow-sm' 
-                  : 'hover:bg-bg-subtle border-l-[3px] border-l-transparent'
+                  : 'hover:bg-bg-tertiary border-l-[3px] border-l-transparent'
               }`}
               onClick={() => selectFile(f.path)}
             >

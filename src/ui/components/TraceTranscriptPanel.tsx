@@ -10,13 +10,13 @@ const ROLE_CONFIG: Record<SessionMessageRole, {
 }> = {
   user: {
     label: 'You',
-    badgeClass: 'bg-accent-blue-bg text-accent-blue border-accent-blue-light',
+    badgeClass: 'bg-bg-tertiary text-text-secondary border-border-light',
     icon: User,
     description: 'User prompt'
   },
   assistant: {
     label: 'Assistant',
-    badgeClass: 'bg-bg-page text-text-secondary border-border-light',
+    badgeClass: 'bg-bg-primary text-text-secondary border-border-light',
     icon: Bot,
     description: 'Assistant response'
   },
@@ -196,11 +196,11 @@ function MessageCard({
 
   return (
     <div className={`rounded-xl border px-4 py-4 transition-all hover:shadow-sm min-w-0 ${
-      message.role === 'user' ? 'bg-accent-blue-bg/50 border-accent-blue-light' :
+      message.role === 'user' ? 'bg-bg-tertiary border-border-light' :
       message.role === 'thinking' ? 'bg-accent-amber-bg/50 border-accent-amber-light' :
       message.role === 'plan' ? 'bg-accent-violet-bg/50 border-accent-violet-light' :
       message.role === 'tool_call' ? 'bg-accent-green-bg/50 border-accent-green-light' :
-      'bg-bg-card border-border-light'
+      'bg-bg-secondary border-border-light'
     }`}>
       {/* Header */}
       <div className="flex items-center justify-between gap-3 min-w-0">
@@ -259,7 +259,7 @@ function EmptyState() {
         </div>
       </div>
       <div className="mt-6 flex flex-col items-center text-center py-4">
-        <div className="w-12 h-12 rounded-full bg-bg-page flex items-center justify-center mb-3">
+        <div className="w-12 h-12 rounded-full bg-bg-primary flex items-center justify-center mb-3">
           <Sparkles className="w-5 h-5 text-text-muted" />
         </div>
         <p className="text-sm text-text-tertiary mb-1">No conversation loaded</p>
@@ -273,7 +273,7 @@ function EmptyState() {
 
 function StatsBar({ stats }: { stats: Record<SessionMessageRole, number> }) {
   const items = [
-    { count: stats.user, label: 'user', color: 'text-accent-blue' },
+    { count: stats.user, label: 'user', color: 'text-text-secondary' },
     { count: stats.assistant, label: 'assistant', color: 'text-text-secondary' },
     { count: stats.thinking, label: 'thinking', color: 'text-accent-amber' },
     { count: stats.plan, label: 'plan', color: 'text-accent-violet' },
@@ -360,7 +360,7 @@ export function TraceTranscriptPanel({
           <button
             type="button"
             onClick={() => setShowAll(!showAll)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-bg-page text-text-secondary text-xs font-medium hover:bg-border-light transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-bg-primary text-text-secondary text-xs font-medium hover:bg-border-light transition-colors"
           >
             {showAll ? (
               <><ChevronUp className="w-3.5 h-3.5" /> Show less</>
@@ -372,7 +372,7 @@ export function TraceTranscriptPanel({
             <button
               type="button"
               onClick={handleJumpToLatest}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-subtle transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-tertiary transition-colors"
             >
               Jump to latest
             </button>

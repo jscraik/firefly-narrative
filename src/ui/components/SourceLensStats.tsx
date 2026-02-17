@@ -61,7 +61,7 @@ export function SourceLensStats({
     return 'Note contains ranges only (no prompt metadata).';
   })();
   const evidenceTone = (() => {
-    if (!noteSummary?.hasNote) return 'bg-bg-page text-text-tertiary';
+    if (!noteSummary?.hasNote) return 'bg-bg-primary text-text-tertiary';
     if (metadataCached) return 'bg-accent-green-bg text-accent-green';
     return 'bg-accent-amber-bg text-accent-amber';
   })();
@@ -125,7 +125,7 @@ export function SourceLensStats({
               type="button"
               onClick={onImportNote}
               disabled={syncing}
-              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-subtle disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-tertiary disabled:opacity-50"
             >
               <RefreshCw className={`h-3 w-3 ${syncing ? 'motion-safe:animate-spin' : ''}`} />
               Import note
@@ -134,7 +134,7 @@ export function SourceLensStats({
               type="button"
               onClick={onExportNote}
               disabled={syncing}
-              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-subtle disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-tertiary disabled:opacity-50"
             >
               <Save className="h-3 w-3" />
               Export note
@@ -183,7 +183,7 @@ export function SourceLensStats({
           Prompts: {noteSummary.promptCount}
         </div>
       ) : null}
-      <div className="mt-3 rounded-md border border-border-subtle bg-bg-subtle px-3 py-2 text-[11px] text-text-secondary">
+      <div className="mt-3 rounded-md border border-border-subtle bg-bg-tertiary px-3 py-2 text-[11px] text-text-secondary">
         <div className="font-semibold">How to read this</div>
         <ul className="mt-1 list-disc pl-4 space-y-1 text-text-tertiary">
           <li>Badge shows the primary source for each line.</li>
@@ -205,7 +205,7 @@ export function SourceLensStats({
             type="button"
             onClick={onEnableMetadata}
             disabled={syncing}
-            className="mt-2 inline-flex items-center gap-1 rounded-md border border-accent-blue-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-accent-blue-light disabled:opacity-50"
+            className="mt-2 inline-flex items-center gap-1 rounded-md border border-accent-blue-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-accent-blue-light disabled:opacity-50"
           >
             Enable metadata
           </button>

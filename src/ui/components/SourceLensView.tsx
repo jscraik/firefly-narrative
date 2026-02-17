@@ -109,7 +109,7 @@ export function SourceLensView({
             type="button"
             onClick={handleImportNote}
             disabled={syncing}
-            className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-medium text-text-secondary hover:bg-bg-subtle disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-medium text-text-secondary hover:bg-bg-tertiary disabled:opacity-50"
           >
             Import note
           </button>

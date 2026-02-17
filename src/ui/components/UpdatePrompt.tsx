@@ -67,18 +67,18 @@ function getUserFriendlyError(error: string): { title: string; message: string; 
     
     return (
       <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
-        <div className="rounded-xl border border-accent-red-light bg-accent-red-bg shadow-lg p-4">
+        <div className="rounded-xl border border-accent-red-light bg-bg-secondary shadow-lg p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-accent-red mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-accent-red text-sm">{title}</div>
+              <div className="font-semibold text-text-primary text-sm">{title}</div>
               <p className="text-xs text-text-secondary mt-1">{message}</p>
               <div className="flex gap-2 mt-3">
                 {onCheckAgain && !isWebMode && (
                   <button
                     type="button"
                     onClick={onCheckAgain}
-                    className="text-xs font-medium text-text-secondary hover:text-text-primary flex items-center gap-1"
+                    className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-tertiary px-2 py-1 text-xs font-medium text-text-secondary hover:bg-bg-hover"
                   >
                     <RefreshCw className="w-3 h-3" />
                     Try Again
@@ -172,7 +172,7 @@ function getUserFriendlyError(error: string): { title: string; message: string; 
 
     return (
       <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
-        <div className="rounded-xl border border-border-light bg-bg-card shadow-lg p-4">
+        <div className="rounded-xl border border-border-light bg-bg-secondary shadow-lg p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-blue">
               <Download className="h-5 w-5 text-text-inverted" />
@@ -201,7 +201,7 @@ function getUserFriendlyError(error: string): { title: string; message: string; 
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="px-3 py-1.5 rounded-lg border border-border-light bg-bg-subtle text-text-primary text-xs font-medium hover:bg-bg-hover transition-colors"
+                    className="px-3 py-1.5 rounded-lg border border-border-light text-text-secondary text-xs font-medium hover:bg-bg-tertiary transition-colors"
                   >
                     Later
                   </button>

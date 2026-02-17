@@ -16,6 +16,7 @@ import { useTraceCollector } from './hooks/useTraceCollector';
 import { useSessionImport } from './hooks/useSessionImport';
 import { useAutoIngest } from './hooks/useAutoIngest';
 import { useCommitData } from './hooks/useCommitData';
+import { useFirefly } from './hooks/useFirefly';
 import { UpdatePrompt, UpdateIndicator } from './ui/components/UpdatePrompt';
 import { indexRepo } from './core/repo/indexer';
 
@@ -100,16 +101,16 @@ function DocsView(props: {
 
   if (repoState.status === 'loading' || isLoading) {
     return (
-      <div className="h-full p-4 flex items-center justify-center">
-        <div className="text-center text-text-tertiary">
-          <div className="text-sm">Loading repository...</div>
+      <div className="flex h-full items-center justify-center bg-bg-tertiary p-6">
+        <div className="rounded-2xl border border-border-light bg-bg-secondary px-6 py-5 text-center text-text-tertiary shadow-sm">
+          <div className="text-sm font-medium text-text-secondary">Loading repository...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full p-4 overflow-hidden">
+    <div className="h-full overflow-hidden bg-bg-tertiary p-6">
       <DocsOverviewPanel 
         repoRoot={repoState.status === 'ready' ? repoState.repo.root : ''}
         onClose={onClose}
@@ -156,7 +157,7 @@ export default function App() {
     if (!agentationWebhookUrl) {
       console.warn('[Agentation] VITE_AGENTATION_WEBHOOK_URL is invalid. Use an http(s) URL.');
     }
-  }, [rawAgentationWebhookUrl, agentationWebhookUrl]);
+  }, [agentationWebhookUrl]);
 
   // Clear dashboard filter when switching away from repo mode (optional UX enhancement)
   useEffect(() => {
@@ -236,6 +237,9 @@ export default function App() {
     pollIntervalMinutes: 60 * 24 // Check once per day
   });
 
+  // Firefly signal state management
+  const firefly = useFirefly();
+
   const updateCodexOtelReceiverEnabled = useCallback(
     async (enabled: boolean) => {
       try {
@@ -287,11 +291,11 @@ export default function App() {
         lastFocusedElementRef.current.focus();
         lastFocusedElementRef.current = null;
       }
-    }, 150); // Match transition duration
+    }, 180); // Match transition duration
   }, []);
 
   return (
-    <div className="flex h-full flex-col bg-bg-page text-text-primary">
+    <div className="flex h-full flex-col bg-bg-primary text-text-primary">
       {/* Update Notification */}
       {updateStatus && (
         <UpdatePrompt
@@ -317,7 +321,7 @@ export default function App() {
       </TopNav>
 
       {/* `min-h-0` is critical so nested flex children can scroll instead of overflowing */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden bg-bg-secondary">
         {mode === 'dashboard' ? (
           <DashboardView
             repoState={repoState}
@@ -402,9 +406,12 @@ export default function App() {
             onConfigureCodex={autoIngest.configureCodexTelemetry}
             onRotateOtlpKey={autoIngest.rotateOtlpKey}
             onGrantCodexConsent={autoIngest.grantCodexConsent}
+            fireflyEnabled={firefly.enabled}
+            fireflyEvent={firefly.event}
+            onToggleFirefly={firefly.toggle}
           />
         ) : (
-          <RepoEmptyState onOpenRepo={openRepo} />
+          <RepoEmptyState />
         )}
       </div>
       {import.meta.env.DEV && AgentationComponent && (
