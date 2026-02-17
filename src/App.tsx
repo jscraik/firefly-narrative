@@ -157,7 +157,7 @@ export default function App() {
     if (!agentationWebhookUrl) {
       console.warn('[Agentation] VITE_AGENTATION_WEBHOOK_URL is invalid. Use an http(s) URL.');
     }
-  }, [rawAgentationWebhookUrl, agentationWebhookUrl]);
+  }, [agentationWebhookUrl]);
 
   // Clear dashboard filter when switching away from repo mode (optional UX enhancement)
   useEffect(() => {
