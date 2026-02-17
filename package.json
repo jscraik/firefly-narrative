@@ -24,7 +24,7 @@
     "tauri:dev": "tauri dev",
     "tauri:prepare-cli": "node scripts/prepare-narrative-cli.mjs",
     "tauri:build": "tauri build",
-    "docs:lint": "vale --minAlertLevel=warning README.md docs/README.md docs/agents/*.md && npx -y markdownlint-cli2 README.md docs/**/*.md brand/README.md",
+    "docs:lint": "bash -lc \"if command -v vale >/dev/null 2>&1; then vale --minAlertLevel=warning README.md docs/README.md docs/agents/*.md; else echo 'vale not found; skipping vale check'; fi && npx -y markdownlint-cli2 README.md docs/**/*.md brand/README.md\"",
     "docs:api": "typedoc",
     "analyze": "vite-bundle-analyzer",
     "repair:agent": "node scripts/repair-agent.mjs",
