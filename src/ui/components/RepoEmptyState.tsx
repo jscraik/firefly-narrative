@@ -1,6 +1,7 @@
-import { type Dispatch, type SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { NearbyGridDemo } from '../../core/demo/nearbyGridDemo';
 import type { RepoState } from '../../hooks/useRepoLoader';
+import type { RepoIndex } from '../../core/repo/indexer';
 import { RepositoryPlaceholderCard } from './RepositoryPlaceholderCard';
 
 export function RepoEmptyState({
@@ -10,18 +11,18 @@ export function RepoEmptyState({
 }) {
   const handleLoadMock = () => {
     if (!setRepoState) return;
+    const repo: RepoIndex = {
+      repoId: 999,
+      root: '/mock/repo',
+      branch: 'main',
+      headSha: '0000000',
+    };
+
     setRepoState({
       status: 'ready',
       path: '/mock/repo', // Mock path
       model: NearbyGridDemo,
-      repo: {
-        repoId: 999,
-        status: 'ready',
-        root: '/mock/repo',
-        head: 'HEAD',
-        branches: [],
-        remotes: [],
-      } as any,
+      repo,
     });
   };
 
@@ -31,6 +32,7 @@ export function RepoEmptyState({
 
       {import.meta.env.DEV && setRepoState && (
         <button
+          type="button"
           onClick={handleLoadMock}
           className="absolute bottom-4 right-4 text-xs text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity"
         >
