@@ -161,8 +161,8 @@ Approach:
 1. Keep current Timeline anchoring and settings persistence architecture.
 2. Make `/Users/jamiecraik/dev/narrative/src/hooks/useFirefly.ts` the **single owner** of semantic state; `BranchView` provides inputs and `Timeline` renders only.
 3. Replace timer-dominant flow with a derived priority selector: `Insight > Analyzing > Tracking > Idle`.
-4. Lock `Insight` to a concrete source: `model.traceSummaries?.byCommit[selectedNodeId]` transitioning from `undefined` to a summary where `(aiLines + humanLines + mixedLines + unknownLines) > 0`.
-5. Dedupe `Insight` emissions with `insightKey = ${selectedNodeId}:${commitSha}:${aiLines}:${humanLines}:${mixedLines}:${unknownLines}:${sortedModelIds}:${sortedToolNames}`.
+4. Lock `Insight` to a concrete source: `model.traceSummaries?.byCommit[selectedCommitSha]` transitioning from `undefined` to a summary where `(aiLines + humanLines + mixedLines + unknownLines) > 0`.
+5. Dedupe `Insight` emissions with `insightKey = ${selectedCommitSha}:${commitSha}:${aiLines}:${humanLines}:${mixedLines}:${unknownLines}:${sortedModelIds}:${sortedToolNames}`.
 6. Gate all async transition commits by current selection identity + sequence token to prevent stale leakage.
 
 ## Event-to-State Contract (v1)
@@ -172,7 +172,7 @@ Approach:
 | `Idle` | default resting | current selected node | selection change or selected-node analysis starts | ambient baseline |
 | `Tracking` | selected node changes | `selectedNodeId` at event emission | position settle or `Analyzing` begins | commit-following orientation |
 | `Analyzing` | selected-node visible loaders active (`files`, `diff`, `trace`) | applicable loader set + loader token + `selectedNodeId` | all tracked applicable loaders settle for same selected node | stale completions ignored |
-| `Insight` | `traceSummaries.byCommit[selectedNodeId]` becomes newly available with non-zero summary payload | `insightKey` + `selectedNodeId` | selection changes, summary key changes, or `Analyzing` restarts for same node | never emit for off-selection commits |
+| `Insight` | `traceSummaries.byCommit[selectedCommitSha]` becomes newly available with non-zero summary payload | `insightKey` + `selectedCommitSha` | selection changes, summary key changes, or `Analyzing` restarts for same node | never emit for off-selection commits |
 
 ### Deterministic Signal Definitions (P0 closeout)
 
@@ -189,11 +189,13 @@ Approach:
 
   - If a loader is not applicable for the current node/context, exclude it from the pending set.
   - `Analyzing` exits only when the pending set is empty for the same `selectedNodeId`.
-- **Insight eligible predicate:** summary exists for current selected node, `summary.commitSha === selectedNodeId`, and total lines `(ai+human+mixed+unknown) > 0`.
+- **Insight eligible predicate:** summary exists for current selected commit, `summary.commitSha === selectedCommitSha`, and total lines `(ai+human+mixed+unknown) > 0`.
+- **ID normalization contract:** treat semantic-selection identity as `selectedCommitSha`; if UI state is `selectedNodeId`, normalize once at adapter boundary before semantic evaluation.
 - **Self-transition semantics:**  
   - `Analyzing → Analyzing`: allowed only when pending-loader set changes for same selection; do not restart animation state.  
   - `Insight → Insight`: allowed only when `insightKey` changes; unchanged key must not re-emit.
 - **Tracking-settle plumbing contract:** `Timeline` emits settled position updates to `BranchView`; `BranchView` passes tracking-settled input into `useFirefly` (no transition calculation outside hook).
+- **Trace applicability source-of-truth:** use a single adapter flag (`traceRequestedForSelection`) in `BranchView` as the only condition for whether `trace` enters the applicable loader set.
 - **Ownership guard:** semantic transitions are computed only in `useFirefly`; `BranchView` supplies inputs only.
 
 ### Formal Transition Matrix (P0)
@@ -206,6 +208,7 @@ Allowed transitions only:
 - `Insight → Analyzing | Tracking | Idle | Insight` (`Insight→Insight` only on `insightKey` change)
 
 Precedence when multiple signals are true in the same frame:
+Apply precedence only after filtering to transitions allowed from the **current state** by the matrix above (precedence never bypasses matrix rules).
 1. `Insight`
 2. `Analyzing`
 3. `Tracking`
@@ -255,7 +258,7 @@ function commitIfCurrent(localSeq: number, next: FireflyState) {
 Insight dedupe key contract:
 
 ```ts
-const insightKey = `${selectedNodeId}:${summary.commitSha}:${summary.aiLines}:${summary.humanLines}:${summary.mixedLines}:${summary.unknownLines}:${[...summary.modelIds].sort().join(',')}:${[...summary.toolNames].sort().join(',')}`;
+const insightKey = `${selectedCommitSha}:${summary.commitSha}:${summary.aiLines}:${summary.humanLines}:${summary.mixedLines}:${summary.unknownLines}:${[...summary.modelIds].sort().join(',')}:${[...summary.toolNames].sort().join(',')}`;
 if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 ```
 
@@ -288,6 +291,9 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 - Continue using Tauri Store lazy singleton pattern:
   - `/Users/jamiecraik/dev/narrative/src/core/tauri/settings.ts:7-14`
 - Keep explicit `save()` after setting toggle to ensure durable preference updates.
+- Toggle-off behavior contract:
+  - disabling Firefly immediately suppresses rendering and new state emissions
+  - pending transition commits for the current sequence are ignored while disabled
 
 ### 6) Performance verification protocol (P1)
 
@@ -300,6 +306,11 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
   - `pnpm test:e2e -- e2e/firefly-visual-system-v1.spec.ts --grep "@firefly-perf"`
 - Persist perf evidence to:
   - `/Users/jamiecraik/dev/narrative/docs/assets/verification/firefly-perf-YYYY-MM-DD.json`
+- Perf artifact metadata (required):
+  - OS + version
+  - browser/runtime mode (headed/headless)
+  - machine profile label
+  - run timestamp + attempt count
 - Acceptance thresholds:
   - average FPS ≥ 55
   - p95 frame time ≤ 20ms
@@ -311,13 +322,15 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 
 - [ ] Firefly supports `Idle`, `Tracking`, `Analyzing`, `Insight` states with typed event/state contract.
 - [ ] `useFirefly` is the single semantic-state owner; `BranchView` and `App` do not contain competing transition logic.
+- [ ] Selection identity is normalized at adapter boundary (`selectedNodeId -> selectedCommitSha`) before semantic evaluation.
 - [ ] `Tracking` emits only for active selection changes and exits only after deterministic “position settled” criteria.
 - [ ] `Analyzing` reflects selected-node loader truth table (`any pending in tracked applicable loaders`) and ignores stale async results.
-- [ ] `Insight` emits only when `traceSummaries.byCommit[selectedNodeId]` transitions to newly available summary where total lines > 0.
+- [ ] `Insight` emits only when `traceSummaries.byCommit[selectedCommitSha]` transitions to newly available summary where total lines > 0.
 - [ ] `Insight` dedupe key prevents repeated re-emit from rerender/tab churn without underlying summary change.
 - [ ] Transition precedence is enforced: `Insight > Analyzing > Tracking > Idle`.
 - [ ] Self-transition rules are enforced (`Analyzing→Analyzing` only on pending-set change, `Insight→Insight` only on `insightKey` change).
 - [ ] Firefly toggle reliably enables/disables signal and persists across app restarts.
+- [ ] Toggle OFF immediately suppresses Firefly rendering/state emissions and prevents pending transitions from reappearing while disabled.
 
 ### Non-functional
 
@@ -345,7 +358,7 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 - [ ] Perf capture command executed:
   - `pnpm test:e2e -- e2e/firefly-visual-system-v1.spec.ts --grep "@firefly-perf"`
 - [ ] Performance verification artifact (scripted scroll run)
-  - records average FPS, p95 frame time, and layout-shift check results at `/Users/jamiecraik/dev/narrative/docs/assets/verification/firefly-perf-YYYY-MM-DD.json`.
+  - records average FPS, p95 frame time, layout-shift check results, and required run metadata at `/Users/jamiecraik/dev/narrative/docs/assets/verification/firefly-perf-YYYY-MM-DD.json`.
 
 ## Implementation Plan
 
@@ -379,6 +392,8 @@ Files:
 
 Deliverables:
 - selected-node and loader inputs wired into `useFirefly` (input adapter only)
+- normalized semantic selection identity (`selectedCommitSha`) provided by adapter
+- explicit `traceRequestedForSelection` adapter flag provided as trace applicability source
 - deterministic `Tracking` settle signal input and `Analyzing` loader truth-table inputs
 - explicit callback plumbing for settled position (`Timeline -> BranchView -> useFirefly`)
 - stale async guard keyed by current selected node + sequence token
@@ -392,8 +407,8 @@ Files:
 - `/Users/jamiecraik/dev/narrative/src/core/types.ts` (if additional typed summary payload is needed)
 
 Deliverables:
-- explicit source lock: `traceSummaries.byCommit[selectedNodeId]`
-- `Insight` emission only on `undefined -> eligible summary` transition for selected node
+- explicit source lock: `traceSummaries.byCommit[selectedCommitSha]`
+- `Insight` emission only on `undefined -> eligible summary` transition for selected commit
 - dedupe by strengthened `insightKey` (includes sorted model/tool dimensions)
 - self-transition behavior defined (`Insight→Insight` only on key change)
 - guard against off-selection insight triggers
@@ -410,6 +425,7 @@ Files:
 Deliverables:
 - reduced-motion transition behavior validated
 - user-visible + logged error path for loader/settings failures (canonical `actionError` / `ImportErrorBanner` surface contract)
+- toggle-off immediate suppression + no-reappear behavior validated
 - mid-transition toggle cleanup behavior
 
 #### T5 — Tests, race harness, and perf verification gates
@@ -428,6 +444,7 @@ Deliverables:
 - reduced-motion and persistence regression coverage
 - command gate execution evidence (`pnpm test`, `pnpm test:e2e -- e2e/firefly-visual-system-v1.spec.ts`)
 - scripted perf gate output (avg FPS, p95 frame time, layout-shift outcome) at `/Users/jamiecraik/dev/narrative/docs/assets/verification/firefly-perf-YYYY-MM-DD.json`
+- perf artifact includes required run metadata fields
 
 ## SpecFlow Analysis (Gaps Closed)
 
@@ -435,7 +452,7 @@ Deliverables:
    **Resolution:** explicit source-and-guard state contract + dependency-ordered tasks.
 
 2. **Gap:** `Insight` trigger semantics were ambiguous.  
-   **Resolution:** locked concrete source (`traceSummaries.byCommit[selectedNodeId]`) + `insightKey` dedupe semantics in `T3`.
+   **Resolution:** locked concrete source (`traceSummaries.byCommit[selectedCommitSha]`) + `insightKey` dedupe semantics in `T3`.
 
 3. **Gap:** stale async race mitigation was mentioned but not operationalized.  
    **Resolution:** explicit sequence-token + selected-node guard approach + deferred-promise out-of-order test harness.
@@ -455,6 +472,9 @@ Deliverables:
 8. **Gap:** reproducibility and ownership details were still partially implicit.  
    **Resolution:** explicit callback/data plumbing, toggle-error propagation ownership, fixture path, and perf capture command added.
 
+9. **Gap:** identity and loader-applicability semantics could drift across implementations.  
+   **Resolution:** added adapter-level ID normalization and single trace-applicability source flag.
+
 ## Dependencies & Risks
 
 | Risk | Mitigation |
@@ -464,8 +484,10 @@ Deliverables:
 | Timer-based resets override valid semantic states | migrate to deterministic transition handling in `T1` |
 | Silent loader/persistence failures mislead users | enforce surfaced error path + logging in `T4` |
 | State logic duplicated across files | enforce `useFirefly` single-owner rule in implementation + review checklist |
+| ID mismatch between selection and commit summary | adapter normalization to `selectedCommitSha` + dedicated assertions |
 | Predicate drift across implementers | deterministic signal definitions + explicit truth-table tests |
 | Visual flapping from fast loader churn | precedence + dwell constraints + race harness assertions |
+| Perf artifacts not comparable across environments | required run metadata in perf artifact + fixed perf capture command |
 | Visual noise/distraction from ambient signal | reduced-motion and restrained animation defaults, plus toggle |
 
 ## Success Metrics
