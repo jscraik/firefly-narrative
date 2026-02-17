@@ -1,7 +1,7 @@
-import { useRef, useEffect } from 'react';
 import { FileCode } from 'lucide-react';
-import type { FileChange, TraceFileSummary } from '../../core/types';
+import { useEffect, useRef } from 'react';
 import { useFileSelection } from '../../core/context/FileSelectionContext';
+import type { FileChange, TraceFileSummary } from '../../core/types';
 
 function formatDelta(n: number) {
   const sign = n >= 0 ? '+' : '';
@@ -53,16 +53,14 @@ export function FilesChanged({
               }}
               type="button"
               aria-pressed={selectedFile === f.path}
-              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all duration-150 ${
-                selectedFile === f.path 
-                  ? 'bg-accent-blue-bg border-l-[3px] border-l-accent-blue -ml-[3px] pl-[18px] shadow-sm' 
+              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all duration-150 ${selectedFile === f.path
+                  ? 'bg-accent-blue-bg border-l-[3px] border-l-accent-blue -ml-[3px] pl-[18px] shadow-sm'
                   : 'hover:bg-bg-tertiary border-l-[3px] border-l-transparent'
-              }`}
+                }`}
               onClick={() => selectFile(f.path)}
             >
-              <div className={`truncate font-mono text-[12px] ${
-                selectedFile === f.path ? 'text-accent-blue' : 'text-text-secondary'
-              }`}>
+              <div className={`truncate font-mono text-[12px] ${selectedFile === f.path ? 'text-accent-blue' : 'text-text-secondary'
+                }`}>
                 {f.path}
               </div>
               <div className="flex shrink-0 items-center gap-2 font-mono text-[11px] tabular-nums">
@@ -84,7 +82,7 @@ export function FilesChanged({
                   })()
                 ) : null}
                 <span className="text-accent-green">{formatDelta(f.additions)}</span>
-                <span className="text-accent-red">-{f.deletions}</span>
+                <span className="text-accent-red">{`-${f.deletions}`}</span>
               </div>
             </button>
           ))

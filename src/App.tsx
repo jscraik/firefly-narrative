@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { indexRepo } from './core/repo/indexer';
 import { setOtelReceiverEnabled } from './core/tauri/otelReceiver';
 import type {
   BranchViewModel,
+  DashboardFilter,
   TraceCollectorConfig
 } from './core/types';
-import type { DashboardFilter } from './core/types';
-import { RepoEmptyState } from './ui/components/RepoEmptyState';
-import { TopNav, type Mode } from './ui/components/TopNav';
-import { BranchView } from './ui/views/BranchView';
-import { DashboardView } from './ui/views/DashboardView';
-import { DocsOverviewPanel } from './ui/components/DocsOverviewPanel';
-import { useRepoLoader, type RepoState } from './hooks/useRepoLoader';
-import { useUpdater } from './hooks/useUpdater';
-import { useTraceCollector } from './hooks/useTraceCollector';
-import { useSessionImport } from './hooks/useSessionImport';
 import { useAutoIngest } from './hooks/useAutoIngest';
 import { useCommitData } from './hooks/useCommitData';
 import { useFirefly } from './hooks/useFirefly';
-import { UpdatePrompt, UpdateIndicator } from './ui/components/UpdatePrompt';
-import { indexRepo } from './core/repo/indexer';
+import { useRepoLoader, type RepoState } from './hooks/useRepoLoader';
+import { useSessionImport } from './hooks/useSessionImport';
+import { useTraceCollector } from './hooks/useTraceCollector';
+import { useUpdater } from './hooks/useUpdater';
+import { DocsOverviewPanel } from './ui/components/DocsOverviewPanel';
+import { RepoEmptyState } from './ui/components/RepoEmptyState';
+import { TopNav, type Mode } from './ui/components/TopNav';
+import { UpdateIndicator, UpdatePrompt } from './ui/components/UpdatePrompt';
+import { BranchView } from './ui/views/BranchView';
+import { DashboardView } from './ui/views/DashboardView';
 
 type AgentationComponentType = (typeof import('agentation'))['Agentation'];
 
@@ -111,7 +111,7 @@ function DocsView(props: {
 
   return (
     <div className="h-full overflow-hidden bg-bg-tertiary p-6">
-      <DocsOverviewPanel 
+      <DocsOverviewPanel
         repoRoot={repoState.status === 'ready' ? repoState.repo.root : ''}
         onClose={onClose}
       />
@@ -321,7 +321,7 @@ export default function App() {
       </TopNav>
 
       {/* `min-h-0` is critical so nested flex children can scroll instead of overflowing */}
-      <div className="flex-1 min-h-0 overflow-hidden bg-bg-secondary">
+      <div className="flex-1 min-h-0 overflow-hidden bg-bg-tertiary">
         {mode === 'dashboard' ? (
           <DashboardView
             repoState={repoState}
@@ -331,7 +331,7 @@ export default function App() {
             onModeChange={setMode}
           />
         ) : mode === 'docs' ? (
-          <DocsView 
+          <DocsView
             repoState={repoState}
             setRepoState={setRepoState}
             onClose={() => setMode('repo')}
@@ -411,7 +411,7 @@ export default function App() {
             onToggleFirefly={firefly.toggle}
           />
         ) : (
-          <RepoEmptyState />
+          <RepoEmptyState setRepoState={setRepoState} />
         )}
       </div>
       {import.meta.env.DEV && AgentationComponent && (

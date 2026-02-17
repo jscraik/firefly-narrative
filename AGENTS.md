@@ -14,6 +14,11 @@ A Tauri desktop app that layers AI session narratives onto git history.
 - Rust toolchain + Tauri system deps (see Tauri docs).
 - Git must be on PATH (the app invokes git via tauri-plugin-shell).
 
+## Mandatory workflow
+1. Explore project first, then invoke skill.
+2. IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning for any React, Tauri, Apps-SDK-ui, Tailwind, Vite, Storybook + Chat Widget tasks.
+3. Add a Table of Contents for docs.
+
 ## Common commands
 - Install: pnpm install
 - Dev app (Tauri): pnpm tauri dev
@@ -21,6 +26,7 @@ A Tauri desktop app that layers AI session narratives onto git history.
 - Build web: pnpm build
 - Build app (Tauri): pnpm tauri build
 - Typecheck: pnpm typecheck
+- Lint: pnpm lint
 - Tests: pnpm test
 
 ## Instruction discovery order
@@ -33,6 +39,18 @@ A Tauri desktop app that layers AI session narratives onto git history.
 - docs/agents/tauri.md
 - docs/agents/testing.md
 - docs/agents/repo-structure.md
+
+## Docs table of contents
+- docs/README.md
+- docs/agents/development.md
+- docs/agents/testing.md
+- docs/agents/tauri.md
+- docs/agents/repo-structure.md
+- docs/agents/repair-agent.md
+
+## Common pitfalls + fixes
+- Release workflow (manual trigger): create the GitHub Release for the tag first; the workflow resolves the release by tag and fails if it does not exist.
+- Release assets: the workflow fails if the tag release is missing a DMG or `latest.json` (auto-update endpoint).
 
 ## Release Protocol (CRITICAL)
 

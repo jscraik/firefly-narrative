@@ -1,0 +1,8 @@
+title = "Narrative gitleaks config"
+
+[allowlist]
+description = "Allow redaction/sanitization test fixtures with fake tokens"
+paths = [
+  "src-tauri/src/import/redactor.rs",
+  "src-tauri/src/import/tool_sanitizer.rs"
+]

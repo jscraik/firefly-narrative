@@ -1,8 +1,8 @@
+import { BookOpen, ChevronRight, FileText, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { FileText, BookOpen, X, ChevronRight } from 'lucide-react';
+import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
-import type { Components } from 'react-markdown';
 import {
   ensureNarrativeDirs,
   listNarrativeFiles,
@@ -128,11 +128,11 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
     code({ className, children, ...rest }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1] || '';
-      
+
       if (language === 'mermaid') {
         return <MermaidDiagram chart={String(children).replace(/\n$/, '')} />;
       }
-      
+
       return (
         <code className={className} {...rest}>
           {children}
@@ -144,126 +144,130 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
   // Document list view
   return (
     <div className="h-full flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 motion-page-enter">
-      <div className="card p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-accent-blue" />
-          <h2 className="text-sm font-semibold text-text-primary">Documentation</h2>
-        </div>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-tertiary-soft p-1.5 rounded-lg text-text-muted"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
       {!repoRoot ? (
         <div className="flex flex-1 items-center justify-center p-3">
-          <RepositoryPlaceholderCard className="max-w-2xl" />
-        </div>
-      ) : selectedDoc ? (
-        <div className="card p-4 flex-1 flex flex-col min-h-0">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border-light">
-            <button
-              type="button"
-              onClick={() => setSelectedDoc(null)}
-              className="btn-tertiary-soft p-1.5 rounded-lg text-text-tertiary"
-            >
-              <ChevronRight className="w-5 h-5 rotate-180" />
-            </button>
-            <div>
-              <h3 className="text-sm font-semibold text-text-primary">{selectedDoc.title}</h3>
-              <p className="text-xs text-text-tertiary">{selectedDoc.name}</p>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {loading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="text-sm text-text-tertiary">Loading...</div>
-              </div>
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                <ReactMarkdown rehypePlugins={[rehypeRaw]} components={components}>
-                  {content}
-                </ReactMarkdown>
-              </div>
-            )}
-          </div>
-        </div>
-      ) : docs.length === 0 ? (
-        <div className="card p-6 flex flex-1 flex-col items-center justify-center text-center text-text-tertiary">
-          <div className="mb-3 inline-flex rounded-xl border border-border-light bg-bg-tertiary p-3">
-            <FileText className="h-12 w-12 opacity-50" />
-          </div>
-          <p className="text-sm font-medium text-text-secondary">No Narrative docs found</p>
-          <p className="text-xs mt-2 text-text-muted max-w-[52ch]">
-            Narrative renders markdown files inside <span className="font-mono">.narrative/</span>. Mermaid diagrams
-            render from fenced <span className="font-mono">```mermaid</span> blocks.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2 justify-center">
-            <button
-              type="button"
-              className="btn-secondary-soft inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-text-secondary"
-              onClick={async () => {
-	                try {
-                  await ensureNarrativeDirs(repoRoot);
-                  const rel = 'docs/overview.md';
-                  const starter = [
-                    '# Narrative Documentation',
-                    '',
-	                    '## System overview',
-	                    '',
-	                    '```mermaid',
-	                    'flowchart TD',
-	                    '  A[Auto-ingest] --> B[Sessions]',
-	                    '  A --> C[Traces]',
-	                    '  B --> D[Story Anchors]',
-	                    '  C --> D',
-	                    '```',
-	                    '',
-	                    '## Notes',
-	                    '',
-	                    '- Place docs in `.narrative/` so they can be shared alongside narratives.',
-                    ''
-                  ].join('\\n');
-                  await writeNarrativeFile(repoRoot, rel, starter);
-                  await refreshDocs();
-                } catch (e) {
-                  console.error('Failed to create starter doc:', e);
-                }
-              }}
-            >
-              <FileText className="w-4 h-4" />
-              Create starter doc
-            </button>
-          </div>
+          <RepositoryPlaceholderCard className="max-w-2xl" variant="docs" />
         </div>
       ) : (
-        <div className="card p-4 flex-1 space-y-2 overflow-y-auto">
-          {docs.map((doc) => (
-            <button
-              key={doc.path}
-              type="button"
-              onClick={() => setSelectedDoc(doc)}
-              className="w-full flex items-center gap-3 p-3 rounded-lg border border-border-light hover:border-accent-blue-light hover:bg-accent-blue-bg transition-colors text-left group"
-            >
-              <FileText className="w-5 h-5 text-text-muted group-hover:text-accent-blue" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-secondary group-hover:text-accent-blue truncate">
-                  {doc.title}
-                </p>
-                <p className="text-xs text-text-muted truncate">{doc.name}</p>
+        <>
+          <div className="card p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-accent-blue" />
+              <h2 className="text-sm font-semibold text-text-primary">Documentation</h2>
+            </div>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-tertiary-soft p-1.5 rounded-lg text-text-muted"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {selectedDoc ? (
+            <div className="card p-4 flex-1 flex flex-col min-h-0">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border-light">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDoc(null)}
+                  className="btn-tertiary-soft p-1.5 rounded-lg text-text-tertiary"
+                >
+                  <ChevronRight className="w-5 h-5 rotate-180" />
+                </button>
+                <div>
+                  <h3 className="text-sm font-semibold text-text-primary">{selectedDoc.title}</h3>
+                  <p className="text-xs text-text-tertiary">{selectedDoc.name}</p>
+                </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent-blue" />
-            </button>
-          ))}
-        </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {loading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="text-sm text-text-tertiary">Loading...</div>
+                  </div>
+                ) : (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown rehypePlugins={[rehypeRaw]} components={components}>
+                      {content}
+                    </ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : docs.length === 0 ? (
+            <div className="card p-6 flex flex-1 flex-col items-center justify-center text-center text-text-tertiary">
+              <div className="mb-3 inline-flex rounded-xl border border-border-light bg-bg-tertiary p-3">
+                <FileText className="h-12 w-12 opacity-50" />
+              </div>
+              <p className="text-sm font-medium text-text-secondary">No Narrative docs found</p>
+              <p className="text-xs mt-2 text-text-muted max-w-[52ch]">
+                Narrative renders markdown files inside <span className="font-mono">.narrative/</span>. Mermaid diagrams
+                render from fenced <span className="font-mono">```mermaid</span> blocks.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                <button
+                  type="button"
+                  className="btn-secondary-soft inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-text-secondary"
+                  onClick={async () => {
+                    try {
+                      await ensureNarrativeDirs(repoRoot);
+                      const rel = 'docs/overview.md';
+                      const starter = [
+                        '# Narrative Documentation',
+                        '',
+                        '## System overview',
+                        '',
+                        '```mermaid',
+                        'flowchart TD',
+                        '  A[Auto-ingest] --> B[Sessions]',
+                        '  A --> C[Traces]',
+                        '  B --> D[Story Anchors]',
+                        '  C --> D',
+                        '```',
+                        '',
+                        '## Notes',
+                        '',
+                        '- Place docs in `.narrative/` so they can be shared alongside narratives.',
+                        ''
+                      ].join('\\n');
+                      await writeNarrativeFile(repoRoot, rel, starter);
+                      await refreshDocs();
+                    } catch (e) {
+                      console.error('Failed to create starter doc:', e);
+                    }
+                  }}
+                >
+                  <FileText className="w-4 h-4" />
+                  Create starter doc
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="card p-4 flex-1 space-y-2 overflow-y-auto">
+              {docs.map((doc) => (
+                <button
+                  key={doc.path}
+                  type="button"
+                  onClick={() => setSelectedDoc(doc)}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg border border-border-light hover:border-accent-blue-light hover:bg-accent-blue-bg transition-colors text-left group"
+                >
+                  <FileText className="w-5 h-5 text-text-muted group-hover:text-accent-blue" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-text-secondary group-hover:text-accent-blue truncate">
+                      {doc.title}
+                    </p>
+                    <p className="text-xs text-text-muted truncate">{doc.name}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent-blue" />
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

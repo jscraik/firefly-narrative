@@ -172,5 +172,13 @@ Use this project under the **Apache-2.0** license. See [`LICENSE`](LICENSE).
 - Last updated: 2026-02-16
 
 <p align="center">
+  <img src="brand/brand-mark.webp" width="42" alt="brAInwav brand mark" />
+</p>
+
+<p align="center">
+  <em>from demo to duty</em>
+</p>
+
+<p align="center">
   Built with ❤️ by <strong>brAInwav</strong>
 </p>

@@ -1,6 +1,6 @@
-import { FolderOpen, Link2, BarChart3 } from 'lucide-react';
+import { BarChart3, BookOpen, GitBranch, Link2 } from 'lucide-react';
 
-type PlaceholderVariant = 'repo' | 'dashboard';
+type PlaceholderVariant = 'repo' | 'dashboard' | 'docs';
 
 export function RepositoryPlaceholderCard({
   className = '',
@@ -10,18 +10,29 @@ export function RepositoryPlaceholderCard({
   variant?: PlaceholderVariant;
 }) {
   const isDashboard = variant === 'dashboard';
-  const title = isDashboard ? 'No Dashboard Loaded' : 'No Repository Loaded';
-  const message = isDashboard
-    ? 'Load a repository to see contribution metrics, trends, and developer insights.'
-    : 'Narrative will display timeline, docs, and linked sessions as soon as a repository is available.';
+  const isDocs = variant === 'docs';
+
+  let title = 'No Repository Loaded';
+  if (isDashboard) title = 'No Dashboard Loaded';
+  if (isDocs) title = 'No Documentation Loaded';
+
+  let message =
+    'Narrative will display timeline, docs, and linked sessions as soon as a repository is available.';
+  if (isDashboard) {
+    message = 'Load a repository to see contribution metrics, trends, and developer insights.';
+  } else if (isDocs) {
+    message = 'Narrative will render markdown documentation from the .narrative directory once a repository is loaded.';
+  }
 
   return (
     <div className={`card w-full max-w-xl rounded-2xl p-8 shadow-sm animate-in fade-in slide-in-from-bottom-2 motion-page-enter ${className}`.trim()}>
-      <div className="mx-auto mb-6 inline-flex rounded-2xl border border-border-light bg-bg-tertiary p-5">
+      <div className="mb-6 inline-flex items-center justify-center rounded-2xl border border-border-light bg-bg-tertiary p-5">
         {isDashboard ? (
           <BarChart3 className="h-10 w-10 text-text-muted" />
+        ) : isDocs ? (
+          <BookOpen className="h-10 w-10 text-text-muted" />
         ) : (
-          <FolderOpen className="h-10 w-10 text-text-muted" />
+          <GitBranch className="h-10 w-10 text-text-muted" />
         )}
       </div>
       <h3 className="mb-2 text-center text-lg font-semibold text-text-primary">{title}</h3>

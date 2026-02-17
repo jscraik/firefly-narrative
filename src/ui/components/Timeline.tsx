@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { TimelineNode as TimelineNodeType } from '../../core/types';
+import { useTimelineNavigation } from '../../hooks/useTimelineNavigation';
 import { BadgePill } from './BadgePill';
+import { FireflySignal, type FireflyEvent } from './FireflySignal';
 import { TimelineNavButtons } from './TimelineNavButtons';
 import { TimelineNodeComponent } from './TimelineNode';
-import { useTimelineNavigation } from '../../hooks/useTimelineNavigation';
-import { FireflySignal, type FireflyEvent } from './FireflySignal';
 
 export interface TimelineProps {
   nodes: TimelineNodeType[];
@@ -88,7 +88,7 @@ export function Timeline({
             }}
           />
 
-          <div className="relative flex min-w-max items-start gap-12 px-4 py-2">
+          <div className="relative flex min-w-max items-start gap-16 px-4 py-2">
             {sorted.map((n) => (
               <TimelineNodeComponent
                 key={n.id}
