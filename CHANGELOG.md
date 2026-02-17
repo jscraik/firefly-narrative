@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.6.1...narrative-desktop-mvp-v0.7.0) (2026-02-16)
+
+
+### Features
+
+* improve theming, session links, and agentation autopilot ([bcfdafb](https://github.com/jscraik/narrative/commit/bcfdafb205afd1864c83b45e604781a4e1bce866))
+
 ## [0.6.1](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.6.0...narrative-desktop-mvp-v0.6.1) (2026-02-16)
 
 
