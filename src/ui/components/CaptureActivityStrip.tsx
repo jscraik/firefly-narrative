@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 import type { ActivityEvent } from '../../core/tauri/activity';
 import { Checkbox } from './Checkbox';
 
+type ActivityFilter = 'all' | 'failed' | 'needs-review' | 'linked';
+
 function formatTime(iso?: string) {
   if (!iso) return '—';
   try {
@@ -9,6 +11,82 @@ function formatTime(iso?: string) {
   } catch {
     return '—';
   }
+}
+
+function CaptureLifecycleRail({
+  recent,
+  onSelectFilter,
+  activeFilter,
+}: {
+  recent: ActivityEvent[];
+  onSelectFilter?: (filter: ActivityFilter) => void;
+  activeFilter?: ActivityFilter;
+}) {
+  const latestImport = recent.find((e) => e.action === 'auto_import');
+  const hasLinkedCommit = Boolean(latestImport?.commitShas && latestImport.commitShas.length > 0);
+  const needsReview = Boolean(latestImport?.needsReview);
+  const failed = latestImport?.status === 'failed';
+
+  const activeStep = failed ? 2 : hasLinkedCommit ? 3 : latestImport ? 2 : 1;
+  const step3Label = failed ? 'Failed' : needsReview ? 'Needs review' : 'Linked';
+
+  const steps = [
+    { id: 1, label: 'Imported' },
+    { id: 2, label: 'Matching' },
+    { id: 3, label: step3Label },
+  ] as const;
+
+  return (
+    <div className="mt-1">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {steps.map((step, index) => {
+          const complete = step.id < activeStep && !failed;
+          const active = step.id === activeStep;
+          const dotClass = failed && step.id === 3
+            ? 'bg-accent-red border-accent-red'
+            : complete
+              ? 'bg-accent-green border-accent-green'
+              : active
+                ? 'bg-accent-amber border-accent-amber'
+                : 'bg-bg-tertiary border-border-subtle';
+
+          const textClass = failed && step.id === 3
+            ? 'text-accent-red font-semibold'
+            : active
+              ? 'text-text-secondary font-semibold'
+              : 'text-text-muted';
+
+          return (
+            <div key={step.id} className="flex items-center gap-1.5">
+              <span className={`h-2 w-2 rounded-full border ${dotClass}`} />
+              <span className={`text-[10px] leading-4 ${textClass}`}>{step.label}</span>
+              {index < steps.length - 1 ? <span className="h-px w-3 bg-border-light" aria-hidden="true" /> : null}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {[
+          { key: 'linked' as const, label: 'Linked' },
+          { key: 'needs-review' as const, label: 'Needs review' },
+          { key: 'failed' as const, label: 'Failed' },
+        ].map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => onSelectFilter?.(item.key)}
+            className={`rounded-md border px-2 py-0.5 text-[10px] transition-colors ${
+              activeFilter === item.key
+                ? 'border-accent-blue-light bg-accent-blue-bg text-accent-blue'
+                : 'btn-tertiary-soft'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function CaptureActivityStrip(props: {
@@ -24,6 +102,7 @@ export function CaptureActivityStrip(props: {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerItems, setDrawerItems] = useState<ActivityEvent[] | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
 
   const lastSeen = useMemo(() => formatTime(lastSeenISO), [lastSeenISO]);
 
@@ -43,6 +122,17 @@ export function CaptureActivityStrip(props: {
     setDrawerOpen(false);
   }, []);
 
+  const filteredItems = useMemo(() => {
+    const items = drawerItems ?? [];
+    if (activityFilter === 'all') return items;
+    return items.filter((e) => {
+      if (activityFilter === 'failed') return e.status === 'failed';
+      if (activityFilter === 'needs-review') return Boolean(e.needsReview);
+      if (activityFilter === 'linked') return Boolean(e.commitShas && e.commitShas.length > 0);
+      return true;
+    });
+  }, [activityFilter, drawerItems]);
+
   return (
     <>
       <div className="card p-3 flex flex-col gap-2">
@@ -56,6 +146,16 @@ export function CaptureActivityStrip(props: {
             </div>
             {enabled ? (
               <div className="text-[11px] text-text-muted">Last seen: {lastSeen}</div>
+            ) : null}
+            {enabled ? (
+              <CaptureLifecycleRail
+                recent={recent}
+                activeFilter={activityFilter === 'all' ? undefined : activityFilter}
+                onSelectFilter={async (filter) => {
+                  setActivityFilter((prev) => (prev === filter ? 'all' : filter));
+                  await openDrawer();
+                }}
+              />
             ) : null}
           </div>
 
@@ -72,7 +172,7 @@ export function CaptureActivityStrip(props: {
             <div className="text-[11px] font-semibold text-text-secondary">RECENT</div>
             <button
               type="button"
-              className="text-[11px] text-text-tertiary hover:text-text-secondary"
+              className="text-[11px] text-text-tertiary transition-colors hover:text-text-secondary"
               onClick={openDrawer}
               disabled={!onRequestAll}
             >
@@ -102,7 +202,7 @@ export function CaptureActivityStrip(props: {
             onClick={closeDrawer}
             aria-label="Close"
           />
-          <div className="absolute right-0 top-0 h-full w-full max-w-[520px] bg-bg-primary shadow-xl border-l border-border-light p-5 overflow-y-auto animate-in slide-in-from-right duration-300">
+          <div className="absolute right-0 top-0 h-full w-full max-w-[520px] bg-bg-primary shadow-xl border-l border-border-subtle p-5 overflow-y-auto animate-in slide-in-from-right duration-300">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-text-secondary">Capture activity</div>
@@ -112,7 +212,7 @@ export function CaptureActivityStrip(props: {
               </div>
               <button
                 type="button"
-                className="text-xs px-3 py-1.5 rounded-md bg-bg-hover text-text-secondary hover:bg-border-light"
+                className="btn-secondary-soft text-xs px-3 py-1.5 rounded-md"
                 onClick={closeDrawer}
               >
                 Close
@@ -122,13 +222,13 @@ export function CaptureActivityStrip(props: {
             <div className="mt-4">
               {drawerLoading ? (
                 <div className="text-xs text-text-tertiary">Loading…</div>
-              ) : (drawerItems ?? []).length === 0 ? (
+              ) : filteredItems.length === 0 ? (
                 <div className="text-sm text-text-tertiary">
-                  Nothing captured yet. Turn on Auto‑capture to start.
+                  No activity for this filter yet.
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {(drawerItems ?? []).map((e) => (
+                  {filteredItems.map((e) => (
                     <div key={e.id} className="card p-3">
                       <div className="text-xs text-text-secondary">{e.message}</div>
                       <div className="mt-1 text-[11px] text-text-tertiary">

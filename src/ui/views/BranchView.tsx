@@ -19,6 +19,7 @@ import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
 import type { IngestConfig, OtlpKeyStatus, DiscoveredSources } from '../../core/tauri/ingestConfig';
 import { useTestImport } from '../../hooks/useTestImport';
 import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
+import type { FireflyEvent } from '../components/FireflySignal';
 
 function BranchViewInner(props: {
   model: BranchViewModel;
@@ -56,6 +57,10 @@ function BranchViewInner(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
+  // Firefly signal props
+  fireflyEnabled?: boolean;
+  fireflyEvent?: FireflyEvent;
+  onToggleFirefly?: () => void;
 }) {
   const {
     model,
@@ -92,7 +97,10 @@ function BranchViewInner(props: {
     onUpdateWatchPaths,
     onConfigureCodex,
     onRotateOtlpKey,
-    onGrantCodexConsent
+    onGrantCodexConsent,
+    fireflyEnabled,
+    fireflyEvent,
+    onToggleFirefly,
   } = props;
   const { selectedFile, selectFile } = useFileSelection();
 
@@ -430,6 +438,9 @@ function BranchViewInner(props: {
               diffText={diffText}
               loadingDiff={loadingDiff || loadingTrace}
               traceRanges={traceRanges}
+              // Firefly
+              fireflyEnabled={fireflyEnabled}
+              onToggleFirefly={onToggleFirefly}
             />
           </div>
         </div>
@@ -440,6 +451,8 @@ function BranchViewInner(props: {
         selectedId={selectedNodeId}
         onSelect={setSelectedNodeId}
         pulseCommitId={pulseCommitId}
+        fireflyEvent={fireflyEvent}
+        fireflyDisabled={!fireflyEnabled}
       />
     </div>
   );
@@ -481,6 +494,10 @@ export function BranchView(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
+  // Firefly signal props
+  fireflyEnabled?: boolean;
+  fireflyEvent?: FireflyEvent;
+  onToggleFirefly?: () => void;
 }) {
   return (
     <FileSelectionProvider>

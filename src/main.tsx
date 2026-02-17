@@ -5,6 +5,7 @@ import { ThemeProvider } from '@design-studio/tokens';
 import '@design-studio/tokens/tokens.css';
 import '@design-studio/ui/styles.css';
 import './styles.css';
+import './styles/firefly.css';
 
 const root = document.getElementById('root');
 

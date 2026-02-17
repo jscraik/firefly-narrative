@@ -143,8 +143,8 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
 
   // Document list view
   return (
-    <div className="h-full flex flex-col rounded-2xl border border-border-light bg-bg-secondary p-5 shadow-sm animate-in fade-in slide-in-from-bottom-2 motion-page-enter">
-      <div className="mb-4 flex items-center justify-between border-b border-border-light pb-3">
+    <div className="h-full flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 motion-page-enter">
+      <div className="card p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-accent-blue" />
           <h2 className="text-sm font-semibold text-text-primary">Documentation</h2>
@@ -153,7 +153,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-bg-hover text-text-muted"
+            className="btn-tertiary-soft p-1.5 rounded-lg text-text-muted"
           >
             <X className="w-4 h-4" />
           </button>
@@ -165,13 +165,13 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
           <RepositoryPlaceholderCard className="max-w-2xl" />
         </div>
       ) : selectedDoc ? (
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="card p-4 flex-1 flex flex-col min-h-0">
           {/* Header */}
           <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border-light">
             <button
               type="button"
               onClick={() => setSelectedDoc(null)}
-              className="p-1.5 rounded-lg hover:bg-bg-hover text-text-tertiary"
+              className="btn-tertiary-soft p-1.5 rounded-lg text-text-tertiary"
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
             </button>
@@ -197,7 +197,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
           </div>
         </div>
       ) : docs.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center py-8 text-center text-text-tertiary">
+        <div className="card p-6 flex flex-1 flex-col items-center justify-center text-center text-text-tertiary">
           <div className="mb-3 inline-flex rounded-xl border border-border-light bg-bg-tertiary p-3">
             <FileText className="h-12 w-12 opacity-50" />
           </div>
@@ -209,7 +209,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
           <div className="mt-4 flex flex-wrap gap-2 justify-center">
             <button
               type="button"
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-secondary border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-hover"
+              className="btn-secondary-soft inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-text-secondary"
               onClick={async () => {
 	                try {
                   await ensureNarrativeDirs(repoRoot);
@@ -245,7 +245,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
           </div>
         </div>
       ) : (
-        <div className="flex-1 space-y-2 overflow-y-auto">
+        <div className="card p-4 flex-1 space-y-2 overflow-y-auto">
           {docs.map((doc) => (
             <button
               key={doc.path}

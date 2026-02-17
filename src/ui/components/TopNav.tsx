@@ -90,7 +90,7 @@ export function TopNav(props: {
           </div>
         ) : null}
 
-        {mode === 'repo' && (
+        {mode !== 'demo' && (
           <ImportMenu
             onImportSession={onImportSession}
             onImportKimiSession={onImportKimiSession}

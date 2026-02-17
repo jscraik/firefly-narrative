@@ -16,6 +16,7 @@ import { useTraceCollector } from './hooks/useTraceCollector';
 import { useSessionImport } from './hooks/useSessionImport';
 import { useAutoIngest } from './hooks/useAutoIngest';
 import { useCommitData } from './hooks/useCommitData';
+import { useFirefly } from './hooks/useFirefly';
 import { UpdatePrompt, UpdateIndicator } from './ui/components/UpdatePrompt';
 import { indexRepo } from './core/repo/indexer';
 
@@ -236,6 +237,9 @@ export default function App() {
     pollIntervalMinutes: 60 * 24 // Check once per day
   });
 
+  // Firefly signal state management
+  const firefly = useFirefly();
+
   const updateCodexOtelReceiverEnabled = useCallback(
     async (enabled: boolean) => {
       try {
@@ -402,6 +406,9 @@ export default function App() {
             onConfigureCodex={autoIngest.configureCodexTelemetry}
             onRotateOtlpKey={autoIngest.rotateOtlpKey}
             onGrantCodexConsent={autoIngest.grantCodexConsent}
+            fireflyEnabled={firefly.enabled}
+            fireflyEvent={firefly.event}
+            onToggleFirefly={firefly.toggle}
           />
         ) : (
           <RepoEmptyState />

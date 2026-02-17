@@ -227,16 +227,16 @@ export function DashboardView({
       />
 
       <main className="bg-bg-tertiary px-6 py-6" data-dashboard-content>
-        <section className="mb-5 rounded-xl border border-border-light bg-bg-secondary p-3">
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <section className="card mb-5 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
-              <span className="rounded-md border border-border-light bg-bg-tertiary px-2 py-1 font-medium text-text-secondary">
+              <span className="btn-tertiary-soft rounded-md px-2 py-1 font-medium text-text-secondary">
                 / focus
               </span>
-              <span className="rounded-md border border-border-light bg-bg-tertiary px-2 py-1 font-medium text-text-secondary">
+              <span className="btn-tertiary-soft rounded-md px-2 py-1 font-medium text-text-secondary">
                 g then r repo
               </span>
-              <span className="rounded-md border border-border-light bg-bg-tertiary px-2 py-1 font-medium text-text-secondary">
+              <span className="btn-tertiary-soft rounded-md px-2 py-1 font-medium text-text-secondary">
                 1-4 range
               </span>
             </div>
@@ -249,18 +249,18 @@ export function DashboardView({
               aria-label="Quick file filter"
             />
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" onClick={() => handleDrillDown({ type: 'ai-only' })} className="rounded-md border border-border-light bg-bg-tertiary px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-hover">
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={() => handleDrillDown({ type: 'ai-only' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
               AI only
             </button>
-            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'codex' })} className="rounded-md border border-border-light bg-bg-tertiary px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-hover">
+            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'codex' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
               Codex
             </button>
-            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'claude-code' })} className="rounded-md border border-border-light bg-bg-tertiary px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-hover">
+            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'claude-code' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
               Claude
             </button>
             {commandQuery && (
-              <button type="button" onClick={() => setCommandQuery('')} className="rounded-md border border-border-light bg-bg-tertiary px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-hover">
+              <button type="button" onClick={() => setCommandQuery('')} className="btn-tertiary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
                 Clear filter
               </button>
             )}

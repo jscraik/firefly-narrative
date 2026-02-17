@@ -16,7 +16,7 @@ export function RepositoryPlaceholderCard({
     : 'Narrative will display timeline, docs, and linked sessions as soon as a repository is available.';
 
   return (
-    <div className={`w-full max-w-xl rounded-2xl border border-border-light bg-bg-secondary p-8 shadow-sm animate-in fade-in slide-in-from-bottom-2 motion-page-enter ${className}`.trim()}>
+    <div className={`card w-full max-w-xl rounded-2xl p-8 shadow-sm animate-in fade-in slide-in-from-bottom-2 motion-page-enter ${className}`.trim()}>
       <div className="mx-auto mb-6 inline-flex rounded-2xl border border-border-light bg-bg-tertiary p-5">
         {isDashboard ? (
           <BarChart3 className="h-10 w-10 text-text-muted" />

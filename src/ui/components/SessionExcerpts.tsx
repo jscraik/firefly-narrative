@@ -240,7 +240,7 @@ function UnlinkConfirmDialog({
   return (
     <Dialog
       title="Unlink session from commit?"
-      message="This will remove the association between the AI session and the commit. The session will remain imported but will show as 'Not linked'."
+      message="This will remove the association between the AI session and the commit. The session will remain imported but will show as 'Imported · awaiting link'."
       confirmLabel="Unlink"
       cancelLabel="Cancel"
       variant="destructive"
@@ -248,6 +248,48 @@ function UnlinkConfirmDialog({
       onConfirm={onConfirm}
       onClose={onClose}
     />
+  );
+}
+
+function SessionLinkPipeline({ excerpt }: { excerpt: SessionExcerpt }) {
+  const isLinked = Boolean(excerpt.linkedCommitSha);
+  const needsReview = Boolean(excerpt.needsReview);
+  const activeStep = isLinked ? (needsReview ? 2 : 3) : 2;
+
+  const steps = [
+    { id: 1, label: 'Imported' },
+    { id: 2, label: 'Matching' },
+    { id: 3, label: needsReview ? 'Needs review' : 'Linked' },
+  ] as const;
+
+  return (
+    <div className="mt-1 w-full max-w-[220px]" title="Session link lifecycle">
+      <div className="flex items-center gap-1.5">
+        {steps.map((step, index) => {
+          const complete = step.id < activeStep;
+          const active = step.id === activeStep;
+          const dotClass = complete
+            ? 'bg-accent-green border-accent-green'
+            : active
+              ? 'bg-accent-amber border-accent-amber animate-pulse'
+              : 'bg-bg-tertiary border-border-light';
+
+          return (
+            <div key={step.id} className="flex min-w-0 items-center gap-1.5">
+              <span className={`h-2 w-2 shrink-0 rounded-full border ${dotClass}`} />
+              <span
+                className={`text-[10px] leading-4 ${active ? 'text-text-secondary font-semibold' : 'text-text-muted'}`}
+              >
+                {step.label}
+              </span>
+              {index < steps.length - 1 ? (
+                <span className="h-px w-3 bg-border-light" aria-hidden="true" />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -374,6 +416,7 @@ export function SessionExcerpts({
             {excerpt.needsReview ? (
               <span className="rounded bg-accent-amber-bg px-1.5 py-0.5 text-[11px] text-accent-amber">Needs review</span>
             ) : null}
+            <SessionLinkPipeline excerpt={excerpt} />
           </div>
         </div>
 

@@ -12,7 +12,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({
   repoName,
-  repoPath,
+  repoPath: _repoPath,
   timeRange,
   onTimeRangeChange,
   lastUpdated,
@@ -28,11 +28,6 @@ export function DashboardHeader({
           <h1 className="text-lg font-semibold text-text-primary">
             {repoName || 'Dashboard'}
           </h1>
-          {repoPath && (
-            <span className="text-sm text-text-muted">
-              {repoPath}
-            </span>
-          )}
         </div>
 
         {/* Right: Time range picker + last updated */}

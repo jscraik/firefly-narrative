@@ -1,4 +1,5 @@
 import { Link2, Sparkles, Terminal, Code2, Wand2, Bot, MessageSquare, Cpu } from 'lucide-react';
+import { forwardRef } from 'react';
 import type { TimelineNode, SessionBadgeTool } from '../../core/types';
 import { BadgePill } from './BadgePill';
 
@@ -34,27 +35,28 @@ function getToolOverlayIcon(tool: SessionBadgeTool) {
   }
 }
 
-export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: TimelineNodeProps) {
-  // Always show labels now that we have truncation, to ensure Repo view matches Demo view density
-  // Always show labels now that we have truncation, to ensure Repo view matches Demo view density
-  const showLabel = true;
-  const sessionBadge = node.badges?.find(b => b.type === 'session');
-  const hasSession = !!sessionBadge;
-  const primaryTool = sessionBadge?.sessionTools?.[0] ?? null;
-  const badges = node.badges ?? [];
-  const anchorBadge = badges.find((b) => b.type === 'anchor');
-  const nonAnchorBadges = badges.filter((b) => b.type !== 'anchor');
-  const visibleBadges = (anchorBadge
-    ? [...nonAnchorBadges.slice(0, 2), anchorBadge]
-    : nonAnchorBadges.slice(0, 3)
-  ).slice(0, 3);
+export const TimelineNodeComponent = forwardRef<HTMLDivElement, TimelineNodeProps>(
+  ({ node, selected, pulsing, onSelect }, ref) => {
+    // Always show labels now that we have truncation, to ensure Repo view matches Demo view density
+    const showLabel = true;
+    const sessionBadge = node.badges?.find(b => b.type === 'session');
+    const hasSession = !!sessionBadge;
+    const primaryTool = sessionBadge?.sessionTools?.[0] ?? null;
+    const badges = node.badges ?? [];
+    const anchorBadge = badges.find((b) => b.type === 'anchor');
+    const nonAnchorBadges = badges.filter((b) => b.type !== 'anchor');
+    const visibleBadges = (anchorBadge
+      ? [...nonAnchorBadges.slice(0, 2), anchorBadge]
+      : nonAnchorBadges.slice(0, 3)
+    ).slice(0, 3);
 
-  return (
-    <div
-      data-node-id={node.id}
-      className="relative flex flex-col items-center"
-      style={{ minWidth: '100px' }}
-    >
+    return (
+      <div
+        ref={ref}
+        data-node-id={node.id}
+        className="relative flex flex-col items-center"
+        style={{ minWidth: '100px' }}
+      >
       {/* Label above with tooltip for truncated text */}
       {showLabel && node.label ? (
         <div 
@@ -101,4 +103,6 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
       </div>
     </div>
   );
-}
+});
+
+TimelineNodeComponent.displayName = 'TimelineNodeComponent';
