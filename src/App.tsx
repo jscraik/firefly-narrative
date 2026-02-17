@@ -404,7 +404,7 @@ export default function App() {
             onGrantCodexConsent={autoIngest.grantCodexConsent}
           />
         ) : (
-          <RepoEmptyState setRepoState={setRepoState} />
+          <RepoEmptyState />
         )}
       </div>
       {import.meta.env.DEV && AgentationComponent && (
