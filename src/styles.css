@@ -622,14 +622,15 @@ body {
 /* Timeline styles */
 .timeline-dot {
   position: relative;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  border: 2px solid var(--bg-card);
+  /* Removed border to work with glassmorphism background */
   box-shadow: 0 0 0 1px var(--border-light);
   transition: transform 0.15s ease-out, box-shadow 0.2s ease-out;
   cursor: pointer;
   will-change: transform, box-shadow;
+  z-index: 10;
 }
 
 /* Expand hit area */
