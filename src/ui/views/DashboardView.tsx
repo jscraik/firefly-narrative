@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { RepoState } from '../../hooks/useRepoLoader';
 import {
   getDashboardStats,
   timeRangeToDateRange,
+  type DashboardEmptyReason,
   type DashboardStats,
   type TimeRange,
-  type DashboardEmptyReason,
 } from '../../core/attribution-api';
 import type { DashboardFilter } from '../../core/types';
+import type { RepoState } from '../../hooks/useRepoLoader';
 import type { Mode } from '../components/TopNav';
-import { DashboardHeader } from '../components/dashboard/DashboardHeader';
 import { DashboardEmptyState } from '../components/dashboard/DashboardEmptyState';
-import { MetricsGrid } from '../components/dashboard/MetricsGrid';
-import { DashboardLoadingState } from '../components/dashboard/DashboardLoadingState';
 import { DashboardErrorState } from '../components/dashboard/DashboardErrorState';
+import { DashboardHeader } from '../components/dashboard/DashboardHeader';
+import { DashboardLoadingState } from '../components/dashboard/DashboardLoadingState';
+import { MetricsGrid } from '../components/dashboard/MetricsGrid';
 import { TopFilesTable } from '../components/dashboard/TopFilesTable';
 
 interface DashboardViewProps {
@@ -217,7 +217,7 @@ export function DashboardView({
   }
 
   return (
-    <div className="dashboard-container h-full min-h-0 overflow-y-auto bg-bg-secondary animate-in fade-in slide-in-from-bottom-1 motion-page-enter">
+    <div className="dashboard-container h-full min-h-0 overflow-y-auto animate-in fade-in slide-in-from-bottom-1 motion-page-enter">
       <DashboardHeader
         repoName={stats.repo.name}
         repoPath={stats.repo.path}

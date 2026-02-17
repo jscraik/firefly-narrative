@@ -1,6 +1,6 @@
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import clsx from 'clsx';
 import { BarChart3, BookOpen, FileText, FolderOpen, GitBranch, LayoutGrid } from 'lucide-react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import type { ReactNode } from 'react';
 
 export type Mode = 'demo' | 'repo' | 'docs' | 'dashboard';
@@ -67,23 +67,24 @@ export function TopNav(props: {
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-border-light bg-bg-secondary px-4 py-3">
-      <div className="flex items-center gap-3">
+    <div className="grid h-14 w-full grid-cols-[1fr_auto_1fr] items-center border-b border-border-light bg-bg-secondary px-4">
+      <div className="flex items-center gap-3 justify-self-start">
         <div className="text-sm font-bold tracking-wide text-text-primary">Narrative</div>
-        <div
-          className="flex items-center gap-1 bg-bg-primary rounded-lg p-1"
-          role="tablist"
-          aria-label="View mode"
-          onKeyDown={handleTabKeyDown}
-        >
-          <Tab id="demo" label="Demo" icon={<LayoutGrid className="h-4 w-4" />} />
-          <Tab id="repo" label="Repo" icon={<GitBranch className="h-4 w-4" />} />
-          <Tab id="dashboard" label="Dashboard" icon={<BarChart3 className="h-4 w-4" />} />
-          <Tab id="docs" label="Docs" icon={<BookOpen className="h-4 w-4" />} />
-        </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div
+        className="flex items-center gap-1 bg-bg-primary rounded-lg p-1 justify-self-center"
+        role="tablist"
+        aria-label="View mode"
+        onKeyDown={handleTabKeyDown}
+      >
+        <Tab id="demo" label="Demo" icon={<LayoutGrid className="h-4 w-4" />} />
+        <Tab id="repo" label="Repo" icon={<GitBranch className="h-4 w-4" />} />
+        <Tab id="dashboard" label="Dashboard" icon={<BarChart3 className="h-4 w-4" />} />
+        <Tab id="docs" label="Docs" icon={<BookOpen className="h-4 w-4" />} />
+      </div>
+
+      <div className="flex items-center gap-3 justify-self-end">
         {repoPath ? (
           <div className="max-w-[44ch] truncate text-xs text-text-muted" title={repoPath}>
             {repoPath}
@@ -131,14 +132,15 @@ function ImportMenu(props: {
           type="button"
           disabled={!importEnabled}
           className={clsx(
-            'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+            'inline-flex items-center justify-center rounded-lg p-2 text-sm font-medium transition-colors',
             importEnabled
               ? 'bg-bg-primary text-text-secondary hover:bg-border-light'
               : 'bg-bg-tertiary text-text-muted cursor-not-allowed'
           )}
+          title="Import data"
+          aria-label="Import data"
         >
           <FileText className="h-4 w-4" />
-          Import data…
         </button>
       </DropdownMenu.Trigger>
 

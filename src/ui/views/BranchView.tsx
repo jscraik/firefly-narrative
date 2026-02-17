@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
 import { FileSelectionProvider, useFileSelection } from '../../core/context/FileSelectionContext';
 import { testRuns } from '../../core/demo/nearbyGridDemo';
-import type { BranchViewModel, FileChange, TestRun, TraceRange, DashboardFilter } from '../../core/types';
-import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
+import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
 import type { ActivityEvent } from '../../core/tauri/activity';
+import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
+import type { BranchViewModel, DashboardFilter, FileChange, TestRun, TraceRange } from '../../core/types';
+import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
+import { useTestImport } from '../../hooks/useTestImport';
 import { BranchHeader } from '../components/BranchHeader';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { CaptureActivityStrip } from '../components/CaptureActivityStrip';
 import { FilesChanged } from '../components/FilesChanged';
+import type { FireflyEvent } from '../components/FireflySignal';
 import { ImportErrorBanner } from '../components/ImportErrorBanner';
+import { IngestToast } from '../components/IngestToast';
 import { IntentList } from '../components/IntentList';
 import { NeedsAttentionList } from '../components/NeedsAttentionList';
 import { RightPanelTabs } from '../components/RightPanelTabs';
-import { Timeline } from '../components/Timeline';
-import { IngestToast } from '../components/IngestToast';
 import { SkeletonFiles } from '../components/Skeleton';
-import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
-import type { IngestConfig, OtlpKeyStatus, DiscoveredSources } from '../../core/tauri/ingestConfig';
-import { useTestImport } from '../../hooks/useTestImport';
-import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
-import type { FireflyEvent } from '../components/FireflySignal';
+import { Timeline } from '../components/Timeline';
 
 function BranchViewInner(props: {
   model: BranchViewModel;
@@ -325,7 +325,7 @@ function BranchViewInner(props: {
   };
 
   return (
-    <div className={`flex h-full flex-col bg-bg-primary animate-in fade-in slide-in-from-bottom-1 motion-page-enter ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 motion-page-exit fill-mode-forwards' : ''}`}>
+    <div className={`flex h-full flex-col animate-in fade-in slide-in-from-bottom-1 motion-page-enter ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 motion-page-exit fill-mode-forwards' : ''}`}>
       <IngestToast toast={ingestToast ?? null} />
       <div className="flex-1 overflow-hidden bg-bg-secondary">
         <div className="flex flex-col gap-5 p-6 lg:p-8 h-full overflow-y-auto bg-bg-tertiary lg:grid lg:grid-cols-12 lg:overflow-hidden">
