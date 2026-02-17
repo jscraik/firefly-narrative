@@ -64,7 +64,7 @@ function ToolPill({
 }) {
   return (
     <div className="flex items-center gap-2 text-[11px] text-text-muted">
-      <span className="px-2 py-1 bg-bg-page rounded-md font-mono text-text-tertiary">
+      <span className="px-2 py-1 bg-bg-primary rounded-md font-mono text-text-tertiary">
         {tool}
       </span>
       {agentName ? <span className="text-text-tertiary">· {agentName}</span> : null}
@@ -112,9 +112,12 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
 }) {
   if (!excerpt.linkedCommitSha) {
     return (
-      <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
+      <div
+        className="flex items-center gap-2 text-[11px] text-text-tertiary"
+        title="Session imported successfully, but no confident commit match has been linked yet."
+      >
         <Link2Off className="w-3 h-3" />
-        <span>Not linked</span>
+        <span>Imported · awaiting link</span>
       </div>
     );
   }
@@ -139,7 +142,7 @@ function LinkStatus({ excerpt, onUnlink, onClick, isSelected }: {
         Linked to <span className="font-mono">{shortSha}</span>
       </button>
       <span
-        className="px-1.5 py-0.5 bg-bg-page rounded text-text-tertiary cursor-help"
+        className="px-1.5 py-0.5 bg-bg-primary rounded text-text-tertiary cursor-help"
         title={`Link confidence: ${confidencePercent}% — Estimated match quality between session activity and commit changes. Higher values indicate stronger correlation.`}
       >
         {confidencePercent}%
@@ -300,7 +303,7 @@ export function SessionExcerpts({
           </div>
         </div>
         <div className="mt-6 flex flex-col items-center text-center py-4">
-          <div className="w-12 h-12 rounded-full bg-bg-page flex items-center justify-center mb-3">
+          <div className="w-12 h-12 rounded-full bg-bg-primary flex items-center justify-center mb-3">
             <Upload className="w-5 h-5 text-text-muted" />
           </div>
           <p className="text-sm text-text-tertiary mb-1">No sessions imported yet</p>
@@ -387,7 +390,7 @@ export function SessionExcerpts({
                     px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-150
                     ${isActive
                       ? 'bg-accent-blue-light border-accent-blue text-accent-blue shadow-sm ring-1 ring-accent-blue/20'
-                      : 'bg-bg-card border-border-light text-text-secondary hover:bg-bg-hover hover:border-border-medium'
+                      : 'bg-bg-secondary border-border-light text-text-secondary hover:bg-bg-hover hover:border-border-medium'
                     }
                   `}
                   aria-pressed={isActive}
@@ -400,7 +403,7 @@ export function SessionExcerpts({
           </div>
         ) : null}
 
-        <div className="mt-4 grid gap-4 rounded-lg border border-border-subtle bg-bg-subtle p-4">
+        <div className="mt-4 grid gap-4 rounded-lg border border-border-subtle bg-bg-tertiary p-4">
           <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
             <div>
               <div className="text-[10px] uppercase tracking-wider text-text-muted">Messages</div>

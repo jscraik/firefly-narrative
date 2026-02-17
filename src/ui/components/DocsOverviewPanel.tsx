@@ -10,6 +10,7 @@ import {
   writeNarrativeFile,
 } from '../../core/tauri/narrativeFs';
 import { MermaidDiagram } from './MermaidDiagram';
+import { RepositoryPlaceholderCard } from './RepositoryPlaceholderCard';
 
 interface DocFile {
   name: string;
@@ -142,8 +143,8 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
 
   // Document list view
   return (
-    <div className="card p-4 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+    <div className="h-full flex flex-col rounded-2xl border border-border-light bg-bg-secondary p-5 shadow-sm animate-in fade-in slide-in-from-bottom-2 motion-page-enter">
+      <div className="mb-4 flex items-center justify-between border-b border-border-light pb-3">
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-accent-blue" />
           <h2 className="text-sm font-semibold text-text-primary">Documentation</h2>
@@ -160,9 +161,8 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
       </div>
 
       {!repoRoot ? (
-        <div className="text-center py-8 text-text-tertiary flex-1">
-          <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p className="text-sm">Open a repository to view documentation</p>
+        <div className="flex flex-1 items-center justify-center p-3">
+          <RepositoryPlaceholderCard className="max-w-2xl" />
         </div>
       ) : selectedDoc ? (
         <div className="flex-1 flex flex-col min-h-0">
@@ -197,8 +197,10 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
           </div>
         </div>
       ) : docs.length === 0 ? (
-        <div className="text-center py-8 text-text-tertiary flex-1 flex flex-col items-center justify-center">
-          <FileText className="w-12 h-12 mb-3 opacity-50" />
+        <div className="flex flex-1 flex-col items-center justify-center py-8 text-center text-text-tertiary">
+          <div className="mb-3 inline-flex rounded-xl border border-border-light bg-bg-tertiary p-3">
+            <FileText className="h-12 w-12 opacity-50" />
+          </div>
           <p className="text-sm font-medium text-text-secondary">No Narrative docs found</p>
           <p className="text-xs mt-2 text-text-muted max-w-[52ch]">
             Narrative renders markdown files inside <span className="font-mono">.narrative/</span>. Mermaid diagrams
@@ -207,7 +209,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
           <div className="mt-4 flex flex-wrap gap-2 justify-center">
             <button
               type="button"
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-card border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-hover"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-secondary border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-hover"
               onClick={async () => {
 	                try {
                   await ensureNarrativeDirs(repoRoot);
@@ -243,7 +245,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
           </div>
         </div>
       ) : (
-        <div className="space-y-2 flex-1 overflow-y-auto">
+        <div className="flex-1 space-y-2 overflow-y-auto">
           {docs.map((doc) => (
             <button
               key={doc.path}

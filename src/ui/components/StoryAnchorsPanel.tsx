@@ -65,7 +65,7 @@ export function StoryAnchorsPanel(props: {
   }, [refresh]);
 
   return (
-    <div className="mt-6 flex flex-col gap-3 rounded-lg border border-border-light bg-bg-card p-4">
+    <div className="mt-6 flex flex-col gap-3 rounded-lg border border-border-light bg-bg-secondary p-4">
       <div>
         <div className="text-xs font-semibold text-text-secondary">Story Anchors</div>
         <div className="text-[11px] text-text-muted">
@@ -89,7 +89,7 @@ export function StoryAnchorsPanel(props: {
             <button
               type="button"
               disabled={busy || !repoId}
-              className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
               onClick={async () => {
                 if (!repoId) return;
                 setBusy(true);
@@ -110,7 +110,7 @@ export function StoryAnchorsPanel(props: {
             <button
               type="button"
               disabled={busy || !repoId}
-              className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
               onClick={async () => {
                 if (!repoId) return;
                 setBusy(true);
@@ -131,7 +131,7 @@ export function StoryAnchorsPanel(props: {
             <button
               type="button"
               disabled={busy}
-              className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
               onClick={async () => {
                 setMessage(null);
                 await refresh();
@@ -141,7 +141,7 @@ export function StoryAnchorsPanel(props: {
             </button>
           </div>
 
-          <div className="mt-2 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-subtle px-3 py-2">
+          <div className="mt-2 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-tertiary px-3 py-2">
             <div className="text-[11px] text-text-secondary font-semibold">
               Indexed commits: <span className="font-mono">{indexedCommitShas?.length ?? 0}</span>
             </div>
@@ -160,7 +160,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -190,7 +190,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -211,7 +211,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -265,7 +265,7 @@ export function StoryAnchorsPanel(props: {
               <button
                 type="button"
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
-                className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
                   if (!repoId || !indexedCommitShas?.length) return;
                   setBusy(true);
@@ -317,7 +317,7 @@ export function StoryAnchorsPanel(props: {
           </div>
 
           {selectedCommitSha ? (
-            <div className="mt-2 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-subtle px-3 py-2">
+            <div className="mt-2 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-tertiary px-3 py-2">
               <div className="text-[11px] text-text-secondary font-semibold">
                 Selected commit: <span className="font-mono">{selectedCommitSha.slice(0, 8)}</span>
               </div>
@@ -329,7 +329,7 @@ export function StoryAnchorsPanel(props: {
                 <button
                   type="button"
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
-                  className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
                     if (!repoId || !selectedCommitSha) return;
                     setBusy(true);
@@ -350,7 +350,7 @@ export function StoryAnchorsPanel(props: {
                 <button
                   type="button"
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
-                  className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
                     if (!repoId || !selectedCommitSha) return;
                     setBusy(true);
@@ -371,7 +371,7 @@ export function StoryAnchorsPanel(props: {
                 <button
                   type="button"
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
-                  className="inline-flex items-center rounded-md border border-border-light bg-bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
                     if (!repoId || !selectedCommitSha) return;
                     setBusy(true);

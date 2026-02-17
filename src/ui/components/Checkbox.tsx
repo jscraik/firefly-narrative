@@ -17,7 +17,7 @@ export function Checkbox(props: {
       onCheckedChange={(next) => onCheckedChange(next === true)}
       disabled={disabled}
       className={clsx(
-        'h-4 w-4 shrink-0 rounded border border-border-light bg-bg-card',
+        'h-4 w-4 shrink-0 rounded border border-border-light bg-bg-secondary',
         'data-[state=checked]:bg-accent-blue data-[state=checked]:border-accent-blue',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         className

@@ -77,7 +77,7 @@ export function TestResultsPanel({
       <div className={`card p-5 ${className || ''}`}>
         <div className="section-header">TEST RESULTS</div>
         <div className="mt-5 flex flex-col items-center text-center py-3">
-          <div className="w-10 h-10 rounded-full bg-bg-page flex items-center justify-center mb-2">
+          <div className="w-10 h-10 rounded-full bg-bg-primary flex items-center justify-center mb-2">
             <Terminal className="w-4 h-4 text-text-muted" />
           </div>
           <p className="text-sm text-text-tertiary mb-1">
@@ -91,7 +91,7 @@ export function TestResultsPanel({
               type="button"
               onClick={onImportJUnit}
               disabled={loading}
-              className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-page text-text-secondary hover:bg-border-light transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-primary text-text-secondary hover:bg-border-light transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Import JUnit XML…
             </button>
@@ -109,7 +109,7 @@ export function TestResultsPanel({
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between gap-3 p-5 hover:bg-bg-subtle transition-colors"
+        className="flex w-full items-center justify-between gap-3 p-5 hover:bg-bg-tertiary transition-colors"
         aria-expanded={expanded}
         aria-controls={panelId}
       >

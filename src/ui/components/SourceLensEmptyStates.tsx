@@ -39,7 +39,7 @@ export function SourceLensEmptyStates({
       <div className="card p-5">
         {showHeader ? <div className="section-header">SOURCE LENS</div> : null}
         <div className="mt-4 flex flex-col items-center text-center py-4">
-          <div className="w-12 h-12 rounded-full bg-bg-page flex items-center justify-center mb-3">
+          <div className="w-12 h-12 rounded-full bg-bg-primary flex items-center justify-center mb-3">
             <HelpCircle className="w-5 h-5 text-text-muted" />
           </div>
           <p className="text-sm text-text-tertiary mb-1">No attribution data</p>

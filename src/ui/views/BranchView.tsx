@@ -317,15 +317,10 @@ function BranchViewInner(props: {
   };
 
   return (
-    <div className={`flex h-full flex-col bg-bg-page ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 duration-150 ease-out fill-mode-forwards' : ''}`}>
+    <div className={`flex h-full flex-col bg-bg-primary animate-in fade-in slide-in-from-bottom-1 motion-page-enter ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 motion-page-exit fill-mode-forwards' : ''}`}>
       <IngestToast toast={ingestToast ?? null} />
-      {/* Ensure primary page surface background is applied at this wrapper level too,
-          so large viewports (and grid gaps) never expose an unthemed root surface. */}
-      <div className="flex-1 overflow-hidden bg-bg-page">
-        {/* Page content area: explicit page-surface background to ensure correct theming in both light/dark.
-            Primary surface = bg-bg-page, Secondary = bg-bg-card, Tertiary = bg-bg-subtle/hover.
-            This wrapper previously relied on inheritance; make it explicit for consistency. */}
-        <div className="flex flex-col gap-5 p-6 lg:p-8 h-full overflow-y-auto lg:grid lg:grid-cols-12 lg:overflow-hidden bg-bg-page">
+      <div className="flex-1 overflow-hidden bg-bg-secondary">
+        <div className="flex flex-col gap-5 p-6 lg:p-8 h-full overflow-y-auto bg-bg-tertiary lg:grid lg:grid-cols-12 lg:overflow-hidden">
           {/* Left column */}
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
             <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />

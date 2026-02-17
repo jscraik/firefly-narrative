@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useEffect, useState, Fragment } from 'react';
-import { MessageSquare, Activity, Settings, TestTube, FileCode, Search } from 'lucide-react';
+import { MessageSquare, Activity, Settings, TestTube, FileCode, Search, PictureInPicture2, Minimize2, ChevronDown } from 'lucide-react';
 import { useTheme } from '@design-studio/tokens';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
 import type { SessionExcerpt, TestRun, TraceCommitSummary, TraceCollectorStatus, TraceCollectorConfig, TraceRange } from '../../core/types';
@@ -27,6 +27,14 @@ interface TabConfig {
   icon: typeof MessageSquare;
   category: TabCategory;
 }
+
+const TAB_ACTIVE_STYLES: Record<TabId, string> = {
+  session: 'bg-accent-violet-bg text-accent-violet',
+  attribution: 'bg-accent-green-bg text-accent-green',
+  atlas: 'bg-accent-blue-bg text-accent-blue',
+  tests: 'bg-accent-amber-bg text-accent-amber',
+  settings: 'bg-bg-tertiary text-text-secondary',
+};
 
 const TABS: TabConfig[] = [
   { id: 'session', label: 'Session', shortLabel: 'Session', icon: MessageSquare, category: 'analyze' },
@@ -120,6 +128,7 @@ function DevThemeToggleCard() {
 export function RightPanelTabs(props: RightPanelTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('session');
   const [diffExpanded, setDiffExpanded] = useState(true);
+  const [diffPip, setDiffPip] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const {
@@ -231,10 +240,10 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
   };
 
   return (
-    <div className="flex flex-col h-full gap-4">
+    <div className="relative flex flex-col h-full gap-4">
       {/* Tab Navigation - Grouped by category with visual separators */}
       <div className="card p-2">
-        <div className="flex gap-1 items-center" role="tablist" aria-label="Right panel tabs" onKeyDown={handleTabKeyDown}>
+        <div className="flex items-center gap-1" role="tablist" aria-label="Right panel tabs" onKeyDown={handleTabKeyDown}>
           {TABS.map((tab, index) => {
             const Icon = tab.icon;
             const isActive = effectiveTab === tab.id;
@@ -259,10 +268,11 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium
-                    transition-all duration-150 min-w-0
+                    min-w-0 flex-1 inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2
+                    text-[10px] leading-4 font-medium whitespace-nowrap
+                    transition-all duration-150
                     ${isActive
-                      ? 'bg-accent-blue-light text-accent-blue'
+                      ? TAB_ACTIVE_STYLES[tab.id]
                       : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary'
                     }
                     ${!hasContent && tab.id !== 'settings' ? 'opacity-60' : ''}
@@ -273,8 +283,8 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                   tabIndex={isActive ? 0 : -1}
                   title={tab.label}
                 >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{tab.shortLabel}</span>
+                  <Icon className="h-3 w-3 shrink-0" />
+                  <span>{tab.shortLabel}</span>
                 </button>
               </Fragment>
             );
@@ -319,7 +329,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                   <button
                     type="button"
                     onClick={() => setActiveTab('attribution')}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-bg-page text-text-secondary hover:bg-border-light transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-bg-primary text-text-secondary hover:bg-border-light transition-colors"
                   >
                     Open AI Attribution
                   </button>
@@ -384,6 +394,17 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
 
         {effectiveTab === 'settings' && (
           <div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
+            <div className="card mb-4 p-4">
+              <div className="section-header">COLOR SEMANTICS</div>
+              <div className="section-subheader mt-0.5">visual language</div>
+              <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-medium">
+                <span className="rounded-full border border-accent-green-light bg-accent-green-bg px-2 py-0.5 text-accent-green">AI</span>
+                <span className="rounded-full border border-accent-violet-light bg-accent-violet-bg px-2 py-0.5 text-accent-violet">Human</span>
+                <span className="rounded-full border border-accent-amber-light bg-accent-amber-bg px-2 py-0.5 text-accent-amber">Mixed</span>
+                <span className="rounded-full border border-border-light bg-bg-tertiary px-2 py-0.5 text-text-tertiary">Unknown</span>
+                <span className="rounded-full border border-accent-red-light bg-accent-red-bg px-2 py-0.5 text-accent-red">Failed tests</span>
+              </div>
+            </div>
             {import.meta.env.DEV ? <DevThemeToggleCard /> : null}
             <AutoIngestSetupPanel
               config={ingestConfig ?? null}
@@ -436,15 +457,30 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
         <button
           type="button"
           onClick={() => setDiffExpanded(!diffExpanded)}
-          className="w-full flex items-center justify-between px-4 py-2 bg-bg-page hover:bg-border-light rounded-t-lg text-xs font-medium text-text-secondary transition-colors"
+          className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-bg-primary hover:bg-border-light rounded-t-lg text-xs font-medium text-text-secondary transition-colors"
         >
-          <span className="flex items-center gap-2">
+          <span className="flex min-w-0 items-center gap-2">
             <FileCode className="w-3.5 h-3.5" />
-            {selectedFile ? selectedFile.split('/').pop() : 'Diff'}
+            <span className="truncate">{selectedFile ? selectedFile.split('/').pop() : 'Diff'}</span>
           </span>
-          <span>{diffExpanded ? '▼' : '▲'}</span>
+          <span className="flex items-center gap-1">
+            <button
+              type="button"
+              className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-1.5 py-1 text-[10px] text-text-tertiary hover:bg-bg-hover"
+              onClick={(event) => {
+                event.stopPropagation();
+                setDiffPip((v) => !v);
+                setDiffExpanded(true);
+              }}
+              title={diffPip ? 'Dock diff panel' : 'Pop out diff panel'}
+              aria-label={diffPip ? 'Dock diff panel' : 'Pop out diff panel'}
+            >
+              {diffPip ? <Minimize2 className="h-3 w-3" /> : <PictureInPicture2 className="h-3 w-3" />}
+            </button>
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${diffExpanded ? '' : '-rotate-90'}`} />
+          </span>
         </button>
-        {diffExpanded && (
+        {diffExpanded && !diffPip && (
           <div className="card rounded-t-none border-t-0 max-h-[400px] overflow-auto">
             <DiffViewer
               title=""
@@ -455,6 +491,33 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
           </div>
         )}
       </div>
+
+      {diffExpanded && diffPip && (
+        <div className="absolute bottom-4 right-4 z-20 w-[min(640px,95%)] max-h-[55vh] animate-in fade-in slide-in-from-bottom-2 motion-page-enter">
+          <div className="overflow-hidden rounded-xl border border-border-light bg-bg-secondary shadow-lg">
+            <div className="flex items-center justify-between border-b border-border-light px-3 py-2 text-xs text-text-secondary">
+              <span className="min-w-0 truncate font-medium">
+                {selectedFile ? selectedFile.split('/').pop() : 'Diff'}
+              </span>
+              <button
+                type="button"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-tertiary px-2 py-1 text-[10px] hover:bg-bg-hover"
+                onClick={() => setDiffPip(false)}
+              >
+                Dock
+              </button>
+            </div>
+            <div className="max-h-[50vh] overflow-auto">
+              <DiffViewer
+                title=""
+                diffText={diffText}
+                loading={loadingDiff}
+                traceRanges={traceRanges}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

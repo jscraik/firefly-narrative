@@ -36,7 +36,7 @@ export function TopNav(props: {
       className={clsx(
         'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150',
         mode === p.id
-          ? 'bg-bg-card text-text-primary shadow-sm'
+          ? 'bg-bg-secondary text-text-primary shadow-sm'
           : 'text-text-tertiary hover:bg-bg-hover hover:text-text-secondary hover:scale-[1.02] active:scale-95'
       )}
       onClick={() => onModeChange(p.id)}
@@ -67,11 +67,11 @@ export function TopNav(props: {
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-border-light bg-bg-card px-4 py-3">
+    <div className="flex items-center justify-between border-b border-border-light bg-bg-secondary px-4 py-3">
       <div className="flex items-center gap-3">
         <div className="text-sm font-bold tracking-wide text-text-primary">Narrative</div>
         <div
-          className="flex items-center gap-1 bg-bg-page rounded-lg p-1"
+          className="flex items-center gap-1 bg-bg-primary rounded-lg p-1"
           role="tablist"
           aria-label="View mode"
           onKeyDown={handleTabKeyDown}
@@ -133,8 +133,8 @@ function ImportMenu(props: {
           className={clsx(
             'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
             importEnabled
-              ? 'bg-bg-page text-text-secondary hover:bg-border-light'
-              : 'bg-bg-subtle text-text-muted cursor-not-allowed'
+              ? 'bg-bg-primary text-text-secondary hover:bg-border-light'
+              : 'bg-bg-tertiary text-text-muted cursor-not-allowed'
           )}
         >
           <FileText className="h-4 w-4" />
@@ -147,7 +147,7 @@ function ImportMenu(props: {
           align="end"
           sideOffset={8}
           className={clsx(
-            'z-50 w-56 rounded-xl border border-border-light bg-bg-card p-1 shadow-lg',
+            'z-50 w-56 rounded-xl border border-border-light bg-bg-secondary p-1 shadow-lg',
             'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
             'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95'
           )}

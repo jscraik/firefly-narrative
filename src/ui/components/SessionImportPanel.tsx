@@ -93,7 +93,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
           type="button"
           onClick={handleScan}
           disabled={scanning}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary bg-bg-subtle border border-border-light rounded-md hover:bg-bg-hover disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary bg-bg-tertiary border border-border-light rounded-md hover:bg-bg-hover disabled:opacity-50 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${scanning ? 'motion-safe:animate-spin' : ''}`} />
           {scanning ? 'Scanning...' : 'Scan for Sessions'}
@@ -137,7 +137,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
               return (
                 <div
                   key={session.path}
-                  className={`flex items-center justify-between p-3 hover:bg-bg-subtle transition-colors ${
+                  className={`flex items-center justify-between p-3 hover:bg-bg-tertiary transition-colors ${
                     isSelected ? 'bg-accent-blue-bg' : ''
                   }`}
                 >
@@ -227,7 +227,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
         </div>
       )}
 
-      <div className="mt-4 p-3 bg-bg-subtle rounded-md">
+      <div className="mt-4 p-3 bg-bg-tertiary rounded-md">
         <p className="text-xs text-text-secondary">
           <strong>Supported locations:</strong> ~/.claude/projects/, ~/.cursor/composer/, ~/.continue/
         </p>

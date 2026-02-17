@@ -115,4 +115,53 @@ The Narrative app includes the `Agentation` React component in `src/App.tsx`:
 )}
 ```
 
-Configure the MCP server in `~/.claude/settings.json` for Claude Code integration.
+
+MCP server is configured in `~/.claude/settings.json` for Claude Code integration.
+
+---
+
+## Webhook + Automation Setup (Narrative)
+
+1. Copy the local env template:
+
+```bash
+cp .env.agentation.example .env.local
+```
+
+2. Start Agentation MCP server (port `4747`):
+
+```bash
+pnpm exec agentation-mcp server
+```
+
+3. Start webhook automation listener (port `8787`):
+
+```bash
+pnpm agentation:autopilot
+```
+
+4. Start the app:
+
+```bash
+pnpm tauri:dev
+```
+
+5. In Agentation panel, verify:
+   - MCP connection is green (`endpoint="http://localhost:4747"`)
+   - Webhook URL points to `http://localhost:8787`
+
+### Smoke test webhook
+
+```bash
+curl -sS -X POST http://localhost:8787 \
+  -H "Content-Type: application/json" \
+  -d '{"event":"submit","output":"agentation-smoke-test"}'
+```
+
+Expected artifacts:
+
+- `.narrative/agentation/latest-status.json`
+- `.narrative/agentation/runs/<job-id>/payload.json`
+- `.narrative/agentation/runs/<job-id>/implementation.txt`
+- `.narrative/agentation/runs/<job-id>/review.txt`
+- `.narrative/agentation/runs/<job-id>/result.json`

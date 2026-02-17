@@ -38,21 +38,21 @@ function getToolClasses(tool: SessionBadgeTool): string {
 
   switch (tool) {
     case 'claude-code':
-      return `${baseClasses} bg-accent-violet-bg text-accent-violet border border-accent-violet-light`;
+      return `${baseClasses} pill-tool-violet`;
     case 'codex':
-      return `${baseClasses} bg-accent-green-bg text-accent-green border border-accent-green-light`;
+      return `${baseClasses} pill-tool-green`;
     case 'cursor':
-      return `${baseClasses} bg-accent-blue-bg text-accent-blue border border-accent-blue-light`;
+      return `${baseClasses} pill-tool-blue`;
     case 'gemini':
-      return `${baseClasses} bg-accent-blue-bg text-accent-blue border border-accent-blue-light`;
+      return `${baseClasses} pill-tool-blue`;
     case 'copilot':
-      return `${baseClasses} bg-accent-violet-bg text-accent-violet border border-accent-violet-light`;
+      return `${baseClasses} pill-tool-violet`;
     case 'continue':
-      return `${baseClasses} bg-bg-subtle text-text-secondary border border-border-light`;
+      return `${baseClasses} pill-tool-neutral`;
     case 'kimi':
-      return `${baseClasses} bg-accent-amber-bg text-accent-amber border border-accent-amber-light`;
+      return `${baseClasses} pill-tool-amber`;
     default:
-      return `${baseClasses} bg-bg-subtle text-text-secondary border border-border-light`;
+      return `${baseClasses} pill-tool-neutral`;
   }
 }
 
@@ -142,9 +142,9 @@ export function BadgePill({ badge }: BadgePillProps) {
     }
 
     // Multiple tools: show generic with mixed indicator
-    return (
-      <span
-        className="inline-flex items-center gap-1 rounded border border-border-light bg-bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-text-secondary"
+      return (
+        <span
+        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium pill-tool-neutral"
         title={`Sessions: ${badge.sessionTools.join(', ')}`}
       >
         <Bot className="w-3 h-3" />

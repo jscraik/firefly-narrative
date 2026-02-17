@@ -85,7 +85,7 @@ export function ImportErrorBanner({ error, onDismiss }: ImportErrorBannerProps) 
                         href={action.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-card border border-accent-red-light text-accent-red text-xs font-medium hover:bg-accent-red-light transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-secondary border border-accent-red-light text-accent-red text-xs font-medium hover:bg-accent-red-light transition-colors"
                       >
                         <HelpCircle className="w-3.5 h-3.5" />
                         {action.label}
@@ -95,7 +95,7 @@ export function ImportErrorBanner({ error, onDismiss }: ImportErrorBannerProps) 
                         key={actionKey}
                         type="button"
                         onClick={action.action}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-card border border-accent-red-light text-accent-red text-xs font-medium hover:bg-accent-red-light transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-secondary border border-accent-red-light text-accent-red text-xs font-medium hover:bg-accent-red-light transition-colors"
                       >
                         <FileJson className="w-3.5 h-3.5" />
                         {action.label}

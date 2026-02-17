@@ -1,5 +1,6 @@
-import { FolderOpen, GitCommit, Bot, AlertCircle } from 'lucide-react';
+import { GitCommit, Bot, AlertCircle } from 'lucide-react';
 import type { DashboardEmptyReason } from '../../../core/types';
+import { RepositoryPlaceholderCard } from '../RepositoryPlaceholderCard';
 
 interface DashboardEmptyStateProps {
   reason: DashboardEmptyReason;
@@ -8,22 +9,10 @@ interface DashboardEmptyStateProps {
 // =============================================================================
 // EMPTY STATE CONFIGURATIONS
 // =============================================================================
-const EMPTY_STATES: Record<DashboardEmptyReason, EmptyStateConfig> = {
-  'no-repo': {
-    icon: <FolderOpen className="w-16 h-16 text-text-muted" />,
-    iconBackground: 'bg-bg-subtle',
-    title: 'No repository selected',
-    message: 'Open a repository to view your AI contribution analytics and discover patterns in your code.',
-    primaryAction: {
-      label: 'Open Repository',
-      onClick: () => {/* Trigger repo picker */},
-    },
-    delight: 'Your code stories are waiting.',
-  },
-
+const EMPTY_STATES: Record<Exclude<DashboardEmptyReason, 'no-repo'>, EmptyStateConfig> = {
   'no-commits': {
     icon: <GitCommit className="w-16 h-16 text-text-muted" />,
-    iconBackground: 'bg-bg-subtle',
+    iconBackground: 'bg-bg-tertiary',
     title: 'No commits in this time range',
     message: 'There are no commits in the selected time period. Try a different range or create some commits!',
     primaryAction: {
@@ -62,11 +51,19 @@ const EMPTY_STATES: Record<DashboardEmptyReason, EmptyStateConfig> = {
 // COMPONENT
 // =============================================================================
 export function DashboardEmptyState({ reason }: DashboardEmptyStateProps) {
+  if (reason === 'no-repo') {
+    return (
+      <output className="dashboard-empty-state flex h-full min-h-[500px] items-center justify-center px-6 py-12">
+        <RepositoryPlaceholderCard variant="dashboard" />
+      </output>
+    );
+  }
+
   const config = EMPTY_STATES[reason];
 
   return (
     <output
-      className="dashboard-empty-state flex flex-col items-center justify-center min-h-[500px] px-6 py-12 animate-in fade-in duration-500"
+      className="dashboard-empty-state flex flex-col items-center justify-center min-h-[500px] px-6 py-12 animate-in fade-in motion-page-enter"
     >
       {/* Icon Container */}
       <div

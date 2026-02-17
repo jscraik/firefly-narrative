@@ -27,7 +27,12 @@
     "docs:lint": "vale --minAlertLevel=warning README.md docs/README.md docs/agents/*.md && npx -y markdownlint-cli2 README.md docs/**/*.md brand/README.md",
     "docs:api": "typedoc",
     "analyze": "vite-bundle-analyzer",
-    "repair:agent": "node scripts/repair-agent.mjs"
+    "repair:agent": "node scripts/repair-agent.mjs",
+    "agentation:autopilot": "node scripts/agentation-autopilot.mjs",
+    "agentation:mcp": "agentation-mcp server --port 4747",
+    "app:dev": "bash scripts/dev-native.sh",
+    "agentation:webhook": "PORT=${PORT:-8787} TRIGGER_EVENTS=${TRIGGER_EVENTS:-submit} node scripts/agentation-autopilot.mjs",
+    "agentation:dev": "bash scripts/agentation-dev.sh"
   },
   "dependencies": {
     "@design-studio/runtime": "file:vendor/design-studio/design-studio-runtime-2.0.0.tgz",

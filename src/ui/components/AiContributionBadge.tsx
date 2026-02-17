@@ -42,14 +42,14 @@ export function AiContributionBadge({ stats, showZero = false }: AiContributionB
       };
     } else if (percentage > 0) {
       return {
-        bg: 'bg-accent-blue-bg',
-        text: 'text-accent-blue',
-        border: 'border-accent-blue-light',
-        icon: 'text-accent-blue',
+        bg: 'bg-bg-tertiary',
+        text: 'text-text-secondary',
+        border: 'border-border-light',
+        icon: 'text-text-tertiary',
       };
     }
     return {
-      bg: 'bg-bg-page',
+      bg: 'bg-bg-primary',
       text: 'text-text-secondary',
       border: 'border-border-light',
       icon: 'text-text-tertiary',

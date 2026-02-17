@@ -193,7 +193,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type to search…"
-            className="w-full rounded-md border border-border-light bg-bg-page px-3 py-2 text-sm text-text-secondary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-blue"
+            className="w-full rounded-md border border-border-light bg-bg-primary px-3 py-2 text-sm text-text-secondary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-blue"
             aria-describedby="atlas-search-help"
             autoComplete="off"
             spellCheck={false}
@@ -207,7 +207,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
               type="button"
               onClick={handleRebuild}
               disabled={rebuildLoading}
-              className="inline-flex items-center gap-2 rounded-md bg-bg-page px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-border-light disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-md bg-bg-primary px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-border-light disabled:opacity-60"
             >
               {rebuildLoading ? 'Rebuilding…' : 'Rebuild index'}
             </button>
@@ -216,7 +216,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
               type="button"
               onClick={() => void refreshInfo()}
               disabled={info.loading}
-              className="inline-flex items-center gap-2 rounded-md bg-bg-page px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-border-light disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-md bg-bg-primary px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-border-light disabled:opacity-60"
             >
               {info.loading ? 'Refreshing…' : 'Refresh status'}
             </button>
@@ -225,7 +225,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
               <button
                 type="button"
                 onClick={clearSelection}
-                className="inline-flex items-center gap-2 rounded-md bg-bg-page px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-border-light"
+                className="inline-flex items-center gap-2 rounded-md bg-bg-primary px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-border-light"
               >
                 Clear selection
               </button>
@@ -253,13 +253,13 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
           <details className="mt-2">
             <summary className="cursor-pointer text-xs text-text-secondary">Capabilities / Introspect / Doctor (raw)</summary>
             <div className="mt-2 grid grid-cols-1 gap-3">
-              <pre className="max-h-40 overflow-auto rounded-md bg-bg-page p-3 text-[11px] text-text-secondary">
+              <pre className="max-h-40 overflow-auto rounded-md bg-bg-primary p-3 text-[11px] text-text-secondary">
                 {summarizeObject(info.capabilities)}
               </pre>
-              <pre className="max-h-40 overflow-auto rounded-md bg-bg-page p-3 text-[11px] text-text-secondary">
+              <pre className="max-h-40 overflow-auto rounded-md bg-bg-primary p-3 text-[11px] text-text-secondary">
                 {summarizeObject(info.introspect)}
               </pre>
-              <pre className="max-h-40 overflow-auto rounded-md bg-bg-page p-3 text-[11px] text-text-secondary">
+              <pre className="max-h-40 overflow-auto rounded-md bg-bg-primary p-3 text-[11px] text-text-secondary">
                 {summarizeObject(info.doctor)}
               </pre>
             </div>
@@ -295,7 +295,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
                   onClick={() => selectHit(hit)}
                   className={[
                     'w-full rounded-md border px-3 py-2 text-left transition-colors',
-                    isSelected ? 'border-accent-blue bg-accent-blue-light' : 'border-border-light bg-bg-page hover:bg-border-light',
+                    isSelected ? 'border-accent-blue bg-accent-blue-light' : 'border-border-light bg-bg-primary hover:bg-border-light',
                   ].join(' ')}
                 >
                   <div className="flex flex-col gap-1">
@@ -338,7 +338,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
 
               <div className="flex flex-col gap-2">
                 {selectedSession.chunks.map((c) => (
-                  <div key={c.chunkUid} className="rounded-md border border-border-light bg-bg-page p-3">
+                  <div key={c.chunkUid} className="rounded-md border border-border-light bg-bg-primary p-3">
                     <div className="text-[11px] text-text-tertiary">
                       Chunk {c.chunkIndex} · {c.roleMask}
                     </div>

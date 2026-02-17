@@ -123,6 +123,7 @@ pub fn load_config() -> Result<IngestConfig, String> {
     // - Add newly supported Codex sources if present (sessions + archived_sessions + history.jsonl).
     // - Remove legacy noisy Codex internal logs dir (~/.codex/log).
     normalize_codex_watch_paths(&mut parsed.watch_paths);
+    normalize_codex_mode(&mut parsed.codex);
 
     Ok(parsed)
 }
@@ -160,9 +161,18 @@ pub fn apply_update(update: IngestConfigUpdate) -> Result<IngestConfig, String> 
     }
 
     normalize_codex_watch_paths(&mut config.watch_paths);
+    normalize_codex_mode(&mut config.codex);
 
     save_config(&config)?;
     Ok(config)
+}
+
+fn normalize_codex_mode(codex: &mut CodexConfig) {
+    let mode = codex.mode.trim().to_lowercase();
+    codex.mode = match mode.as_str() {
+        "otlp" | "logs" | "both" => mode,
+        _ => "both".to_string(),
+    };
 }
 
 fn normalize_codex_watch_paths(paths: &mut WatchPaths) {

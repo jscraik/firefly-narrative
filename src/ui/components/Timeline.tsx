@@ -21,7 +21,7 @@ export function Timeline({ nodes, selectedId, onSelect, pulseCommitId }: Timelin
   } = useTimelineNavigation({ nodes, selectedId, onSelect });
 
   return (
-    <div className="bg-bg-card border-t border-border-light px-4 py-4">
+    <div className="bg-bg-secondary border-t border-border-light px-4 py-4">
       <div className="flex items-center gap-3">
         <TimelineNavButtons
           hasPrev={hasPrev}

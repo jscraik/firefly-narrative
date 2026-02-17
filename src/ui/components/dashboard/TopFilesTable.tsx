@@ -41,7 +41,7 @@ export function TopFilesTable({
 
       <div className="overflow-hidden rounded-lg border border-border-light">
         <table className="w-full border-collapse">
-          <thead className="bg-bg-subtle border-b border-border-light">
+          <thead className="bg-bg-tertiary border-b border-border-light">
             <tr>
               <th
                 className="px-4 py-3 text-xs font-semibold text-text-muted uppercase text-left"
@@ -172,7 +172,7 @@ function LoadMoreButton({ onClick, isLoading }: LoadMoreButtonProps) {
         text-sm font-medium transition-all duration-150 ease-out
         ${
           isLoading
-            ? 'text-text-muted cursor-not-allowed bg-bg-subtle opacity-50'
+            ? 'text-text-muted cursor-not-allowed bg-bg-tertiary opacity-50'
             : 'text-accent-blue hover:text-accent-blue hover:bg-accent-blue-bg active:bg-accent-blue-light'
         }
       `}

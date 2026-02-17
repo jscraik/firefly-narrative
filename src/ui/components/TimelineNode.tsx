@@ -41,6 +41,13 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
   const sessionBadge = node.badges?.find(b => b.type === 'session');
   const hasSession = !!sessionBadge;
   const primaryTool = sessionBadge?.sessionTools?.[0] ?? null;
+  const badges = node.badges ?? [];
+  const anchorBadge = badges.find((b) => b.type === 'anchor');
+  const nonAnchorBadges = badges.filter((b) => b.type !== 'anchor');
+  const visibleBadges = (anchorBadge
+    ? [...nonAnchorBadges.slice(0, 2), anchorBadge]
+    : nonAnchorBadges.slice(0, 3)
+  ).slice(0, 3);
 
   return (
     <div
@@ -78,11 +85,9 @@ export function TimelineNodeComponent({ node, selected, pulsing, onSelect }: Tim
       </button>
 
       {/* Badges below dot */}
-      {node.badges && node.badges.length > 0 && (
+      {visibleBadges.length > 0 && (
         <div className="mt-2 flex flex-col items-center gap-1">
-          {node.badges
-            .slice(0, 3)
-            .map((badge) => (
+          {visibleBadges.map((badge) => (
               <BadgePill key={`${badge.type}-${badge.label ?? badge.status ?? 'badge'}`} badge={badge} />
             ))}
         </div>
