@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.8.0...narrative-desktop-mvp-v0.9.0) (2026-02-17)
+
+
+### Features
+
+* **agentation:** add critique mode and mode-aware autopilot status ([#17](https://github.com/jscraik/narrative/issues/17)) ([2b18289](https://github.com/jscraik/narrative/commit/2b1828954f0e617f7d53cf90e92db3ee2c597b67))
+
 ## [0.8.0](https://github.com/jscraik/narrative/compare/narrative-desktop-mvp-v0.7.0...narrative-desktop-mvp-v0.8.0) (2026-02-17)
 
 
