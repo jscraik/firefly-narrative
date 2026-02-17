@@ -1,7 +1,7 @@
 {
   "name": "narrative-desktop-mvp",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -28,7 +28,6 @@
     "docs:api": "typedoc",
     "analyze": "vite-bundle-analyzer",
     "repair:agent": "node scripts/repair-agent.mjs",
-    "agentation:autopilot": "node scripts/agentation-autopilot.mjs",
     "agentation:mcp": "agentation-mcp server --port 4747",
     "app:dev": "bash scripts/dev-native.sh",
     "agentation:webhook": "PORT=${PORT:-8787} TRIGGER_EVENTS=${TRIGGER_EVENTS:-submit} node scripts/agentation-autopilot.mjs",
