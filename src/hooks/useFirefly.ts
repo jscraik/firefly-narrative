@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { TraceCommitSummary } from '../core/types';
 import { getFireflySettings, setFireflyEnabled } from '../core/tauri/settings';
+import type { TraceCommitSummary } from '../core/types';
 
 export const FIREFLY_ANALYZING_DWELL_MS = 150;
 export const FIREFLY_INSIGHT_DWELL_MS = 300;
@@ -179,6 +179,12 @@ export function useFirefly(options: UseFireflyOptions): UseFireflyReturn {
     let cancelled = false;
 
     async function loadSettings() {
+      // In browser dev mode, skip backend call
+      if (import.meta.env.DEV) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const settings = await getFireflySettings();
         if (!cancelled) {
@@ -227,7 +233,9 @@ export function useFirefly(options: UseFireflyOptions): UseFireflyReturn {
     }
 
     try {
-      await setFireflyEnabled(targetEnabled);
+      if (!import.meta.env.DEV) {
+        await setFireflyEnabled(targetEnabled);
+      }
     } catch (error) {
       const message = getErrorMessage(error);
       console.error('[firefly.toggle.persist_failed]', error);
