@@ -7,6 +7,7 @@ import http from 'node:http';
 
 const ROOT = process.cwd();
 const PORT = Number(process.env.PORT ?? 8787);
+const MODE = (process.env.AGENTATION_MODE ?? 'autopilot').trim().toLowerCase();
 const TRIGGER_EVENTS = new Set(
   (process.env.TRIGGER_EVENTS ?? 'submit')
     .split(',')
@@ -21,6 +22,7 @@ const STATUS_FILE = path.resolve(
 );
 const IMPLEMENT_COMMAND = (process.env.AGENTATION_IMPLEMENT_COMMAND ?? '').trim();
 const REVIEW_COMMAND = (process.env.AGENTATION_REVIEW_COMMAND ?? '').trim();
+const CRITIQUE_COMMAND = (process.env.AGENTATION_CRITIQUE_COMMAND ?? '').trim();
 const IMPLEMENT_TIMEOUT_MS = Number(process.env.CODEX_IMPLEMENTATION_TIMEOUT_MS ?? 300000);
 const REVIEW_TIMEOUT_MS = Number(process.env.CODEX_REVIEW_TIMEOUT_MS ?? 180000);
 
@@ -60,9 +62,9 @@ async function writeStatus(patch) {
   const current = await readStatus();
   const next = {
     schema_version: '1.0',
-    updated_at: nowIso(),
     ...current,
-    ...patch
+    ...patch,
+    updated_at: nowIso()
   };
   await writeFile(STATUS_FILE, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
 }
@@ -77,6 +79,21 @@ function stepSummary(step, result) {
     finishedAt: result.finishedAt,
     durationMs: result.durationMs,
     command: result.command
+  };
+}
+
+function skippedStep(step, command, reason) {
+  return {
+    step,
+    command,
+    success: false,
+    skipped: true,
+    timedOut: false,
+    exitCode: null,
+    startedAt: nowIso(),
+    finishedAt: nowIso(),
+    durationMs: 0,
+    output: `${step} skipped: ${reason}\n`
   };
 }
 
@@ -181,6 +198,7 @@ async function processJob(body) {
 
   await writeStatus({
     state: 'webhook_received',
+    mode: MODE,
     event,
     job_id: jobId,
     job_dir: jobDir,
@@ -189,49 +207,69 @@ async function processJob(body) {
 
   const implementationFile = path.join(jobDir, 'implementation.txt');
   const reviewFile = path.join(jobDir, 'review.txt');
+  const critiqueFile = path.join(jobDir, 'critique.txt');
 
-  await writeStatus({ state: 'running_implementation', job_id: jobId });
-  const implementation = await runStep({
-    step: 'implementation',
-    command: IMPLEMENT_COMMAND,
-    timeoutMs: IMPLEMENT_TIMEOUT_MS,
-    outputFile: implementationFile
-  });
+  let implementation = skippedStep('implementation', IMPLEMENT_COMMAND, 'not run');
+  let review = skippedStep('review', REVIEW_COMMAND, 'not run');
+  let critique = skippedStep('critique', CRITIQUE_COMMAND, 'not run');
 
-  let review = {
-    step: 'review',
-    command: REVIEW_COMMAND,
-    success: false,
-    skipped: true,
-    timedOut: false,
-    exitCode: null,
-    startedAt: nowIso(),
-    finishedAt: nowIso(),
-    durationMs: 0,
-    output: 'review skipped: implementation did not succeed\n'
-  };
-
-  if (implementation.success && REVIEW_COMMAND) {
-    await writeStatus({ state: 'running_review', job_id: jobId });
-    review = await runStep({
-      step: 'review',
-      command: REVIEW_COMMAND,
+  if (MODE === 'critique') {
+    const critiqueCommand = CRITIQUE_COMMAND || REVIEW_COMMAND;
+    await writeStatus({ state: 'running_critique', mode: MODE, job_id: jobId });
+    critique = await runStep({
+      step: 'critique',
+      command: critiqueCommand,
       timeoutMs: REVIEW_TIMEOUT_MS,
-      outputFile: reviewFile
+      outputFile: critiqueFile
     });
-  } else {
+    await writeFile(implementationFile, implementation.output, 'utf8');
     await writeFile(reviewFile, review.output, 'utf8');
+  } else {
+    await writeStatus({ state: 'running_implementation', mode: MODE, job_id: jobId });
+    implementation = await runStep({
+      step: 'implementation',
+      command: IMPLEMENT_COMMAND,
+      timeoutMs: IMPLEMENT_TIMEOUT_MS,
+      outputFile: implementationFile
+    });
+
+    if (implementation.success && REVIEW_COMMAND) {
+      await writeStatus({ state: 'running_review', mode: MODE, job_id: jobId });
+      review = await runStep({
+        step: 'review',
+        command: REVIEW_COMMAND,
+        timeoutMs: REVIEW_TIMEOUT_MS,
+        outputFile: reviewFile
+      });
+    } else {
+      review = skippedStep(
+        'review',
+        REVIEW_COMMAND,
+        implementation.success ? 'command not configured' : 'implementation did not succeed'
+      );
+      await writeFile(reviewFile, review.output, 'utf8');
+    }
+    await writeFile(critiqueFile, critique.output, 'utf8');
   }
 
   const issues = [];
-  if (!IMPLEMENT_COMMAND) issues.push('implementation command not configured');
-  if (!REVIEW_COMMAND) issues.push('review command not configured');
-  if (implementation.timedOut) issues.push('implementation timed out');
-  if (review.timedOut) issues.push('review timed out');
-  if (IMPLEMENT_COMMAND && !implementation.success) issues.push('implementation failed');
-  if (REVIEW_COMMAND && implementation.success && !review.success) issues.push('review failed');
+  if (MODE === 'critique') {
+    const critiqueCommand = CRITIQUE_COMMAND || REVIEW_COMMAND;
+    if (!critiqueCommand) issues.push('critique command not configured');
+    if (critique.timedOut) issues.push('critique timed out');
+    if (critiqueCommand && !critique.success) issues.push('critique failed');
+  } else {
+    if (!IMPLEMENT_COMMAND) issues.push('implementation command not configured');
+    if (!REVIEW_COMMAND) issues.push('review command not configured');
+    if (implementation.timedOut) issues.push('implementation timed out');
+    if (review.timedOut) issues.push('review timed out');
+    if (IMPLEMENT_COMMAND && !implementation.success) issues.push('implementation failed');
+    if (REVIEW_COMMAND && implementation.success && !review.success) issues.push('review failed');
+  }
 
-  const hardFailure = IMPLEMENT_COMMAND && !implementation.success;
+  const hardFailure = MODE === 'critique'
+    ? Boolean(CRITIQUE_COMMAND || REVIEW_COMMAND) && !critique.success
+    : Boolean(IMPLEMENT_COMMAND) && !implementation.success;
   const finalState = hardFailure
     ? 'failed'
     : issues.length === 0
@@ -242,9 +280,11 @@ async function processJob(body) {
     schema_version: '1.0',
     job_id: jobId,
     event,
+    mode: MODE,
     created_at: nowIso(),
     state: finalState,
     issues,
+    critique: stepSummary('critique', critique),
     implementation: stepSummary('implementation', implementation),
     review: stepSummary('review', review)
   };
@@ -253,9 +293,11 @@ async function processJob(body) {
 
   await writeStatus({
     state: finalState,
+    mode: MODE,
     job_id: jobId,
     last_result_file: path.join(jobDir, 'result.json'),
     issues,
+    critique: stepSummary('critique', critique),
     implementation: stepSummary('implementation', implementation),
     review: stepSummary('review', review)
   });
@@ -293,21 +335,24 @@ const server = http.createServer(async (req, res) => {
     queue = queue.then(() => processJob(payload)).catch(async (error) => {
       await writeStatus({
         state: 'failed',
+        mode: MODE,
         error: `job_error:${error instanceof Error ? error.message : String(error)}`
       });
     });
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, accepted: true, event }));
+    res.end(JSON.stringify({ ok: true, accepted: true, event, mode: MODE }));
   });
 });
 
 server.listen(PORT, async () => {
   await writeStatus({
     state: 'ready',
+    mode: MODE,
     listening: `http://localhost:${PORT}`,
     trigger_events: [...TRIGGER_EVENTS]
   });
   console.log(`[agentation-autopilot] listening on http://localhost:${PORT}`);
+  console.log(`[agentation-autopilot] mode: ${MODE}`);
   console.log(`[agentation-autopilot] trigger events: ${[...TRIGGER_EVENTS].join(', ')}`);
 });
