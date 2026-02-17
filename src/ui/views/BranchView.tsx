@@ -7,19 +7,19 @@ import type { ActivityEvent } from '../../core/tauri/activity';
 import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
 import type { BranchViewModel, DashboardFilter, FileChange, TestRun, TraceRange } from '../../core/types';
 import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
+import { useFirefly } from '../../hooks/useFirefly';
 import { useTestImport } from '../../hooks/useTestImport';
 import { BranchHeader } from '../components/BranchHeader';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { CaptureActivityStrip } from '../components/CaptureActivityStrip';
 import { FilesChanged } from '../components/FilesChanged';
-import type { FireflyEvent } from '../components/FireflySignal';
 import { ImportErrorBanner } from '../components/ImportErrorBanner';
 import { IngestToast } from '../components/IngestToast';
 import { IntentList } from '../components/IntentList';
 import { NeedsAttentionList } from '../components/NeedsAttentionList';
 import { RightPanelTabs } from '../components/RightPanelTabs';
 import { SkeletonFiles } from '../components/Skeleton';
-import { Timeline } from '../components/Timeline';
+import { Timeline, type FireflyTrackingSettlePayload } from '../components/Timeline';
 
 function BranchViewInner(props: {
   model: BranchViewModel;
@@ -57,10 +57,6 @@ function BranchViewInner(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
-  // Firefly signal props
-  fireflyEnabled?: boolean;
-  fireflyEvent?: FireflyEvent;
-  onToggleFirefly?: () => void;
 }) {
   const {
     model,
@@ -98,9 +94,6 @@ function BranchViewInner(props: {
     onConfigureCodex,
     onRotateOtlpKey,
     onGrantCodexConsent,
-    fireflyEnabled,
-    fireflyEvent,
-    onToggleFirefly,
   } = props;
   const { selectedFile, selectFile } = useFileSelection();
 
@@ -121,6 +114,8 @@ function BranchViewInner(props: {
   const [_error, setError] = useState<string | null>(null);
   const [traceRanges, setTraceRanges] = useState<TraceRange[]>([]);
   const [loadingTrace, setLoadingTrace] = useState(false);
+  const [traceRequestedForSelection, setTraceRequestedForSelection] = useState(false);
+  const [trackingSettledNodeId, setTrackingSettledNodeId] = useState<string | null>(null);
 
   const selectedNode = useMemo(
     () => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
@@ -131,6 +126,23 @@ function BranchViewInner(props: {
     if (!selectedNode || selectedNode.type !== 'commit') return null;
     return selectedNode.id;
   }, [selectedNode]);
+
+  const reportFireflyError = useCallback((message: string) => {
+    setActionError(message);
+  }, [setActionError]);
+
+  const firefly = useFirefly({
+    selectedNodeId,
+    selectedCommitSha,
+    hasSelectedFile: Boolean(selectedFile),
+    trackingSettled: selectedNodeId !== null && trackingSettledNodeId === selectedNodeId,
+    loadingFiles,
+    loadingDiff,
+    loadingTrace,
+    traceRequestedForSelection,
+    traceSummary: selectedCommitSha ? model.traceSummaries?.byCommit[selectedCommitSha] : undefined,
+    onPersistenceError: reportFireflyError,
+  });
 
   // Demo: test run lookup is driven by node.testRunId.
   const demoTestRun = useMemo((): TestRun | undefined => {
@@ -177,6 +189,9 @@ function BranchViewInner(props: {
     setFiles([]);
     selectFile(null);
     setDiffText(null);
+    setTraceRanges([]);
+    setTraceRequestedForSelection(false);
+    setTrackingSettledNodeId(null);
     setError(null);
   }, [defaultSelectedId, selectFile]);
 
@@ -197,7 +212,9 @@ function BranchViewInner(props: {
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : String(e));
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+        setActionError(`Unable to load files for selected node: ${message}`);
         setFiles([]);
         selectFile(null);
       })
@@ -209,7 +226,7 @@ function BranchViewInner(props: {
     return () => {
       cancelled = true;
     };
-  }, [selectedNodeId, loadFilesForNode, selectFile, selectedFile]);
+  }, [selectedNodeId, loadFilesForNode, selectFile, selectedFile, setActionError]);
 
   useEffect(() => {
     if (!selectedNodeId || !selectedFile) return;
@@ -225,7 +242,9 @@ function BranchViewInner(props: {
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : String(e));
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+        setActionError(`Unable to load diff for selected file: ${message}`);
         setDiffText(null);
       })
       .finally(() => {
@@ -236,20 +255,28 @@ function BranchViewInner(props: {
     return () => {
       cancelled = true;
     };
-  }, [selectedNodeId, selectedFile, loadDiffForFile]);
+  }, [selectedNodeId, selectedFile, loadDiffForFile, setActionError]);
 
   useEffect(() => {
-    if (!selectedNodeId || !selectedFile) return;
+    if (!selectedNodeId || !selectedFile || !selectedCommitSha) {
+      setTraceRequestedForSelection(false);
+      setTraceRanges([]);
+      setLoadingTrace(false);
+      return;
+    }
     let cancelled = false;
 
+    setTraceRequestedForSelection(true);
     setLoadingTrace(true);
     loadTraceRangesForFile(selectedNodeId, selectedFile)
       .then((ranges) => {
         if (cancelled) return;
         setTraceRanges(ranges);
       })
-      .catch(() => {
+      .catch((e: unknown) => {
         if (cancelled) return;
+        const message = e instanceof Error ? e.message : String(e);
+        setActionError(`Unable to load trace ranges for selected file: ${message}`);
         setTraceRanges([]);
       })
       .finally(() => {
@@ -260,7 +287,7 @@ function BranchViewInner(props: {
     return () => {
       cancelled = true;
     };
-  }, [selectedNodeId, selectedFile, loadTraceRangesForFile]);
+  }, [selectedCommitSha, selectedNodeId, selectedFile, loadTraceRangesForFile, setActionError]);
 
   // Pulse commit badge once on first successful import
   useEffect(() => {
@@ -296,8 +323,14 @@ function BranchViewInner(props: {
   };
 
   const handleCommitClickFromSession = (commitSha: string) => {
+    setTrackingSettledNodeId(null);
     setSelectedNodeId(commitSha);
   };
+
+  const handleSelectNode = useCallback((nodeId: string) => {
+    setTrackingSettledNodeId(null);
+    setSelectedNodeId(nodeId);
+  }, []);
 
   const handleExportAgentTrace = () => {
     if (!selectedNodeId) return;
@@ -308,6 +341,12 @@ function BranchViewInner(props: {
     if (!selectedNodeId) return;
     onRunOtlpSmokeTest(selectedNodeId, files);
   };
+
+  const handleFireflyTrackingSettled = useCallback((payload: FireflyTrackingSettlePayload) => {
+    if (!selectedNodeId) return;
+    if (payload.selectedNodeId !== selectedNodeId) return;
+    setTrackingSettledNodeId(payload.selectedNodeId);
+  }, [selectedNodeId]);
 
   const { importJUnitForCommit } = useTestImport({
     repoRoot,
@@ -439,8 +478,8 @@ function BranchViewInner(props: {
               loadingDiff={loadingDiff || loadingTrace}
               traceRanges={traceRanges}
               // Firefly
-              fireflyEnabled={fireflyEnabled}
-              onToggleFirefly={onToggleFirefly}
+              fireflyEnabled={firefly.enabled}
+              onToggleFirefly={firefly.toggle}
             />
           </div>
         </div>
@@ -449,10 +488,11 @@ function BranchViewInner(props: {
       <Timeline
         nodes={model.timeline}
         selectedId={selectedNodeId}
-        onSelect={setSelectedNodeId}
+        onSelect={handleSelectNode}
         pulseCommitId={pulseCommitId}
-        fireflyEvent={fireflyEvent}
-        fireflyDisabled={!fireflyEnabled}
+        fireflyEvent={firefly.event}
+        fireflyDisabled={!firefly.enabled}
+        onFireflyTrackingSettled={handleFireflyTrackingSettled}
       />
     </div>
   );
@@ -494,10 +534,6 @@ export function BranchView(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
-  // Firefly signal props
-  fireflyEnabled?: boolean;
-  fireflyEvent?: FireflyEvent;
-  onToggleFirefly?: () => void;
 }) {
   return (
     <FileSelectionProvider>
