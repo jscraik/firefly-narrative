@@ -5,10 +5,21 @@ import { testRuns } from '../../core/demo/nearbyGridDemo';
 import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
 import type { ActivityEvent } from '../../core/tauri/activity';
 import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
-import type { BranchViewModel, DashboardFilter, FileChange, TestRun, TraceRange } from '../../core/types';
+import { composeBranchNarrative } from '../../core/narrative/composeBranchNarrative';
+import { trackNarrativeEvent } from '../../core/telemetry/narrativeTelemetry';
+import type {
+  BranchViewModel,
+  DashboardFilter,
+  FileChange,
+  NarrativeDetailLevel,
+  NarrativeEvidenceLink,
+  TestRun,
+  TraceRange,
+} from '../../core/types';
 import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
 import { useFirefly } from '../../hooks/useFirefly';
 import { useTestImport } from '../../hooks/useTestImport';
+import { BranchNarrativePanel } from '../components/BranchNarrativePanel';
 import { BranchHeader } from '../components/BranchHeader';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { CaptureActivityStrip } from '../components/CaptureActivityStrip';
@@ -116,6 +127,9 @@ function BranchViewInner(props: {
   const [loadingTrace, setLoadingTrace] = useState(false);
   const [traceRequestedForSelection, setTraceRequestedForSelection] = useState(false);
   const [trackingSettledNodeId, setTrackingSettledNodeId] = useState<string | null>(null);
+  const [detailLevel, setDetailLevel] = useState<NarrativeDetailLevel>('summary');
+
+  const narrative = useMemo(() => model.narrative ?? composeBranchNarrative(model), [model]);
 
   const selectedNode = useMemo(
     () => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
@@ -183,17 +197,13 @@ function BranchViewInner(props: {
 
   const testRun = model.source === 'demo' ? demoTestRun : repoTestRun ?? undefined;
 
-  // Reset selection if model changes
+  // Preserve selection across model updates when possible.
   useEffect(() => {
-    setSelectedNodeId(defaultSelectedId);
-    setFiles([]);
-    selectFile(null);
-    setDiffText(null);
-    setTraceRanges([]);
-    setTraceRequestedForSelection(false);
-    setTrackingSettledNodeId(null);
-    setError(null);
-  }, [defaultSelectedId, selectFile]);
+    setSelectedNodeId((prev) => {
+      if (prev && model.timeline.some((node) => node.id === prev)) return prev;
+      return defaultSelectedId;
+    });
+  }, [defaultSelectedId, model.timeline]);
 
   useEffect(() => {
     if (!selectedNodeId) return;
@@ -332,6 +342,43 @@ function BranchViewInner(props: {
     setSelectedNodeId(nodeId);
   }, []);
 
+  const handleDetailLevelChange = useCallback((level: NarrativeDetailLevel) => {
+    setDetailLevel(level);
+    trackNarrativeEvent('layer_switched', {
+      branch: model.meta?.branchName,
+      detailLevel: level,
+      confidence: narrative.confidence,
+    });
+  }, [model.meta?.branchName, narrative.confidence]);
+
+  const handleOpenEvidence = useCallback((link: NarrativeEvidenceLink) => {
+    if (link.commitSha) {
+      setTrackingSettledNodeId(null);
+      setSelectedNodeId(link.commitSha);
+    }
+    if (link.filePath) {
+      selectFile(link.filePath);
+    }
+    trackNarrativeEvent('evidence_opened', {
+      branch: model.meta?.branchName,
+      detailLevel,
+      evidenceKind: link.kind,
+      confidence: narrative.confidence,
+    });
+  }, [detailLevel, model.meta?.branchName, narrative.confidence, selectFile]);
+
+  const handleOpenRawDiff = useCallback(() => {
+    setDetailLevel('diff');
+    if (!selectedFile && files[0]?.path) {
+      selectFile(files[0].path);
+    }
+    trackNarrativeEvent('fallback_used', {
+      branch: model.meta?.branchName,
+      detailLevel: 'diff',
+      confidence: narrative.confidence,
+    });
+  }, [files, model.meta?.branchName, narrative.confidence, selectFile, selectedFile]);
+
   const handleExportAgentTrace = () => {
     if (!selectedNodeId) return;
     onExportAgentTrace(selectedNodeId, files);
@@ -371,6 +418,13 @@ function BranchViewInner(props: {
           {/* Left column */}
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
             <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />
+            <BranchNarrativePanel
+              narrative={narrative}
+              detailLevel={detailLevel}
+              onDetailLevelChange={handleDetailLevelChange}
+              onOpenEvidence={handleOpenEvidence}
+              onOpenRawDiff={handleOpenRawDiff}
+            />
             {ingestStatus ? (
               <CaptureActivityStrip
                 enabled={ingestStatus.enabled}

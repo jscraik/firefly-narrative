@@ -167,6 +167,40 @@ export type TimelineNode = {
   testRunId?: string;
 };
 
+export type NarrativeExecutionState = 'running' | 'ready' | 'needs_attention' | 'failed';
+
+export type NarrativeDetailLevel = 'summary' | 'evidence' | 'diff';
+
+export type NarrativeEvidenceKind = 'commit' | 'session' | 'file' | 'diff';
+
+export type NarrativeEvidenceLink = {
+  id: string;
+  kind: NarrativeEvidenceKind;
+  label: string;
+  commitSha?: string;
+  filePath?: string;
+  sessionId?: string;
+};
+
+export type NarrativeHighlight = {
+  id: string;
+  title: string;
+  whyThisMatters: string;
+  confidence: number;
+  evidenceLinks: NarrativeEvidenceLink[];
+};
+
+export type BranchNarrative = {
+  schemaVersion: number;
+  generatedAtISO: string;
+  state: NarrativeExecutionState;
+  summary: string;
+  confidence: number;
+  highlights: NarrativeHighlight[];
+  evidenceLinks: NarrativeEvidenceLink[];
+  fallbackReason?: string;
+};
+
 export type BranchViewModel = {
   source: 'demo' | 'git';
   title: string;
@@ -185,6 +219,7 @@ export type BranchViewModel = {
   };
   traceStatus?: TraceCollectorStatus;
   traceConfig?: TraceCollectorConfig;
+  narrative?: BranchNarrative;
   meta?: {
     repoPath?: string;
     branchName?: string;

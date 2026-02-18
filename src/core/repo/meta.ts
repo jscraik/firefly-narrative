@@ -69,6 +69,10 @@ export function branchStatsPayload(params: {
   headSha: string;
   stats: Stats;
   commitShas: string[];
+  narrative?: {
+    schemaVersion: number;
+    phase: number;
+  };
 }) {
   return {
     repoRoot: params.repoRoot,
@@ -76,6 +80,7 @@ export function branchStatsPayload(params: {
     headSha: params.headSha,
     indexedAtISO: new Date().toISOString(),
     stats: params.stats,
-    commits: params.commitShas
+    commits: params.commitShas,
+    ...(params.narrative ? { narrative: params.narrative } : {})
   };
 }
