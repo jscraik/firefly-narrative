@@ -1,4 +1,5 @@
 import type { BranchViewModel, IntentItem, TimelineNode } from '../types';
+import { BRANCH_NARRATIVE_SCHEMA_VERSION, composeBranchNarrative } from '../narrative/composeBranchNarrative';
 import { cacheCommitSummaries, cacheFileChanges, getCachedFileChanges, upsertRepo } from './db';
 import { getAggregateStatsForCommits, getCommitDetails, getHeadBranch, getHeadSha, listCommits, resolveGitRoot } from './git';
 import {
@@ -240,7 +241,11 @@ export async function indexRepo(
         branch,
         headSha,
         stats,
-        commitShas: commits.map((c) => c.sha)
+        commitShas: commits.map((c) => c.sha),
+        narrative: {
+          schemaVersion: BRANCH_NARRATIVE_SCHEMA_VERSION,
+          phase: 1
+        }
       })
     );
 
@@ -260,7 +265,7 @@ export async function indexRepo(
     console.warn('[Indexer] Metadata write failed (repo may be read-only):', e);
   }
 
-  const model: BranchViewModel = {
+  const modelBase: BranchViewModel = {
     source: 'git',
     title: branch,
     status: 'open',
@@ -273,6 +278,10 @@ export async function indexRepo(
     traceStatus: otelIngest.status,
     traceConfig,
     meta: { repoPath: root, branchName: branch, headSha, repoId }
+  };
+  const model: BranchViewModel = {
+    ...modelBase,
+    narrative: composeBranchNarrative(modelBase)
   };
 
   reportProgress('done', 'Index complete', commits.length, commits.length);

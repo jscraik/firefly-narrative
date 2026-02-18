@@ -8,7 +8,6 @@ import type {
 } from './core/types';
 import { useAutoIngest } from './hooks/useAutoIngest';
 import { useCommitData } from './hooks/useCommitData';
-import { useFirefly } from './hooks/useFirefly';
 import { useRepoLoader, type RepoState } from './hooks/useRepoLoader';
 import { useSessionImport } from './hooks/useSessionImport';
 import { useTraceCollector } from './hooks/useTraceCollector';
@@ -123,9 +122,25 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('demo');
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter | null>(null);
   const [isExitingFilteredView, setIsExitingFilteredView] = useState(false);
+  const [githubConnectorEnabled, setGithubConnectorEnabled] = useState(false);
   const [AgentationComponent, setAgentationComponent] = useState<AgentationComponentType | null>(null);
   const rawAgentationWebhookUrl = import.meta.env.VITE_AGENTATION_WEBHOOK_URL as string | undefined;
   const agentationWebhookUrl = normalizeWebhookUrl(rawAgentationWebhookUrl);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('narrative.githubConnector.enabled');
+    if (stored === 'true') {
+      setGithubConnectorEnabled(true);
+    }
+  }, []);
+
+  const handleToggleGitHubConnector = useCallback((enabled: boolean) => {
+    setGithubConnectorEnabled(enabled);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('narrative.githubConnector.enabled', enabled ? 'true' : 'false');
+    }
+  }, []);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -236,9 +251,6 @@ export default function App() {
     checkOnMount: true, // Check for updates on app launch
     pollIntervalMinutes: 60 * 24 // Check once per day
   });
-
-  // Firefly signal state management
-  const firefly = useFirefly();
 
   const updateCodexOtelReceiverEnabled = useCallback(
     async (enabled: boolean) => {
@@ -406,9 +418,8 @@ export default function App() {
             onConfigureCodex={autoIngest.configureCodexTelemetry}
             onRotateOtlpKey={autoIngest.rotateOtlpKey}
             onGrantCodexConsent={autoIngest.grantCodexConsent}
-            fireflyEnabled={firefly.enabled}
-            fireflyEvent={firefly.event}
-            onToggleFirefly={firefly.toggle}
+            githubConnectorEnabled={githubConnectorEnabled}
+            onToggleGitHubConnector={handleToggleGitHubConnector}
           />
         ) : (
           <RepoEmptyState setRepoState={setRepoState} />

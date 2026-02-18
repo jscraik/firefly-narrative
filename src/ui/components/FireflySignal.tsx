@@ -1,13 +1,5 @@
-import { useEffect, useState } from 'react';
-
-/**
- * Firefly event types
- * - idle: Default breathing state
- * - active: Pulse animation for events
- */
-export type FireflyEvent =
-  | { type: 'idle' }
-  | { type: 'active'; message?: string };
+import { useEffect, useMemo, useState } from 'react';
+import type { FireflyEvent } from '../../hooks/useFirefly';
 
 export interface FireflySignalProps {
   /** X position relative to container */
@@ -24,49 +16,64 @@ export interface FireflySignalProps {
  * Firefly Signal Component
  *
  * An ambient UI instrument that provides persistent, non-intrusive feedback
- * about system state. Renders as a glowing orb that breathes in idle state
- * and pulses when active.
+ * about system state. Renders as a glowing orb with semantic state classes.
  *
  * @example
- * <FireflySignal x={100} y={20} event={{ type: 'idle' }} />
+ * <FireflySignal x={100} y={20} event={{ type: 'idle', selectedNodeId: null }} />
  */
 export function FireflySignal({
   x,
   y,
-  event = { type: 'idle' },
+  event = { type: 'idle', selectedNodeId: null },
   disabled = false,
 }: FireflySignalProps) {
-  const [isVisible, setIsVisible] = useState(!disabled);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
-  // Sync visibility with disabled prop
   useEffect(() => {
-    setIsVisible(!disabled);
-  }, [disabled]);
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
 
-  // Handle active state animation
-  useEffect(() => {
-    if (event.type === 'active') {
-      setIsAnimating(true);
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setPrefersReducedMotion(query.matches);
+
+    update();
+    query.addEventListener('change', update);
+
+    return () => {
+      query.removeEventListener('change', update);
+    };
+  }, []);
+
+  const motionClass = useMemo(() => {
+    if (prefersReducedMotion) {
+      return `firefly-${event.type}-static`;
     }
-  }, [event]);
+    return `animate-firefly-${event.type}`;
+  }, [event.type, prefersReducedMotion]);
 
-  if (!isVisible) return null;
+  if (disabled) return null;
 
   return (
     <div
-      className={[
-        'firefly',
-        event.type === 'idle' ? 'animate-breathe' : '',
-        event.type === 'active' ? 'animate-pulse-ring firefly-tracking' : '',
-      ].filter(Boolean).join(' ')}
+      className="firefly"
       style={{
         transform: `translate(${x}px, ${y}px)`,
       }}
       aria-hidden="true"
-      onAnimationEnd={() => setIsAnimating(false)}
+      data-testid="firefly-signal"
       data-state={event.type}
-      data-animating={isAnimating}
-    />
+      data-reduced-motion={prefersReducedMotion ? 'true' : 'false'}
+    >
+      <div className="firefly-wings">
+        <div className="firefly-wing left" />
+        <div className="firefly-wing right" />
+      </div>
+      <div
+        className={[
+          'firefly-orb',
+          `firefly-${event.type}`,
+          motionClass,
+        ].join(' ')}
+      />
+    </div>
   );
 }

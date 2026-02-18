@@ -34,7 +34,7 @@ export async function getFireflySettings(): Promise<FireflySettings> {
     };
   } catch (error) {
     console.error('[FireflySettings] Failed to load settings:', error);
-    return { enabled: true }; // Fallback to defaults
+    throw error;
   }
 }
 

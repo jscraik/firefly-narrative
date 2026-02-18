@@ -320,44 +320,44 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 
 ### Functional
 
-- [ ] Firefly supports `Idle`, `Tracking`, `Analyzing`, `Insight` states with typed event/state contract.
-- [ ] `useFirefly` is the single semantic-state owner; `BranchView` and `App` do not contain competing transition logic.
-- [ ] Selection identity is normalized at adapter boundary (`selectedNodeId -> selectedCommitSha`) before semantic evaluation.
-- [ ] `Tracking` emits only for active selection changes and exits only after deterministic “position settled” criteria.
-- [ ] `Analyzing` reflects selected-node loader truth table (`any pending in tracked applicable loaders`) and ignores stale async results.
-- [ ] `Insight` emits only when `traceSummaries.byCommit[selectedCommitSha]` transitions to newly available summary where total lines > 0.
-- [ ] `Insight` dedupe key prevents repeated re-emit from rerender/tab churn without underlying summary change.
-- [ ] Transition precedence is enforced: `Insight > Analyzing > Tracking > Idle`.
-- [ ] Self-transition rules are enforced (`Analyzing→Analyzing` only on pending-set change, `Insight→Insight` only on `insightKey` change).
-- [ ] Firefly toggle reliably enables/disables signal and persists across app restarts.
-- [ ] Toggle OFF immediately suppresses Firefly rendering/state emissions and prevents pending transitions from reappearing while disabled.
+- [x] Firefly supports `Idle`, `Tracking`, `Analyzing`, `Insight` states with typed event/state contract.
+- [x] `useFirefly` is the single semantic-state owner; `BranchView` and `App` do not contain competing transition logic.
+- [x] Selection identity is normalized at adapter boundary (`selectedNodeId -> selectedCommitSha`) before semantic evaluation.
+- [x] `Tracking` emits only for active selection changes and exits only after deterministic “position settled” criteria.
+- [x] `Analyzing` reflects selected-node loader truth table (`any pending in tracked applicable loaders`) and ignores stale async results.
+- [x] `Insight` emits only when `traceSummaries.byCommit[selectedCommitSha]` transitions to newly available summary where total lines > 0.
+- [x] `Insight` dedupe key prevents repeated re-emit from rerender/tab churn without underlying summary change.
+- [x] Transition precedence is enforced: `Insight > Analyzing > Tracking > Idle`.
+- [x] Self-transition rules are enforced (`Analyzing→Analyzing` only on pending-set change, `Insight→Insight` only on `insightKey` change).
+- [x] Firefly toggle reliably enables/disables signal and persists across app restarts.
+- [x] Toggle OFF immediately suppresses Firefly rendering/state emissions and prevents pending transitions from reappearing while disabled.
 
 ### Non-functional
 
-- [ ] In the scripted 10s timeline-scroll scenario, average FPS is ≥ 55 and p95 frame time is ≤ 20ms.
-- [ ] No layout shift introduced by firefly transitions.
-- [ ] Reduced-motion preference suppresses motion while preserving state visibility.
-- [ ] Keyboard timeline behavior remains unchanged.
-- [ ] Loader/settings errors involved in Firefly flow are surfaced (no silent fail path).
-- [ ] Anti-flap dwell constraints are respected (`Analyzing: 150ms`, `Insight: 300ms`, selection change may preempt).
+- [x] In the scripted 10s timeline-scroll scenario, average FPS is ≥ 55 and p95 frame time is ≤ 20ms.
+- [x] No layout shift introduced by firefly transitions.
+- [x] Reduced-motion preference suppresses motion while preserving state visibility.
+- [x] Keyboard timeline behavior remains unchanged.
+- [x] Loader/settings errors involved in Firefly flow are surfaced (no silent fail path).
+- [x] Anti-flap dwell constraints are respected (`Analyzing: 150ms`, `Insight: 300ms`, selection change may preempt).
 
 ### Validation Gate (must-pass)
 
-- [ ] `/Users/jamiecraik/dev/narrative/src/ui/components/__tests__/FireflySignal.test.tsx`
+- [x] `/Users/jamiecraik/dev/narrative/src/ui/components/__tests__/FireflySignal.test.tsx`
   - verifies state-specific classes/data attributes and reduced-motion behavior.
-- [ ] `/Users/jamiecraik/dev/narrative/src/hooks/__tests__/useFirefly.test.ts`
+- [x] `/Users/jamiecraik/dev/narrative/src/hooks/__tests__/useFirefly.test.ts`
   - verifies formal transition matrix, precedence ordering, stale-event guards, insight dedupe key, and persistence failure handling.
-- [ ] `/Users/jamiecraik/dev/narrative/e2e/firefly-visual-system-v1.spec.ts`
+- [x] `/Users/jamiecraik/dev/narrative/e2e/firefly-visual-system-v1.spec.ts`
   - verifies selection flow, loader-driven analyzing, selected-node-only insight trigger source, and toggle persistence.
   - includes UI assertion that toggle persistence failures are surfaced via `ImportErrorBanner`.
-- [ ] Deferred-promise race harness in hook tests
+- [x] Deferred-promise race harness in hook tests
   - verifies out-of-order loader completion does not produce off-selection `Analyzing`/`Insight`.
-- [ ] Command gate executed:
+- [x] Command gate executed:
   - `pnpm test`
   - `pnpm test:e2e -- e2e/firefly-visual-system-v1.spec.ts`
-- [ ] Perf capture command executed:
+- [x] Perf capture command executed:
   - `pnpm test:e2e -- e2e/firefly-visual-system-v1.spec.ts --grep "@firefly-perf"`
-- [ ] Performance verification artifact (scripted scroll run)
+- [x] Performance verification artifact (scripted scroll run)
   - records average FPS, p95 frame time, layout-shift check results, and required run metadata at `/Users/jamiecraik/dev/narrative/docs/assets/verification/firefly-perf-YYYY-MM-DD.json`.
 
 ## Implementation Plan

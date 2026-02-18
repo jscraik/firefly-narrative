@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { ActivityEvent } from '../../core/tauri/activity';
-import { Checkbox } from './Checkbox';
+import { Toggle } from './Toggle';
 
 type ActivityFilter = 'all' | 'failed' | 'needs-review' | 'linked';
 
@@ -75,11 +75,10 @@ function CaptureLifecycleRail({
             key={item.key}
             type="button"
             onClick={() => onSelectFilter?.(item.key)}
-            className={`rounded-md border px-2 py-0.5 text-[10px] transition-colors ${
-              activeFilter === item.key
+            className={`rounded-md border px-2 py-0.5 text-[10px] transition-colors ${activeFilter === item.key
                 ? 'border-accent-blue-light bg-accent-blue-bg text-accent-blue'
                 : 'btn-tertiary-soft'
-            }`}
+              }`}
           >
             {item.label}
           </button>
@@ -161,8 +160,10 @@ export function CaptureActivityStrip(props: {
 
           {onToggle ? (
             <div className="flex items-center gap-2 text-xs text-text-secondary">
-              <Checkbox checked={enabled} onCheckedChange={(c) => onToggle(c)} aria-label="Auto-capture" />
-              Auto‑capture
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-text-tertiary">
+                {enabled ? 'On' : 'Off'}
+              </span>
+              <Toggle checked={enabled} onCheckedChange={(c) => onToggle(c)} aria-label="Auto-capture" />
             </div>
           ) : null}
         </div>

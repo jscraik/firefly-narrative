@@ -5,21 +5,41 @@ import { testRuns } from '../../core/demo/nearbyGridDemo';
 import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
 import type { ActivityEvent } from '../../core/tauri/activity';
 import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
-import type { BranchViewModel, DashboardFilter, FileChange, TestRun, TraceRange } from '../../core/types';
+import { composeBranchNarrative } from '../../core/narrative/composeBranchNarrative';
+import { buildDecisionArchaeology } from '../../core/narrative/decisionArchaeology';
+import { evaluateNarrativeRollout } from '../../core/narrative/rolloutGovernance';
+import { buildStakeholderProjections } from '../../core/narrative/stakeholderProjections';
+import { loadGitHubContext } from '../../core/repo/githubContext';
+import { trackNarrativeEvent } from '../../core/telemetry/narrativeTelemetry';
+import type {
+  BranchViewModel,
+  GitHubContextState,
+  DashboardFilter,
+  StakeholderAudience,
+  FileChange,
+  NarrativeDetailLevel,
+  NarrativeEvidenceLink,
+  NarrativeObservabilityMetrics,
+  TestRun,
+  TraceRange,
+} from '../../core/types';
 import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
+import { useFirefly } from '../../hooks/useFirefly';
 import { useTestImport } from '../../hooks/useTestImport';
+import { BranchNarrativePanel } from '../components/BranchNarrativePanel';
 import { BranchHeader } from '../components/BranchHeader';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { CaptureActivityStrip } from '../components/CaptureActivityStrip';
+import { DecisionArchaeologyPanel } from '../components/DecisionArchaeologyPanel';
 import { FilesChanged } from '../components/FilesChanged';
-import type { FireflyEvent } from '../components/FireflySignal';
 import { ImportErrorBanner } from '../components/ImportErrorBanner';
 import { IngestToast } from '../components/IngestToast';
 import { IntentList } from '../components/IntentList';
+import { NarrativeGovernancePanel } from '../components/NarrativeGovernancePanel';
 import { NeedsAttentionList } from '../components/NeedsAttentionList';
 import { RightPanelTabs } from '../components/RightPanelTabs';
 import { SkeletonFiles } from '../components/Skeleton';
-import { Timeline } from '../components/Timeline';
+import { Timeline, type FireflyTrackingSettlePayload } from '../components/Timeline';
 
 function BranchViewInner(props: {
   model: BranchViewModel;
@@ -57,10 +77,8 @@ function BranchViewInner(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
-  // Firefly signal props
-  fireflyEnabled?: boolean;
-  fireflyEvent?: FireflyEvent;
-  onToggleFirefly?: () => void;
+  githubConnectorEnabled?: boolean;
+  onToggleGitHubConnector?: (enabled: boolean) => void;
 }) {
   const {
     model,
@@ -98,9 +116,8 @@ function BranchViewInner(props: {
     onConfigureCodex,
     onRotateOtlpKey,
     onGrantCodexConsent,
-    fireflyEnabled,
-    fireflyEvent,
-    onToggleFirefly,
+    githubConnectorEnabled = false,
+    onToggleGitHubConnector,
   } = props;
   const { selectedFile, selectFile } = useFileSelection();
 
@@ -121,6 +138,51 @@ function BranchViewInner(props: {
   const [_error, setError] = useState<string | null>(null);
   const [traceRanges, setTraceRanges] = useState<TraceRange[]>([]);
   const [loadingTrace, setLoadingTrace] = useState(false);
+  const [traceRequestedForSelection, setTraceRequestedForSelection] = useState(false);
+  const [trackingSettledNodeId, setTrackingSettledNodeId] = useState<string | null>(null);
+  const [detailLevel, setDetailLevel] = useState<NarrativeDetailLevel>('summary');
+  const [audience, setAudience] = useState<StakeholderAudience>('manager');
+  const [githubContext, setGithubContext] = useState<GitHubContextState>({
+    status: githubConnectorEnabled ? 'loading' : 'disabled',
+    entries: []
+  });
+  const [observability, setObservability] = useState<NarrativeObservabilityMetrics>({
+    layerSwitchedCount: 0,
+    evidenceOpenedCount: 0,
+    fallbackUsedCount: 0,
+    killSwitchTriggeredCount: 0,
+  });
+  const rolloutTelemetryKeyRef = useRef<string | null>(null);
+  const killSwitchReasonRef = useRef<string | null>(null);
+
+  const narrative = useMemo(() => model.narrative ?? composeBranchNarrative(model), [model]);
+  const projections = useMemo(
+    () =>
+      buildStakeholderProjections({
+        narrative,
+        model,
+        githubEntry: githubContext.entries[0]
+      }),
+    [githubContext.entries, model, narrative]
+  );
+  const archaeologyEntries = useMemo(
+    () => buildDecisionArchaeology({ narrative, githubEntry: githubContext.entries[0] }),
+    [githubContext.entries, narrative]
+  );
+  const rolloutReport = useMemo(
+    () =>
+      evaluateNarrativeRollout({
+        narrative,
+        projections,
+        githubContextState: githubContext,
+        observability,
+      }),
+    [githubContext, narrative, observability, projections]
+  );
+  const criticalRule = rolloutReport.rules.find((rule) => rule.triggered && rule.severity === 'critical');
+  const killSwitchActive = rolloutReport.status === 'rollback';
+  const effectiveDetailLevel: NarrativeDetailLevel = killSwitchActive ? 'diff' : detailLevel;
+  const branchScopeKey = `${model.meta?.repoPath ?? ''}:${model.meta?.branchName ?? ''}`;
 
   const selectedNode = useMemo(
     () => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
@@ -131,6 +193,23 @@ function BranchViewInner(props: {
     if (!selectedNode || selectedNode.type !== 'commit') return null;
     return selectedNode.id;
   }, [selectedNode]);
+
+  const reportFireflyError = useCallback((message: string) => {
+    setActionError(message);
+  }, [setActionError]);
+
+  const firefly = useFirefly({
+    selectedNodeId,
+    selectedCommitSha,
+    hasSelectedFile: Boolean(selectedFile),
+    trackingSettled: selectedNodeId !== null && trackingSettledNodeId === selectedNodeId,
+    loadingFiles,
+    loadingDiff,
+    loadingTrace,
+    traceRequestedForSelection,
+    traceSummary: selectedCommitSha ? model.traceSummaries?.byCommit[selectedCommitSha] : undefined,
+    onPersistenceError: reportFireflyError,
+  });
 
   // Demo: test run lookup is driven by node.testRunId.
   const demoTestRun = useMemo((): TestRun | undefined => {
@@ -171,14 +250,92 @@ function BranchViewInner(props: {
 
   const testRun = model.source === 'demo' ? demoTestRun : repoTestRun ?? undefined;
 
-  // Reset selection if model changes
+  // Preserve selection across model updates when possible.
   useEffect(() => {
-    setSelectedNodeId(defaultSelectedId);
-    setFiles([]);
-    selectFile(null);
-    setDiffText(null);
-    setError(null);
-  }, [defaultSelectedId, selectFile]);
+    setSelectedNodeId((prev) => {
+      if (prev && model.timeline.some((node) => node.id === prev)) return prev;
+      return defaultSelectedId;
+    });
+  }, [defaultSelectedId, model.timeline]);
+
+  useEffect(() => {
+    const repoRoot = model.meta?.repoPath;
+    if (!repoRoot) {
+      setGithubContext({ status: 'empty', entries: [] });
+      return;
+    }
+    if (!githubConnectorEnabled) {
+      setGithubContext({ status: 'disabled', entries: [] });
+      return;
+    }
+
+    let cancelled = false;
+    setGithubContext((prev) => ({ ...prev, status: 'loading', error: undefined }));
+    loadGitHubContext(repoRoot).then((state) => {
+      if (cancelled) return;
+      setGithubContext(state);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [githubConnectorEnabled, model.meta?.repoPath]);
+
+  useEffect(() => {
+    void branchScopeKey;
+    setObservability({
+      layerSwitchedCount: 0,
+      evidenceOpenedCount: 0,
+      fallbackUsedCount: 0,
+      killSwitchTriggeredCount: 0,
+    });
+  }, [branchScopeKey]);
+
+  const bumpObservability = useCallback((kind: keyof Omit<NarrativeObservabilityMetrics, 'lastEventAtISO'>) => {
+    setObservability((prev) => ({
+      ...prev,
+      [kind]: prev[kind] + 1,
+      lastEventAtISO: new Date().toISOString(),
+    }));
+  }, []);
+
+  useEffect(() => {
+    const key = `${model.meta?.branchName ?? 'unknown'}:${rolloutReport.status}:${rolloutReport.averageScore}`;
+    if (rolloutTelemetryKeyRef.current === key) return;
+    rolloutTelemetryKeyRef.current = key;
+
+    trackNarrativeEvent('rollout_scored', {
+      branch: model.meta?.branchName,
+      confidence: narrative.confidence,
+      rolloutStatus: rolloutReport.status,
+      score: rolloutReport.averageScore,
+    });
+  }, [model.meta?.branchName, narrative.confidence, rolloutReport.averageScore, rolloutReport.status]);
+
+  useEffect(() => {
+    if (!killSwitchActive) {
+      killSwitchReasonRef.current = null;
+      return;
+    }
+
+    const reason = criticalRule?.id ?? 'rollback_guard';
+    if (killSwitchReasonRef.current === reason) return;
+    killSwitchReasonRef.current = reason;
+    bumpObservability('killSwitchTriggeredCount');
+
+    trackNarrativeEvent('kill_switch_triggered', {
+      branch: model.meta?.branchName,
+      confidence: narrative.confidence,
+      rolloutStatus: rolloutReport.status,
+      reason,
+    });
+  }, [
+    bumpObservability,
+    criticalRule?.id,
+    killSwitchActive,
+    model.meta?.branchName,
+    narrative.confidence,
+    rolloutReport.status,
+  ]);
 
   useEffect(() => {
     if (!selectedNodeId) return;
@@ -197,7 +354,9 @@ function BranchViewInner(props: {
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : String(e));
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+        setActionError(`Unable to load files for selected node: ${message}`);
         setFiles([]);
         selectFile(null);
       })
@@ -209,7 +368,7 @@ function BranchViewInner(props: {
     return () => {
       cancelled = true;
     };
-  }, [selectedNodeId, loadFilesForNode, selectFile, selectedFile]);
+  }, [selectedNodeId, loadFilesForNode, selectFile, selectedFile, setActionError]);
 
   useEffect(() => {
     if (!selectedNodeId || !selectedFile) return;
@@ -225,7 +384,9 @@ function BranchViewInner(props: {
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : String(e));
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+        setActionError(`Unable to load diff for selected file: ${message}`);
         setDiffText(null);
       })
       .finally(() => {
@@ -236,20 +397,28 @@ function BranchViewInner(props: {
     return () => {
       cancelled = true;
     };
-  }, [selectedNodeId, selectedFile, loadDiffForFile]);
+  }, [selectedNodeId, selectedFile, loadDiffForFile, setActionError]);
 
   useEffect(() => {
-    if (!selectedNodeId || !selectedFile) return;
+    if (!selectedNodeId || !selectedFile || !selectedCommitSha) {
+      setTraceRequestedForSelection(false);
+      setTraceRanges([]);
+      setLoadingTrace(false);
+      return;
+    }
     let cancelled = false;
 
+    setTraceRequestedForSelection(true);
     setLoadingTrace(true);
     loadTraceRangesForFile(selectedNodeId, selectedFile)
       .then((ranges) => {
         if (cancelled) return;
         setTraceRanges(ranges);
       })
-      .catch(() => {
+      .catch((e: unknown) => {
         if (cancelled) return;
+        const message = e instanceof Error ? e.message : String(e);
+        setActionError(`Unable to load trace ranges for selected file: ${message}`);
         setTraceRanges([]);
       })
       .finally(() => {
@@ -260,7 +429,7 @@ function BranchViewInner(props: {
     return () => {
       cancelled = true;
     };
-  }, [selectedNodeId, selectedFile, loadTraceRangesForFile]);
+  }, [selectedCommitSha, selectedNodeId, selectedFile, loadTraceRangesForFile, setActionError]);
 
   // Pulse commit badge once on first successful import
   useEffect(() => {
@@ -296,8 +465,69 @@ function BranchViewInner(props: {
   };
 
   const handleCommitClickFromSession = (commitSha: string) => {
+    setTrackingSettledNodeId(null);
     setSelectedNodeId(commitSha);
   };
+
+  const handleSelectNode = useCallback((nodeId: string) => {
+    setTrackingSettledNodeId(null);
+    setSelectedNodeId(nodeId);
+  }, []);
+
+  const handleDetailLevelChange = useCallback((level: NarrativeDetailLevel) => {
+    if (killSwitchActive && level !== 'diff') {
+      return;
+    }
+    if (level === detailLevel) return;
+    setDetailLevel(level);
+    bumpObservability('layerSwitchedCount');
+    trackNarrativeEvent('layer_switched', {
+      branch: model.meta?.branchName,
+      detailLevel: level,
+      confidence: narrative.confidence,
+    });
+  }, [bumpObservability, detailLevel, killSwitchActive, model.meta?.branchName, narrative.confidence]);
+
+  const handleOpenEvidence = useCallback((link: NarrativeEvidenceLink) => {
+    if (link.commitSha) {
+      setTrackingSettledNodeId(null);
+      setSelectedNodeId(link.commitSha);
+    }
+    if (link.filePath) {
+      selectFile(link.filePath);
+    }
+    bumpObservability('evidenceOpenedCount');
+    trackNarrativeEvent('evidence_opened', {
+      branch: model.meta?.branchName,
+      detailLevel: effectiveDetailLevel,
+      evidenceKind: link.kind,
+      confidence: narrative.confidence,
+    });
+  }, [bumpObservability, effectiveDetailLevel, model.meta?.branchName, narrative.confidence, selectFile]);
+
+  const handleOpenRawDiff = useCallback(() => {
+    setDetailLevel('diff');
+    if (!selectedFile && files[0]?.path) {
+      selectFile(files[0].path);
+    }
+    bumpObservability('fallbackUsedCount');
+    trackNarrativeEvent('fallback_used', {
+      branch: model.meta?.branchName,
+      detailLevel: 'diff',
+      confidence: narrative.confidence,
+    });
+  }, [bumpObservability, files, model.meta?.branchName, narrative.confidence, selectFile, selectedFile]);
+
+  const handleAudienceChange = useCallback((nextAudience: StakeholderAudience) => {
+    if (nextAudience === audience) return;
+    setAudience(nextAudience);
+    trackNarrativeEvent('audience_switched', {
+      branch: model.meta?.branchName,
+      detailLevel: effectiveDetailLevel,
+      audience: nextAudience,
+      confidence: narrative.confidence,
+    });
+  }, [audience, effectiveDetailLevel, model.meta?.branchName, narrative.confidence]);
 
   const handleExportAgentTrace = () => {
     if (!selectedNodeId) return;
@@ -308,6 +538,12 @@ function BranchViewInner(props: {
     if (!selectedNodeId) return;
     onRunOtlpSmokeTest(selectedNodeId, files);
   };
+
+  const handleFireflyTrackingSettled = useCallback((payload: FireflyTrackingSettlePayload) => {
+    if (!selectedNodeId) return;
+    if (payload.selectedNodeId !== selectedNodeId) return;
+    setTrackingSettledNodeId(payload.selectedNodeId);
+  }, [selectedNodeId]);
 
   const { importJUnitForCommit } = useTestImport({
     repoRoot,
@@ -332,6 +568,20 @@ function BranchViewInner(props: {
           {/* Left column */}
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
             <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />
+            <BranchNarrativePanel
+              narrative={narrative}
+              projections={projections}
+              audience={audience}
+              detailLevel={effectiveDetailLevel}
+              killSwitchActive={killSwitchActive}
+              killSwitchReason={criticalRule?.rationale}
+              onAudienceChange={handleAudienceChange}
+              onDetailLevelChange={handleDetailLevelChange}
+              onOpenEvidence={handleOpenEvidence}
+              onOpenRawDiff={handleOpenRawDiff}
+            />
+            <NarrativeGovernancePanel report={rolloutReport} observability={observability} />
+            <DecisionArchaeologyPanel entries={archaeologyEntries} onOpenEvidence={handleOpenEvidence} />
             {ingestStatus ? (
               <CaptureActivityStrip
                 enabled={ingestStatus.enabled}
@@ -424,6 +674,9 @@ function BranchViewInner(props: {
               onConfigureCodex={onConfigureCodex}
               onRotateOtlpKey={onRotateOtlpKey}
               onGrantCodexConsent={onGrantCodexConsent}
+              githubConnectorEnabled={githubConnectorEnabled}
+              onToggleGitHubConnector={onToggleGitHubConnector}
+              githubConnectorState={githubContext}
               // Tests
               testRun={testRun}
               onTestFileClick={handleFileClickFromTest}
@@ -439,8 +692,8 @@ function BranchViewInner(props: {
               loadingDiff={loadingDiff || loadingTrace}
               traceRanges={traceRanges}
               // Firefly
-              fireflyEnabled={fireflyEnabled}
-              onToggleFirefly={onToggleFirefly}
+              fireflyEnabled={firefly.enabled}
+              onToggleFirefly={firefly.toggle}
             />
           </div>
         </div>
@@ -449,10 +702,11 @@ function BranchViewInner(props: {
       <Timeline
         nodes={model.timeline}
         selectedId={selectedNodeId}
-        onSelect={setSelectedNodeId}
+        onSelect={handleSelectNode}
         pulseCommitId={pulseCommitId}
-        fireflyEvent={fireflyEvent}
-        fireflyDisabled={!fireflyEnabled}
+        fireflyEvent={firefly.event}
+        fireflyDisabled={!firefly.enabled}
+        onFireflyTrackingSettled={handleFireflyTrackingSettled}
       />
     </div>
   );
@@ -494,10 +748,8 @@ export function BranchView(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
-  // Firefly signal props
-  fireflyEnabled?: boolean;
-  fireflyEvent?: FireflyEvent;
-  onToggleFirefly?: () => void;
+  githubConnectorEnabled?: boolean;
+  onToggleGitHubConnector?: (enabled: boolean) => void;
 }) {
   return (
     <FileSelectionProvider>

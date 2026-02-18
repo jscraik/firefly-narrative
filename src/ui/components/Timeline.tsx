@@ -1,10 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TimelineNode as TimelineNodeType } from '../../core/types';
+import type { FireflyEvent } from '../../hooks/useFirefly';
 import { useTimelineNavigation } from '../../hooks/useTimelineNavigation';
 import { BadgePill } from './BadgePill';
-import { FireflySignal, type FireflyEvent } from './FireflySignal';
+import { FireflySignal } from './FireflySignal';
 import { TimelineNavButtons } from './TimelineNavButtons';
 import { TimelineNodeComponent } from './TimelineNode';
+
+export interface FireflyTrackingSettlePayload {
+  selectedNodeId: string;
+  x: number;
+  y: number;
+}
 
 export interface TimelineProps {
   nodes: TimelineNodeType[];
@@ -13,6 +20,7 @@ export interface TimelineProps {
   pulseCommitId?: string | null;
   fireflyEvent?: FireflyEvent;
   fireflyDisabled?: boolean;
+  onFireflyTrackingSettled?: (payload: FireflyTrackingSettlePayload) => void;
 }
 
 export function Timeline({
@@ -20,8 +28,9 @@ export function Timeline({
   selectedId,
   onSelect,
   pulseCommitId,
-  fireflyEvent = { type: 'idle' },
+  fireflyEvent = { type: 'idle', selectedNodeId: null },
   fireflyDisabled = false,
+  onFireflyTrackingSettled,
 }: TimelineProps) {
   const {
     containerRef,
@@ -34,26 +43,82 @@ export function Timeline({
   // Firefly position tracking
   const [fireflyPos, setFireflyPos] = useState({ x: 0, y: 0 });
   const nodeRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const settleRafRef = useRef<number | null>(null);
 
-  // Update firefly position when selectedId changes
-  useEffect(() => {
-    if (!selectedId) return;
-
+  const measureFireflyPosition = useCallback(() => {
+    if (!selectedId) return null;
     const node = nodeRefs.current.get(selectedId);
     const container = containerRef.current;
-    if (!node || !container) return;
+    if (!node || !container) return null;
 
     const nodeRect = node.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
-
-    setFireflyPos({
+    const nextPos = {
       x: nodeRect.left - containerRect.left + container.scrollLeft,
       y: nodeRect.top - containerRect.top,
-    });
+    };
+
+    setFireflyPos(nextPos);
+    return nextPos;
   }, [selectedId, containerRef]);
 
+  useEffect(() => {
+    if (!selectedId) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    let settleRafA = 0;
+    let settleRafB = 0;
+
+    const runSettleCheck = () => {
+      const first = measureFireflyPosition();
+      if (!first) return;
+
+      settleRafA = window.requestAnimationFrame(() => {
+        const second = measureFireflyPosition();
+        if (!second || cancelled) return;
+
+        const stableX = Math.abs(first.x - second.x) <= 1;
+        const stableY = Math.abs(first.y - second.y) <= 1;
+
+        if (stableX && stableY) {
+          onFireflyTrackingSettled?.({
+            selectedNodeId: selectedId,
+            x: second.x,
+            y: second.y,
+          });
+        } else {
+          settleRafB = window.requestAnimationFrame(runSettleCheck);
+          settleRafRef.current = settleRafB;
+        }
+      });
+      settleRafRef.current = settleRafA;
+    };
+
+    runSettleCheck();
+
+    const handleScroll = () => {
+      measureFireflyPosition();
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', runSettleCheck);
+
+    return () => {
+      cancelled = true;
+      container.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', runSettleCheck);
+      window.cancelAnimationFrame(settleRafA);
+      window.cancelAnimationFrame(settleRafB);
+      if (settleRafRef.current !== null) {
+        window.cancelAnimationFrame(settleRafRef.current);
+      }
+    };
+  }, [measureFireflyPosition, onFireflyTrackingSettled, selectedId, containerRef]);
+
   return (
-    <div className="bg-bg-secondary border-t border-border-light px-4 py-4">
+    <div className="bg-black/20 backdrop-blur-lg border-t border-white/10 px-4 py-4">
       <div className="flex items-center gap-3">
         <TimelineNavButtons
           hasPrev={hasPrev}
@@ -68,6 +133,12 @@ export function Timeline({
           tabIndex={0}
           role="listbox"
           aria-label="Commit timeline"
+          style={{
+            maskImage:
+              'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
+            WebkitMaskImage:
+              'linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)',
+          }}
           onKeyDown={(event) => {
             if (event.key === 'ArrowLeft') {
               event.preventDefault();
@@ -79,16 +150,9 @@ export function Timeline({
           }}
         >
           {/* Connection line - visible path */}
-          <div
-            className="pointer-events-none absolute left-0 right-0 top-[18px] h-[2px]"
-            style={{
-              background:
-                'linear-gradient(to right, var(--border-light), var(--border-medium), var(--border-light))',
-              opacity: 0.95,
-            }}
-          />
+          <div className="pointer-events-none absolute left-0 right-0 top-[38px] h-[1px] bg-border-subtle" />
 
-          <div className="relative flex min-w-max items-start gap-16 px-4 py-2">
+          <div className="relative flex min-w-max items-start gap-2 px-4 py-2">
             {sorted.map((n) => (
               <TimelineNodeComponent
                 key={n.id}

@@ -27,8 +27,8 @@ test.describe('Narrative Critical Flows', () => {
         await repoButton.click();
       }
       
-      // Import button should be visible
-      await expect(page.getByRole('button', { name: 'Import data…' })).toBeVisible();
+      // Import trigger should be visible in repo mode.
+      await expect(page.getByRole('button', { name: /import data/i })).toBeVisible();
     });
 
     test('should show session panel when available', async ({ page }) => {

@@ -167,6 +167,118 @@ export type TimelineNode = {
   testRunId?: string;
 };
 
+export type NarrativeExecutionState = 'running' | 'ready' | 'needs_attention' | 'failed';
+
+export type NarrativeDetailLevel = 'summary' | 'evidence' | 'diff';
+
+export type NarrativeEvidenceKind = 'commit' | 'session' | 'file' | 'diff';
+
+export type NarrativeEvidenceLink = {
+  id: string;
+  kind: NarrativeEvidenceKind;
+  label: string;
+  commitSha?: string;
+  filePath?: string;
+  sessionId?: string;
+};
+
+export type NarrativeHighlight = {
+  id: string;
+  title: string;
+  whyThisMatters: string;
+  confidence: number;
+  evidenceLinks: NarrativeEvidenceLink[];
+};
+
+export type StakeholderAudience = 'executive' | 'manager' | 'engineer';
+
+export type StakeholderProjection = {
+  audience: StakeholderAudience;
+  headline: string;
+  bullets: string[];
+  risks: string[];
+  evidenceLinks: NarrativeEvidenceLink[];
+};
+
+export type StakeholderProjections = Record<StakeholderAudience, StakeholderProjection>;
+
+export type DecisionArchaeologyEntry = {
+  id: string;
+  title: string;
+  intent: string;
+  tradeoffs: string[];
+  alternatives: string[];
+  evidenceLinks: NarrativeEvidenceLink[];
+  confidence: number;
+};
+
+export type BranchNarrative = {
+  schemaVersion: number;
+  generatedAtISO: string;
+  state: NarrativeExecutionState;
+  summary: string;
+  confidence: number;
+  highlights: NarrativeHighlight[];
+  evidenceLinks: NarrativeEvidenceLink[];
+  fallbackReason?: string;
+};
+
+export type GitHubContextStatus = 'disabled' | 'loading' | 'ready' | 'partial' | 'empty' | 'error';
+
+export type GitHubContextEntry = {
+  id: string;
+  number?: number;
+  title: string;
+  body?: string;
+  reviewSummary?: string;
+  url?: string;
+  updatedAtISO?: string;
+  redactionHits: number;
+};
+
+export type GitHubContextState = {
+  status: GitHubContextStatus;
+  entries: GitHubContextEntry[];
+  lastLoadedAtISO?: string;
+  failedFileCount?: number;
+  error?: string;
+};
+
+export type NarrativeObservabilityMetrics = {
+  layerSwitchedCount: number;
+  evidenceOpenedCount: number;
+  fallbackUsedCount: number;
+  killSwitchTriggeredCount: number;
+  lastEventAtISO?: string;
+};
+
+export type NarrativeRolloutStatus = 'healthy' | 'watch' | 'rollback';
+
+export type NarrativeRubricMetric = {
+  id: 'confidence' | 'evidence_coverage' | 'projection_completeness' | 'fallback_health' | 'connector_safety';
+  label: string;
+  score: number;
+  threshold: number;
+  status: 'pass' | 'warn' | 'fail';
+  rationale: string;
+};
+
+export type NarrativeKillSwitchRule = {
+  id: string;
+  label: string;
+  severity: 'warning' | 'critical';
+  triggered: boolean;
+  rationale: string;
+};
+
+export type NarrativeRolloutReport = {
+  status: NarrativeRolloutStatus;
+  rubric: NarrativeRubricMetric[];
+  rules: NarrativeKillSwitchRule[];
+  averageScore: number;
+  generatedAtISO: string;
+};
+
 export type BranchViewModel = {
   source: 'demo' | 'git';
   title: string;
@@ -185,6 +297,7 @@ export type BranchViewModel = {
   };
   traceStatus?: TraceCollectorStatus;
   traceConfig?: TraceCollectorConfig;
+  narrative?: BranchNarrative;
   meta?: {
     repoPath?: string;
     branchName?: string;

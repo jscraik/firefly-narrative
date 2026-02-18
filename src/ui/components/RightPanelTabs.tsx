@@ -1,21 +1,31 @@
-import { type KeyboardEvent, useEffect, useState, Fragment } from 'react';
-import { MessageSquare, Activity, Settings, TestTube, FileCode, Search, PictureInPicture2, Minimize2, ChevronDown } from 'lucide-react';
 import { useTheme } from '@design-studio/tokens';
+import { Activity, ChevronDown, FileCode, MessageSquare, Minimize2, PictureInPicture2, Search, Settings, TestTube } from 'lucide-react';
+import { Fragment, type KeyboardEvent, useEffect, useState } from 'react';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
-import type { SessionExcerpt, TestRun, TraceCommitSummary, TraceCollectorStatus, TraceCollectorConfig, TraceRange } from '../../core/types';
-import { SessionExcerpts } from './SessionExcerpts';
-import { TraceTranscriptPanel } from './TraceTranscriptPanel';
+import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
+import type {
+  GitHubContextState,
+  SessionExcerpt,
+  TestRun,
+  TraceCollectorConfig,
+  TraceCollectorStatus,
+  TraceCommitSummary,
+  TraceRange,
+} from '../../core/types';
 import { AgentTraceSummary } from './AgentTraceSummary';
-import { CodexOtelSettingsPanel } from './CodexOtelSettingsPanel';
-import { StoryAnchorsPanel } from './StoryAnchorsPanel';
+import { AtlasSearchPanel } from './AtlasSearchPanel';
+import { AttributionSettingsPanel } from './AttributionSettingsPanel';
 import { AutoIngestSetupPanel } from './AutoIngestSetupPanel';
-import { TestResultsPanel } from './TestResultsPanel';
 import { DiffViewer } from './DiffViewer';
+import { GitHubConnectorPanel } from './GitHubConnectorPanel';
+import { SessionExcerpts } from './SessionExcerpts';
 import { SourceLensView } from './SourceLensView';
 import { StepsSummaryCard } from './StepsSummaryCard';
-import { AtlasSearchPanel } from './AtlasSearchPanel';
-import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
-import { Select } from './Select';
+import { StoryAnchorsPanel } from './StoryAnchorsPanel';
+import { TelemetrySettingsPanel } from './TelemetrySettingsPanel';
+import { TestResultsPanel } from './TestResultsPanel';
+import { Toggle } from './Toggle';
+import { TraceTranscriptPanel } from './TraceTranscriptPanel';
 
 type TabId = 'session' | 'attribution' | 'atlas' | 'settings' | 'tests';
 type TabCategory = 'analyze' | 'tools' | 'config';
@@ -79,6 +89,9 @@ interface RightPanelTabsProps {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
+  githubConnectorEnabled?: boolean;
+  onToggleGitHubConnector?: (enabled: boolean) => void;
+  githubConnectorState?: GitHubContextState;
 
   // Test data
   testRun?: TestRun;
@@ -99,81 +112,70 @@ interface RightPanelTabsProps {
   onToggleFirefly?: (enabled: boolean) => void;
 }
 
-function DevThemeToggleCard() {
-  const { theme, setTheme, effectiveTheme } = useTheme();
-
-  return (
-    <div className="card p-5">
-      <div className="section-header">THEME</div>
-      <div className="section-subheader mt-0.5">dev-only override</div>
-
-      <div className="mt-3 flex items-center gap-3">
-        <span className="text-xs font-semibold text-text-secondary">
-          Mode
-        </span>
-        <Select
-          aria-label="Theme mode"
-          value={theme}
-          onValueChange={(v) => setTheme(v as 'system' | 'light' | 'dark')}
-          items={[
-            { value: 'system', label: 'System' },
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
-          ]}
-        />
-        <div className="text-[11px] text-text-tertiary">
-          Effective: <span className="font-mono">{effectiveTheme}</span>
-        </div>
-      </div>
-    </div>
-  );
+interface AppearanceCardProps {
+  fireflyEnabled?: boolean;
+  onToggleFirefly?: (enabled: boolean) => void;
 }
 
-interface FireflyToggleCardProps {
-  enabled: boolean;
-  onToggle: (enabled: boolean) => void;
-}
+function AppearanceCard({ fireflyEnabled, onToggleFirefly }: AppearanceCardProps) {
+  const { theme, setTheme } = useTheme();
 
-function FireflyToggleCard({ enabled, onToggle }: FireflyToggleCardProps) {
   return (
     <div className="card p-4">
-      <div className="section-header">FIREFLY SIGNAL</div>
-      <div className="section-subheader mt-0.5">ambient status indicator</div>
+      <div className="section-header">Appearance</div>
+      <div className="section-subheader mt-0.5">visual preferences</div>
 
-      <div className="mt-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-2 h-2 rounded-full ${enabled ? 'bg-accent-amber' : 'bg-border-medium'}`}
-            style={{
-              boxShadow: enabled ? '0 0 6px 1px rgba(251, 191, 36, 0.5)' : 'none',
-            }}
-          />
-          <span className="text-xs text-text-secondary">
-            {enabled ? 'Enabled' : 'Disabled'}
-          </span>
+      <div className="mt-4 flex flex-col gap-4">
+        {/* Theme Toggle (Dev Only) */}
+        {import.meta.env.DEV && (
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-medium text-text-secondary">Dev Theme Override</span>
+              <span className="text-[10px] text-text-tertiary">Force dark/light mode for testing</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">{theme === 'dark' ? 'Dark' : 'Light'}</span>
+              <Toggle
+                checked={theme === 'dark'}
+                onCheckedChange={(c) => setTheme(c ? 'dark' : 'light')}
+                aria-label="Toggle dark mode"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Firefly Toggle */}
+        {onToggleFirefly && (
+          <div className={`flex items-center justify-between ${import.meta.env.DEV ? 'border-t border-border-subtle/50 pt-3' : ''}`}>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-medium text-text-secondary">Firefly Signal</span>
+              <span className="text-[10px] text-text-tertiary">Ambient status indicator</span>
+            </div>
+            <Toggle
+              checked={fireflyEnabled ?? true}
+              onCheckedChange={onToggleFirefly}
+              aria-label="Toggle firefly signal"
+            />
+          </div>
+        )}
+
+        {/* Color Semantics */}
+        <div className={`border-t border-border-subtle/50 pt-3 ${onToggleFirefly || import.meta.env.DEV ? '' : 'mt-0'}`}>
+          <div className="text-xs font-medium text-text-secondary mb-2">Color Semantics</div>
+          <div className="flex flex-wrap gap-2 text-[11px] font-medium">
+            <span className="rounded-full border border-accent-green-light bg-accent-green-bg px-2 py-0.5 text-accent-green">AI</span>
+            <span className="rounded-full border border-accent-violet-light bg-accent-violet-bg px-2 py-0.5 text-accent-violet">Human</span>
+            <span className="rounded-full border border-accent-amber-light bg-accent-amber-bg px-2 py-0.5 text-accent-amber">Mixed</span>
+            <span className="rounded-full border border-border-subtle bg-bg-tertiary px-2 py-0.5 text-text-tertiary">Unknown</span>
+            <span className="rounded-full border border-accent-red-light bg-accent-red-bg px-2 py-0.5 text-accent-red">Failed tests</span>
+          </div>
+          <div className="mt-2 text-[11px] text-text-tertiary">
+            Session link lifecycle: <span className="text-text-secondary">Imported</span> →{' '}
+            <span className="text-accent-amber">Matching</span> →{' '}
+            <span className="text-accent-green">Linked</span>{' '}
+            <span className="text-text-muted">(or Needs review)</span>
+          </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => onToggle(!enabled)}
-          className={`
-            relative inline-flex h-5 w-9 items-center rounded-full transition-colors
-            ${enabled ? 'bg-accent-violet' : 'bg-border-medium'}
-          `}
-          aria-pressed={enabled}
-          aria-label={enabled ? 'Disable firefly signal' : 'Enable firefly signal'}
-        >
-          <span
-            className={`
-              inline-block h-3.5 w-3.5 transform rounded-full bg-bg-primary transition-transform
-              ${enabled ? 'translate-x-5' : 'translate-x-1'}
-            `}
-          />
-        </button>
-      </div>
-
-      <div className="mt-2 text-[11px] text-text-tertiary">
-        Shows a subtle ambient indicator on the selected commit. Disable if you find it distracting.
       </div>
     </div>
   );
@@ -311,6 +313,7 @@ function DiffDock({
         <button
           type="button"
           onClick={onToggleExpanded}
+          title="Toggle diff panel"
           className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-bg-secondary text-xs font-medium text-text-secondary transition-colors hover:bg-bg-hover"
         >
           <span className="flex min-w-0 items-center gap-2">
@@ -336,7 +339,6 @@ function DiffDock({
         {diffExpanded && !diffPip && (
           <div className="max-h-[400px] overflow-auto border-t border-border-light">
             <DiffViewer
-              title=""
               diffText={diffText}
               loading={loadingDiff}
               traceRanges={traceRanges}
@@ -362,7 +364,6 @@ function DiffDock({
             </div>
             <div className="h-[calc(100%-37px)] overflow-auto">
               <DiffViewer
-                title=""
                 diffText={diffText}
                 loading={loadingDiff}
                 traceRanges={traceRanges}
@@ -536,6 +537,9 @@ interface SettingsTabPanelProps {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
+  githubConnectorEnabled?: boolean;
+  onToggleGitHubConnector?: (enabled: boolean) => void;
+  githubConnectorState?: GitHubContextState;
   traceConfig?: TraceCollectorConfig;
   onUpdateCodexOtelPath?: (path: string) => void;
   onToggleCodexOtelReceiver?: (enabled: boolean) => void;
@@ -548,7 +552,7 @@ interface SettingsTabPanelProps {
   repoRoot?: string;
   selectedCommitSha: string | null;
   indexedCommitShas?: string[] | null;
-  
+
   // Firefly settings
   fireflyEnabled?: boolean;
   onToggleFirefly?: (enabled: boolean) => void;
@@ -563,6 +567,9 @@ function SettingsTabPanel({
   onConfigureCodex,
   onRotateOtlpKey,
   onGrantCodexConsent,
+  githubConnectorEnabled = false,
+  onToggleGitHubConnector,
+  githubConnectorState,
   traceConfig,
   onUpdateCodexOtelPath,
   onToggleCodexOtelReceiver,
@@ -580,50 +587,47 @@ function SettingsTabPanel({
 }: SettingsTabPanelProps) {
   return (
     <div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" className="flex flex-col gap-4">
-      <div className="card p-4">
-        <div className="section-header">COLOR SEMANTICS</div>
-        <div className="section-subheader mt-0.5">visual language</div>
-        <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-medium">
-          <span className="rounded-full border border-accent-green-light bg-accent-green-bg px-2 py-0.5 text-accent-green">AI</span>
-          <span className="rounded-full border border-accent-violet-light bg-accent-violet-bg px-2 py-0.5 text-accent-violet">Human</span>
-          <span className="rounded-full border border-accent-amber-light bg-accent-amber-bg px-2 py-0.5 text-accent-amber">Mixed</span>
-          <span className="rounded-full border border-border-subtle bg-bg-tertiary px-2 py-0.5 text-text-tertiary">Unknown</span>
-          <span className="rounded-full border border-accent-red-light bg-accent-red-bg px-2 py-0.5 text-accent-red">Failed tests</span>
-        </div>
-        <div className="mt-3 text-[11px] text-text-tertiary">
-          Session link lifecycle: <span className="text-text-secondary">Imported</span> →{' '}
-          <span className="text-accent-amber">Matching</span> →{' '}
-          <span className="text-accent-green">Linked</span>{' '}
-          <span className="text-text-muted">(or Needs review)</span>
-        </div>
-      </div>
-      {onToggleFirefly && (
-        <FireflyToggleCard
-          enabled={fireflyEnabled ?? true}
-          onToggle={onToggleFirefly}
-        />
-      )}
-      {import.meta.env.DEV ? <DevThemeToggleCard /> : null}
+
+      <AppearanceCard
+        fireflyEnabled={fireflyEnabled}
+        onToggleFirefly={onToggleFirefly}
+      />
       <AutoIngestSetupPanel
         config={ingestConfig ?? null}
-        otlpKey={otlpKeyStatus ?? null}
         sources={discoveredSources ?? null}
         onToggleAutoIngest={(enabled) => onToggleAutoIngest?.(enabled)}
         onUpdateWatchPaths={(paths) => onUpdateWatchPaths?.(paths)}
-        onConfigureCodex={() => onConfigureCodex?.()}
-        onRotateOtlpKey={() => onRotateOtlpKey?.()}
-        onGrantConsent={() => onGrantCodexConsent?.()}
       />
-      <CodexOtelSettingsPanel
+      <TelemetrySettingsPanel
         traceConfig={traceConfig}
+        ingestConfig={ingestConfig ?? null}
+        otlpKeyStatus={otlpKeyStatus ?? null}
+        logUserPromptEnabled={codexPromptExport?.enabled ?? null}
+        logUserPromptConfigPath={codexPromptExport?.configPath ?? null}
         onUpdateCodexOtelPath={onUpdateCodexOtelPath}
         onToggleCodexOtelReceiver={onToggleCodexOtelReceiver}
         onOpenCodexOtelDocs={onOpenCodexOtelDocs}
-        logUserPromptEnabled={codexPromptExport?.enabled ?? null}
-        logUserPromptConfigPath={codexPromptExport?.configPath ?? null}
+        onRotateOtlpKey={() => onRotateOtlpKey?.()}
+        onGrantConsent={() => onGrantCodexConsent?.()}
+        onConfigureCodex={() => onConfigureCodex?.()}
+      />
+      <AttributionSettingsPanel
         attributionPrefs={attributionPrefs}
         onUpdateAttributionPrefs={onUpdateAttributionPrefs}
         onPurgeAttributionMetadata={onPurgeAttributionMetadata}
+      />
+      <GitHubConnectorPanel
+        enabled={githubConnectorEnabled}
+        status={githubConnectorState?.status ?? 'disabled'}
+        entryCount={githubConnectorState?.entries.length ?? 0}
+        failedFileCount={githubConnectorState?.failedFileCount}
+        redactionHits={(githubConnectorState?.entries ?? []).reduce(
+          (total, entry) => total + entry.redactionHits,
+          0
+        )}
+        lastLoadedAtISO={githubConnectorState?.lastLoadedAtISO}
+        error={githubConnectorState?.error}
+        onToggle={(enabled) => onToggleGitHubConnector?.(enabled)}
       />
       <StoryAnchorsPanel
         repoId={repoId ?? null}
@@ -671,7 +675,7 @@ function TestsTabPanel({
 
 export function RightPanelTabs(props: RightPanelTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('session');
-  const [diffExpanded, setDiffExpanded] = useState(true);
+  const [diffExpanded, setDiffExpanded] = useState(false);
   const [diffPip, setDiffPip] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
@@ -705,6 +709,9 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
     onConfigureCodex,
     onRotateOtlpKey,
     onGrantCodexConsent,
+    githubConnectorEnabled,
+    onToggleGitHubConnector,
+    githubConnectorState,
     testRun,
     onTestFileClick,
     loadingTests,
@@ -814,6 +821,9 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
             onConfigureCodex={onConfigureCodex}
             onRotateOtlpKey={onRotateOtlpKey}
             onGrantCodexConsent={onGrantCodexConsent}
+            githubConnectorEnabled={githubConnectorEnabled}
+            onToggleGitHubConnector={onToggleGitHubConnector}
+            githubConnectorState={githubConnectorState}
             traceConfig={traceConfig}
             onUpdateCodexOtelPath={onUpdateCodexOtelPath}
             onToggleCodexOtelReceiver={onToggleCodexOtelReceiver}
