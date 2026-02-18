@@ -1,20 +1,41 @@
+import { ArrowLeft, FileText, GitCommit, MessageSquare } from 'lucide-react';
 import type React from 'react';
-import { ArrowLeft, GitCommit, FileText, MessageSquare } from 'lucide-react';
-import type { BranchViewModel, DashboardFilter } from '../../core/types';
+import type { BranchHeaderViewModel, HeaderMetric } from '../../core/types';
 
-function Stat({ value, label, tone, icon: Icon }: { value: string; label: string; tone?: 'neutral' | 'good' | 'bad'; icon?: React.ElementType }) {
+function formatMetric(metric: HeaderMetric): string {
+  if (metric.kind === 'known') return String(metric.value);
+  return '—';
+}
+
+function Stat({
+  metric,
+  label,
+  tone,
+  icon: Icon,
+  prefix,
+}: {
+  metric: HeaderMetric;
+  label: string;
+  tone?: 'neutral' | 'good' | 'bad';
+  icon?: React.ElementType;
+  prefix?: '+' | '-';
+}) {
   const valueClass =
     tone === 'good'
       ? 'text-accent-green'
       : tone === 'bad'
         ? 'text-accent-red'
         : 'text-text-secondary';
-  
+
+  const value = formatMetric(metric);
+  const displayValue = metric.kind === 'known' && prefix ? `${prefix}${value}` : value;
+  const title = metric.kind === 'unavailable' ? `Unavailable (${metric.reason})` : undefined;
+
   return (
     <div className="flex items-center gap-2">
       {Icon && <Icon className="w-3.5 h-3.5 text-text-muted" />}
-      <div className="flex items-baseline gap-1.5">
-        <span className={`text-base font-semibold tabular-nums ${valueClass}`}>{value}</span>
+      <div className="flex items-baseline gap-1.5" title={title}>
+        <span className={`text-base font-semibold tabular-nums ${valueClass}`}>{displayValue}</span>
         <span className="text-[11px] text-text-muted">{label}</span>
       </div>
     </div>
@@ -30,50 +51,71 @@ function StatGroup({ children, label }: { children: React.ReactNode; label: stri
   );
 }
 
-export function BranchHeader({ model, dashboardFilter, onClearFilter }: { model: BranchViewModel; dashboardFilter?: DashboardFilter | null; onClearFilter?: () => void }) {
+export function BranchHeader({
+  viewModel,
+  onClearFilter,
+}: {
+  viewModel: BranchHeaderViewModel;
+  onClearFilter?: () => void;
+}) {
+  if (viewModel.kind === 'hidden') {
+    return null;
+  }
+
+  if (viewModel.kind === 'shell') {
+    return (
+      <section className="card p-5" aria-label="Branch context" aria-live="polite">
+        <h2 className="text-sm font-semibold text-text-primary">
+          {viewModel.state === 'loading' ? 'Loading branch context' : 'Branch context unavailable'}
+        </h2>
+        <p className="mt-2 text-sm text-text-tertiary">{viewModel.message}</p>
+      </section>
+    );
+  }
+
   return (
-    <div className="card p-5">
+    <section className="card p-5" aria-label="Branch context" aria-live="polite">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            {dashboardFilter && onClearFilter && (
+            {viewModel.isFilteredView && onClearFilter && (
               <button
                 type="button"
                 onClick={onClearFilter}
-                className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                 <span>Back to dashboard</span>
               </button>
             )}
-            <h1 className="text-2xl font-semibold text-text-primary">{model.title}</h1>
-            <span className="badge-open">{model.status}</span>
-            {dashboardFilter && (
+            <h1 className="text-2xl font-semibold text-text-primary">{viewModel.title}</h1>
+            <span className="badge-open">{viewModel.status}</span>
+            {viewModel.isFilteredView && (
               <span className="inline-flex items-center rounded-md bg-accent-blue-bg px-2 py-0.5 text-xs font-medium text-accent-blue">
                 Filtered view
               </span>
             )}
           </div>
-          <p className="mt-2 text-sm text-text-tertiary leading-relaxed">{model.description}</p>
+          <p className="mt-2 text-sm text-text-tertiary leading-relaxed">{viewModel.description}</p>
         </div>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 pt-4 border-t border-border-subtle">
         <StatGroup label="Code">
-          <Stat value={`+${model.stats.added}`} label="added" tone="good" />
-          <Stat value={`-${model.stats.removed}`} label="removed" tone="bad" />
-          <Stat value={`${model.stats.files}`} label="files" icon={FileText} />
+          <Stat metric={viewModel.metrics.added} label="added" tone="good" prefix="+" />
+          <Stat metric={viewModel.metrics.removed} label="removed" tone="bad" prefix="-" />
+          <Stat metric={viewModel.metrics.files} label="files" icon={FileText} />
         </StatGroup>
 
         <StatGroup label="Git">
-          <Stat value={`${model.stats.commits}`} label="commits" icon={GitCommit} />
+          <Stat metric={viewModel.metrics.commits} label="commits" icon={GitCommit} />
         </StatGroup>
 
         <StatGroup label="AI">
-          <Stat value={`${model.stats.prompts}`} label="prompts" icon={MessageSquare} />
-          <Stat value={`${model.stats.responses}`} label="responses" />
+          <Stat metric={viewModel.metrics.prompts} label="prompts" icon={MessageSquare} />
+          <Stat metric={viewModel.metrics.responses} label="responses" />
         </StatGroup>
       </div>
-    </div>
+    </section>
   );
 }
