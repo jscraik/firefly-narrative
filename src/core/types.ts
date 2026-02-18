@@ -223,7 +223,7 @@ export type BranchNarrative = {
   fallbackReason?: string;
 };
 
-export type GitHubContextStatus = 'disabled' | 'loading' | 'ready' | 'empty' | 'error';
+export type GitHubContextStatus = 'disabled' | 'loading' | 'ready' | 'partial' | 'empty' | 'error';
 
 export type GitHubContextEntry = {
   id: string;
@@ -240,6 +240,7 @@ export type GitHubContextState = {
   status: GitHubContextStatus;
   entries: GitHubContextEntry[];
   lastLoadedAtISO?: string;
+  failedFileCount?: number;
   error?: string;
 };
 

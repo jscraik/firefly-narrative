@@ -85,30 +85,53 @@ export async function loadGitHubContext(repoRoot: string): Promise<GitHubContext
     }
 
     const entries: GitHubContextEntry[] = [];
+    let failedFileCount = 0;
+    let firstFailureMessage: string | undefined;
     for (const file of jsonFiles.slice(0, 5)) {
       try {
         const contents = await readNarrativeFile(repoRoot, file);
         const parsed = JSON.parse(contents) as unknown;
         const entry = toEntry(file, parsed);
         if (entry) entries.push(entry);
-      } catch {
-        // keep processing other files
+      } catch (error: unknown) {
+        failedFileCount += 1;
+        if (!firstFailureMessage) {
+          firstFailureMessage = error instanceof Error ? error.message : String(error);
+        }
       }
     }
 
-    if (entries.length === 0) {
-      return { status: 'empty', entries: [] };
+    if (entries.length === 0 && failedFileCount > 0) {
+      return {
+        status: 'error',
+        entries: [],
+        failedFileCount,
+        error: `Failed to load GitHub connector files (${failedFileCount} errors). ${firstFailureMessage ?? ''}`.trim(),
+      };
     }
 
+    if (entries.length === 0) {
+      return { status: 'empty', entries: [], failedFileCount: 0 };
+    }
+
+    const status: GitHubContextState['status'] = failedFileCount > 0 ? 'partial' : 'ready';
+    const error =
+      failedFileCount > 0
+        ? `Loaded ${entries.length} entry${entries.length === 1 ? '' : 'ies'} with ${failedFileCount} connector file errors. ${firstFailureMessage ?? ''}`.trim()
+        : undefined;
+
     return {
-      status: 'ready',
+      status,
       entries,
+      failedFileCount,
+      error,
       lastLoadedAtISO: new Date().toISOString(),
     };
   } catch (error: unknown) {
     return {
       status: 'error',
       entries: [],
+      failedFileCount: 0,
       error: error instanceof Error ? error.message : String(error),
     };
   }

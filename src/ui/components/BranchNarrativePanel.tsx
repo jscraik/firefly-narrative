@@ -23,20 +23,22 @@ function DetailButton(props: {
   level: NarrativeDetailLevel;
   current: NarrativeDetailLevel;
   label: string;
+  disabled?: boolean;
   onClick: (level: NarrativeDetailLevel) => void;
 }) {
-  const { level, current, label, onClick } = props;
+  const { level, current, label, disabled = false, onClick } = props;
   const active = current === level;
 
   return (
     <button
       type="button"
       onClick={() => onClick(level)}
+      disabled={disabled}
       className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
         active
           ? 'border-accent-blue-light bg-accent-blue-bg text-accent-blue'
           : 'border-border-subtle bg-bg-primary text-text-secondary hover:border-border-light hover:bg-bg-secondary'
-      }`}
+      } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
       aria-pressed={active}
     >
       {label}
@@ -69,8 +71,20 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <DetailButton level="summary" current={detailLevel} label="Summary" onClick={onDetailLevelChange} />
-          <DetailButton level="evidence" current={detailLevel} label="Evidence" onClick={onDetailLevelChange} />
+          <DetailButton
+            level="summary"
+            current={detailLevel}
+            label="Summary"
+            disabled={killSwitchActive}
+            onClick={onDetailLevelChange}
+          />
+          <DetailButton
+            level="evidence"
+            current={detailLevel}
+            label="Evidence"
+            disabled={killSwitchActive}
+            onClick={onDetailLevelChange}
+          />
           <DetailButton level="diff" current={detailLevel} label="Raw Diff" onClick={onDetailLevelChange} />
         </div>
       </div>

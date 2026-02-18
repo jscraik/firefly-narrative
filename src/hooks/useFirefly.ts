@@ -233,7 +233,7 @@ export function useFirefly(options: UseFireflyOptions): UseFireflyReturn {
     }
 
     try {
-      if (!import.meta.env.DEV) {
+      if (!import.meta.env.DEV || import.meta.env.MODE === 'test') {
         await setFireflyEnabled(targetEnabled);
       }
     } catch (error) {

@@ -1,5 +1,6 @@
 export type NarrativeTelemetryEventName =
   | 'layer_switched'
+  | 'audience_switched'
   | 'evidence_opened'
   | 'fallback_used'
   | 'rollout_scored'
@@ -8,6 +9,7 @@ export type NarrativeTelemetryEventName =
 export type NarrativeTelemetryPayload = {
   branch?: string;
   detailLevel?: 'summary' | 'evidence' | 'diff';
+  audience?: 'executive' | 'manager' | 'engineer';
   evidenceKind?: 'commit' | 'session' | 'file' | 'diff';
   confidence?: number;
   rolloutStatus?: 'healthy' | 'watch' | 'rollback';

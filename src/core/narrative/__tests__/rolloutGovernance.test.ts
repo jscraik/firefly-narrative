@@ -87,4 +87,56 @@ describe('evaluateNarrativeRollout', () => {
     expect(report.status).toBe('rollback');
     expect(report.rules.some((rule) => rule.id === 'narrative_failed' && rule.triggered)).toBe(true);
   });
+
+  it('returns rollback when rubric fails even without a critical rule', () => {
+    const report = evaluateNarrativeRollout({
+      narrative: {
+        ...healthyNarrative,
+        confidence: 0.75,
+      },
+      projections: {
+        executive: {
+          ...projections.executive,
+          headline: '',
+          bullets: [],
+          evidenceLinks: [],
+        },
+        manager: {
+          ...projections.manager,
+          headline: '',
+          bullets: [],
+          evidenceLinks: [],
+        },
+        engineer: {
+          ...projections.engineer,
+          headline: '',
+          bullets: [],
+          evidenceLinks: [],
+        },
+      },
+      githubContextState: disabledConnector,
+      observability: baselineObservability,
+    });
+
+    expect(report.rules.some((rule) => rule.triggered && rule.severity === 'critical')).toBe(false);
+    expect(report.rubric.some((metric) => metric.status === 'fail')).toBe(true);
+    expect(report.status).toBe('rollback');
+  });
+
+  it('returns watch on partial connector ingestion', () => {
+    const report = evaluateNarrativeRollout({
+      narrative: healthyNarrative,
+      projections,
+      githubContextState: {
+        status: 'partial',
+        entries: [{ id: 'pr-1', title: 'PR 1', redactionHits: 0 }],
+        failedFileCount: 1,
+        error: 'Loaded with 1 connector file error.',
+      },
+      observability: baselineObservability,
+    });
+
+    expect(report.status).toBe('watch');
+    expect(report.rules.some((rule) => rule.id === 'connector_error' && rule.triggered)).toBe(true);
+  });
 });

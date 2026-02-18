@@ -313,6 +313,7 @@ function DiffDock({
         <button
           type="button"
           onClick={onToggleExpanded}
+          title="Toggle diff panel"
           className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-bg-secondary text-xs font-medium text-text-secondary transition-colors hover:bg-bg-hover"
         >
           <span className="flex min-w-0 items-center gap-2">
@@ -619,6 +620,7 @@ function SettingsTabPanel({
         enabled={githubConnectorEnabled}
         status={githubConnectorState?.status ?? 'disabled'}
         entryCount={githubConnectorState?.entries.length ?? 0}
+        failedFileCount={githubConnectorState?.failedFileCount}
         redactionHits={(githubConnectorState?.entries ?? []).reduce(
           (total, entry) => total + entry.redactionHits,
           0
@@ -673,7 +675,7 @@ function TestsTabPanel({
 
 export function RightPanelTabs(props: RightPanelTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('session');
-  const [diffExpanded, setDiffExpanded] = useState(true);
+  const [diffExpanded, setDiffExpanded] = useState(false);
   const [diffPip, setDiffPip] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 

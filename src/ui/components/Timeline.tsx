@@ -150,7 +150,7 @@ export function Timeline({
           }}
         >
           {/* Connection line - visible path */}
-          <div className="pointer-events-none absolute left-0 right-0 top-[44px] h-[1px] bg-white/20" />
+          <div className="pointer-events-none absolute left-0 right-0 top-[38px] h-[1px] bg-border-subtle" />
 
           <div className="relative flex min-w-max items-start gap-2 px-4 py-2">
             {sorted.map((n) => (

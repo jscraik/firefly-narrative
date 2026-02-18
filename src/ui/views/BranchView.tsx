@@ -181,6 +181,8 @@ function BranchViewInner(props: {
   );
   const criticalRule = rolloutReport.rules.find((rule) => rule.triggered && rule.severity === 'critical');
   const killSwitchActive = rolloutReport.status === 'rollback';
+  const effectiveDetailLevel: NarrativeDetailLevel = killSwitchActive ? 'diff' : detailLevel;
+  const branchScopeKey = `${model.meta?.repoPath ?? ''}:${model.meta?.branchName ?? ''}`;
 
   const selectedNode = useMemo(
     () => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
@@ -279,32 +281,25 @@ function BranchViewInner(props: {
   }, [githubConnectorEnabled, model.meta?.repoPath]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    void branchScopeKey;
+    setObservability({
+      layerSwitchedCount: 0,
+      evidenceOpenedCount: 0,
+      fallbackUsedCount: 0,
+      killSwitchTriggeredCount: 0,
+    });
+  }, [branchScopeKey]);
 
-    const onTelemetry = (event: Event) => {
-      const custom = event as CustomEvent<{ event?: string; atISO?: string }>;
-      const eventName = custom.detail?.event;
-      if (!eventName) return;
-
-      setObservability((prev) => ({
-        ...prev,
-        layerSwitchedCount: prev.layerSwitchedCount + (eventName === 'layer_switched' ? 1 : 0),
-        evidenceOpenedCount: prev.evidenceOpenedCount + (eventName === 'evidence_opened' ? 1 : 0),
-        fallbackUsedCount: prev.fallbackUsedCount + (eventName === 'fallback_used' ? 1 : 0),
-        killSwitchTriggeredCount:
-          prev.killSwitchTriggeredCount + (eventName === 'kill_switch_triggered' ? 1 : 0),
-        lastEventAtISO: custom.detail?.atISO ?? prev.lastEventAtISO,
-      }));
-    };
-
-    window.addEventListener('narrative:telemetry', onTelemetry as EventListener);
-    return () => {
-      window.removeEventListener('narrative:telemetry', onTelemetry as EventListener);
-    };
+  const bumpObservability = useCallback((kind: keyof Omit<NarrativeObservabilityMetrics, 'lastEventAtISO'>) => {
+    setObservability((prev) => ({
+      ...prev,
+      [kind]: prev[kind] + 1,
+      lastEventAtISO: new Date().toISOString(),
+    }));
   }, []);
 
   useEffect(() => {
-    const key = `${rolloutReport.status}:${rolloutReport.averageScore}`;
+    const key = `${model.meta?.branchName ?? 'unknown'}:${rolloutReport.status}:${rolloutReport.averageScore}`;
     if (rolloutTelemetryKeyRef.current === key) return;
     rolloutTelemetryKeyRef.current = key;
 
@@ -322,13 +317,10 @@ function BranchViewInner(props: {
       return;
     }
 
-    if (detailLevel !== 'diff') {
-      setDetailLevel('diff');
-    }
-
     const reason = criticalRule?.id ?? 'rollback_guard';
     if (killSwitchReasonRef.current === reason) return;
     killSwitchReasonRef.current = reason;
+    bumpObservability('killSwitchTriggeredCount');
 
     trackNarrativeEvent('kill_switch_triggered', {
       branch: model.meta?.branchName,
@@ -337,8 +329,8 @@ function BranchViewInner(props: {
       reason,
     });
   }, [
+    bumpObservability,
     criticalRule?.id,
-    detailLevel,
     killSwitchActive,
     model.meta?.branchName,
     narrative.confidence,
@@ -484,16 +476,17 @@ function BranchViewInner(props: {
 
   const handleDetailLevelChange = useCallback((level: NarrativeDetailLevel) => {
     if (killSwitchActive && level !== 'diff') {
-      setDetailLevel('diff');
       return;
     }
+    if (level === detailLevel) return;
     setDetailLevel(level);
+    bumpObservability('layerSwitchedCount');
     trackNarrativeEvent('layer_switched', {
       branch: model.meta?.branchName,
       detailLevel: level,
       confidence: narrative.confidence,
     });
-  }, [killSwitchActive, model.meta?.branchName, narrative.confidence]);
+  }, [bumpObservability, detailLevel, killSwitchActive, model.meta?.branchName, narrative.confidence]);
 
   const handleOpenEvidence = useCallback((link: NarrativeEvidenceLink) => {
     if (link.commitSha) {
@@ -503,34 +496,38 @@ function BranchViewInner(props: {
     if (link.filePath) {
       selectFile(link.filePath);
     }
+    bumpObservability('evidenceOpenedCount');
     trackNarrativeEvent('evidence_opened', {
       branch: model.meta?.branchName,
-      detailLevel,
+      detailLevel: effectiveDetailLevel,
       evidenceKind: link.kind,
       confidence: narrative.confidence,
     });
-  }, [detailLevel, model.meta?.branchName, narrative.confidence, selectFile]);
+  }, [bumpObservability, effectiveDetailLevel, model.meta?.branchName, narrative.confidence, selectFile]);
 
   const handleOpenRawDiff = useCallback(() => {
     setDetailLevel('diff');
     if (!selectedFile && files[0]?.path) {
       selectFile(files[0].path);
     }
+    bumpObservability('fallbackUsedCount');
     trackNarrativeEvent('fallback_used', {
       branch: model.meta?.branchName,
       detailLevel: 'diff',
       confidence: narrative.confidence,
     });
-  }, [files, model.meta?.branchName, narrative.confidence, selectFile, selectedFile]);
+  }, [bumpObservability, files, model.meta?.branchName, narrative.confidence, selectFile, selectedFile]);
 
   const handleAudienceChange = useCallback((nextAudience: StakeholderAudience) => {
+    if (nextAudience === audience) return;
     setAudience(nextAudience);
-    trackNarrativeEvent('layer_switched', {
+    trackNarrativeEvent('audience_switched', {
       branch: model.meta?.branchName,
-      detailLevel,
-      confidence: narrative.confidence
+      detailLevel: effectiveDetailLevel,
+      audience: nextAudience,
+      confidence: narrative.confidence,
     });
-  }, [detailLevel, model.meta?.branchName, narrative.confidence]);
+  }, [audience, effectiveDetailLevel, model.meta?.branchName, narrative.confidence]);
 
   const handleExportAgentTrace = () => {
     if (!selectedNodeId) return;
@@ -575,7 +572,7 @@ function BranchViewInner(props: {
               narrative={narrative}
               projections={projections}
               audience={audience}
-              detailLevel={detailLevel}
+              detailLevel={effectiveDetailLevel}
               killSwitchActive={killSwitchActive}
               killSwitchReason={criticalRule?.rationale}
               onAudienceChange={handleAudienceChange}

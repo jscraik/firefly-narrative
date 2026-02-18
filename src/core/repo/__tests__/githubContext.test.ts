@@ -41,4 +41,35 @@ describe('loadGitHubContext', () => {
     const state = await loadGitHubContext('/tmp/repo');
     expect(state.status).toBe('empty');
   });
+
+  it('returns partial when at least one file loads and others fail', async () => {
+    listNarrativeFiles.mockResolvedValue([
+      'connectors/github/latest.json',
+      'connectors/github/bad.json',
+    ]);
+    readNarrativeFile.mockImplementation(async (repoRoot: string, file: string) => {
+      void repoRoot;
+      if (file.endsWith('latest.json')) {
+        return JSON.stringify({ title: 'Valid context' });
+      }
+      throw new Error('Parse failure');
+    });
+
+    const state = await loadGitHubContext('/tmp/repo');
+    expect(state.status).toBe('partial');
+    expect(state.entries.length).toBe(1);
+    expect(state.failedFileCount).toBe(1);
+    expect(state.error).toContain('1');
+  });
+
+  it('returns error when all connector files fail to load', async () => {
+    listNarrativeFiles.mockResolvedValue(['connectors/github/bad.json']);
+    readNarrativeFile.mockRejectedValue(new Error('Cannot parse'));
+
+    const state = await loadGitHubContext('/tmp/repo');
+    expect(state.status).toBe('error');
+    expect(state.entries).toHaveLength(0);
+    expect(state.failedFileCount).toBe(1);
+    expect(state.error).toContain('Failed to load GitHub connector files');
+  });
 });

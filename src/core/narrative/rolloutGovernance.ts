@@ -100,11 +100,18 @@ export function evaluateNarrativeRollout(args: {
   const connectorMetric = toMetric({
     id: 'connector_safety',
     label: 'Connector safety',
-    score: githubContextState.status === 'error' ? 0.2 : 1,
+    score:
+      githubContextState.status === 'error'
+        ? 0.2
+        : githubContextState.status === 'partial'
+          ? 0.55
+          : 1,
     threshold: 0.7,
     rationale:
       githubContextState.status === 'error'
         ? githubContextState.error ?? 'GitHub connector reported an ingestion error.'
+        : githubContextState.status === 'partial'
+          ? githubContextState.error ?? 'GitHub connector loaded partially with recoverable errors.'
         : 'Connector status healthy or disabled with no ingestion errors.',
   });
 
@@ -135,7 +142,7 @@ export function evaluateNarrativeRollout(args: {
       id: 'connector_error',
       label: 'Connector ingest error',
       severity: 'warning' as const,
-      triggered: githubContextState.status === 'error',
+      triggered: githubContextState.status === 'error' || githubContextState.status === 'partial',
       rationale: 'Connector errors should degrade confidence and be reviewed before rollout expansion.',
     },
     {
@@ -151,10 +158,12 @@ export function evaluateNarrativeRollout(args: {
     rubric.reduce((sum, metric) => sum + metric.score, 0) / Math.max(1, rubric.length)
   );
   const hasCritical = rules.some((rule) => rule.triggered && rule.severity === 'critical');
-  const hasWarning = rules.some((rule) => rule.triggered);
+  const hasWarning = rules.some((rule) => rule.triggered && rule.severity === 'warning');
+  const hasRubricFail = rubric.some((metric) => metric.status === 'fail');
+  const hasRubricWarn = rubric.some((metric) => metric.status === 'warn');
 
   return {
-    status: hasCritical ? 'rollback' : hasWarning ? 'watch' : 'healthy',
+    status: hasCritical || hasRubricFail ? 'rollback' : hasWarning || hasRubricWarn ? 'watch' : 'healthy',
     rubric,
     rules,
     averageScore,
