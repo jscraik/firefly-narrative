@@ -1,6 +1,6 @@
-import { Link2, Sparkles, Terminal, Code2, Wand2, Bot, MessageSquare, Cpu } from 'lucide-react';
+import { Bot, Code2, Cpu, Link2, MessageSquare, Sparkles, Terminal, Wand2 } from 'lucide-react';
 import { forwardRef } from 'react';
-import type { TimelineNode, SessionBadgeTool } from '../../core/types';
+import type { SessionBadgeTool, TimelineNode } from '../../core/types';
 import { BadgePill } from './BadgePill';
 
 export interface TimelineNodeProps {
@@ -44,8 +44,13 @@ export const TimelineNodeComponent = forwardRef<HTMLDivElement, TimelineNodeProp
     const primaryTool = sessionBadge?.sessionTools?.[0] ?? null;
     const badges = node.badges ?? [];
     const anchorBadge = badges.find((b) => b.type === 'anchor');
+    // Only show anchor badge if there is at least one active anchor
+    const hasActiveAnchors = anchorBadge?.anchor
+      ? (Number(anchorBadge.anchor.hasAttributionNote) + Number(anchorBadge.anchor.hasSessionsNote) + Number(anchorBadge.anchor.hasLineageNote)) > 0
+      : false;
+
     const nonAnchorBadges = badges.filter((b) => b.type !== 'anchor');
-    const visibleBadges = (anchorBadge
+    const visibleBadges = (anchorBadge && hasActiveAnchors
       ? [...nonAnchorBadges.slice(0, 2), anchorBadge]
       : nonAnchorBadges.slice(0, 3)
     ).slice(0, 3);
@@ -57,52 +62,52 @@ export const TimelineNodeComponent = forwardRef<HTMLDivElement, TimelineNodeProp
         className="relative flex flex-col items-center"
         style={{ minWidth: '100px' }}
       >
-      {/* Label above with tooltip for truncated text */}
-      {showLabel && node.label ? (
-        <div 
-          className="mb-2 w-32 text-center text-[11px] font-medium text-text-secondary leading-tight px-1"
-          title={node.label}
-        >
-          <span className="block truncate">{node.label}</span>
-        </div>
-      ) : (
-        <div className="mb-2 h-4" />
-      )}
-
-      {/* Dot with selection glow */}
-      <button
-        type="button"
-        className={`timeline-dot transition-all duration-150 ${node.status || 'ok'} ${selected ? 'selected' : ''} ${hasSession ? 'has-session' : ''} ${pulsing ? 'pulse-once' : ''}`}
-        onClick={onSelect}
-        title={node.label ?? node.id}
-        aria-label={node.label ?? node.id}
-        aria-current={selected ? 'true' : undefined}
-      >
-        {/* Session badge overlay on dot */}
-        {sessionBadge && (
-          <span className="session-badge-overlay">
-            {primaryTool ? getToolOverlayIcon(primaryTool) : <Link2 className="w-2.5 h-2.5" />}
-          </span>
+        {/* Label above with tooltip for truncated text */}
+        {showLabel && node.label ? (
+          <div
+            className="mb-2 h-4 w-32 text-center text-[11px] font-medium text-text-secondary leading-tight px-1"
+            title={node.label}
+          >
+            <span className="block truncate">{node.label}</span>
+          </div>
+        ) : (
+          <div className="mb-2 h-4" />
         )}
-      </button>
 
-      {/* Badges below dot */}
-      {visibleBadges.length > 0 && (
-        <div className="mt-2 flex flex-col items-center gap-1">
-          {visibleBadges.map((badge) => (
+        {/* Dot with selection glow */}
+        <button
+          type="button"
+          className={`timeline-dot transition-all duration-150 ${node.status || 'ok'} ${selected ? 'selected' : ''} ${hasSession ? 'has-session' : ''} ${pulsing ? 'pulse-once' : ''}`}
+          onClick={onSelect}
+          title={node.label ?? node.id}
+          aria-label={node.label ?? node.id}
+          aria-current={selected ? 'true' : undefined}
+        >
+          {/* Session badge overlay on dot */}
+          {sessionBadge && (
+            <span className="session-badge-overlay">
+              {primaryTool ? getToolOverlayIcon(primaryTool) : <Link2 className="w-2.5 h-2.5" />}
+            </span>
+          )}
+        </button>
+
+        {/* Badges below dot */}
+        {visibleBadges.length > 0 && (
+          <div className="mt-2 flex flex-col items-center gap-1">
+            {visibleBadges.map((badge) => (
               <BadgePill key={`${badge.type}-${badge.label ?? badge.status ?? 'badge'}`} badge={badge} />
             ))}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Date below */}
-      <div className="mt-2 h-4 text-[10px] text-text-muted">
-        {showLabel && node.atISO
-          ? new Date(node.atISO).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-          : ''}
+        {/* Date below */}
+        <div className="mt-2 h-4 text-[10px] text-text-muted">
+          {showLabel && node.atISO
+            ? new Date(node.atISO).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+            : ''}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  });
 
 TimelineNodeComponent.displayName = 'TimelineNodeComponent';

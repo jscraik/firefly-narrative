@@ -1,4 +1,4 @@
-import type { TraceRange, TraceContributorType } from '../../core/types';
+import type { TraceContributorType, TraceRange } from '../../core/types';
 
 function lineClass(line: string) {
   if (line.startsWith('@@')) return 'diff-line-hunk';
@@ -36,8 +36,6 @@ function parseNewFileLineNumber(hunkLine: string) {
 }
 
 export interface DiffViewerProps {
-  /** File title displayed in the header. */
-  title: string;
   /** Raw diff text to render. */
   diffText: string | null;
   /** Loading state for skeleton UI. */
@@ -47,85 +45,78 @@ export interface DiffViewerProps {
 }
 
 export function DiffViewer(props: DiffViewerProps) {
-  const { title, diffText, loading, traceRanges } = props;
+  const { diffText, loading, traceRanges } = props;
   const traceLookup = traceRanges ? buildTraceLineLookup(traceRanges) : null;
 
   return (
-    <div className="card flex h-full flex-col overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 bg-bg-tertiary/50">
-        <div className="truncate font-mono text-[12px] text-text-secondary">{title}</div>
-
-      </div>
-
-      <div className="flex-1 overflow-auto px-4 py-3 bg-bg-secondary">
-        {loading ? (
-          <div className="space-y-2">
-            <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-1/4" style={{ animationDelay: '0ms' }} />
-            <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-full" style={{ animationDelay: '80ms' }} />
-            <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-5/6" style={{ animationDelay: '160ms' }} />
-            <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-3/4" style={{ animationDelay: '240ms' }} />
-            <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-full" style={{ animationDelay: '320ms' }} />
-            <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-2/3" style={{ animationDelay: '400ms' }} />
+    <div className="min-h-full bg-bg-secondary px-4 py-3">
+      {loading ? (
+        <div className="space-y-2">
+          <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-1/4" style={{ animationDelay: '0ms' }} />
+          <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-full" style={{ animationDelay: '80ms' }} />
+          <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-5/6" style={{ animationDelay: '160ms' }} />
+          <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-3/4" style={{ animationDelay: '240ms' }} />
+          <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-full" style={{ animationDelay: '320ms' }} />
+          <div className="h-4 bg-bg-primary rounded skeleton-shimmer w-2/3" style={{ animationDelay: '400ms' }} />
+        </div>
+      ) : !diffText ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="w-12 h-12 rounded-full bg-bg-primary flex items-center justify-center mb-3">
+            <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </div>
-        ) : !diffText ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-bg-primary flex items-center justify-center mb-3">
-              <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <p className="text-sm text-text-secondary font-medium">No diff to display</p>
-            <p className="text-xs text-text-muted mt-1 max-w-[240px]">
-              Select a file from the commit to view its changes. Demo data may not include diffs for all files.
-            </p>
-          </div>
-        ) : (
-          <pre className="text-[12px] leading-loose text-text-secondary font-mono">
-            {(() => {
-              let currentLineNumber = 0;
-              let inHunk = false;
+          <p className="text-sm text-text-secondary font-medium">No diff to display</p>
+          <p className="text-xs text-text-muted mt-1 max-w-[240px]">
+            Select a file from the commit to view its changes. Demo data may not include diffs for all files.
+          </p>
+        </div>
+      ) : (
+        <pre className="text-[12px] leading-loose text-text-secondary font-mono">
+          {(() => {
+            let currentLineNumber = 0;
+            let inHunk = false;
 
-              return diffText.split(/\r?\n/).map((line) => {
-                if (line.startsWith('@@')) {
-                  const nextLine = parseNewFileLineNumber(line);
-                  if (nextLine !== null) {
-                    currentLineNumber = nextLine;
-                    inHunk = true;
-                  }
-                  return (
-                    <div key={`hunk-${line}`} className={`${lineClass(line)} px-2 -mx-2`}>
-                      {line || ' '}
-                    </div>
-                  );
+            return diffText.split(/\r?\n/).map((line) => {
+              if (line.startsWith('@@')) {
+                const nextLine = parseNewFileLineNumber(line);
+                if (nextLine !== null) {
+                  currentLineNumber = nextLine;
+                  inHunk = true;
                 }
-
-                let traceStyle = '';
-                if (inHunk && traceLookup && !line.startsWith('-')) {
-                  const traceInfo = traceLookup.get(currentLineNumber);
-                  if (traceInfo) traceStyle = traceClass(traceInfo.type);
-                }
-
-                const classes = [lineClass(line), traceStyle, 'px-2', '-mx-2'].filter(Boolean).join(' ');
-                const lineKey = inHunk ? `line-${currentLineNumber}-${line}` : `meta-${line}`;
-
-                if (inHunk) {
-                  if (line.startsWith('+') && !line.startsWith('+++')) {
-                    currentLineNumber += 1;
-                  } else if (!line.startsWith('-') || line.startsWith('---')) {
-                    currentLineNumber += 1;
-                  }
-                }
-
                 return (
-                  <div key={lineKey} className={classes}>
+                  <div key={`hunk-${line}`} className={`${lineClass(line)} px-2 -mx-2`}>
                     {line || ' '}
                   </div>
                 );
-              });
-            })()}
-          </pre>
-        )}
-      </div>
+              }
+
+              let traceStyle = '';
+              if (inHunk && traceLookup && !line.startsWith('-')) {
+                const traceInfo = traceLookup.get(currentLineNumber);
+                if (traceInfo) traceStyle = traceClass(traceInfo.type);
+              }
+
+              const classes = [lineClass(line), traceStyle, 'px-2', '-mx-2'].filter(Boolean).join(' ');
+              const lineKey = inHunk ? `line-${currentLineNumber}-${line}` : `meta-${line}`;
+
+              if (inHunk) {
+                if (line.startsWith('+') && !line.startsWith('+++')) {
+                  currentLineNumber += 1;
+                } else if (!line.startsWith('-') || line.startsWith('---')) {
+                  currentLineNumber += 1;
+                }
+              }
+
+              return (
+                <div key={lineKey} className={classes}>
+                  {line || ' '}
+                </div>
+              );
+            });
+          })()}
+        </pre>
+      )}
     </div>
   );
 }

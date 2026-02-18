@@ -1,20 +1,16 @@
-import { useEffect, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
-import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
-import { Checkbox } from './Checkbox';
+import { useEffect, useState } from 'react';
+import type { DiscoveredSources, IngestConfig } from '../../core/tauri/ingestConfig';
+import { HelpPopover } from './HelpPopover';
+import { Toggle } from './Toggle';
 
 export function AutoIngestSetupPanel(props: {
   config: IngestConfig | null;
-  otlpKey: OtlpKeyStatus | null;
   sources: DiscoveredSources | null;
   onToggleAutoIngest: (enabled: boolean) => void;
   onUpdateWatchPaths: (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => void;
-  onConfigureCodex: () => void;
-  onRotateOtlpKey: () => void;
-  onGrantConsent: () => void;
 }) {
-  const { config, otlpKey, sources, onToggleAutoIngest, onUpdateWatchPaths, onConfigureCodex, onRotateOtlpKey, onGrantConsent } =
-    props;
+  const { config, sources, onToggleAutoIngest, onUpdateWatchPaths } = props;
   const [claudePaths, setClaudePaths] = useState('');
   const [cursorPaths, setCursorPaths] = useState('');
   const [codexPaths, setCodexPaths] = useState('');
@@ -39,16 +35,14 @@ export function AutoIngestSetupPanel(props: {
   if (!config) {
     return (
       <div className="card p-5">
-        <div className="section-header">AUTO‑INGEST SETUP</div>
+        <div className="section-header">Auto-Ingest Setup</div>
         <div className="section-subheader">connect once</div>
         <div className="mt-3 text-xs text-text-tertiary">Open a repo to configure auto‑ingest.</div>
       </div>
     );
   }
 
-  const hasConsent = config.consent.codexTelemetryGranted;
-  const keyPresent = otlpKey?.present ?? false;
-  const maskedKey = otlpKey?.maskedPreview ?? (keyPresent ? '********' : null);
+  /* Removed telemetry consent checks */
 
   const pickDir = async () => {
     const selected = await open({ directory: true, multiple: false, title: 'Choose a folder to capture from' });
@@ -58,29 +52,39 @@ export function AutoIngestSetupPanel(props: {
 
   return (
     <div className="card p-5">
-      <div className="section-header">AUTO‑INGEST SETUP</div>
-      <div className="section-subheader mt-0.5">connect once</div>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="section-header">Auto-Ingest Setup</div>
+          <div className="section-subheader mt-0.5">connect once</div>
+        </div>
+        <HelpPopover
+          content="Auto-ingest monitors your local AI interaction logs (Claude, Cursor, etc.) and automatically links them to your git commits."
+          label="About auto-ingest"
+        />
+      </div>
 
       <div className="mt-4 space-y-4">
-        <div className="flex items-center gap-2 text-xs text-text-secondary">
-          <Checkbox
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-bg-secondary p-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-text-secondary">Enable auto‑ingest</span>
+            <span className="text-[11px] text-text-tertiary">Process logs in background</span>
+          </div>
+          <Toggle
             checked={config.autoIngestEnabled}
             onCheckedChange={(c) => onToggleAutoIngest(c)}
             aria-label="Enable auto-ingest"
           />
-          Enable auto‑ingest
         </div>
 
         <div className="rounded-lg border border-border-subtle bg-bg-secondary p-3">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                config.autoIngestEnabled
-                  ? 'bg-accent-green-bg text-accent-green border border-accent-green-light'
-                  : 'bg-bg-tertiary text-text-tertiary border border-border-subtle'
-              }`}
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${config.autoIngestEnabled
+                ? 'bg-accent-green-bg text-accent-green border border-accent-green-light'
+                : 'bg-bg-tertiary text-text-tertiary border border-border-subtle'
+                }`}
             >
-              {config.autoIngestEnabled ? 'Auto-ingest: ON' : 'Auto-ingest: OFF'}
+              {config.autoIngestEnabled ? 'Active' : 'Inactive'}
             </span>
             {discoveredSummary ? (
               <span className="inline-flex items-center rounded-full border border-border-subtle bg-bg-tertiary px-2 py-0.5 text-[11px] font-medium text-text-secondary">
@@ -88,17 +92,22 @@ export function AutoIngestSetupPanel(props: {
               </span>
             ) : null}
           </div>
-          <div className="mt-2 text-[11px] text-text-tertiary">
+          <div className="text-[11px] text-text-tertiary">
             Add source folders quickly, then save watch paths. Open advanced editor only if you need manual path tuning.
           </div>
         </div>
 
         <div className="rounded-lg border border-border-subtle bg-bg-tertiary p-3">
-          <div className="text-xs font-semibold text-text-secondary">Watch paths</div>
-          <div className="mt-1 text-[11px] text-text-tertiary">
-            Recommended: <span className="font-mono">~/.codex/sessions</span> and{' '}
-            <span className="font-mono">~/.codex/archived_sessions</span>. Optional: <span className="font-mono">~/.codex/history.jsonl</span>{' '}
-            (index) and <span className="font-mono">~/.codex/logs</span> (legacy fallback).
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-semibold text-text-secondary">Watch Paths</div>
+            <HelpPopover
+              content={
+                <div className="space-y-1">
+                  <p>Locations where Narrator looks for AI conversation logs.</p>
+                  <p className="font-mono text-[10px] text-text-muted">~/.codex/sessions</p>
+                </div>
+              }
+            />
           </div>
 
           <div className="mt-2 flex flex-wrap gap-2">
@@ -197,45 +206,8 @@ export function AutoIngestSetupPanel(props: {
           )}
         </div>
 
-        <div className="rounded-lg border border-border-subtle bg-bg-secondary p-3">
-          <div className="text-xs font-semibold text-text-secondary">Codex telemetry</div>
-          <div className="text-[11px] text-text-tertiary mt-1">
-            Uses a local OTLP receiver with an API key stored securely on this machine.
-          </div>
-
-          {!hasConsent ? (
-            <div className="mt-2 flex items-center gap-2 text-xs text-text-secondary">
-              <Checkbox checked={false} onCheckedChange={(_c) => onGrantConsent()} aria-label="Grant Codex telemetry consent" />
-              I consent to enabling Codex telemetry export
-            </div>
-          ) : (
-            <div className="mt-2 text-xs text-accent-green">Consent granted</div>
-          )}
-
-          <div className="mt-2 text-[11px] text-text-tertiary">
-            Receiver key: <span className="font-mono">{maskedKey ?? 'not set'}</span>
-          </div>
-
-          <button
-            type="button"
-            className="mt-2 inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-accent-blue-light disabled:opacity-50"
-            onClick={onConfigureCodex}
-            disabled={!hasConsent}
-          >
-            Configure Codex telemetry
-          </button>
-
-          <button
-            type="button"
-            className="btn-secondary-soft mt-2 ml-2 inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
-            onClick={onRotateOtlpKey}
-            disabled={!hasConsent}
-            title="Rotate the local receiver key (you will need to re-configure Codex telemetry afterwards)."
-          >
-            Rotate key
-          </button>
-        </div>
       </div>
     </div>
   );
 }
+
