@@ -191,6 +191,8 @@ Ingest PR title/body/review summary metadata as optional context with strict san
 
 ### Phase 3 — Written now, hardening
 
+- [x] T8 — Advanced rollout framework
+
 #### T8 — Advanced rollout framework
 Add expanded quality rubric scoring, kill-switch matrix, and deeper observability/reporting loops.
 

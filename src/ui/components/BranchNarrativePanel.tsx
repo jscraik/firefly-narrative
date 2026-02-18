@@ -11,6 +11,8 @@ type BranchNarrativePanelProps = {
   projections: StakeholderProjections;
   audience: StakeholderAudience;
   detailLevel: NarrativeDetailLevel;
+  killSwitchActive?: boolean;
+  killSwitchReason?: string;
   onAudienceChange: (audience: StakeholderAudience) => void;
   onDetailLevelChange: (level: NarrativeDetailLevel) => void;
   onOpenEvidence: (link: NarrativeEvidenceLink) => void;
@@ -48,6 +50,8 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
     projections,
     audience,
     detailLevel,
+    killSwitchActive = false,
+    killSwitchReason,
     onAudienceChange,
     onDetailLevelChange,
     onOpenEvidence,
@@ -70,6 +74,13 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
           <DetailButton level="diff" current={detailLevel} label="Raw Diff" onClick={onDetailLevelChange} />
         </div>
       </div>
+
+      {killSwitchActive && (
+        <div className="mt-3 rounded-lg border border-accent-red-light bg-accent-red-bg px-3 py-2 text-xs text-accent-red">
+          Kill switch active. Narrative layers are read-only until quality recovers.{' '}
+          <span className="text-text-secondary">{killSwitchReason ?? 'Fallback to raw diff is enforced.'}</span>
+        </div>
+      )}
 
       {detailLevel === 'summary' && (
         <div className="mt-4 space-y-3">

@@ -1,10 +1,18 @@
-export type NarrativeTelemetryEventName = 'layer_switched' | 'evidence_opened' | 'fallback_used';
+export type NarrativeTelemetryEventName =
+  | 'layer_switched'
+  | 'evidence_opened'
+  | 'fallback_used'
+  | 'rollout_scored'
+  | 'kill_switch_triggered';
 
 export type NarrativeTelemetryPayload = {
   branch?: string;
   detailLevel?: 'summary' | 'evidence' | 'diff';
   evidenceKind?: 'commit' | 'session' | 'file' | 'diff';
   confidence?: number;
+  rolloutStatus?: 'healthy' | 'watch' | 'rollback';
+  score?: number;
+  reason?: string;
 };
 
 export function trackNarrativeEvent(

@@ -7,6 +7,7 @@ import type { ActivityEvent } from '../../core/tauri/activity';
 import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
 import { composeBranchNarrative } from '../../core/narrative/composeBranchNarrative';
 import { buildDecisionArchaeology } from '../../core/narrative/decisionArchaeology';
+import { evaluateNarrativeRollout } from '../../core/narrative/rolloutGovernance';
 import { buildStakeholderProjections } from '../../core/narrative/stakeholderProjections';
 import { loadGitHubContext } from '../../core/repo/githubContext';
 import { trackNarrativeEvent } from '../../core/telemetry/narrativeTelemetry';
@@ -18,6 +19,7 @@ import type {
   FileChange,
   NarrativeDetailLevel,
   NarrativeEvidenceLink,
+  NarrativeObservabilityMetrics,
   TestRun,
   TraceRange,
 } from '../../core/types';
@@ -33,6 +35,7 @@ import { FilesChanged } from '../components/FilesChanged';
 import { ImportErrorBanner } from '../components/ImportErrorBanner';
 import { IngestToast } from '../components/IngestToast';
 import { IntentList } from '../components/IntentList';
+import { NarrativeGovernancePanel } from '../components/NarrativeGovernancePanel';
 import { NeedsAttentionList } from '../components/NeedsAttentionList';
 import { RightPanelTabs } from '../components/RightPanelTabs';
 import { SkeletonFiles } from '../components/Skeleton';
@@ -143,6 +146,14 @@ function BranchViewInner(props: {
     status: githubConnectorEnabled ? 'loading' : 'disabled',
     entries: []
   });
+  const [observability, setObservability] = useState<NarrativeObservabilityMetrics>({
+    layerSwitchedCount: 0,
+    evidenceOpenedCount: 0,
+    fallbackUsedCount: 0,
+    killSwitchTriggeredCount: 0,
+  });
+  const rolloutTelemetryKeyRef = useRef<string | null>(null);
+  const killSwitchReasonRef = useRef<string | null>(null);
 
   const narrative = useMemo(() => model.narrative ?? composeBranchNarrative(model), [model]);
   const projections = useMemo(
@@ -158,6 +169,18 @@ function BranchViewInner(props: {
     () => buildDecisionArchaeology({ narrative, githubEntry: githubContext.entries[0] }),
     [githubContext.entries, narrative]
   );
+  const rolloutReport = useMemo(
+    () =>
+      evaluateNarrativeRollout({
+        narrative,
+        projections,
+        githubContextState: githubContext,
+        observability,
+      }),
+    [githubContext, narrative, observability, projections]
+  );
+  const criticalRule = rolloutReport.rules.find((rule) => rule.triggered && rule.severity === 'critical');
+  const killSwitchActive = rolloutReport.status === 'rollback';
 
   const selectedNode = useMemo(
     () => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
@@ -254,6 +277,73 @@ function BranchViewInner(props: {
       cancelled = true;
     };
   }, [githubConnectorEnabled, model.meta?.repoPath]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onTelemetry = (event: Event) => {
+      const custom = event as CustomEvent<{ event?: string; atISO?: string }>;
+      const eventName = custom.detail?.event;
+      if (!eventName) return;
+
+      setObservability((prev) => ({
+        ...prev,
+        layerSwitchedCount: prev.layerSwitchedCount + (eventName === 'layer_switched' ? 1 : 0),
+        evidenceOpenedCount: prev.evidenceOpenedCount + (eventName === 'evidence_opened' ? 1 : 0),
+        fallbackUsedCount: prev.fallbackUsedCount + (eventName === 'fallback_used' ? 1 : 0),
+        killSwitchTriggeredCount:
+          prev.killSwitchTriggeredCount + (eventName === 'kill_switch_triggered' ? 1 : 0),
+        lastEventAtISO: custom.detail?.atISO ?? prev.lastEventAtISO,
+      }));
+    };
+
+    window.addEventListener('narrative:telemetry', onTelemetry as EventListener);
+    return () => {
+      window.removeEventListener('narrative:telemetry', onTelemetry as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    const key = `${rolloutReport.status}:${rolloutReport.averageScore}`;
+    if (rolloutTelemetryKeyRef.current === key) return;
+    rolloutTelemetryKeyRef.current = key;
+
+    trackNarrativeEvent('rollout_scored', {
+      branch: model.meta?.branchName,
+      confidence: narrative.confidence,
+      rolloutStatus: rolloutReport.status,
+      score: rolloutReport.averageScore,
+    });
+  }, [model.meta?.branchName, narrative.confidence, rolloutReport.averageScore, rolloutReport.status]);
+
+  useEffect(() => {
+    if (!killSwitchActive) {
+      killSwitchReasonRef.current = null;
+      return;
+    }
+
+    if (detailLevel !== 'diff') {
+      setDetailLevel('diff');
+    }
+
+    const reason = criticalRule?.id ?? 'rollback_guard';
+    if (killSwitchReasonRef.current === reason) return;
+    killSwitchReasonRef.current = reason;
+
+    trackNarrativeEvent('kill_switch_triggered', {
+      branch: model.meta?.branchName,
+      confidence: narrative.confidence,
+      rolloutStatus: rolloutReport.status,
+      reason,
+    });
+  }, [
+    criticalRule?.id,
+    detailLevel,
+    killSwitchActive,
+    model.meta?.branchName,
+    narrative.confidence,
+    rolloutReport.status,
+  ]);
 
   useEffect(() => {
     if (!selectedNodeId) return;
@@ -393,13 +483,17 @@ function BranchViewInner(props: {
   }, []);
 
   const handleDetailLevelChange = useCallback((level: NarrativeDetailLevel) => {
+    if (killSwitchActive && level !== 'diff') {
+      setDetailLevel('diff');
+      return;
+    }
     setDetailLevel(level);
     trackNarrativeEvent('layer_switched', {
       branch: model.meta?.branchName,
       detailLevel: level,
       confidence: narrative.confidence,
     });
-  }, [model.meta?.branchName, narrative.confidence]);
+  }, [killSwitchActive, model.meta?.branchName, narrative.confidence]);
 
   const handleOpenEvidence = useCallback((link: NarrativeEvidenceLink) => {
     if (link.commitSha) {
@@ -482,11 +576,14 @@ function BranchViewInner(props: {
               projections={projections}
               audience={audience}
               detailLevel={detailLevel}
+              killSwitchActive={killSwitchActive}
+              killSwitchReason={criticalRule?.rationale}
               onAudienceChange={handleAudienceChange}
               onDetailLevelChange={handleDetailLevelChange}
               onOpenEvidence={handleOpenEvidence}
               onOpenRawDiff={handleOpenRawDiff}
             />
+            <NarrativeGovernancePanel report={rolloutReport} observability={observability} />
             <DecisionArchaeologyPanel entries={archaeologyEntries} onOpenEvidence={handleOpenEvidence} />
             {ingestStatus ? (
               <CaptureActivityStrip

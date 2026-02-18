@@ -243,6 +243,41 @@ export type GitHubContextState = {
   error?: string;
 };
 
+export type NarrativeObservabilityMetrics = {
+  layerSwitchedCount: number;
+  evidenceOpenedCount: number;
+  fallbackUsedCount: number;
+  killSwitchTriggeredCount: number;
+  lastEventAtISO?: string;
+};
+
+export type NarrativeRolloutStatus = 'healthy' | 'watch' | 'rollback';
+
+export type NarrativeRubricMetric = {
+  id: 'confidence' | 'evidence_coverage' | 'projection_completeness' | 'fallback_health' | 'connector_safety';
+  label: string;
+  score: number;
+  threshold: number;
+  status: 'pass' | 'warn' | 'fail';
+  rationale: string;
+};
+
+export type NarrativeKillSwitchRule = {
+  id: string;
+  label: string;
+  severity: 'warning' | 'critical';
+  triggered: boolean;
+  rationale: string;
+};
+
+export type NarrativeRolloutReport = {
+  status: NarrativeRolloutStatus;
+  rubric: NarrativeRubricMetric[];
+  rules: NarrativeKillSwitchRule[];
+  averageScore: number;
+  generatedAtISO: string;
+};
+
 export type BranchViewModel = {
   source: 'demo' | 'git';
   title: string;
