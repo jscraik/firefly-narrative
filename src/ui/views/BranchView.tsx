@@ -32,7 +32,6 @@ import { Breadcrumb } from '../components/Breadcrumb';
 import { CaptureActivityStrip } from '../components/CaptureActivityStrip';
 import { DecisionArchaeologyPanel } from '../components/DecisionArchaeologyPanel';
 import { FilesChanged } from '../components/FilesChanged';
-import type { FireflyEvent } from '../components/FireflySignal';
 import { ImportErrorBanner } from '../components/ImportErrorBanner';
 import { IngestToast } from '../components/IngestToast';
 import { IntentList } from '../components/IntentList';
