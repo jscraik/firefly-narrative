@@ -122,9 +122,25 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('demo');
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter | null>(null);
   const [isExitingFilteredView, setIsExitingFilteredView] = useState(false);
+  const [githubConnectorEnabled, setGithubConnectorEnabled] = useState(false);
   const [AgentationComponent, setAgentationComponent] = useState<AgentationComponentType | null>(null);
   const rawAgentationWebhookUrl = import.meta.env.VITE_AGENTATION_WEBHOOK_URL as string | undefined;
   const agentationWebhookUrl = normalizeWebhookUrl(rawAgentationWebhookUrl);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('narrative.githubConnector.enabled');
+    if (stored === 'true') {
+      setGithubConnectorEnabled(true);
+    }
+  }, []);
+
+  const handleToggleGitHubConnector = useCallback((enabled: boolean) => {
+    setGithubConnectorEnabled(enabled);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('narrative.githubConnector.enabled', enabled ? 'true' : 'false');
+    }
+  }, []);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -402,6 +418,8 @@ export default function App() {
             onConfigureCodex={autoIngest.configureCodexTelemetry}
             onRotateOtlpKey={autoIngest.rotateOtlpKey}
             onGrantCodexConsent={autoIngest.grantCodexConsent}
+            githubConnectorEnabled={githubConnectorEnabled}
+            onToggleGitHubConnector={handleToggleGitHubConnector}
           />
         ) : (
           <RepoEmptyState />

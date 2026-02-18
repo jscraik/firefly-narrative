@@ -190,6 +190,28 @@ export type NarrativeHighlight = {
   evidenceLinks: NarrativeEvidenceLink[];
 };
 
+export type StakeholderAudience = 'executive' | 'manager' | 'engineer';
+
+export type StakeholderProjection = {
+  audience: StakeholderAudience;
+  headline: string;
+  bullets: string[];
+  risks: string[];
+  evidenceLinks: NarrativeEvidenceLink[];
+};
+
+export type StakeholderProjections = Record<StakeholderAudience, StakeholderProjection>;
+
+export type DecisionArchaeologyEntry = {
+  id: string;
+  title: string;
+  intent: string;
+  tradeoffs: string[];
+  alternatives: string[];
+  evidenceLinks: NarrativeEvidenceLink[];
+  confidence: number;
+};
+
 export type BranchNarrative = {
   schemaVersion: number;
   generatedAtISO: string;
@@ -199,6 +221,26 @@ export type BranchNarrative = {
   highlights: NarrativeHighlight[];
   evidenceLinks: NarrativeEvidenceLink[];
   fallbackReason?: string;
+};
+
+export type GitHubContextStatus = 'disabled' | 'loading' | 'ready' | 'empty' | 'error';
+
+export type GitHubContextEntry = {
+  id: string;
+  number?: number;
+  title: string;
+  body?: string;
+  reviewSummary?: string;
+  url?: string;
+  updatedAtISO?: string;
+  redactionHits: number;
+};
+
+export type GitHubContextState = {
+  status: GitHubContextStatus;
+  entries: GitHubContextEntry[];
+  lastLoadedAtISO?: string;
+  error?: string;
 };
 
 export type BranchViewModel = {

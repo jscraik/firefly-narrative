@@ -176,6 +176,10 @@ Add baseline feature flag, confidence fallback behavior, and essential telemetry
 
 ### Phase 2 — Written now, implemented next
 
+- [x] T5 — Stakeholder projection API
+- [x] T6 — Decision archaeology panel
+- [x] T7 — GitHub metadata connector v1
+
 #### T5 — Stakeholder projection API
 Introduce explicit Executive/Manager/Engineer view-model projections over canonical narrative entities.
 

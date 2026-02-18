@@ -6,10 +6,15 @@ import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
 import type { ActivityEvent } from '../../core/tauri/activity';
 import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
 import { composeBranchNarrative } from '../../core/narrative/composeBranchNarrative';
+import { buildDecisionArchaeology } from '../../core/narrative/decisionArchaeology';
+import { buildStakeholderProjections } from '../../core/narrative/stakeholderProjections';
+import { loadGitHubContext } from '../../core/repo/githubContext';
 import { trackNarrativeEvent } from '../../core/telemetry/narrativeTelemetry';
 import type {
   BranchViewModel,
+  GitHubContextState,
   DashboardFilter,
+  StakeholderAudience,
   FileChange,
   NarrativeDetailLevel,
   NarrativeEvidenceLink,
@@ -23,6 +28,7 @@ import { BranchNarrativePanel } from '../components/BranchNarrativePanel';
 import { BranchHeader } from '../components/BranchHeader';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { CaptureActivityStrip } from '../components/CaptureActivityStrip';
+import { DecisionArchaeologyPanel } from '../components/DecisionArchaeologyPanel';
 import { FilesChanged } from '../components/FilesChanged';
 import { ImportErrorBanner } from '../components/ImportErrorBanner';
 import { IngestToast } from '../components/IngestToast';
@@ -68,6 +74,8 @@ function BranchViewInner(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
+  githubConnectorEnabled?: boolean;
+  onToggleGitHubConnector?: (enabled: boolean) => void;
 }) {
   const {
     model,
@@ -105,6 +113,8 @@ function BranchViewInner(props: {
     onConfigureCodex,
     onRotateOtlpKey,
     onGrantCodexConsent,
+    githubConnectorEnabled = false,
+    onToggleGitHubConnector,
   } = props;
   const { selectedFile, selectFile } = useFileSelection();
 
@@ -128,8 +138,26 @@ function BranchViewInner(props: {
   const [traceRequestedForSelection, setTraceRequestedForSelection] = useState(false);
   const [trackingSettledNodeId, setTrackingSettledNodeId] = useState<string | null>(null);
   const [detailLevel, setDetailLevel] = useState<NarrativeDetailLevel>('summary');
+  const [audience, setAudience] = useState<StakeholderAudience>('manager');
+  const [githubContext, setGithubContext] = useState<GitHubContextState>({
+    status: githubConnectorEnabled ? 'loading' : 'disabled',
+    entries: []
+  });
 
   const narrative = useMemo(() => model.narrative ?? composeBranchNarrative(model), [model]);
+  const projections = useMemo(
+    () =>
+      buildStakeholderProjections({
+        narrative,
+        model,
+        githubEntry: githubContext.entries[0]
+      }),
+    [githubContext.entries, model, narrative]
+  );
+  const archaeologyEntries = useMemo(
+    () => buildDecisionArchaeology({ narrative, githubEntry: githubContext.entries[0] }),
+    [githubContext.entries, narrative]
+  );
 
   const selectedNode = useMemo(
     () => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
@@ -204,6 +232,28 @@ function BranchViewInner(props: {
       return defaultSelectedId;
     });
   }, [defaultSelectedId, model.timeline]);
+
+  useEffect(() => {
+    const repoRoot = model.meta?.repoPath;
+    if (!repoRoot) {
+      setGithubContext({ status: 'empty', entries: [] });
+      return;
+    }
+    if (!githubConnectorEnabled) {
+      setGithubContext({ status: 'disabled', entries: [] });
+      return;
+    }
+
+    let cancelled = false;
+    setGithubContext((prev) => ({ ...prev, status: 'loading', error: undefined }));
+    loadGitHubContext(repoRoot).then((state) => {
+      if (cancelled) return;
+      setGithubContext(state);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [githubConnectorEnabled, model.meta?.repoPath]);
 
   useEffect(() => {
     if (!selectedNodeId) return;
@@ -379,6 +429,15 @@ function BranchViewInner(props: {
     });
   }, [files, model.meta?.branchName, narrative.confidence, selectFile, selectedFile]);
 
+  const handleAudienceChange = useCallback((nextAudience: StakeholderAudience) => {
+    setAudience(nextAudience);
+    trackNarrativeEvent('layer_switched', {
+      branch: model.meta?.branchName,
+      detailLevel,
+      confidence: narrative.confidence
+    });
+  }, [detailLevel, model.meta?.branchName, narrative.confidence]);
+
   const handleExportAgentTrace = () => {
     if (!selectedNodeId) return;
     onExportAgentTrace(selectedNodeId, files);
@@ -420,11 +479,15 @@ function BranchViewInner(props: {
             <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />
             <BranchNarrativePanel
               narrative={narrative}
+              projections={projections}
+              audience={audience}
               detailLevel={detailLevel}
+              onAudienceChange={handleAudienceChange}
               onDetailLevelChange={handleDetailLevelChange}
               onOpenEvidence={handleOpenEvidence}
               onOpenRawDiff={handleOpenRawDiff}
             />
+            <DecisionArchaeologyPanel entries={archaeologyEntries} onOpenEvidence={handleOpenEvidence} />
             {ingestStatus ? (
               <CaptureActivityStrip
                 enabled={ingestStatus.enabled}
@@ -517,6 +580,9 @@ function BranchViewInner(props: {
               onConfigureCodex={onConfigureCodex}
               onRotateOtlpKey={onRotateOtlpKey}
               onGrantCodexConsent={onGrantCodexConsent}
+              githubConnectorEnabled={githubConnectorEnabled}
+              onToggleGitHubConnector={onToggleGitHubConnector}
+              githubConnectorState={githubContext}
               // Tests
               testRun={testRun}
               onTestFileClick={handleFileClickFromTest}
@@ -588,6 +654,8 @@ export function BranchView(props: {
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
+  githubConnectorEnabled?: boolean;
+  onToggleGitHubConnector?: (enabled: boolean) => void;
 }) {
   return (
     <FileSelectionProvider>

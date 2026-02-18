@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { BranchNarrative } from '../../../core/types';
+import type { BranchNarrative, StakeholderProjections } from '../../../core/types';
 import { BranchNarrativePanel } from '../BranchNarrativePanel';
 
 const narrative: BranchNarrative = {
@@ -35,13 +35,40 @@ const narrative: BranchNarrative = {
   ],
 };
 
+const projections: StakeholderProjections = {
+  executive: {
+    audience: 'executive',
+    headline: 'Exec headline',
+    bullets: ['Exec bullet'],
+    risks: [],
+    evidenceLinks: narrative.evidenceLinks,
+  },
+  manager: {
+    audience: 'manager',
+    headline: 'Manager headline',
+    bullets: ['Manager bullet'],
+    risks: [],
+    evidenceLinks: narrative.evidenceLinks,
+  },
+  engineer: {
+    audience: 'engineer',
+    headline: 'Engineer headline',
+    bullets: ['Engineer bullet'],
+    risks: [],
+    evidenceLinks: narrative.evidenceLinks,
+  },
+};
+
 describe('BranchNarrativePanel', () => {
   it('renders summary view and allows switching detail levels', () => {
     const onDetailLevelChange = vi.fn();
     render(
       <BranchNarrativePanel
         narrative={narrative}
+        projections={projections}
+        audience="manager"
         detailLevel="summary"
+        onAudienceChange={vi.fn()}
         onDetailLevelChange={onDetailLevelChange}
         onOpenEvidence={vi.fn()}
         onOpenRawDiff={vi.fn()}
@@ -58,7 +85,10 @@ describe('BranchNarrativePanel', () => {
     render(
       <BranchNarrativePanel
         narrative={narrative}
+        projections={projections}
+        audience="manager"
         detailLevel="evidence"
+        onAudienceChange={vi.fn()}
         onDetailLevelChange={vi.fn()}
         onOpenEvidence={onOpenEvidence}
         onOpenRawDiff={vi.fn()}

@@ -2,11 +2,16 @@ import type {
   BranchNarrative,
   NarrativeDetailLevel,
   NarrativeEvidenceLink,
+  StakeholderAudience,
+  StakeholderProjections,
 } from '../../core/types';
 
 type BranchNarrativePanelProps = {
   narrative: BranchNarrative;
+  projections: StakeholderProjections;
+  audience: StakeholderAudience;
   detailLevel: NarrativeDetailLevel;
+  onAudienceChange: (audience: StakeholderAudience) => void;
   onDetailLevelChange: (level: NarrativeDetailLevel) => void;
   onOpenEvidence: (link: NarrativeEvidenceLink) => void;
   onOpenRawDiff: () => void;
@@ -38,7 +43,17 @@ function DetailButton(props: {
 }
 
 export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
-  const { narrative, detailLevel, onDetailLevelChange, onOpenEvidence, onOpenRawDiff } = props;
+  const {
+    narrative,
+    projections,
+    audience,
+    detailLevel,
+    onAudienceChange,
+    onDetailLevelChange,
+    onOpenEvidence,
+    onOpenRawDiff,
+  } = props;
+  const projection = projections[audience];
 
   return (
     <div className="card p-5">
@@ -58,6 +73,32 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
 
       {detailLevel === 'summary' && (
         <div className="mt-4 space-y-3">
+          <div className="flex items-center gap-1">
+            {(['executive', 'manager', 'engineer'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => onAudienceChange(option)}
+                className={`rounded-md border px-2.5 py-1 text-xs capitalize transition-colors ${
+                  audience === option
+                    ? 'border-accent-green-light bg-accent-green-bg text-accent-green'
+                    : 'border-border-subtle bg-bg-primary text-text-secondary hover:border-border-light hover:bg-bg-secondary'
+                }`}
+                aria-pressed={audience === option}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <div className="rounded-lg border border-border-subtle bg-bg-primary p-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-text-muted">{projection.audience}</div>
+            <p className="mt-1 text-sm text-text-primary">{projection.headline}</p>
+            <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-text-secondary">
+              {projection.bullets.slice(0, 3).map((bullet) => (
+                <li key={bullet}>{bullet}</li>
+              ))}
+            </ul>
+          </div>
           <p className="text-sm leading-relaxed text-text-secondary">{narrative.summary}</p>
           <ul className="space-y-2">
             {narrative.highlights.slice(0, 3).map((highlight) => (
