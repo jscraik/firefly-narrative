@@ -1176,3 +1176,112 @@ a:focus-visible,
     transform: translateY(0);
   }
 }
+
+/* Landing Page Specific Animations */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+.delay-700 {
+  animation-delay: 700ms;
+}
+/* Firefly Theme Extensions */
+:root {
+  --firefly-glow: var(--accent-blue);
+}
+
+:root[data-theme="dark"] {
+  --firefly-glow: var(--accent-blue);
+}
+
+/* Landing Page Specific Animations */
+@keyframes brand-breathe {
+  0%, 100% {
+    text-shadow: 0 0 20px color-mix(in srgb, var(--firefly-glow) 30%, transparent), 
+                 0 0 40px color-mix(in srgb, var(--firefly-glow) 10%, transparent);
+  }
+  50% {
+    text-shadow: 0 0 30px color-mix(in srgb, var(--firefly-glow) 60%, transparent), 
+                 0 0 60px color-mix(in srgb, var(--firefly-glow) 30%, transparent);
+  }
+}
+
+.animate-brand-breathe {
+  animation: brand-breathe 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fade-in-up 0.8s ease-out forwards;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-700 { animation-delay: 700ms; }

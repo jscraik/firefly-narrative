@@ -152,39 +152,35 @@
 
 @keyframes wing-insight-left {
   0% {
-    transform: rotate(-10deg);
-    width: 14px;
+    transform: rotate(-10deg) scaleX(1);
+    /* width implicit via scale */
   }
 
   50% {
-    transform: rotate(-60deg);
-    width: 22px;
+    transform: rotate(-60deg) scaleX(1.6);
+    /* width: 22px approx relative to 14px base is ~1.57x */
     opacity: 0.8;
     box-shadow: 0 0 8px gold;
   }
 
   100% {
-    transform: rotate(-10deg);
-    width: 14px;
+    transform: rotate(-10deg) scaleX(1);
   }
 }
 
 @keyframes wing-insight-right {
   0% {
-    transform: rotate(10deg);
-    width: 14px;
+    transform: rotate(10deg) scaleX(1);
   }
 
   50% {
-    transform: rotate(60deg);
-    width: 22px;
+    transform: rotate(60deg) scaleX(1.6);
     opacity: 0.8;
     box-shadow: 0 0 8px gold;
   }
 
   100% {
-    transform: rotate(10deg);
-    width: 14px;
+    transform: rotate(10deg) scaleX(1);
   }
 }
 
@@ -341,13 +337,40 @@
 
   .firefly-orb,
   .firefly-wing {
-    animation: none !important;
-    transform: none !important;
-    transition: none !important;
+    animation: none;
+    transform: none;
+    transition: none;
   }
 
   .firefly-wing {
     display: none;
     /* Hide flashing wings in reduced motion */
   }
+}
+
+
+:root {
+  --firefly-brand-text: #b45309;
+  /* amber-700 */
+  --firefly-brand-shadow: 0 0 4px rgba(251, 191, 36, 0.4);
+}
+
+:root[data-theme="dark"] {
+  --firefly-brand-text: #fffbeb;
+  --firefly-brand-shadow:
+    0 0 4px rgba(251, 191, 36, 0.8),
+    /* Inner amber glow */
+    0 0 10px rgba(251, 191, 36, 0.4),
+    /* Outer amber glow */
+    0 0 20px rgba(251, 191, 36, 0.2);
+}
+
+/* Typography for Logo */
+.brand-firefly {
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  color: var(--firefly-brand-text);
+  text-shadow: var(--firefly-brand-shadow);
+  /* Ambient spill */
+  letter-spacing: 0.02em;
 }

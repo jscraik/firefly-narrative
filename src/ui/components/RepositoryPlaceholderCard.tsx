@@ -1,6 +1,53 @@
+import { motion } from 'framer-motion';
 import { BarChart3, BookOpen, GitBranch, Link2 } from 'lucide-react';
 
 type PlaceholderVariant = 'repo' | 'dashboard' | 'docs';
+
+/* ─────────────────────────────────────────────────────────
+ * ANIMATION STORYBOARD
+ *
+ *    0ms   Card fades in + slides up
+ *  200ms   Icon container starts breathing (continuous)
+ *  400ms   Title & Text fade in
+ *  600ms   Feature grid items slide in (staggered)
+ * ───────────────────────────────────────────────────────── */
+
+const ANIMATION = {
+  card: {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.4, ease: "easeOut" as const }
+  },
+  breathingIcon: {
+    animate: {
+      boxShadow: [
+        "0 0 0 1px var(--border-subtle)",
+        "0 0 0 2px var(--accent-blue-light)",
+        "0 0 0 1px var(--border-subtle)"
+      ],
+      backgroundColor: [
+        "var(--secondary)",
+        "var(--bg-subtle)",
+        "var(--secondary)"
+      ],
+    },
+    transition: {
+      duration: 4,
+      ease: "easeInOut" as const,
+      repeat: Infinity,
+    }
+  },
+  content: {
+    initial: { opacity: 0, y: 5 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.3, delay: 0.2 }
+  },
+  gridItem: (index: number) => ({
+    initial: { opacity: 0, x: -5 },
+    animate: { opacity: 1, x: 0 },
+    transition: { duration: 0.3, delay: 0.4 + (index * 0.1) }
+  })
+};
 
 export function RepositoryPlaceholderCard({
   className = '',
@@ -25,36 +72,70 @@ export function RepositoryPlaceholderCard({
   }
 
   return (
-    <div className={`card w-full max-w-xl rounded-2xl p-8 shadow-sm animate-in fade-in slide-in-from-bottom-2 motion-page-enter ${className}`.trim()}>
-      <div className="mb-6 inline-flex items-center justify-center rounded-2xl border border-border-light bg-bg-tertiary p-5">
+    <motion.div
+      className={`glass-shell w-full max-w-xl rounded-2xl p-8 shadow-card text-left ${className}`.trim()}
+      initial={ANIMATION.card.initial}
+      animate={ANIMATION.card.animate}
+      transition={ANIMATION.card.transition}
+    >
+      <motion.div
+        className="mb-6 inline-flex items-center justify-center rounded-2xl border border-border-subtle bg-bg-secondary p-5"
+        animate={ANIMATION.breathingIcon.animate}
+        transition={ANIMATION.breathingIcon.transition}
+        whileHover={{
+          scale: 1.05,
+          boxShadow: "0 0 0 3px var(--accent-blue-light)",
+          transition: { duration: 0.2 }
+        }}
+      >
         {isDashboard ? (
-          <BarChart3 className="h-10 w-10 text-text-muted" />
+          <BarChart3 className="h-10 w-10 text-text-secondary" />
         ) : isDocs ? (
-          <BookOpen className="h-10 w-10 text-text-muted" />
+          <BookOpen className="h-10 w-10 text-text-secondary" />
         ) : (
-          <GitBranch className="h-10 w-10 text-text-muted" />
+          <GitBranch className="h-10 w-10 text-text-secondary" />
         )}
-      </div>
-      <h3 className="mb-2 text-center text-lg font-semibold text-text-primary">{title}</h3>
-      <p className="mx-auto max-w-md text-center text-sm leading-relaxed text-text-tertiary">
-        {message}
-      </p>
+      </motion.div>
+
+      <motion.div
+        initial={ANIMATION.content.initial}
+        animate={ANIMATION.content.animate}
+        transition={ANIMATION.content.transition}
+      >
+        <h3 className="mb-2 text-lg font-semibold text-text-primary">{title}</h3>
+        <p className="max-w-md text-sm leading-relaxed text-text-secondary">
+          {message}
+        </p>
+      </motion.div>
 
       <div className="mt-8 grid grid-cols-1 gap-4 text-left text-xs sm:grid-cols-2">
-        <div className="rounded-lg border border-border-light bg-bg-tertiary p-4">
-          <div className="mb-1 text-sm font-semibold text-text-secondary">Explore History</div>
+        <motion.div
+          className="rounded-lg border border-border-subtle bg-bg-subtle p-4"
+          {...ANIMATION.gridItem(0)}
+        >
+          <div className="mb-1 text-sm font-semibold text-text-primary">Explore History</div>
           <div className="text-text-muted">Commit timeline + changed files + context</div>
-        </div>
-        <div className="rounded-lg border border-border-light bg-bg-tertiary p-4">
-          <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-text-secondary">
+        </motion.div>
+
+        <motion.div
+          className="rounded-lg border border-border-subtle bg-bg-subtle p-4"
+          {...ANIMATION.gridItem(1)}
+        >
+          <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-text-primary">
             <Link2 className="h-3.5 w-3.5 text-text-muted" />
             Link Sessions
           </div>
           <div className="text-text-muted">Claude/Codex/Cursor session attribution</div>
-        </div>
+        </motion.div>
       </div>
 
-      <p className="mt-6 text-center text-xs italic text-text-muted">Waiting for repository context…</p>
-    </div>
+      <motion.p
+        className="mt-6 text-xs italic text-text-muted opacity-70"
+        animate={{ opacity: [0.5, 0.8, 0.5] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+      >
+        Waiting for repository context…
+      </motion.p>
+    </motion.div>
   );
 }
