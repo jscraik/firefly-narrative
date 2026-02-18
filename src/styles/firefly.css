@@ -20,11 +20,13 @@
 
 /* Keyframe animations */
 @keyframes firefly-idle {
+
   0%,
   100% {
     opacity: 0.4;
     transform: scale(1) translateZ(0);
   }
+
   50% {
     opacity: 0.68;
     transform: scale(1.06) translateZ(0);
@@ -36,6 +38,7 @@
     transform: scale(1) translateZ(0);
     opacity: 0.6;
   }
+
   100% {
     transform: scale(1.12) translateZ(0);
     opacity: 0.85;
@@ -43,11 +46,13 @@
 }
 
 @keyframes firefly-analyzing {
+
   0%,
   100% {
     transform: scale(1) translateZ(0);
     opacity: 0.7;
   }
+
   50% {
     transform: scale(1.18) translateZ(0);
     opacity: 0.95;
@@ -55,6 +60,7 @@
 }
 
 @keyframes firefly-insight {
+
   0%,
   100% {
     transform: scale(1) translateZ(0);
@@ -63,6 +69,7 @@
       0 0 10px 2px rgba(251, 191, 36, 0.35),
       0 0 20px 5px rgba(251, 191, 36, 0.2);
   }
+
   45% {
     transform: scale(1.28) translateZ(0);
     opacity: 1;
@@ -71,6 +78,116 @@
       0 0 28px 8px rgba(255, 210, 90, 0.45);
   }
 }
+
+/* Wing Animations */
+@keyframes wing-idle-left {
+
+  0%,
+  100% {
+    transform: rotate(-10deg) scaleX(0.9);
+    opacity: 0.3;
+  }
+
+  50% {
+    transform: rotate(-35deg) scaleX(1);
+    opacity: 0.6;
+  }
+}
+
+@keyframes wing-idle-right {
+
+  0%,
+  100% {
+    transform: rotate(10deg) scaleX(0.9);
+    opacity: 0.3;
+  }
+
+  50% {
+    transform: rotate(35deg) scaleX(1);
+    opacity: 0.6;
+  }
+}
+
+@keyframes wing-track-left {
+  to {
+    transform: rotate(60deg) scaleX(0.6) translateY(4px);
+    opacity: 0.2;
+  }
+}
+
+@keyframes wing-track-right {
+  to {
+    transform: rotate(-60deg) scaleX(0.6) translateY(4px);
+    opacity: 0.2;
+  }
+}
+
+@keyframes wing-analyze-left {
+  0% {
+    transform: rotate(-15deg);
+  }
+
+  50% {
+    transform: rotate(-45deg);
+  }
+
+  100% {
+    transform: rotate(-15deg);
+  }
+}
+
+@keyframes wing-analyze-right {
+  0% {
+    transform: rotate(15deg);
+  }
+
+  50% {
+    transform: rotate(45deg);
+  }
+
+  100% {
+    transform: rotate(15deg);
+  }
+}
+
+@keyframes wing-insight-left {
+  0% {
+    transform: rotate(-10deg);
+    width: 14px;
+  }
+
+  50% {
+    transform: rotate(-60deg);
+    width: 22px;
+    opacity: 0.8;
+    box-shadow: 0 0 8px gold;
+  }
+
+  100% {
+    transform: rotate(-10deg);
+    width: 14px;
+  }
+}
+
+@keyframes wing-insight-right {
+  0% {
+    transform: rotate(10deg);
+    width: 14px;
+  }
+
+  50% {
+    transform: rotate(60deg);
+    width: 22px;
+    opacity: 0.8;
+    box-shadow: 0 0 8px gold;
+  }
+
+  100% {
+    transform: rotate(10deg);
+    width: 14px;
+  }
+}
+
 
 /* Utility classes */
 .animate-firefly-idle {
@@ -89,6 +206,7 @@
   animation: firefly-insight var(--duration-insight) var(--ease-bounce) infinite;
 }
 
+
 /* Firefly component styles */
 .firefly {
   position: absolute;
@@ -100,9 +218,11 @@
   transform-origin: center;
   will-change: transform;
   contain: layout paint;
+  z-index: 20;
 }
 
 .firefly-orb {
+  position: relative;
   width: 100%;
   height: 100%;
   border-radius: 9999px;
@@ -112,8 +232,88 @@
     0 0 16px 4px rgba(251, 191, 36, 0.3);
   transform-origin: center;
   will-change: transform, opacity;
+  z-index: 2;
 }
 
+/* Wing Styles */
+.firefly-wings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+  /* Below orb */
+}
+
+.firefly-wing {
+  position: absolute;
+  top: 40%;
+  width: 13px;
+  height: 8px;
+  border-top: 1px solid rgba(251, 191, 36, 0.7);
+  box-shadow: 0 -1px 4px rgba(251, 191, 36, 0.2);
+  opacity: 0.6;
+  will-change: transform;
+  /* Make them look like thin threads */
+  border-radius: 100% 0 0 0;
+}
+
+.firefly-wing.left {
+  right: 50%;
+  transform-origin: 100% 60%;
+  /* Pivot near center-right */
+  margin-right: -2px;
+  transform: rotate(-20deg);
+}
+
+.firefly-wing.right {
+  left: 50%;
+  transform-origin: 0% 60%;
+  /* Pivot near center-left */
+  margin-left: -2px;
+  transform: rotate(20deg) scaleX(-1);
+  /* Mirror */
+}
+
+
+/* Wing State Animations */
+[data-state='idle'] .firefly-wing.left {
+  animation: wing-idle-left 5s ease-in-out infinite;
+}
+
+[data-state='idle'] .firefly-wing.right {
+  animation: wing-idle-right 5s ease-in-out infinite;
+}
+
+[data-state='tracking'] .firefly-wing.left {
+  animation: wing-track-left 0.3s ease-out forwards;
+}
+
+[data-state='tracking'] .firefly-wing.right {
+  animation: wing-track-right 0.3s ease-out forwards;
+}
+
+[data-state='analyzing'] .firefly-wing.left {
+  animation: wing-analyze-left 0.1s linear infinite;
+}
+
+[data-state='analyzing'] .firefly-wing.right {
+  animation: wing-analyze-right 0.1s linear infinite;
+}
+
+[data-state='insight'] .firefly-wing.left {
+  animation: wing-insight-left 0.6s ease-out infinite;
+}
+
+[data-state='insight'] .firefly-wing.right {
+  animation: wing-insight-right 0.6s ease-out infinite;
+}
+
+
+/* Orb State Colors */
 .firefly-idle,
 .firefly-tracking {
   background-color: var(--color-firefly-glow);
@@ -127,6 +327,7 @@
   background-color: var(--color-firefly-insight);
 }
 
+/* Reduced Motion Static States */
 .firefly-idle-static,
 .firefly-tracking-static,
 .firefly-analyzing-static,
@@ -136,11 +337,17 @@
   transform: scale(1) translateZ(0);
 }
 
-/* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-  .firefly-orb {
-    animation: none;
-    transform: scale(1);
-    transition: none;
+
+  .firefly-orb,
+  .firefly-wing {
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .firefly-wing {
+    display: none;
+    /* Hide flashing wings in reduced motion */
   }
 }

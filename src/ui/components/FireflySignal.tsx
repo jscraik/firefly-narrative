@@ -63,6 +63,10 @@ export function FireflySignal({
       data-state={event.type}
       data-reduced-motion={prefersReducedMotion ? 'true' : 'false'}
     >
+      <div className="firefly-wings">
+        <div className="firefly-wing left" />
+        <div className="firefly-wing right" />
+      </div>
       <div
         className={[
           'firefly-orb',

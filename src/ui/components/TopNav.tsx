@@ -69,7 +69,7 @@ export function TopNav(props: {
   return (
     <div className="grid h-14 w-full grid-cols-[1fr_auto_1fr] items-center border-b border-border-light bg-bg-secondary px-4">
       <div className="flex items-center gap-3 justify-self-start">
-        <div className="text-sm font-bold tracking-wide text-text-primary">Narrative</div>
+        <div className="text-sm font-bold tracking-wide text-text-primary">Firefly Narrative</div>
       </div>
 
       <div
