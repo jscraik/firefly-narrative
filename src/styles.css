@@ -641,6 +641,14 @@ body {
   border-radius: 50%;
 }
 
+/* Expand hit area */
+.timeline-dot::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+}
+
 .timeline-dot:hover {
   transform: scale(1.25);
   box-shadow: 0 0 0 2px var(--accent-blue-light);

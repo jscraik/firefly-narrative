@@ -422,7 +422,7 @@ export default function App() {
             onToggleGitHubConnector={handleToggleGitHubConnector}
           />
         ) : (
-          <RepoEmptyState />
+          <RepoEmptyState setRepoState={setRepoState} />
         )}
       </div>
       {import.meta.env.DEV && AgentationComponent && (
