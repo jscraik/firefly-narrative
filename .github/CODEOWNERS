@@ -1,4 +1,4 @@
-# Default owner for repository governance controls.
+# Default owner for all files in this repository.
 * @jscraik
 
 /.github/branch-protection-manifest.md @jscraik

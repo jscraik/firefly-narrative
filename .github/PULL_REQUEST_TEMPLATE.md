@@ -6,7 +6,7 @@
 
 [PROMPT: Why is this change needed? Link context, incidents, or user feedback.]
 
-Closes #[PROMPT: #123] (or explain why none exists)
+Closes [PROMPT: #123] (or explain why none exists)
 
 ## What changed?
 

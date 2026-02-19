@@ -138,9 +138,9 @@ function ImportMenu(props: {
           type="button"
           disabled={!importEnabled}
           className={clsx(
-            'inline-flex items-center justify-center rounded-lg p-2 text-sm font-medium transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 hover:scale-110 active:scale-90',
+            'inline-flex items-center justify-center rounded-lg p-2 text-sm font-medium transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75',
             importEnabled
-              ? 'bg-bg-primary text-text-secondary hover:bg-border-light'
+              ? 'bg-bg-primary text-text-secondary hover:bg-border-light hover:scale-110 active:scale-90'
               : 'bg-bg-tertiary text-text-muted cursor-not-allowed'
           )}
           title="Import data"

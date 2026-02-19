@@ -5,7 +5,9 @@ import kimiIcon from '../../assets/icons/kimi-color.svg';
 import ollamaIcon from '../../assets/icons/ollama.svg';
 import openaiIcon from '../../assets/icons/openai.svg';
 
-export function FireflyLanding() {
+export function FireflyLanding(props: { onGetStarted?: () => void }) {
+    const { onGetStarted } = props;
+
     return (
         <div className="min-h-full w-full bg-bg-primary text-text-primary font-sans relative overflow-hidden flex flex-col transition-colors duration-300">
             {/* Background Dots */}
@@ -33,7 +35,11 @@ export function FireflyLanding() {
                     </p>
 
                     <div className="pt-8 animate-fade-in-up delay-300">
-                        <button type="button" className="bg-text-primary text-bg-primary px-8 py-3 rounded-full font-medium text-lg inline-flex items-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 shadow-lg hover:shadow-[0_0_20px_rgba(var(--text-primary-rgb),0.3)]">
+                        <button
+                            type="button"
+                            onClick={onGetStarted}
+                            className="bg-text-primary text-bg-primary px-8 py-3 rounded-full font-medium text-lg inline-flex items-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 shadow-lg hover:shadow-[0_0_20px_rgba(var(--text-primary-rgb),0.3)]"
+                        >
                             Get Started <ArrowRight className="w-5 h-5" />
                         </button>
                     </div>

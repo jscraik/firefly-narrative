@@ -33,7 +33,7 @@ Apply code-owner review and stricter review expectations for:
 - `COMPLIANCE/**`
 - `SECURITY/**`
 - `EVALUATION/**`
-- `branch-protection-manifest.md`
+- `.github/branch-protection-manifest.md`
 
 ## Evidence and cadence
 

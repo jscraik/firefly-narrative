@@ -342,6 +342,19 @@
     transition: none;
   }
 
+  [data-state='idle'] .firefly-wing.left,
+  [data-state='idle'] .firefly-wing.right,
+  [data-state='tracking'] .firefly-wing.left,
+  [data-state='tracking'] .firefly-wing.right,
+  [data-state='analyzing'] .firefly-wing.left,
+  [data-state='analyzing'] .firefly-wing.right,
+  [data-state='insight'] .firefly-wing.left,
+  [data-state='insight'] .firefly-wing.right {
+    animation: none;
+    transform: none;
+    transition: none;
+  }
+
   .firefly-wing {
     display: none;
     /* Hide flashing wings in reduced motion */

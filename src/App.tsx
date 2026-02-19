@@ -344,7 +344,7 @@ export default function App() {
             onModeChange={setMode}
           />
         ) : mode === 'landing' ? (
-          <FireflyLanding />
+          <FireflyLanding onGetStarted={() => setMode('repo')} />
         ) : mode === 'docs' ? (
           <DocsView
             repoState={repoState}

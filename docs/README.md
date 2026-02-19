@@ -22,6 +22,9 @@ This directory contains developer documentation and operational notes for the Na
 To verify documentation locally:
 
 ```bash
+# Run the project docs lint wrapper (skips Vale when unavailable)
+pnpm docs:lint
+
 # Lint markdown files
 npx -y markdownlint-cli2 README.md docs/**/*.md brand/README.md
 

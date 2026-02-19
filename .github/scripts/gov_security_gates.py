@@ -22,7 +22,7 @@ EVENT_PATH = os.environ.get("GITHUB_EVENT_PATH", str(REPO_ROOT / "event.json"))
 REQUIRED_SECTIONS = {
     "threat model": [r"threat model", r"threat-model"],
     "security impact": [r"security\s*/?\s*privacy", r"security impact"],
-    "ai and data impact": [r"ai", r"data impact", r"ai/data"],
+    "ai and data impact": [r"\bai\b", r"data impact", r"ai/data"],
     "verification evidence": [r"verification evidence", r"how to test"],
     "release notes": [r"release notes", r"release note"],
 }
@@ -196,6 +196,10 @@ def run_gitleaks_if_available():
         return True
 
     print("❌ gitleaks found issues.")
+    if cp.stdout.strip():
+        print(cp.stdout)
+    if cp.stderr.strip():
+        print(cp.stderr)
     return False
 
 

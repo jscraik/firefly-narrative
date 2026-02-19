@@ -11,7 +11,7 @@
   - `GOVERNANCE/*`
   - `COMPLIANCE/*`
 - PR quality controls for policy-related files
-- Branch-protection evidence and exception/incidence documentation
+- Branch-protection evidence and exception/incident documentation
 
 ## In-scope assets
 

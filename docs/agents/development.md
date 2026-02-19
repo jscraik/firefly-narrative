@@ -5,7 +5,7 @@
 - **Node.js** + **pnpm** (Package manager)
 - **Rust toolchain** (via `rustup`)
 - **Git** on your PATH (Narrative executes git commands via `tauri-plugin-shell`)
-- OS-specific Tauri dependencies (see [Tauri Framework Docs](https://tauri.app/v1/guides/getting-started/prerequisites))
+- OS-specific Tauri dependencies (see [Tauri Framework Docs](https://v2.tauri.app/start/prerequisites/))
 
 ## Running Locally
 

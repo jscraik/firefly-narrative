@@ -42,7 +42,7 @@ open Narrative.dmg
 |---------|--------------|
 | **📖 Context-Aware Timeline** | Navigate commits with linked AI conversations, not just diffs. |
 | **🤖 AI Integration** | Import sessions from Claude Code, Codex CLI, and Cursor. |
-| **🔍 Semantic Search** | Find "that thing we discussed about caching" instantly across all sessions. |
+| **🔍 Atlas Search** | Find "that thing we discussed about caching" instantly across all sessions. |
 | **💾 Local-First** | All data stays in your `.narrative` folder. No cloud needed. |
 
 ---

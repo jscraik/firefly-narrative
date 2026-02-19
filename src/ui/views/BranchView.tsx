@@ -620,9 +620,6 @@ function BranchViewInner(props: {
     if (link.filePath) {
       selectFile(link.filePath);
     }
-    if (link.kind === 'diff') {
-      handleOpenRawDiff();
-    }
     bumpObservability('evidenceOpenedCount');
     trackNarrativeEvent('evidence_opened', {
       branch: model.meta?.branchName,
