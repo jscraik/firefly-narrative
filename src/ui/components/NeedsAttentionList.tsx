@@ -8,7 +8,7 @@ export function NeedsAttentionList(props: {
   if (issues.length === 0) return null;
 
   return (
-    <div className="card p-4">
+    <div className="card p-4 animate-fade-in-up">
       <div className="section-header">NEEDS ATTENTION</div>
       <div className="section-subheader">Auto‑import issues requiring action</div>
       <div className="mt-3 space-y-3">
@@ -20,7 +20,7 @@ export function NeedsAttentionList(props: {
               {issue.action ? (
                 <button
                   type="button"
-                  className="inline-flex items-center rounded-md border border-accent-amber-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light"
+                  className="inline-flex items-center rounded-md border border-accent-amber-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
                   onClick={issue.action.handler}
                 >
                   {issue.action.label}
@@ -28,7 +28,7 @@ export function NeedsAttentionList(props: {
               ) : null}
               <button
                 type="button"
-                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
                 onClick={() => onDismiss(issue.id)}
               >
                 Dismiss

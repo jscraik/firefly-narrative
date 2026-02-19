@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { NearbyGridDemo } from '../../core/demo/nearbyGridDemo';
-import type { RepoState } from '../../hooks/useRepoLoader';
 import type { RepoIndex } from '../../core/repo/indexer';
+import type { RepoState } from '../../hooks/useRepoLoader';
 import { RepositoryPlaceholderCard } from './RepositoryPlaceholderCard';
 
 export function RepoEmptyState({
@@ -34,7 +34,7 @@ export function RepoEmptyState({
         <button
           type="button"
           onClick={handleLoadMock}
-          className="absolute bottom-4 right-4 text-xs text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute bottom-4 right-4 text-xs text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
         >
           [dev] Load Mock Data
         </button>

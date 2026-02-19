@@ -68,10 +68,8 @@ scripts/obs
 scripts/qa
 scripts/test
 
-FORJAMIE.md
-
-FORJAMIE.md
-
-FORJAMIE.md
-
-FORJAMIE.md
+# Test artifacts
+playwright-report/
+test-results/
+tmp_frames/
+package-lock.json

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,6 +13,13 @@ type FireflyPerfFixture = {
   };
 };
 
+async function openDemoTimeline(page: Page) {
+  await page.goto('/');
+  const demoTab = page.getByRole('tab', { name: 'Demo' });
+  await demoTab.click();
+  await page.waitForSelector('[role="listbox"][aria-label="Commit timeline"]');
+}
+
 async function loadPerfFixture(): Promise<FireflyPerfFixture> {
   const fixturePath = new URL('./fixtures/firefly-large-timeline.json', import.meta.url);
   const fixtureRaw = await readFile(fixturePath, 'utf8');
@@ -21,7 +28,7 @@ async function loadPerfFixture(): Promise<FireflyPerfFixture> {
 
 test.describe('Firefly Visual System v1', () => {
   test('tracks selection changes on the timeline', async ({ page }) => {
-    await page.goto('/');
+    await openDemoTimeline(page);
 
     const firefly = page.locator('[data-testid=\"firefly-signal\"]');
     await expect(firefly).toBeVisible();
@@ -37,7 +44,7 @@ test.describe('Firefly Visual System v1', () => {
   });
 
   test('surfaces toggle persistence failures in ImportErrorBanner when they occur', async ({ page }) => {
-    await page.goto('/');
+    await openDemoTimeline(page);
 
     await page.getByRole('tab', { name: 'Settings' }).click();
 
@@ -65,8 +72,7 @@ test.describe('Firefly Visual System v1', () => {
   test('@firefly-perf captures frame metrics and writes verification artifact', async ({ page, browserName }) => {
     const fixture = await loadPerfFixture();
 
-    await page.goto('/');
-    await page.waitForSelector('button.timeline-dot');
+    await openDemoTimeline(page);
 
     const perfResult = await page.evaluate(async ({ durationMs, stepMs, scrollActions }) => {
       const timeline = document.querySelector('[role=\"listbox\"][aria-label=\"Commit timeline\"]');

@@ -75,9 +75,9 @@ function CaptureLifecycleRail({
             key={item.key}
             type="button"
             onClick={() => onSelectFilter?.(item.key)}
-            className={`rounded-md border px-2 py-0.5 text-[10px] transition-colors ${activeFilter === item.key
-                ? 'border-accent-blue-light bg-accent-blue-bg text-accent-blue'
-                : 'btn-tertiary-soft'
+            className={`rounded-md border px-2 py-0.5 text-[10px] transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 ${activeFilter === item.key
+              ? 'border-accent-blue-light bg-accent-blue-bg text-accent-blue'
+              : 'btn-tertiary-soft'
               }`}
           >
             {item.label}
@@ -173,7 +173,7 @@ export function CaptureActivityStrip(props: {
             <div className="text-[11px] font-semibold text-text-secondary">RECENT</div>
             <button
               type="button"
-              className="text-[11px] text-text-tertiary transition-colors hover:text-text-secondary"
+              className="text-[11px] text-text-tertiary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:text-text-secondary hover:scale-105"
               onClick={openDrawer}
               disabled={!onRequestAll}
             >
@@ -213,7 +213,7 @@ export function CaptureActivityStrip(props: {
               </div>
               <button
                 type="button"
-                className="btn-secondary-soft text-xs px-3 py-1.5 rounded-md"
+                className="btn-secondary-soft text-xs px-3 py-1.5 rounded-md transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
                 onClick={closeDrawer}
               >
                 Close

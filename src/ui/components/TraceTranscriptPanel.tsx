@@ -1,5 +1,5 @@
+import { Bot, Check, ChevronDown, ChevronUp, Copy, Lightbulb, Sparkles, Terminal, User, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Sparkles, User, Terminal, Lightbulb, Wrench, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import type { SessionExcerpt, SessionMessage, SessionMessageRole } from '../../core/types';
 
 const ROLE_CONFIG: Record<SessionMessageRole, {
@@ -113,7 +113,7 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-accent-green hover:bg-accent-green-bg/70 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-accent-green hover:bg-accent-green-bg/70 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.99]"
       >
         <span className="flex items-center gap-2">
           <Terminal className="w-3.5 h-3.5" />
@@ -121,7 +121,7 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
         </span>
         {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
       </button>
-      
+
       {isExpanded && (
         <div className="border-t border-accent-green-light">
           <div className="flex items-center justify-between px-3 py-1.5 bg-accent-green-bg/40 border-b border-accent-green-light">
@@ -195,13 +195,12 @@ function MessageCard({
   const config = ROLE_CONFIG[message.role];
 
   return (
-    <div className={`rounded-xl border px-4 py-4 transition-all hover:shadow-sm min-w-0 ${
-      message.role === 'user' ? 'bg-bg-tertiary border-border-light' :
+    <div className={`rounded-xl border px-4 py-4 transition-all hover:shadow-sm min-w-0 ${message.role === 'user' ? 'bg-bg-tertiary border-border-light' :
       message.role === 'thinking' ? 'bg-accent-amber-bg/50 border-accent-amber-light' :
-      message.role === 'plan' ? 'bg-accent-violet-bg/50 border-accent-violet-light' :
-      message.role === 'tool_call' ? 'bg-accent-green-bg/50 border-accent-green-light' :
-      'bg-bg-secondary border-border-light'
-    }`}>
+        message.role === 'plan' ? 'bg-accent-violet-bg/50 border-accent-violet-light' :
+          message.role === 'tool_call' ? 'bg-accent-green-bg/50 border-accent-green-light' :
+            'bg-bg-secondary border-border-light'
+      }`}>
       {/* Header */}
       <div className="flex items-center justify-between gap-3 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -360,7 +359,7 @@ export function TraceTranscriptPanel({
           <button
             type="button"
             onClick={() => setShowAll(!showAll)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-bg-primary text-text-secondary text-xs font-medium hover:bg-border-light transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-bg-primary text-text-secondary text-xs font-medium hover:bg-border-light transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
           >
             {showAll ? (
               <><ChevronUp className="w-3.5 h-3.5" /> Show less</>
@@ -372,7 +371,7 @@ export function TraceTranscriptPanel({
             <button
               type="button"
               onClick={handleJumpToLatest}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-tertiary transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border-light text-xs font-medium text-text-secondary hover:bg-bg-tertiary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
             >
               Jump to latest
             </button>

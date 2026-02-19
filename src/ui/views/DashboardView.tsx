@@ -250,17 +250,17 @@ export function DashboardView({
             />
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={() => handleDrillDown({ type: 'ai-only' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
+            <button type="button" onClick={() => handleDrillDown({ type: 'ai-only' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
               AI only
             </button>
-            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'codex' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
+            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'codex' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
               Codex
             </button>
-            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'claude-code' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
+            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'claude-code' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
               Claude
             </button>
             {commandQuery && (
-              <button type="button" onClick={() => setCommandQuery('')} className="btn-tertiary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary">
+              <button type="button" onClick={() => setCommandQuery('')} className="btn-tertiary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
                 Clear filter
               </button>
             )}

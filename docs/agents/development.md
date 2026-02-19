@@ -1,23 +1,49 @@
-# Development
+# Development Guide
 
-## prereqs
+## Prerequisites
 
-- Node.js + pnpm
-- Rust toolchain
-- tauri system deps for your OS (see tauri docs)
-- git on PATH (repo mode executes git via tauri-plugin-shell)
+- **Node.js** + **pnpm** (Package manager)
+- **Rust toolchain** (via `rustup`)
+- **Git** on your PATH (Narrative executes git commands via `tauri-plugin-shell`)
+- OS-specific Tauri dependencies (see [Tauri Framework Docs](https://tauri.app/v1/guides/getting-started/prerequisites))
 
-## Run
+## Running Locally
 
-- Install deps: pnpm install
-- Start app (tauri): pnpm tauri dev
-- Start web-only dev server: pnpm dev
+1. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
 
-## Build
+2. **Start the application (Desktop Mode)**:
+   This runs the full Tauri application with Rust backend.
+   ```bash
+   pnpm tauri dev
+   ```
 
-- Web build: pnpm build
-- tauri build: pnpm tauri build
+   You should see the landing page:
+   
+   <img src="../assets/screenshots/landing.png" width="600" alt="Local Development - Landing Page">
+
+3. **Start Web-Only Mode (Frontend Only)**:
+   Useful for UI iteration without compiling Rust. Note that filesystem and git features will be mocked or unavailable.
+   ```bash
+   pnpm dev
+   ```
+
+## Building
+
+- **Web Assets Only**:
+  ```bash
+  pnpm build
+  ```
+
+- **Production App (Tauri)**:
+  This produces the `.app`, `.dmg`, or executable for your OS.
+  ```bash
+  pnpm tauri build
+  ```
 
 ## Notes
 
-- The app writes narrative metadata under .narrative/ when you open a repo.
+- **Data Storage**: When you open a repository, Narrative creates a `.narrative/` directory in that repo root to store session metadata.
+- **Troubleshooting**: If you encounter Rust errors, ensure your toolchain is up to date with `rustup update`.

@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react';
-import { Upload, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
-import { 
-  scanForSessionFiles, 
-  importSessionFile, 
+import { AlertTriangle, CheckCircle, RefreshCw, Upload, XCircle } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import {
+  importSessionFile,
   importSessionFiles,
-  type ScannedSession,
-  type BatchImportResult 
+  scanForSessionFiles,
+  type BatchImportResult,
+  type ScannedSession
 } from '../../core/attribution-api';
 import { Checkbox } from './Checkbox';
 
@@ -39,11 +39,11 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
 
   const handleImportSelected = useCallback(async () => {
     if (selectedPaths.size === 0) return;
-    
+
     setImporting(true);
     setError(null);
     setResult(null);
-    
+
     try {
       const result = await importSessionFiles(repoId, Array.from(selectedPaths));
       setResult(result);
@@ -62,7 +62,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
     setImporting(true);
     setError(null);
     setResult(null);
-    
+
     try {
       const result = await importSessionFile(repoId, path);
       setResult(result);
@@ -93,7 +93,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
           type="button"
           onClick={handleScan}
           disabled={scanning}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary bg-bg-tertiary border border-border-light rounded-md hover:bg-bg-hover disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary bg-bg-tertiary border border-border-light rounded-md hover:bg-bg-hover disabled:opacity-50 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
         >
           <RefreshCw className={`w-4 h-4 ${scanning ? 'motion-safe:animate-spin' : ''}`} />
           {scanning ? 'Scanning...' : 'Scan for Sessions'}
@@ -118,7 +118,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
                 type="button"
                 onClick={handleImportSelected}
                 disabled={importing}
-                className="flex items-center gap-2 rounded-md bg-accent-blue px-3 py-1.5 text-sm font-medium text-text-inverted transition-colors hover:brightness-95 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-md bg-accent-blue px-3 py-1.5 text-sm font-medium text-text-inverted transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 hover:brightness-95 disabled:opacity-50"
               >
                 <Upload className="w-4 h-4" />
                 {importing ? 'Importing...' : `Import ${selectedPaths.size} Selected`}
@@ -137,9 +137,8 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
               return (
                 <div
                   key={session.path}
-                  className={`flex items-center justify-between p-3 hover:bg-bg-tertiary transition-colors ${
-                    isSelected ? 'bg-accent-blue-bg' : ''
-                  }`}
+                  className={`flex items-center justify-between p-3 hover:bg-bg-tertiary transition-colors ${isSelected ? 'bg-accent-blue-bg' : ''
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Checkbox
@@ -162,7 +161,7 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
                     type="button"
                     onClick={() => handleImportSingle(session.path)}
                     disabled={importing}
-                    className="text-xs font-medium text-accent-blue hover:text-accent-blue/80 disabled:opacity-50"
+                    className="text-xs font-medium text-accent-blue hover:text-accent-blue/80 disabled:opacity-50 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-110"
                   >
                     Import
                   </button>
@@ -174,11 +173,10 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
       )}
 
       {result && (
-        <div className={`p-3 rounded-md border ${
-          result.failed.length === 0 
-            ? 'bg-accent-green-bg border-accent-green-light' 
-            : 'bg-accent-amber-bg border-accent-amber-light'
-        }`}>
+        <div className={`p-3 rounded-md border ${result.failed.length === 0
+          ? 'bg-accent-green-bg border-accent-green-light'
+          : 'bg-accent-amber-bg border-accent-amber-light'
+          }`}>
           <div className="flex items-center gap-2 mb-2">
             {result.failed.length === 0 ? (
               <>

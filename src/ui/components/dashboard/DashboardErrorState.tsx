@@ -27,7 +27,7 @@ export function DashboardErrorState({ error, onRetry }: DashboardErrorStateProps
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-2 rounded-lg px-4 py-2 font-medium text-text-secondary transition-colors hover:bg-bg-hover hover:text-text-primary"
+          className="inline-flex items-center gap-2 rounded-lg px-4 py-2 font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:bg-bg-hover hover:text-text-primary hover:scale-105"
         >
           <RefreshCw className="w-4 h-4" />
           <span>Try again</span>

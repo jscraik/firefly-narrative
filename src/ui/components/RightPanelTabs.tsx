@@ -260,7 +260,7 @@ function RightPanelTabBar({
                 className={`
                   min-w-0 flex-1 inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2 border
                   text-[10px] leading-4 font-medium whitespace-nowrap
-                  transition-all duration-150
+                  transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105
                   ${isActive
                     ? TAB_ACTIVE_STYLES[tab.id]
                     : 'border-border-subtle bg-bg-primary text-text-secondary hover:bg-bg-secondary hover:border-border-light'
@@ -314,7 +314,7 @@ function DiffDock({
           type="button"
           onClick={onToggleExpanded}
           title="Toggle diff panel"
-          className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-bg-secondary text-xs font-medium text-text-secondary transition-colors hover:bg-bg-hover"
+          className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-bg-secondary text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98] hover:bg-bg-hover"
         >
           <span className="flex min-w-0 items-center gap-2">
             <FileCode className="w-3.5 h-3.5" />

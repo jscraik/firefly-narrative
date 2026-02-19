@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { TrendColor } from '../../../core/attribution-api';
 
 interface MetricCardProps {
@@ -22,12 +22,15 @@ interface MetricCardProps {
 export function MetricCard({ label, value, trend, icon, index }: MetricCardProps) {
   return (
     <section
-      className="metric-card group relative p-6 border border-border-light rounded-lg bg-bg-secondary transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-border-medium focus-within:ring-2 focus-within:ring-accent-blue focus-within:ring-offset-2 focus-within:-translate-y-0.5 focus-within:shadow-md animate-in slide-in-from-bottom-2 fade-in duration-300 fill-mode-forwards"
-      style={{ '--metric-card-index': index } as React.CSSProperties}
+      className={`metric-card group relative p-6 border border-border-light rounded-lg bg-bg-secondary 
+        transition-all duration-300 ease-out 
+        hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:border-border-medium hover:bg-bg-hover
+        focus-within:ring-2 focus-within:ring-accent-blue focus-within:ring-offset-2 
+        animate-fade-in-up ${index < 8 ? `delay-${index * 100}` : ''}`}
       aria-label={`${label}: ${value}${trend ? `, ${trend.label}` : ''}`}
     >
       {/* Label */}
-      <div className="text-sm font-medium text-text-secondary mb-2">{label}</div>
+      <div className="text-xs font-medium uppercase tracking-wider text-text-tertiary mb-1">{label}</div>
 
       {/* Value + Trend */}
       <div className="flex items-baseline gap-3">
@@ -39,7 +42,6 @@ export function MetricCard({ label, value, trend, icon, index }: MetricCardProps
         {trend && (
           <span
             className={`flex items-center gap-1 text-xs font-medium ${trend.color} animate-in zoom-in duration-300 trend-badge`}
-            style={{ '--metric-card-index': index } as React.CSSProperties}
           >
             {trend.icon === 'trending_up' && <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" />}
             {trend.icon === 'trending_down' && <TrendingDown className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -50,7 +52,7 @@ export function MetricCard({ label, value, trend, icon, index }: MetricCardProps
 
         {/* Optional icon (for tool badge) */}
         {icon && (
-          <div className="ml-auto" aria-hidden="true">
+          <div className="ml-auto opacity-70 group-hover:opacity-100 transition-opacity" aria-hidden="true">
             {icon}
           </div>
         )}
