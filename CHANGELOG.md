@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/jscraik/firefly-narrative/compare/firefly-narrative-v0.10.0...firefly-narrative-v0.11.0) (2026-02-19)
+
+
+### Features
+
+* add governance baseline sweep artifacts ([#23](https://github.com/jscraik/firefly-narrative/issues/23)) ([6b442b7](https://github.com/jscraik/firefly-narrative/commit/6b442b71f92ee3228c3a62e89c42a855e1332d94))
+
 ## [0.10.0](https://github.com/jscraik/narrative/compare/firefly-narrative-v0.9.0...firefly-narrative-v0.10.0) (2026-02-18)
 
 
