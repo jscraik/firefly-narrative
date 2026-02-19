@@ -125,7 +125,7 @@ export function DashboardEmptyState({ reason }: DashboardEmptyStateProps) {
 
         {/* Delight Message */}
         <motion.p
-          className="delight mt-8 text-sm italic text-text-muted opacity-80"
+          className="delight mt-8 text-sm italic text-text-muted"
           aria-hidden="true"
           animate={{ opacity: [0.8, 1, 0.8] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
