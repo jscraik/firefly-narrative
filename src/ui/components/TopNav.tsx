@@ -67,7 +67,7 @@ export function TopNav(props: {
   };
 
   return (
-    <div className="grid h-14 w-full grid-cols-[1fr_auto_1fr] items-center border-b border-border-light bg-bg-secondary px-4">
+    <header className="grid h-14 w-full grid-cols-[1fr_auto_1fr] items-center border-b border-border-light bg-bg-secondary px-4">
       <div className="flex items-center gap-3 justify-self-start">
         <div className="flex items-center gap-2">
           {/* Using a span for the text logo */}
@@ -77,18 +77,20 @@ export function TopNav(props: {
         </div>
       </div>
 
-      <div
-        className="flex items-center gap-1 bg-bg-primary rounded-lg p-1 justify-self-center"
-        role="tablist"
-        aria-label="View mode"
-        onKeyDown={handleTabKeyDown}
-      >
-        <Tab id="landing" label="Landing" icon={<LayoutGrid className="h-4 w-4" />} />
-        <Tab id="demo" label="Demo" icon={<LayoutGrid className="h-4 w-4" />} />
-        <Tab id="repo" label="Repo" icon={<GitBranch className="h-4 w-4" />} />
-        <Tab id="dashboard" label="Dashboard" icon={<BarChart3 className="h-4 w-4" />} />
-        <Tab id="docs" label="Docs" icon={<BookOpen className="h-4 w-4" />} />
-      </div>
+      <nav className="justify-self-center" aria-label="Primary navigation">
+        <div
+          className="flex items-center gap-1 bg-bg-primary rounded-lg p-1"
+          role="tablist"
+          aria-label="View mode"
+          onKeyDown={handleTabKeyDown}
+        >
+          <Tab id="landing" label="Landing" icon={<LayoutGrid className="h-4 w-4" />} />
+          <Tab id="demo" label="Demo" icon={<LayoutGrid className="h-4 w-4" />} />
+          <Tab id="repo" label="Repo" icon={<GitBranch className="h-4 w-4" />} />
+          <Tab id="dashboard" label="Dashboard" icon={<BarChart3 className="h-4 w-4" />} />
+          <Tab id="docs" label="Docs" icon={<BookOpen className="h-4 w-4" />} />
+        </div>
+      </nav>
 
       <div className="flex items-center gap-3 justify-self-end">
         {repoPath ? (
@@ -117,7 +119,7 @@ export function TopNav(props: {
           Open repo…
         </button>
       </div>
-    </div>
+    </header>
   );
 }
 
