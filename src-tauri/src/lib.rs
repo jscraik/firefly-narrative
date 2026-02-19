@@ -1,6 +1,7 @@
 mod activity;
 mod atlas;
 pub mod attribution;
+mod codex_app_server;
 mod commands;
 mod file_watcher;
 mod git_diff;
@@ -262,6 +263,26 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             ingest_config::reset_otlp_api_key,
             ingest_config::discover_capture_sources,
             ingest_config::configure_codex_otel,
+            ingest_config::get_collector_migration_status,
+            ingest_config::run_collector_migration,
+            ingest_config::rollback_collector_migration,
+            // Codex App Server reliability + streaming
+            codex_app_server::get_codex_app_server_status,
+            codex_app_server::start_codex_app_server,
+            codex_app_server::stop_codex_app_server,
+            codex_app_server::codex_app_server_initialize,
+            codex_app_server::codex_app_server_initialized,
+            codex_app_server::codex_app_server_account_read,
+            codex_app_server::codex_app_server_account_login_start,
+            codex_app_server::codex_app_server_account_login_completed,
+            codex_app_server::codex_app_server_account_updated,
+            codex_app_server::codex_app_server_account_logout,
+            codex_app_server::codex_app_server_set_stream_health,
+            codex_app_server::codex_app_server_set_stream_kill_switch,
+            codex_app_server::codex_app_server_request_thread_snapshot,
+            codex_app_server::ingest_codex_stream_event,
+            codex_app_server::get_codex_stream_dedupe_log,
+            codex_app_server::get_capture_reliability_status,
             import::commands::backfill_recent_sessions,
             // Story Anchors (Git Notes + hooks)
             story_anchors::commands::get_story_anchor_status,
@@ -329,6 +350,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
             let otel_state = otlp_receiver::OtelReceiverState::default();
             app.manage(otel_state.clone());
+            let codex_app_server_state = codex_app_server::CodexAppServerState::default();
+            app.manage(codex_app_server_state);
 
             Ok(())
         })

@@ -27,6 +27,9 @@
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,
+    "externalBin": [
+      "bin/codex-app-server"
+    ],
     "resources": [
       "bin/*"
     ],

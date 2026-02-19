@@ -92,12 +92,14 @@ export function CaptureActivityStrip(props: {
   enabled: boolean;
   sourcesLabel: string;
   issueCount: number;
+  captureMode?: 'OTEL_ONLY' | 'HYBRID_ACTIVE' | 'DEGRADED_STREAMING' | 'FAILURE';
+  captureModeMessage?: string;
   lastSeenISO?: string;
   recent: ActivityEvent[];
   onToggle?: (enabled: boolean) => void;
   onRequestAll?: () => Promise<ActivityEvent[]>;
 }) {
-  const { enabled, sourcesLabel, issueCount, lastSeenISO, recent, onToggle, onRequestAll } = props;
+  const { enabled, sourcesLabel, issueCount, captureMode, captureModeMessage, lastSeenISO, recent, onToggle, onRequestAll } = props;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerItems, setDrawerItems] = useState<ActivityEvent[] | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
@@ -143,6 +145,25 @@ export function CaptureActivityStrip(props: {
                 ? `On · Sources: ${sourcesLabel || '—'} · Issues: ${issueCount}`
                 : 'Off · Turn on to capture sessions and traces automatically.'}
             </div>
+            {captureMode ? (
+              <div className="mt-1 flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${captureMode === 'HYBRID_ACTIVE'
+                    ? 'bg-accent-green-bg text-accent-green border-accent-green-light'
+                    : captureMode === 'OTEL_ONLY'
+                      ? 'bg-accent-blue-bg text-accent-blue border-accent-blue-light'
+                      : captureMode === 'DEGRADED_STREAMING'
+                        ? 'bg-accent-amber-bg text-accent-amber border-accent-amber-light'
+                        : 'bg-accent-red-bg text-accent-red border-accent-red-light'
+                    }`}
+                >
+                  {captureMode}
+                </span>
+                {captureModeMessage ? (
+                  <span className="text-[11px] text-text-tertiary">{captureModeMessage}</span>
+                ) : null}
+              </div>
+            ) : null}
             {enabled ? (
               <div className="text-[11px] text-text-muted">Last seen: {lastSeen}</div>
             ) : null}

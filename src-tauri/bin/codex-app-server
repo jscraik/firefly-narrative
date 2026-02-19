@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Narrative placeholder sidecar shim.
+# Replace with bundled Codex App Server binary for production packaging.
+if [[ "$1" == "--version" ]]; then
+  echo "narrative-codex-app-server-shim 0.1.0"
+  exit 0
+fi
+
+# Keep process alive for local scaffolding tests.
+while IFS= read -r line; do
+  if [[ "$line" == *"shutdown"* ]]; then
+    exit 0
+  fi
+  # no-op JSON-RPC shim
+  echo "{\"jsonrpc\":\"2.0\",\"result\":{\"ok\":true},\"id\":null}"
+done

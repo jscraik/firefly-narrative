@@ -8,6 +8,17 @@ use tauri::command;
 
 use crate::secret_store;
 
+pub const CANONICAL_COLLECTOR_ROOT: &str = "~/.agents/otel/collector";
+pub const LEGACY_COLLECTOR_ROOT: &str = "~/.codex/otel-collector";
+
+fn default_chatgpt_auth_mode() -> String {
+    "chatgpt".to_string()
+}
+
+fn default_collector_migration_status() -> String {
+    "not_started".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IngestConfig {
@@ -17,6 +28,8 @@ pub struct IngestConfig {
     pub watch_paths: WatchPaths,
     #[serde(default)]
     pub codex: CodexConfig,
+    #[serde(default)]
+    pub collector: CollectorConfig,
     #[serde(default)]
     pub retention_days: i64,
     #[serde(default)]
@@ -56,6 +69,59 @@ impl Default for WatchPaths {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CollectorMigrationState {
+    #[serde(default = "default_collector_migration_status")]
+    pub status: String, // not_started | migrated | deferred | failed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_attempt_at_iso: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_backup_path: Option<String>,
+}
+
+impl Default for CollectorMigrationState {
+    fn default() -> Self {
+        Self {
+            status: default_collector_migration_status(),
+            last_attempt_at_iso: None,
+            last_error: None,
+            last_backup_path: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectorConfig {
+    #[serde(default = "default_canonical_collector_root")]
+    pub canonical_root: String,
+    #[serde(default = "default_legacy_collector_root")]
+    pub legacy_root: String,
+    #[serde(default)]
+    pub migration: CollectorMigrationState,
+}
+
+impl Default for CollectorConfig {
+    fn default() -> Self {
+        Self {
+            canonical_root: default_canonical_collector_root(),
+            legacy_root: default_legacy_collector_root(),
+            migration: CollectorMigrationState::default(),
+        }
+    }
+}
+
+fn default_canonical_collector_root() -> String {
+    CANONICAL_COLLECTOR_ROOT.to_string()
+}
+
+fn default_legacy_collector_root() -> String {
+    LEGACY_COLLECTOR_ROOT.to_string()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CodexConfig {
     #[serde(default)]
     pub receiver_enabled: bool,
@@ -65,6 +131,12 @@ pub struct CodexConfig {
     pub endpoint: String,
     #[serde(default)]
     pub header_env_key: String,
+    #[serde(default)]
+    pub stream_enrichment_enabled: bool,
+    #[serde(default)]
+    pub stream_kill_switch: bool,
+    #[serde(default = "default_chatgpt_auth_mode")]
+    pub app_server_auth_mode: String,
 }
 
 impl Default for CodexConfig {
@@ -74,6 +146,9 @@ impl Default for CodexConfig {
             mode: "both".to_string(),
             endpoint: "http://127.0.0.1:4318/v1/logs".to_string(),
             header_env_key: "NARRATIVE_OTEL_API_KEY".to_string(),
+            stream_enrichment_enabled: true,
+            stream_kill_switch: false,
+            app_server_auth_mode: default_chatgpt_auth_mode(),
         }
     }
 }
@@ -93,6 +168,7 @@ pub struct IngestConfigUpdate {
     pub auto_ingest_enabled: Option<bool>,
     pub watch_paths: Option<WatchPaths>,
     pub codex: Option<CodexConfig>,
+    pub collector: Option<CollectorConfig>,
     pub retention_days: Option<i64>,
     pub redaction_mode: Option<String>,
     pub consent: Option<ConsentState>,
@@ -104,6 +180,7 @@ impl Default for IngestConfig {
             auto_ingest_enabled: false,
             watch_paths: WatchPaths::default(),
             codex: CodexConfig::default(),
+            collector: CollectorConfig::default(),
             retention_days: 30,
             redaction_mode: "redact".to_string(),
             consent: ConsentState::default(),
@@ -124,6 +201,7 @@ pub fn load_config() -> Result<IngestConfig, String> {
     // - Remove legacy noisy Codex internal logs dir (~/.codex/log).
     normalize_codex_watch_paths(&mut parsed.watch_paths);
     normalize_codex_mode(&mut parsed.codex);
+    normalize_collector_config(&mut parsed.collector);
 
     Ok(parsed)
 }
@@ -150,6 +228,9 @@ pub fn apply_update(update: IngestConfigUpdate) -> Result<IngestConfig, String> 
     if let Some(value) = update.codex {
         config.codex = value;
     }
+    if let Some(value) = update.collector {
+        config.collector = value;
+    }
     if let Some(value) = update.retention_days {
         config.retention_days = value;
     }
@@ -162,6 +243,7 @@ pub fn apply_update(update: IngestConfigUpdate) -> Result<IngestConfig, String> 
 
     normalize_codex_watch_paths(&mut config.watch_paths);
     normalize_codex_mode(&mut config.codex);
+    normalize_collector_config(&mut config.collector);
 
     save_config(&config)?;
     Ok(config)
@@ -172,6 +254,26 @@ fn normalize_codex_mode(codex: &mut CodexConfig) {
     codex.mode = match mode.as_str() {
         "otlp" | "logs" | "both" => mode,
         _ => "both".to_string(),
+    };
+    let auth_mode = codex.app_server_auth_mode.trim().to_lowercase();
+    codex.app_server_auth_mode = if auth_mode.is_empty() {
+        default_chatgpt_auth_mode()
+    } else {
+        auth_mode
+    };
+}
+
+fn normalize_collector_config(collector: &mut CollectorConfig) {
+    if collector.canonical_root.trim().is_empty() {
+        collector.canonical_root = default_canonical_collector_root();
+    }
+    if collector.legacy_root.trim().is_empty() {
+        collector.legacy_root = default_legacy_collector_root();
+    }
+    let normalized = collector.migration.status.trim().to_lowercase();
+    collector.migration.status = match normalized.as_str() {
+        "migrated" | "deferred" | "failed" | "not_started" => normalized,
+        _ => default_collector_migration_status(),
     };
 }
 
@@ -186,6 +288,9 @@ fn normalize_codex_watch_paths(paths: &mut WatchPaths) {
         // Normalize legacy variants.
         if p.ends_with("/.codex/log") || p.ends_with("~/.codex/log") {
             continue; // never watch internal logs dir
+        }
+        if p.contains(".codex/otel-collector") {
+            continue; // collector state path is not a session-log source
         }
         if p.contains(".codex/archived-sessions") {
             p = p.replace(".codex/archived-sessions", ".codex/archived_sessions");
@@ -301,6 +406,28 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
 
     let updated = upsert_otel_block(&existing, &otel_block);
     fs::write(&config_path, updated).map_err(|e| e.to_string())?;
+
+    // Keep collector state canonicalized and persisted for migration-aware UI.
+    let mut ingest = load_config().unwrap_or_default();
+    normalize_collector_config(&mut ingest.collector);
+    let canonical = expand_tilde_to_abs(&ingest.collector.canonical_root)?;
+    fs::create_dir_all(&canonical).map_err(|e| e.to_string())?;
+    let state_file = canonical.join("narrative-collector-state.json");
+    let state_payload = serde_json::json!({
+        "configuredAtISO": iso_now(),
+        "endpoint": endpoint,
+        "header": header_name,
+    });
+    fs::write(
+        state_file,
+        serde_json::to_string_pretty(&state_payload).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())?;
+    ingest.collector.migration.status = "migrated".to_string();
+    ingest.collector.migration.last_attempt_at_iso = Some(iso_now());
+    ingest.collector.migration.last_error = None;
+    save_config(&ingest)?;
+
     Ok(())
 }
 
@@ -342,10 +469,38 @@ pub fn reset_otlp_api_key() -> Result<OtlpKeyStatus, String> {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CollectorMigrationStatus {
+    pub canonical_root: String,
+    pub legacy_root: String,
+    pub canonical_exists: bool,
+    pub legacy_exists: bool,
+    pub migration_required: bool,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_attempt_at_iso: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_backup_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectorMigrationResult {
+    pub status: CollectorMigrationStatus,
+    pub migrated: bool,
+    pub rolled_back: bool,
+    pub dry_run: bool,
+    pub actions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DiscoveredSources {
     pub claude: Vec<String>,
     pub cursor: Vec<String>,
     pub codex_logs: Vec<String>,
+    pub collector: CollectorMigrationStatus,
 }
 
 #[command(rename_all = "camelCase")]
@@ -391,11 +546,203 @@ pub fn discover_capture_sources() -> Result<DiscoveredSources, String> {
         }
     }
 
+    let collector = get_collector_migration_status_inner()?;
+
     Ok(DiscoveredSources {
         claude,
         cursor,
         codex_logs,
+        collector,
     })
+}
+
+#[command(rename_all = "camelCase")]
+pub fn get_collector_migration_status() -> Result<CollectorMigrationStatus, String> {
+    get_collector_migration_status_inner()
+}
+
+#[command(rename_all = "camelCase")]
+pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrationResult, String> {
+    let dry_run = dry_run.unwrap_or(false);
+    let mut config = load_config().unwrap_or_default();
+    normalize_collector_config(&mut config.collector);
+    let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
+    let legacy_abs = expand_tilde_to_abs(&config.collector.legacy_root)?;
+
+    let mut actions = Vec::new();
+    let mut migrated = false;
+
+    actions.push(format!(
+        "Assess legacy ({}) and canonical ({}) collector roots",
+        legacy_abs.display(),
+        canonical_abs.display()
+    ));
+
+    if !legacy_abs.exists() && !canonical_abs.exists() {
+        actions.push("No collector directory exists; create canonical root".to_string());
+        if !dry_run {
+            fs::create_dir_all(&canonical_abs).map_err(|e| e.to_string())?;
+        }
+        migrated = !dry_run;
+    } else if legacy_abs.exists() {
+        let backup_abs = migration_backup_path(&canonical_abs);
+        actions.push(format!(
+            "Create non-destructive backup snapshot at {}",
+            backup_abs.display()
+        ));
+        actions.push(format!(
+            "Copy legacy collector data from {} to canonical {}",
+            legacy_abs.display(),
+            canonical_abs.display()
+        ));
+        if !dry_run {
+            copy_dir_recursive(&legacy_abs, &backup_abs, true)?;
+            copy_dir_recursive(&legacy_abs, &canonical_abs, true)?;
+            config.collector.migration.last_backup_path =
+                Some(backup_abs.to_string_lossy().to_string());
+            migrated = true;
+        }
+    } else {
+        actions.push("Canonical collector already exists; no migration required".to_string());
+        migrated = true;
+    }
+
+    if !dry_run {
+        config.collector.migration.status = if migrated {
+            "migrated".to_string()
+        } else {
+            "failed".to_string()
+        };
+        config.collector.migration.last_attempt_at_iso = Some(iso_now());
+        if migrated {
+            config.collector.migration.last_error = None;
+        }
+        save_config(&config)?;
+    }
+
+    Ok(CollectorMigrationResult {
+        status: get_collector_migration_status_inner()?,
+        migrated,
+        rolled_back: false,
+        dry_run,
+        actions,
+    })
+}
+
+#[command(rename_all = "camelCase")]
+pub fn rollback_collector_migration() -> Result<CollectorMigrationResult, String> {
+    let mut config = load_config().unwrap_or_default();
+    normalize_collector_config(&mut config.collector);
+    let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
+    let backup_path = config
+        .collector
+        .migration
+        .last_backup_path
+        .clone()
+        .ok_or_else(|| "No backup snapshot available to rollback".to_string())?;
+    let backup_abs = expand_tilde_to_abs(&backup_path)?;
+
+    if !backup_abs.exists() {
+        return Err(format!(
+            "Backup path not found; cannot rollback: {}",
+            backup_abs.display()
+        ));
+    }
+
+    let actions = vec![
+        format!(
+            "Restore collector data from backup {}",
+            backup_abs.display()
+        ),
+        format!("Restore into canonical root {}", canonical_abs.display()),
+    ];
+    copy_dir_recursive(&backup_abs, &canonical_abs, true)?;
+
+    config.collector.migration.status = "deferred".to_string();
+    config.collector.migration.last_attempt_at_iso = Some(iso_now());
+    config.collector.migration.last_error = None;
+    save_config(&config)?;
+
+    Ok(CollectorMigrationResult {
+        status: get_collector_migration_status_inner()?,
+        migrated: false,
+        rolled_back: true,
+        dry_run: false,
+        actions,
+    })
+}
+
+fn get_collector_migration_status_inner() -> Result<CollectorMigrationStatus, String> {
+    let mut config = load_config().unwrap_or_default();
+    normalize_collector_config(&mut config.collector);
+    let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
+    let legacy_abs = expand_tilde_to_abs(&config.collector.legacy_root)?;
+
+    Ok(CollectorMigrationStatus {
+        canonical_root: config.collector.canonical_root,
+        legacy_root: config.collector.legacy_root,
+        canonical_exists: canonical_abs.exists(),
+        legacy_exists: legacy_abs.exists(),
+        migration_required: legacy_abs.exists() && !canonical_abs.exists(),
+        status: config.collector.migration.status,
+        last_attempt_at_iso: config.collector.migration.last_attempt_at_iso,
+        last_error: config.collector.migration.last_error,
+        last_backup_path: config.collector.migration.last_backup_path,
+    })
+}
+
+fn iso_now() -> String {
+    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+}
+
+fn expand_tilde_to_abs(path: &str) -> Result<PathBuf, String> {
+    if let Some(stripped) = path.strip_prefix("~/") {
+        let home =
+            dirs::home_dir().ok_or_else(|| "Could not determine home directory".to_string())?;
+        return Ok(home.join(stripped));
+    }
+    Ok(PathBuf::from(path))
+}
+
+fn migration_backup_path(canonical_abs: &std::path::Path) -> PathBuf {
+    let parent = canonical_abs
+        .parent()
+        .map(std::path::Path::to_path_buf)
+        .unwrap_or_else(|| canonical_abs.to_path_buf());
+    let stamp = chrono::Utc::now().format("%Y%m%dT%H%M%SZ");
+    parent.join(format!("collector-backup-{stamp}"))
+}
+
+fn copy_dir_recursive(
+    source: &std::path::Path,
+    destination: &std::path::Path,
+    overwrite: bool,
+) -> Result<(), String> {
+    if source.is_file() {
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        if overwrite || !destination.exists() {
+            fs::copy(source, destination).map_err(|e| e.to_string())?;
+        }
+        return Ok(());
+    }
+
+    fs::create_dir_all(destination).map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(source).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let src = entry.path();
+        let dst = destination.join(entry.file_name());
+        if src.is_dir() {
+            copy_dir_recursive(&src, &dst, overwrite)?;
+        } else if overwrite || !dst.exists() {
+            if let Some(parent) = dst.parent() {
+                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            fs::copy(&src, &dst).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
 }
 
 fn upsert_otel_block(existing: &str, block: &str) -> String {
@@ -441,4 +788,63 @@ fn upsert_otel_block(existing: &str, block: &str) -> String {
     }
 
     out.join("\n") + "\n"
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        copy_dir_recursive, normalize_codex_mode, normalize_codex_watch_paths, CodexConfig,
+        WatchPaths,
+    };
+    use std::fs;
+
+    #[test]
+    fn normalize_codex_mode_enforces_valid_mode_and_auth_mode() {
+        let mut codex = CodexConfig {
+            receiver_enabled: false,
+            mode: "invalid".to_string(),
+            endpoint: "http://localhost".to_string(),
+            header_env_key: "NARRATIVE_OTEL_API_KEY".to_string(),
+            stream_enrichment_enabled: true,
+            stream_kill_switch: false,
+            app_server_auth_mode: "".to_string(),
+        };
+        normalize_codex_mode(&mut codex);
+        assert_eq!(codex.mode, "both");
+        assert_eq!(codex.app_server_auth_mode, "chatgpt");
+    }
+
+    #[test]
+    fn normalize_codex_watch_paths_drops_non_session_legacy_collector_paths() {
+        let mut paths = WatchPaths {
+            claude: Vec::new(),
+            cursor: Vec::new(),
+            codex_logs: vec![
+                "~/.codex/sessions".to_string(),
+                "~/.codex/otel-collector".to_string(),
+                "~/.codex/log".to_string(),
+            ],
+        };
+        normalize_codex_watch_paths(&mut paths);
+        assert!(paths.codex_logs.iter().any(|p| p == "~/.codex/sessions"));
+        assert!(!paths
+            .codex_logs
+            .iter()
+            .any(|p| p.contains("otel-collector")));
+        assert!(!paths.codex_logs.iter().any(|p| p.ends_with("/.codex/log")));
+    }
+
+    #[test]
+    fn copy_dir_recursive_copies_nested_structure() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let source = tmp.path().join("src");
+        let nested = source.join("nested");
+        let destination = tmp.path().join("dst");
+        fs::create_dir_all(&nested).expect("mkdir");
+        fs::write(nested.join("sample.txt"), "hello").expect("write");
+
+        copy_dir_recursive(&source, &destination, true).expect("copy");
+        let copied = fs::read_to_string(destination.join("nested/sample.txt")).expect("read");
+        assert_eq!(copied, "hello");
+    }
 }

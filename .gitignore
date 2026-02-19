@@ -9,6 +9,7 @@ src-tauri/gen
 src-tauri/.cargo
 src-tauri/bin/*
 !src-tauri/bin/.gitkeep
+!src-tauri/bin/codex-app-server*
 
 # Logs
 npm-debug.log*
