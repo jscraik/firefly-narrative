@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, useSpring, useTransform, animate } from 'framer-motion';
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, useSpring, useTransform } from 'framer-motion';
 import './FireflyHero.css';
 
 interface FireflyHeroProps {
@@ -25,7 +26,6 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
   const ctaRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLSpanElement>(null);
   
-  const [frame, setFrame] = useState(0);
   const [latency, setLatency] = useState(0);
   const [status, setStatus] = useState('SCANNING...');
   const [isBooting, setIsBooting] = useState(true);
@@ -41,6 +41,41 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
   // --- BREATHING STATE ---
   const [breathVal, setBreathVal] = useState(0); // 0 to 1
 
+  // --- SIGNAL ORCHESTRATION ---
+  const triggerPackets = useCallback((isInstant = false) => {
+    const packets = document.querySelectorAll('.packet');
+    packets.forEach((p, i) => {
+      const el = p as SVGPathElement;
+      el.style.setProperty('--p-duration', isInstant ? '0.4s' : '1.4s');
+      
+      setTimeout(() => {
+        el.classList.remove('packet-active');
+        void el.getBoundingClientRect();
+        el.classList.add('packet-active');
+        
+        // Node Feedback
+        setTimeout(() => {
+          const nodeId = p.id.replace('p-', 'n-');
+          const rippleId = p.id.replace('p-', 'r-');
+          const node = document.getElementById(nodeId);
+          const ripple = document.getElementById(rippleId);
+          
+          if (node && ripple) {
+            node.style.fill = 'var(--firefly-signal)';
+            node.style.filter = 'drop-shadow(0 0 12px var(--firefly-signal))';
+            ripple.style.animation = 'ripple-out 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+            
+            setTimeout(() => {
+              node.style.fill = '';
+              node.style.filter = '';
+              ripple.style.animation = '';
+            }, 800);
+          }
+        }, (isInstant ? 0.3 : 1.3) * 1000);
+      }, i * (isInstant ? 100 : 250));
+    });
+  }, []);
+
   // --- ANIMATION LOOP ---
   useEffect(() => {
     let animationFrameId: number;
@@ -48,7 +83,6 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
 
     const loop = () => {
       localFrame++;
-      setFrame(localFrame);
 
       // 1. Breathing Logic (12s @ 60fps = 720 frames)
       const breathPhase = (localFrame % 720) / 720;
@@ -82,7 +116,7 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
       cancelAnimationFrame(animationFrameId);
       clearTimeout(bootTimer);
     };
-  }, [isGlitching]);
+  }, [isGlitching, triggerPackets]);
 
   // --- MOUSE INTERACTION ---
   useEffect(() => {
@@ -97,8 +131,8 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
       const cCX = ctaRect.left + ctaRect.width / 2;
       const cCY = ctaRect.top + ctaRect.height / 2;
 
-      const distToStage = Math.sqrt(Math.pow(e.clientX - sCX, 2) + Math.pow(e.clientY - sCY, 2));
-      const distToCTA = Math.sqrt(Math.pow(e.clientX - cCX, 2) + Math.pow(e.clientY - cCY, 2));
+      const distToStage = Math.sqrt((e.clientX - sCX) ** 2 + (e.clientY - sCY) ** 2);
+      const distToCTA = Math.sqrt((e.clientX - cCX) ** 2 + (e.clientY - cCY) ** 2);
 
       let tX = 0;
       let tY = 0;
@@ -106,7 +140,7 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
 
       if (distToCTA < 450) {
         // CTA Gravity Well
-        const ctaPower = Math.pow(1 - (distToCTA / 450), 1.5);
+        const ctaPower = (1 - (distToCTA / 450)) ** 1.5;
         const ctaTargetY = (cCY - sCY) * 0.6;
         
         tX = (e.clientX - sCX) * 0.1 * (1 - ctaPower);
@@ -118,7 +152,7 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
           ctaRef.current.style.boxShadow = `0 ${4 + (ctaPower * 20)}px ${ctaPower * 60}px rgba(245, 158, 11, ${0.2 + (ctaPower * 0.5)})`;
         }
 
-        if (Math.random() > 0.98) triggerPackets(1.4);
+        if (Math.random() > 0.98) triggerPackets(true);
       } else if (distToStage < 600) {
         // Ambient Follow
         const power = 1 - (distToStage / 600);
@@ -137,42 +171,7 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY, scale]);
-
-  // --- SIGNAL ORCHESTRATION ---
-  const triggerPackets = (isInstant = false) => {
-    const packets = document.querySelectorAll('.packet');
-    packets.forEach((p, i) => {
-      const el = p as SVGPathElement;
-      el.style.setProperty('--p-duration', isInstant ? '0.4s' : '1.4s');
-      
-      setTimeout(() => {
-        el.classList.remove('packet-active');
-        void el.offsetWidth;
-        el.classList.add('packet-active');
-        
-        // Node Feedback
-        setTimeout(() => {
-          const nodeId = p.id.replace('p-', 'n-');
-          const rippleId = p.id.replace('p-', 'r-');
-          const node = document.getElementById(nodeId);
-          const ripple = document.getElementById(rippleId);
-          
-          if (node && ripple) {
-            node.style.fill = 'var(--firefly-signal)';
-            node.style.filter = 'drop-shadow(0 0 12px var(--firefly-signal))';
-            ripple.style.animation = 'ripple-out 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-            
-            setTimeout(() => {
-              node.style.fill = '';
-              node.style.filter = '';
-              ripple.style.animation = '';
-            }, 800);
-          }
-        }, (isInstant ? 0.3 : 1.3) * 1000);
-      }, i * (isInstant ? 100 : 250));
-    });
-  };
+  }, [mouseX, mouseY, scale, triggerPackets]);
 
   const handleOrbClick = () => {
     setIsBursting(true);
@@ -180,9 +179,9 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
     setStatus('SIGNAL_BURST');
     
     // Snappy reset
-    mouseX.set(0, false);
-    mouseY.set(0, false);
-    scale.set(1, false);
+    mouseX.set(0);
+    mouseY.set(0);
+    scale.set(1);
 
     setTimeout(() => {
       setIsBursting(false);
@@ -202,6 +201,11 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
   const jitterX = (Math.random() - 0.5) * 0.8;
   const jitterY = (Math.random() - 0.5) * 0.8;
 
+  const titleStyle: React.CSSProperties & { '--title-glow': string; '--title-tint': string } = {
+    '--title-glow': `0 0 ${breathVal * 20}px rgba(245, 158, 11, ${breathVal * 0.5})`,
+    '--title-tint': `${40 + (breathVal * 30)}%`,
+  };
+
   return (
     <div className={`firefly-hero-container ${isBursting ? 'pulse-flash' : ''} ${isBooting ? 'booting' : ''}`}>
       <div className="grid-bg" />
@@ -213,10 +217,8 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
             className="brand-narrative" 
             ref={titleRef}
             style={{
-              // @ts-ignore - custom properties
-              '--title-glow': `0 0 ${breathVal * 20}px rgba(245, 158, 11, ${breathVal * 0.5})`,
-              '--title-tint': `${40 + (breathVal * 30)}%`
-            } as React.CSSProperties}
+              ...titleStyle
+            }}
           >
             Narrative
           </span>
@@ -228,6 +230,7 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
 
         <div className="cta-container">
           <button 
+            type="button"
             ref={ctaRef}
             className="cta-button"
             onClick={onCtaClick}
@@ -241,13 +244,13 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
         <div className="orbital-ring" />
 
         {/* HUD Leaders */}
-        <svg style={{ position: 'absolute', width: '100%', height: '100%', pointerEvents: 'none' }}>
+        <svg aria-hidden="true" focusable="false" style={{ position: 'absolute', width: '100%', height: '100%', pointerEvents: 'none' }}>
           <path d="M 400,380 L 490,290" fill="none" stroke="rgba(245,158,11,0.2)" strokeWidth="0.5" strokeDasharray="2,2" />
           <path d="M 380,440 L 310,540" fill="none" stroke="rgba(245,158,11,0.2)" strokeWidth="0.5" strokeDasharray="2,2" />
         </svg>
 
         {/* Circuitry */}
-        <svg className="circuitry-svg" viewBox="0 0 800 800">
+        <svg aria-hidden="true" focusable="false" className="circuitry-svg" viewBox="0 0 800 800">
           <defs>
             <filter id="led-glow-ui">
               <feGaussianBlur stdDeviation="2" result="blur"/>
@@ -308,7 +311,12 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
           >
             <div className="shard shard-inner" />
             <div className="shard shard-outer" />
-            <div className="core-orb" onClick={handleOrbClick} />
+            <button
+              type="button"
+              className="core-orb"
+              onClick={handleOrbClick}
+              aria-label="Trigger signal burst"
+            />
           </div>
 
           <div 

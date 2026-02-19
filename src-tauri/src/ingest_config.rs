@@ -578,13 +578,15 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
         canonical_abs.display()
     ));
 
+    let migration_required = legacy_abs.exists() && !canonical_abs.exists();
+
     if !legacy_abs.exists() && !canonical_abs.exists() {
         actions.push("No collector directory exists; create canonical root".to_string());
         if !dry_run {
             fs::create_dir_all(&canonical_abs).map_err(|e| e.to_string())?;
         }
         migrated = !dry_run;
-    } else if legacy_abs.exists() {
+    } else if migration_required {
         let backup_abs = migration_backup_path(&canonical_abs);
         actions.push(format!(
             "Create non-destructive backup snapshot at {}",

@@ -158,6 +158,8 @@
   position: absolute;
   inset: 12px;
   background: #fffbeb;
+  border: none;
+  padding: 0;
   border-radius: 50%;
   box-shadow: 
     0 0 15px #fff,

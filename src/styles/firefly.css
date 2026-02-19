@@ -337,9 +337,9 @@
 
   .firefly-orb,
   .firefly-wing {
-    animation: none !important;
-    transform: none !important;
-    transition: none !important;
+    animation: none;
+    transform: none;
+    transition: none;
   }
 
   [data-state='idle'] .firefly-wing.left,

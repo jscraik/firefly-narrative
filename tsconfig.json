@@ -15,5 +15,6 @@
     "strict": true,
     "types": ["vite/client", "vitest/globals", "node"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.stories.tsx"]
 }
