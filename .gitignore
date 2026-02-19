@@ -71,5 +71,6 @@ scripts/test
 # Test artifacts
 playwright-report/
 test-results/
+.lighthouseci/
 tmp_frames/
 package-lock.json
