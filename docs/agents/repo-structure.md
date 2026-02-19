@@ -7,7 +7,7 @@ This document outlines the organization of the Narrative codebase.
 ### Top-Level Directories
 
 - `src/` - React Frontend (UI components, views, hooks).
-- `src-tauri/` - Rust Backend (Tauri commands, database, git operations).
+- `src-tauri/` - Rust Backend (tauri commands, database, git operations).
 - `docs/` - Documentation, screenshots, audit reports, and design notes.
 - `scripts/` - Local development scripts and tooling.
 - `examples/` - Sample data and usage examples.
@@ -30,6 +30,6 @@ The visible application structure (`src/ui/`) corresponds to the main views you 
 <img src="../assets/screenshots/dashboard.png" width="600" alt="Dashboard View - src/ui/views/DashboardView.tsx">
 
 - **Dashboard**: `src/ui/views/DashboardView.tsx` (Components in `src/ui/components/dashboard/`)
-- **Repo View**: `src/ui/views/BranchView.tsx` (Components in `src/ui/components/`)
+- **repo View**: `src/ui/views/BranchView.tsx` (Components in `src/ui/components/`)
 - **Landing Page**: `src/ui/views/FireflyLanding.tsx`
 - **Navigation**: `src/ui/components/TopNav.tsx`

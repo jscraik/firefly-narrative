@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/jscraik/narrative/actions/workflows/ci.yml/badge.svg)](https://github.com/jscraik/narrative/actions)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Tauri v2](https://img.shields.io/badge/Tauri-v2-orange.svg)](https://tauri.app)
+[![tauri v2](https://img.shields.io/badge/tauri-v2-orange.svg)](https://tauri.app)
 
 </div>
 
@@ -32,36 +32,39 @@ open Narrative.dmg
 
 ## TL;DR
 
-**The Problem**: When you code with AI (Claude, Codex, Cursor), the rich context—your intent, dead ends, and reasoning—is lost. Git commits only show *what* changed, not *why*.
+**The Problem**: When you code with AI (Claude, Codex, Cursor), you lose rich context—intent, dead ends, and reasoning. Git commits only show *what* changed, not *why*.
 
 **The Solution**: Narrative captures the full story: AI sessions → intent → commits → timeline. It links your conversations to your code, preserving the thought process behind every line.
 
 ### Why Use Narrative?
 
-| Feature | What It Does |
-|---------|--------------|
-| **📖 Context-Aware Timeline** | Navigate commits with linked AI conversations, not just diffs. |
-| **🤖 AI Integration** | Import sessions from Claude Code, Codex CLI, and Cursor. |
-| **🔍 Atlas Search** | Find "that thing we discussed about caching" instantly across all sessions. |
-| **💾 Local-First** | All data stays in your `.narrative` folder. No cloud needed. |
+|Feature|What It Does|
+|---|---|
+|**📖 Context-Aware Timeline**|Navigate commits with linked AI conversations, not just diffs.|
+|**🤖 AI Integration**|Import sessions from Claude Code, Codex CLI, and Cursor.|
+|**🔍 Atlas Search**|Find "that thing we discussed about caching" instantly across all sessions.|
+|**💾 Local-First**|All data stays in your `.narrative` folder. No cloud needed.|
 
 ---
 
 ## Visual Tour
 
 ### Dashboard
+
 Get high-level insights into your AI-assisted workflow, tracking session impact and productivity.
 <p align="center">
   <img src="docs/assets/screenshots/dashboard.png" width="800" alt="Narrative Dashboard">
 </p>
 
 ### Repository View
+
 Navigate the commit timeline with rich context. See the "why" behind the code.
 <p align="center">
   <img src="docs/assets/screenshots/repo.png" width="800" alt="Repository View">
 </p>
 
 ### Documentation & Knowledge
+
 Access project documentation and knowledge items directly within the narrative interface.
 <p align="center">
   <img src="docs/assets/screenshots/docs.png" width="800" alt="Docs View">
@@ -95,9 +98,9 @@ Then open a git repository and see your commit history come to life with narrati
 
 - **Timeline View**: A new way to look at git history, focusing on the story.
 - **Session Import**:
-    - **Claude Code**: Import `.json` logs.
-    - **Codex CLI**: Import session history.
-    - **Cursor**: Drag and drop chat exports.
+  - **Claude Code**: Import `.json` logs.
+  - **Codex CLI**: Import session history.
+  - **Cursor**: Drag and drop chat exports.
 - **Atlas Search**: Full-text search across your entire narrative history.
 - **Live Updates**: Watch your repo change in real-time.
 - **Auto-Ingest**: Automatically capture sessions from supported tools.
@@ -116,12 +119,15 @@ Then open a git repository and see your commit history come to life with narrati
 ## Troubleshooting
 
 ### "App opens but is empty"
-Ensure you have clicked "Open Repo" and selected a valid git repository. If no repo is selected, Narrative waits for your input.
+
+Click "Open repo" and select a valid git repository. If you have not selected a repo, Narrative waits for your input.
 
 ### "Import failed"
+
 Check that your log files are in the supported JSON format. See [Documentation](docs/README.md) for detailed format specifications.
 
 ### "Build errors"
+
 Run `pnpm install` again. Ensure your Rust toolchain is up to date (`rustup update`).
 
 ---
@@ -137,7 +143,7 @@ Run `pnpm install` again. Ensure your Rust toolchain is up to date (`rustup upda
 
 ## Contributing
 
-We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md). Narrative uses **Tauri v2** (Rust backend + React frontend).
+We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md). Narrative uses **tauri v2** (Rust backend + React frontend).
 
 ### Ways to Contribute
 
@@ -149,4 +155,4 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md).
 
 ## License
 
-Apache-2.0 © [Jamie Craik](https://github.com/jscraik). See [`LICENSE`](LICENSE).
+Apache-2.0. See [`LICENSE`](LICENSE).
