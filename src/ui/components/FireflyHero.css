@@ -7,12 +7,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 40px;
+  justify-content: flex-start;
+  padding-top: 100px;
   perspective: 1200px;
   position: relative;
   z-index: 10;
   width: 100%;
+  height: 800px; /* Give it enough height to fit the stage */
+}
+
+.grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.05) 0%, transparent 70%),
+    linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 60px 60px, 60px 60px;
+  z-index: -1;
+  opacity: 0.6;
+}
+
+.hero-content {
+  text-align: center;
+  z-index: 20;
+  max-width: 900px;
+  pointer-events: none;
+  transform: translateZ(100px);
+  /* Place exactly where the master html does */
+  margin-top: -40px;
 }
 
 /* --- BRAND TYPOGRAPHY --- */
@@ -46,6 +69,41 @@
   transition: filter 0.1s linear;
 }
 
+.subtitle {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  max-width: 540px;
+  margin: 100px auto 0; /* Pushed significantly further down! */
+  line-height: 1.6;
+  font-weight: 300;
+  opacity: 0.8;
+}
+
+.cta-container { 
+  pointer-events: auto; 
+  margin-top: 40px; 
+}
+
+.cta-button {
+  padding: 16px 40px;
+  background: var(--firefly-glow, #f59e0b);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 0px rgba(0,0,0,0.2);
+}
+
+.cta-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(245, 158, 11, 0.4);
+}
+
 /* --- FIREFLY ASSEMBLY --- */
 .firefly-stage {
   position: absolute;
@@ -59,6 +117,7 @@
   justify-content: center;
   transform-style: preserve-3d;
   pointer-events: none;
+  z-index: 10;
 }
 
 /* Circuitry SVG */
