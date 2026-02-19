@@ -17,14 +17,14 @@ export type IngestConfig = {
     legacyRoot: string;
     migration: {
       status: 'not_started' | 'migrated' | 'deferred' | 'failed';
-      lastAttemptAtISO?: string;
+      lastAttemptAtIso?: string;
       lastError?: string;
       lastBackupPath?: string;
     };
   };
   retentionDays: number;
   redactionMode: 'redact';
-  consent: { codexTelemetryGranted: boolean; grantedAtISO?: string };
+  consent: { codexTelemetryGranted: boolean; grantedAtIso?: string };
 };
 
 export type IngestConfigUpdate = Partial<IngestConfig>;
@@ -53,7 +53,7 @@ export type CollectorMigrationStatus = {
   legacyExists: boolean;
   migrationRequired: boolean;
   status: 'not_started' | 'migrated' | 'deferred' | 'failed';
-  lastAttemptAtISO?: string;
+  lastAttemptAtIso?: string;
   lastError?: string;
   lastBackupPath?: string;
 };
@@ -77,7 +77,7 @@ export type CodexAppServerStatus = {
   restartBudget: number;
   restartAttemptsInWindow: number;
   lastError?: string;
-  lastTransitionAtISO?: string;
+  lastTransitionAtIso?: string;
 };
 
 export type CaptureReliabilityStatus = {
@@ -92,7 +92,7 @@ export type CaptureReliabilityStatus = {
     streamEventsDropped: number;
     streamEventsReplaced: number;
   };
-  transitions: Array<{ atISO: string; fromMode?: string; toMode: string; reason: string }>;
+  transitions: Array<{ atIso: string; fromMode?: string; toMode: string; reason: string }>;
   appServer: CodexAppServerStatus;
 };
 

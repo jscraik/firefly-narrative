@@ -79,6 +79,7 @@ export function useAutoIngest(params: {
   const [activityRecent, setActivityRecent] = useState<ActivityEvent[]>([]);
   const lastImportRef = useRef<{ source?: string; time?: string }>({});
   const idCounter = useRef(0);
+  const reliabilityRefreshInFlightRef = useRef(false);
 
   const refreshActivity = useCallback(async (limit: number) => {
     try {
@@ -125,6 +126,8 @@ export function useAutoIngest(params: {
   }, []);
 
   const refreshReliability = useCallback(async () => {
+    if (reliabilityRefreshInFlightRef.current) return;
+    reliabilityRefreshInFlightRef.current = true;
     try {
       const [migration, reliability, appServer] = await Promise.all([
         getCollectorMigrationStatus(),
@@ -144,6 +147,8 @@ export function useAutoIngest(params: {
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       recordIssue('Capture reliability check failed', message);
+    } finally {
+      reliabilityRefreshInFlightRef.current = false;
     }
   }, [recordIssue]);
 
@@ -418,7 +423,7 @@ export function useAutoIngest(params: {
     try {
       const now = new Date().toISOString();
       const next = await setIngestConfig({
-        consent: { codexTelemetryGranted: true, grantedAtISO: now }
+        consent: { codexTelemetryGranted: true, grantedAtIso: now }
       });
       setConfig(next);
     } catch (e) {

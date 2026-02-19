@@ -228,8 +228,10 @@ pub fn apply_update(update: IngestConfigUpdate) -> Result<IngestConfig, String> 
     if let Some(value) = update.codex {
         config.codex = value;
     }
-    if let Some(value) = update.collector {
-        config.collector = value;
+    if update.collector.is_some() {
+        return Err(
+            "Collector root paths are managed by Narrative and cannot be overridden".to_string(),
+        );
     }
     if let Some(value) = update.retention_days {
         config.retention_days = value;
@@ -244,6 +246,7 @@ pub fn apply_update(update: IngestConfigUpdate) -> Result<IngestConfig, String> 
     normalize_codex_watch_paths(&mut config.watch_paths);
     normalize_codex_mode(&mut config.codex);
     normalize_collector_config(&mut config.collector);
+    enforce_collector_roots(&mut config.collector)?;
 
     save_config(&config)?;
     Ok(config)
@@ -275,6 +278,23 @@ fn normalize_collector_config(collector: &mut CollectorConfig) {
         "migrated" | "deferred" | "failed" | "not_started" => normalized,
         _ => default_collector_migration_status(),
     };
+}
+
+fn enforce_collector_roots(collector: &mut CollectorConfig) -> Result<(), String> {
+    let expected_canonical = expand_tilde_to_abs(CANONICAL_COLLECTOR_ROOT)?;
+    let expected_legacy = expand_tilde_to_abs(LEGACY_COLLECTOR_ROOT)?;
+    let current_canonical = expand_tilde_to_abs(&collector.canonical_root)?;
+    let current_legacy = expand_tilde_to_abs(&collector.legacy_root)?;
+
+    if current_canonical != expected_canonical || current_legacy != expected_legacy {
+        collector.migration.last_error = Some(
+            "Collector roots were reset to managed defaults for safety".to_string(),
+        );
+    }
+
+    collector.canonical_root = default_canonical_collector_root();
+    collector.legacy_root = default_legacy_collector_root();
+    Ok(())
 }
 
 fn normalize_codex_watch_paths(paths: &mut WatchPaths) {
@@ -410,6 +430,7 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
     // Keep collector state canonicalized and persisted for migration-aware UI.
     let mut ingest = load_config().unwrap_or_default();
     normalize_collector_config(&mut ingest.collector);
+    enforce_collector_roots(&mut ingest.collector)?;
     let canonical = expand_tilde_to_abs(&ingest.collector.canonical_root)?;
     fs::create_dir_all(&canonical).map_err(|e| e.to_string())?;
     let state_file = canonical.join("narrative-collector-state.json");
@@ -566,6 +587,7 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
     let dry_run = dry_run.unwrap_or(false);
     let mut config = load_config().unwrap_or_default();
     normalize_collector_config(&mut config.collector);
+    enforce_collector_roots(&mut config.collector)?;
     let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
     let legacy_abs = expand_tilde_to_abs(&config.collector.legacy_root)?;
 
@@ -635,6 +657,7 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
 pub fn rollback_collector_migration() -> Result<CollectorMigrationResult, String> {
     let mut config = load_config().unwrap_or_default();
     normalize_collector_config(&mut config.collector);
+    enforce_collector_roots(&mut config.collector)?;
     let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
     let backup_path = config
         .collector
@@ -677,6 +700,7 @@ pub fn rollback_collector_migration() -> Result<CollectorMigrationResult, String
 fn get_collector_migration_status_inner() -> Result<CollectorMigrationStatus, String> {
     let mut config = load_config().unwrap_or_default();
     normalize_collector_config(&mut config.collector);
+    enforce_collector_roots(&mut config.collector)?;
     let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
     let legacy_abs = expand_tilde_to_abs(&config.collector.legacy_root)?;
 
@@ -720,6 +744,23 @@ fn copy_dir_recursive(
     destination: &std::path::Path,
     overwrite: bool,
 ) -> Result<(), String> {
+    let source_meta = fs::symlink_metadata(source).map_err(|e| e.to_string())?;
+    if source_meta.file_type().is_symlink() {
+        return Err(format!(
+            "Symlink source is not supported during collector migration: {}",
+            source.display()
+        ));
+    }
+    if destination.exists() {
+        let destination_meta = fs::symlink_metadata(destination).map_err(|e| e.to_string())?;
+        if destination_meta.file_type().is_symlink() {
+            return Err(format!(
+                "Symlink destination is not supported during collector migration: {}",
+                destination.display()
+            ));
+        }
+    }
+
     if source.is_file() {
         if let Some(parent) = destination.parent() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -735,6 +776,13 @@ fn copy_dir_recursive(
         let entry = entry.map_err(|e| e.to_string())?;
         let src = entry.path();
         let dst = destination.join(entry.file_name());
+        let src_meta = fs::symlink_metadata(&src).map_err(|e| e.to_string())?;
+        if src_meta.file_type().is_symlink() {
+            return Err(format!(
+                "Symlink entry is not supported during collector migration: {}",
+                src.display()
+            ));
+        }
         if src.is_dir() {
             copy_dir_recursive(&src, &dst, overwrite)?;
         } else if overwrite || !dst.exists() {
@@ -795,8 +843,8 @@ fn upsert_otel_block(existing: &str, block: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        copy_dir_recursive, normalize_codex_mode, normalize_codex_watch_paths, CodexConfig,
-        WatchPaths,
+        copy_dir_recursive, enforce_collector_roots, normalize_codex_mode, normalize_codex_watch_paths,
+        CodexConfig, CollectorConfig, WatchPaths,
     };
     use std::fs;
 
@@ -848,5 +896,18 @@ mod tests {
         copy_dir_recursive(&source, &destination, true).expect("copy");
         let copied = fs::read_to_string(destination.join("nested/sample.txt")).expect("read");
         assert_eq!(copied, "hello");
+    }
+
+    #[test]
+    fn enforce_collector_roots_resets_custom_values() {
+        let mut collector = CollectorConfig {
+            canonical_root: "/tmp/custom-canonical".to_string(),
+            legacy_root: "/tmp/custom-legacy".to_string(),
+            ..CollectorConfig::default()
+        };
+        enforce_collector_roots(&mut collector).expect("collector roots");
+        assert_eq!(collector.canonical_root, super::CANONICAL_COLLECTOR_ROOT);
+        assert_eq!(collector.legacy_root, super::LEGACY_COLLECTOR_ROOT);
+        assert!(collector.migration.last_error.is_some());
     }
 }
