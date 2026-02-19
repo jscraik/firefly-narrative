@@ -620,7 +620,10 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
             canonical_abs.display()
         ));
         if !dry_run {
-            copy_dir_recursive(&legacy_abs, &backup_abs, true)?;
+            // Back up canonical (the data about to be overwritten), not legacy (which remains in place).
+            if canonical_abs.exists() {
+                copy_dir_recursive(&canonical_abs, &backup_abs, true)?;
+            }
             copy_dir_recursive(&legacy_abs, &canonical_abs, true)?;
             config.collector.migration.last_backup_path =
                 Some(backup_abs.to_string_lossy().to_string());
