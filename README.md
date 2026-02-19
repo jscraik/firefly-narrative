@@ -161,7 +161,6 @@ Apache-2.0. See [`LICENSE`](LICENSE).
 
 <img
   src="./brand/brand-mark.webp"
-  srcset="./brand/brand-mark.webp 1x, ./brand/brand-mark@2x.webp 2x"
   alt="brAInwav"
   height="28"
   align="left"
