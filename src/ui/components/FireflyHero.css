@@ -63,6 +63,7 @@
   font-weight: 700;
   letter-spacing: -0.05em;
   background: linear-gradient(to bottom, var(--foreground) var(--title-tint, 40%), var(--text-secondary));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(var(--title-glow, 0 0 0 transparent));
@@ -239,7 +240,6 @@
   border-radius: 50%;
   transform: rotateX(72deg) rotateY(15deg);
   animation: rotate-ring 15s linear infinite;
-  backdrop-filter: hue-rotate(15deg) blur(1px);
   z-index: 4;
 }
 

@@ -89,6 +89,7 @@ export type CaptureReliabilityStatus = {
   metrics: {
     streamEventsAccepted: number;
     streamEventsDuplicates: number;
+    streamEventsDropped: number;
     streamEventsReplaced: number;
   };
   transitions: Array<{ atISO: string; fromMode?: string; toMode: string; reason: string }>;

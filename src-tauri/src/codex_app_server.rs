@@ -94,6 +94,7 @@ pub struct CodexStreamDedupeDecision {
 pub struct CaptureReliabilityMetrics {
     pub stream_events_accepted: u64,
     pub stream_events_duplicates: u64,
+    pub stream_events_dropped: u64,
     pub stream_events_replaced: u64,
 }
 
@@ -127,6 +128,7 @@ struct CodexAppServerRuntime {
     recent_dedupe: VecDeque<CodexStreamDedupeDecision>,
     stream_events_accepted: u64,
     stream_events_duplicates: u64,
+    stream_events_dropped: u64,
     stream_events_replaced: u64,
     transitions: VecDeque<CaptureModeTransition>,
     last_mode: Option<String>,
@@ -299,11 +301,15 @@ pub fn start_codex_app_server(
             "Codex App Server sidecar binary not found (expected bin/codex-app-server)".to_string(),
         );
     } else {
-        runtime.status.state = "healthy".to_string();
+        runtime.status.state = "degraded".to_string();
         runtime.status.initialize_sent = false;
         runtime.status.initialized = false;
+        runtime.status.auth_state = "needs_login".to_string();
         runtime.status.stream_healthy = false;
-        runtime.status.last_error = None;
+        runtime.status.last_error = Some(
+            "Sidecar binary detected, but runtime supervision/auth verification is not yet active"
+                .to_string(),
+        );
         runtime.status.last_transition_at_iso = Some(now_iso());
     }
 
@@ -386,14 +392,14 @@ pub fn codex_app_server_account_login_completed(
     success: bool,
 ) -> Result<CodexAccountStatus, String> {
     let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
-    runtime.status.auth_state = if success {
-        "authenticated".to_string()
-    } else {
-        "needs_login".to_string()
-    };
+    runtime.status.auth_state = "needs_login".to_string();
     runtime.status.last_transition_at_iso = Some(now_iso());
-    if !success {
-        runtime.status.stream_healthy = false;
+    runtime.status.stream_healthy = false;
+    if success {
+        runtime.status.last_error = Some(
+            "Authenticated assertions are ignored until sidecar callback verification is implemented"
+                .to_string(),
+        );
     }
     Ok(CodexAccountStatus {
         auth_state: runtime.status.auth_state.clone(),
@@ -407,7 +413,7 @@ pub fn codex_app_server_account_login_completed(
 pub fn codex_app_server_account_updated(
     state: State<'_, CodexAppServerState>,
     auth_mode: String,
-    authenticated: bool,
+    _authenticated: bool,
 ) -> Result<CodexAccountStatus, String> {
     let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
     let mode = auth_mode.trim().to_lowercase();
@@ -420,11 +426,12 @@ pub fn codex_app_server_account_updated(
         ));
     } else {
         runtime.status.auth_mode = mode;
-        runtime.status.auth_state = if authenticated {
-            "authenticated".to_string()
-        } else {
-            "needs_login".to_string()
-        };
+        runtime.status.auth_state = "needs_login".to_string();
+        runtime.status.stream_healthy = false;
+        runtime.status.last_error = Some(
+            "Authenticated assertions are ignored until sidecar callback verification is implemented"
+                .to_string(),
+        );
     }
     runtime.status.last_transition_at_iso = Some(now_iso());
     Ok(CodexAccountStatus {
@@ -543,7 +550,7 @@ pub fn ingest_codex_stream_event(
                 chosen_source = incoming_source;
             } else {
                 decision = "dropped".to_string();
-                runtime.stream_events_duplicates += 1;
+                runtime.stream_events_dropped += 1;
                 chosen_source = existing_source;
             }
         }
@@ -653,6 +660,7 @@ pub fn get_capture_reliability_status(
         metrics: CaptureReliabilityMetrics {
             stream_events_accepted: runtime.stream_events_accepted,
             stream_events_duplicates: runtime.stream_events_duplicates,
+            stream_events_dropped: runtime.stream_events_dropped,
             stream_events_replaced: runtime.stream_events_replaced,
         },
         transitions: runtime.transitions.iter().cloned().collect(),

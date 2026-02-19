@@ -7,11 +7,7 @@ import { getIngestActivity, type ActivityEvent } from '../core/tauri/activity';
 import {
   autoImportSessionFile,
   configureCodexOtel,
-  codexAppServerAccountUpdated,
   codexAppServerInitialize,
-  codexAppServerInitialized,
-  codexAppServerLoginCompleted,
-  codexAppServerLoginStart,
   discoverCaptureSources,
   getCaptureReliabilityStatus,
   getCollectorMigrationStatus,
@@ -231,6 +227,7 @@ export function useAutoIngest(params: {
 
   useEffect(() => {
     if (!repoRoot || !repoId) return;
+    if (!config?.autoIngestEnabled) return;
     let cancelled = false;
     let unlistenStatus: (() => void) | undefined;
 
@@ -256,7 +253,7 @@ export function useAutoIngest(params: {
       clearInterval(interval);
       if (unlistenStatus) unlistenStatus();
     };
-  }, [repoRoot, repoId, refreshReliability]);
+  }, [repoRoot, repoId, config?.autoIngestEnabled, refreshReliability]);
 
   useEffect(() => {
     if (!config?.autoIngestEnabled || watchPaths.length === 0) return;
@@ -366,10 +363,6 @@ export function useAutoIngest(params: {
           try {
             await startCodexAppServer();
             await codexAppServerInitialize();
-            await codexAppServerInitialized();
-            await codexAppServerLoginStart();
-            await codexAppServerLoginCompleted(true);
-            await codexAppServerAccountUpdated(next.codex.appServerAuthMode || 'chatgpt', true);
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             recordIssue('Codex App Server degraded', msg);

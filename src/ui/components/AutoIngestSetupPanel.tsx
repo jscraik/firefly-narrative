@@ -40,6 +40,7 @@ export function AutoIngestSetupPanel(props: {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [hasAutoDetectedOnLoad, setHasAutoDetectedOnLoad] = useState(false);
   const [migrationBusy, setMigrationBusy] = useState(false);
+  const captureMode = captureReliability?.mode ?? 'UNKNOWN';
 
   useEffect(() => {
     if (!config) return;
@@ -154,16 +155,18 @@ export function AutoIngestSetupPanel(props: {
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${captureReliability?.mode === 'HYBRID_ACTIVE'
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${captureMode === 'HYBRID_ACTIVE'
                 ? 'bg-accent-green-bg text-accent-green border-accent-green-light'
-                : captureReliability?.mode === 'OTEL_ONLY'
+                : captureMode === 'OTEL_ONLY'
                   ? 'bg-accent-blue-bg text-accent-blue border-accent-blue-light'
-                  : captureReliability?.mode === 'DEGRADED_STREAMING'
+                  : captureMode === 'DEGRADED_STREAMING'
                     ? 'bg-accent-amber-bg text-accent-amber border-accent-amber-light'
-                    : 'bg-accent-red-bg text-accent-red border-accent-red-light'
+                    : captureMode === 'FAILURE'
+                      ? 'bg-accent-red-bg text-accent-red border-accent-red-light'
+                      : 'bg-bg-tertiary text-text-secondary border-border-subtle'
                 }`}
             >
-              {captureReliability?.mode ?? 'FAILURE'}
+              {captureMode}
             </span>
             {captureReliability?.reasons?.[0] ? (
               <span className="text-[11px] text-text-tertiary">{captureReliability.reasons[0]}</span>

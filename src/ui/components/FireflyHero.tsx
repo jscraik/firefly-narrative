@@ -31,6 +31,7 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
   const [isBooting, setIsBooting] = useState(true);
   const [isGlitching, setIsGlitching] = useState(false);
   const [isBursting, setIsBursting] = useState(false);
+  const isGlitchingRef = useRef(false);
 
   // --- PHYSICS SPRINGS ---
   const springConfig = { stiffness: 40, damping: 20, mass: 1 };
@@ -40,6 +41,10 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
 
   // --- BREATHING STATE ---
   const [breathVal, setBreathVal] = useState(0); // 0 to 1
+
+  useEffect(() => {
+    isGlitchingRef.current = isGlitching;
+  }, [isGlitching]);
 
   // --- SIGNAL ORCHESTRATION ---
   const triggerPackets = useCallback((isInstant = false) => {
@@ -95,7 +100,7 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
         setTimeout(() => setIsGlitching(false), 120);
       }
       
-      if (!isGlitching) {
+      if (!isGlitchingRef.current) {
         let lat = Math.floor(bMultiplier * 120);
         if (Math.random() > 0.9) lat += Math.floor(Math.random() * 5);
         setLatency(lat);
@@ -116,7 +121,7 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
       cancelAnimationFrame(animationFrameId);
       clearTimeout(bootTimer);
     };
-  }, [isGlitching, triggerPackets]);
+  }, [triggerPackets]);
 
   // --- MOUSE INTERACTION ---
   useEffect(() => {
@@ -179,9 +184,9 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({ onCtaClick }) => {
     setStatus('SIGNAL_BURST');
     
     // Snappy reset
-    mouseX.set(0);
-    mouseY.set(0);
-    scale.set(1);
+    mouseX.jump(0);
+    mouseY.jump(0);
+    scale.jump(1);
 
     setTimeout(() => {
       setIsBursting(false);

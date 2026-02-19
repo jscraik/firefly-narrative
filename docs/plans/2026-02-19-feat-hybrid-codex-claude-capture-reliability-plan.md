@@ -1,4 +1,4 @@
-te---
+---
 title: feat: Hybrid Codex-Claude Capture Reliability v1
 type: feat
 date: 2026-02-19
