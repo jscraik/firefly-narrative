@@ -9,6 +9,49 @@ export type Stats = {
   responses: number;
 };
 
+export type HeaderMetricUnavailableReason =
+  | 'NO_TRACE_DATA'
+  | 'SOURCE_UNSUPPORTED'
+  | 'LOADING'
+  | 'PERMISSION_DENIED'
+  | 'ERROR';
+
+export type HeaderMetric =
+  | { kind: 'known'; value: number }
+  | { kind: 'unavailable'; reason: HeaderMetricUnavailableReason };
+
+export type BranchHeaderMetricSet = {
+  added: HeaderMetric;
+  removed: HeaderMetric;
+  files: HeaderMetric;
+  commits: HeaderMetric;
+  prompts: HeaderMetric;
+  responses: HeaderMetric;
+};
+
+export type BranchHeaderViewModel =
+  | {
+      kind: 'hidden';
+      reason:
+        | 'mode_unsupported'
+        | 'repo_idle'
+        | 'model_missing'
+        | 'feature_disabled';
+    }
+  | {
+      kind: 'shell';
+      state: 'loading' | 'error';
+      message: string;
+    }
+  | {
+      kind: 'full';
+      title: string;
+      status: BranchStatus;
+      description: string;
+      metrics: BranchHeaderMetricSet;
+      isFilteredView: boolean;
+    };
+
 export type IntentType = 'feature' | 'fix' | 'refactor' | 'test' | 'docs' | 'other';
 
 export type IntentItem = {

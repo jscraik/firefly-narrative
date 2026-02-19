@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getTraceRangesForCommitFile } from '../core/repo/agentTrace';
 import { getCommitDiffForFile } from '../core/repo/git';
 import { getOrLoadCommitFiles } from '../core/repo/indexer';
-import { getTraceRangesForCommitFile } from '../core/repo/agentTrace';
 import type { BranchViewModel, FileChange, TraceRange } from '../core/types';
 import type { RepoState } from './useRepoLoader';
 
@@ -23,7 +23,7 @@ async function loadDemoModel(): Promise<BranchViewModel> {
 }
 
 export interface UseCommitDataProps {
-  mode: 'demo' | 'repo' | 'docs' | 'dashboard';
+  mode: 'demo' | 'repo' | 'docs' | 'dashboard' | 'landing';
   repoState: RepoState;
   diffCache: React.MutableRefObject<{ get(key: string): string | undefined; set(key: string, value: string): void }>;
   model: BranchViewModel | null;

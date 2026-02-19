@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { TraceCommitSummary } from '../../core/types';
 import { getCommitCaptureBundle, type CommitCaptureBundle } from '../../core/tauri/activity';
+import type { TraceCommitSummary } from '../../core/types';
 
 function confidenceLabel(confidence: number) {
   if (confidence >= 0.8) return 'High';
@@ -75,28 +75,28 @@ export function StepsSummaryCard(props: {
   const tracePresent = Boolean(traceSummary);
 
   return (
-    <div className="card p-5">
+    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
       <div className="section-header">STEPS</div>
       <div className="section-subheader">What the assistant did for this commit.</div>
 
       {loading ? (
         <div className="mt-3 text-xs text-text-tertiary">Loading…</div>
       ) : (
-        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
           <div className="text-text-tertiary">Linked sessions</div>
-          <div className="text-text-secondary">{linkedCount}</div>
+          <div className="text-text-primary font-medium">{linkedCount}</div>
 
           <div className="text-text-tertiary">Tools</div>
-          <div className="text-text-secondary">{formatTools(tools)}</div>
+          <div className="text-text-primary font-medium">{formatTools(tools)}</div>
 
           <div className="text-text-tertiary">Files touched</div>
-          <div className="text-text-secondary">{formatFiles(filesTouched)}</div>
+          <div className="text-text-primary font-medium">{formatFiles(filesTouched)}</div>
 
           <div className="text-text-tertiary">Trace</div>
-          <div className="text-text-secondary">{tracePresent ? 'Present' : 'None'}</div>
+          <div className="text-text-primary font-medium">{tracePresent ? 'Present' : 'None'}</div>
 
           <div className="text-text-tertiary">Link confidence</div>
-          <div className="text-text-secondary">
+          <div className="text-text-primary font-medium">
             {confidence ? `${confidence.label}${confidence.needsReview ? ' · Needs review' : ''}` : '—'}
           </div>
         </div>

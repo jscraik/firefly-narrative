@@ -10,7 +10,10 @@ import { buildDecisionArchaeology } from '../../core/narrative/decisionArchaeolo
 import { evaluateNarrativeRollout } from '../../core/narrative/rolloutGovernance';
 import { buildStakeholderProjections } from '../../core/narrative/stakeholderProjections';
 import { loadGitHubContext } from '../../core/repo/githubContext';
-import { trackNarrativeEvent } from '../../core/telemetry/narrativeTelemetry';
+import {
+  trackNarrativeEvent,
+  trackQualityRenderDecision,
+} from '../../core/telemetry/narrativeTelemetry';
 import type {
   BranchViewModel,
   GitHubContextState,
@@ -28,6 +31,11 @@ import { useFirefly } from '../../hooks/useFirefly';
 import { useTestImport } from '../../hooks/useTestImport';
 import { BranchNarrativePanel } from '../components/BranchNarrativePanel';
 import { BranchHeader } from '../components/BranchHeader';
+import {
+  createBranchHeaderRequestIdentityKey,
+  deriveBranchHeaderViewModel,
+  deriveLegacyBranchHeaderViewModel,
+} from '../components/branchHeaderMapper';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { CaptureActivityStrip } from '../components/CaptureActivityStrip';
 import { DecisionArchaeologyPanel } from '../components/DecisionArchaeologyPanel';
@@ -40,6 +48,8 @@ import { NeedsAttentionList } from '../components/NeedsAttentionList';
 import { RightPanelTabs } from '../components/RightPanelTabs';
 import { SkeletonFiles } from '../components/Skeleton';
 import { Timeline, type FireflyTrackingSettlePayload } from '../components/Timeline';
+import { shouldRouteEvidenceToRawDiff } from './branchViewEvidence';
+
 
 function BranchViewInner(props: {
   model: BranchViewModel;
@@ -79,6 +89,7 @@ function BranchViewInner(props: {
   onGrantCodexConsent?: () => void;
   githubConnectorEnabled?: boolean;
   onToggleGitHubConnector?: (enabled: boolean) => void;
+  branchHeaderParityEnabled?: boolean;
 }) {
   const {
     model,
@@ -118,6 +129,7 @@ function BranchViewInner(props: {
     onGrantCodexConsent,
     githubConnectorEnabled = false,
     onToggleGitHubConnector,
+    branchHeaderParityEnabled = (import.meta.env.VITE_BRANCH_HEADER_PARITY_V1 ?? 'true') !== 'false',
   } = props;
   const { selectedFile, selectFile } = useFileSelection();
 
@@ -141,6 +153,8 @@ function BranchViewInner(props: {
   const [traceRequestedForSelection, setTraceRequestedForSelection] = useState(false);
   const [trackingSettledNodeId, setTrackingSettledNodeId] = useState<string | null>(null);
   const [detailLevel, setDetailLevel] = useState<NarrativeDetailLevel>('summary');
+  const activeRequestIdentityRef = useRef<string>('');
+  const requestContextVersionRef = useRef(0);
   const [audience, setAudience] = useState<StakeholderAudience>('manager');
   const [githubContext, setGithubContext] = useState<GitHubContextState>({
     status: githubConnectorEnabled ? 'loading' : 'disabled',
@@ -154,8 +168,74 @@ function BranchViewInner(props: {
   });
   const rolloutTelemetryKeyRef = useRef<string | null>(null);
   const killSwitchReasonRef = useRef<string | null>(null);
+  const headerDecisionTelemetryKeyRef = useRef<string | null>(null);
+  const headerDerivationDurationMsRef = useRef(0);
 
-  const narrative = useMemo(() => model.narrative ?? composeBranchNarrative(model), [model]);
+  const requestIdentityKey = useMemo(
+    () =>
+      createBranchHeaderRequestIdentityKey({
+        repoKey: model.meta?.repoPath,
+        mode: model.source === 'git' ? 'repo' : 'demo',
+        filter: dashboardFilter,
+      }),
+    [dashboardFilter, model.meta?.repoPath, model.source]
+  );
+  const requestContextKey = useMemo(
+    () => `${requestIdentityKey}|node:${selectedNodeId ?? 'none'}|file:${selectedFile ?? 'none'}`,
+    [requestIdentityKey, selectedFile, selectedNodeId]
+  );
+
+  useEffect(() => {
+    requestContextVersionRef.current += 1;
+    activeRequestIdentityRef.current = requestContextKey;
+  }, [requestContextKey]);
+
+  const headerViewModel = useMemo(() => {
+    const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+    const result = !branchHeaderParityEnabled
+      ? deriveLegacyBranchHeaderViewModel(model, dashboardFilter)
+      : deriveBranchHeaderViewModel({
+          mode: model.source === 'git' ? 'repo' : 'demo',
+          repoStatus: 'ready',
+          model,
+          dashboardFilter,
+          featureEnabled: true,
+        });
+
+    const end = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    headerDerivationDurationMsRef.current = Math.max(0, end - start);
+
+    return result;
+  }, [branchHeaderParityEnabled, dashboardFilter, model]);
+
+  const headerReasonCode = useMemo(() => {
+    if (headerViewModel.kind === 'hidden') return headerViewModel.reason;
+    if (headerViewModel.kind === 'shell') return headerViewModel.state;
+    return 'ready';
+  }, [headerViewModel]);
+
+  useEffect(() => {
+    const telemetryKey = `${requestIdentityKey}:${headerViewModel.kind}:${headerReasonCode}`;
+    const previousKey = headerDecisionTelemetryKeyRef.current;
+    if (previousKey === telemetryKey) return;
+
+    const transition = previousKey ? 'state_change' : 'initial';
+    headerDecisionTelemetryKeyRef.current = telemetryKey;
+
+    trackQualityRenderDecision({
+      branch: model.meta?.branchName,
+      source: model.source,
+      headerKind: headerViewModel.kind,
+      repoStatus: 'ready',
+      transition,
+      reasonCode: headerReasonCode,
+      durationMs: headerDerivationDurationMsRef.current,
+      budgetMs: 1,
+    });
+  }, [headerReasonCode, headerViewModel.kind, model.meta?.branchName, model.source, requestIdentityKey]);
+
+  const narrative = useMemo(() => composeBranchNarrative(model), [model]);
   const projections = useMemo(
     () =>
       buildStakeholderProjections({
@@ -340,6 +420,8 @@ function BranchViewInner(props: {
   useEffect(() => {
     if (!selectedNodeId) return;
     let cancelled = false;
+    const requestVersion = requestContextVersionRef.current;
+    const requestIdentity = activeRequestIdentityRef.current;
 
     setLoadingFiles(true);
     setError(null);
@@ -347,6 +429,9 @@ function BranchViewInner(props: {
     loadFilesForNode(selectedNodeId)
       .then((f) => {
         if (cancelled) return;
+        if (requestContextVersionRef.current !== requestVersion) return;
+        if (activeRequestIdentityRef.current !== requestIdentity) return;
+
         setFiles(f);
         if (!selectedFile && f[0]?.path) {
           selectFile(f[0].path);
@@ -354,6 +439,9 @@ function BranchViewInner(props: {
       })
       .catch((e: unknown) => {
         if (cancelled) return;
+        if (requestContextVersionRef.current !== requestVersion) return;
+        if (activeRequestIdentityRef.current !== requestIdentity) return;
+
         const message = e instanceof Error ? e.message : String(e);
         setError(message);
         setActionError(`Unable to load files for selected node: ${message}`);
@@ -362,6 +450,8 @@ function BranchViewInner(props: {
       })
       .finally(() => {
         if (cancelled) return;
+        if (requestContextVersionRef.current !== requestVersion) return;
+        if (activeRequestIdentityRef.current !== requestIdentity) return;
         setLoadingFiles(false);
       });
 
@@ -373,6 +463,8 @@ function BranchViewInner(props: {
   useEffect(() => {
     if (!selectedNodeId || !selectedFile) return;
     let cancelled = false;
+    const requestVersion = requestContextVersionRef.current;
+    const requestIdentity = activeRequestIdentityRef.current;
 
     setLoadingDiff(true);
     setError(null);
@@ -380,10 +472,15 @@ function BranchViewInner(props: {
     loadDiffForFile(selectedNodeId, selectedFile)
       .then((d) => {
         if (cancelled) return;
+        if (requestContextVersionRef.current !== requestVersion) return;
+        if (activeRequestIdentityRef.current !== requestIdentity) return;
         setDiffText(d || '(no diff)');
       })
       .catch((e: unknown) => {
         if (cancelled) return;
+        if (requestContextVersionRef.current !== requestVersion) return;
+        if (activeRequestIdentityRef.current !== requestIdentity) return;
+
         const message = e instanceof Error ? e.message : String(e);
         setError(message);
         setActionError(`Unable to load diff for selected file: ${message}`);
@@ -391,6 +488,8 @@ function BranchViewInner(props: {
       })
       .finally(() => {
         if (cancelled) return;
+        if (requestContextVersionRef.current !== requestVersion) return;
+        if (activeRequestIdentityRef.current !== requestIdentity) return;
         setLoadingDiff(false);
       });
 
@@ -407,22 +506,31 @@ function BranchViewInner(props: {
       return;
     }
     let cancelled = false;
+    const requestVersion = requestContextVersionRef.current;
+    const requestIdentity = activeRequestIdentityRef.current;
 
     setTraceRequestedForSelection(true);
     setLoadingTrace(true);
     loadTraceRangesForFile(selectedNodeId, selectedFile)
       .then((ranges) => {
         if (cancelled) return;
+        if (requestContextVersionRef.current !== requestVersion) return;
+        if (activeRequestIdentityRef.current !== requestIdentity) return;
         setTraceRanges(ranges);
       })
       .catch((e: unknown) => {
         if (cancelled) return;
+        if (requestContextVersionRef.current !== requestVersion) return;
+        if (activeRequestIdentityRef.current !== requestIdentity) return;
+
         const message = e instanceof Error ? e.message : String(e);
         setActionError(`Unable to load trace ranges for selected file: ${message}`);
         setTraceRanges([]);
       })
       .finally(() => {
         if (cancelled) return;
+        if (requestContextVersionRef.current !== requestVersion) return;
+        if (activeRequestIdentityRef.current !== requestIdentity) return;
         setLoadingTrace(false);
       });
 
@@ -488,23 +596,6 @@ function BranchViewInner(props: {
     });
   }, [bumpObservability, detailLevel, killSwitchActive, model.meta?.branchName, narrative.confidence]);
 
-  const handleOpenEvidence = useCallback((link: NarrativeEvidenceLink) => {
-    if (link.commitSha) {
-      setTrackingSettledNodeId(null);
-      setSelectedNodeId(link.commitSha);
-    }
-    if (link.filePath) {
-      selectFile(link.filePath);
-    }
-    bumpObservability('evidenceOpenedCount');
-    trackNarrativeEvent('evidence_opened', {
-      branch: model.meta?.branchName,
-      detailLevel: effectiveDetailLevel,
-      evidenceKind: link.kind,
-      confidence: narrative.confidence,
-    });
-  }, [bumpObservability, effectiveDetailLevel, model.meta?.branchName, narrative.confidence, selectFile]);
-
   const handleOpenRawDiff = useCallback(() => {
     setDetailLevel('diff');
     if (!selectedFile && files[0]?.path) {
@@ -517,6 +608,26 @@ function BranchViewInner(props: {
       confidence: narrative.confidence,
     });
   }, [bumpObservability, files, model.meta?.branchName, narrative.confidence, selectFile, selectedFile]);
+
+  const handleOpenEvidence = useCallback((link: NarrativeEvidenceLink) => {
+    if (link.commitSha) {
+      setTrackingSettledNodeId(null);
+      setSelectedNodeId(link.commitSha);
+    }
+    if (shouldRouteEvidenceToRawDiff(link)) {
+      handleOpenRawDiff();
+    }
+    if (link.filePath) {
+      selectFile(link.filePath);
+    }
+    bumpObservability('evidenceOpenedCount');
+    trackNarrativeEvent('evidence_opened', {
+      branch: model.meta?.branchName,
+      detailLevel: effectiveDetailLevel,
+      evidenceKind: link.kind,
+      confidence: narrative.confidence,
+    });
+  }, [bumpObservability, effectiveDetailLevel, handleOpenRawDiff, model.meta?.branchName, narrative.confidence, selectFile]);
 
   const handleAudienceChange = useCallback((nextAudience: StakeholderAudience) => {
     if (nextAudience === audience) return;
@@ -567,7 +678,7 @@ function BranchViewInner(props: {
         <div className="flex flex-col gap-5 p-6 lg:p-8 h-full overflow-y-auto bg-bg-tertiary lg:grid lg:grid-cols-12 lg:overflow-hidden">
           {/* Left column */}
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
-            <BranchHeader model={model} dashboardFilter={dashboardFilter} onClearFilter={onClearFilter} />
+            <BranchHeader viewModel={headerViewModel} onClearFilter={onClearFilter} />
             <BranchNarrativePanel
               narrative={narrative}
               projections={projections}
@@ -750,6 +861,7 @@ export function BranchView(props: {
   onGrantCodexConsent?: () => void;
   githubConnectorEnabled?: boolean;
   onToggleGitHubConnector?: (enabled: boolean) => void;
+  branchHeaderParityEnabled?: boolean;
 }) {
   return (
     <FileSelectionProvider>

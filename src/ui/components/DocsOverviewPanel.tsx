@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { BookOpen, ChevronRight, FileText, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { Components } from 'react-markdown';
@@ -199,19 +200,46 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
               </div>
             </div>
           ) : docs.length === 0 ? (
-            <div className="card p-6 flex flex-1 flex-col items-center justify-center text-center text-text-tertiary">
-              <div className="mb-3 inline-flex rounded-xl border border-border-light bg-bg-tertiary p-3">
-                <FileText className="h-12 w-12 opacity-50" />
-              </div>
-              <p className="text-sm font-medium text-text-secondary">No Narrative docs found</p>
-              <p className="text-xs mt-2 text-text-muted max-w-[52ch]">
-                Narrative renders markdown files inside <span className="font-mono">.narrative/</span>. Mermaid diagrams
-                render from fenced <span className="font-mono">```mermaid</span> blocks.
+            <motion.div
+              className="card glass-shell shadow-card p-8 flex flex-1 flex-col items-center justify-center text-center text-text-secondary"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <motion.div
+                className="mb-6 inline-flex rounded-2xl border border-border-subtle bg-bg-secondary p-4 shadow-sm"
+                animate={{
+                  boxShadow: [
+                    "0 0 0 1px var(--border-subtle)",
+                    "0 0 0 3px var(--bg-subtle)",
+                    "0 0 0 1px var(--border-subtle)"
+                  ],
+                }}
+                transition={{
+                  duration: 4,
+                  ease: "easeInOut" as const,
+                  repeat: Infinity,
+                }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 0 0 4px var(--accent-blue-light)",
+                  transition: { duration: 0.2 }
+                }}
+              >
+                <FileText className="h-12 w-12 text-text-muted opacity-80" />
+              </motion.div>
+
+              <h3 className="mb-2 text-lg font-semibold text-text-primary">No Narrative docs found</h3>
+
+              <p className="text-sm text-text-secondary max-w-[42ch] leading-relaxed mb-6">
+                Narrative renders markdown files inside <span className="font-mono text-xs bg-bg-subtle px-1.5 py-0.5 rounded border border-border-light">.narrative/</span>.
+                Mermaid diagrams render from fenced <span className="font-mono text-xs bg-bg-subtle px-1.5 py-0.5 rounded border border-border-light">```mermaid</span> blocks.
               </p>
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
+
+              <div className="flex flex-wrap gap-3 justify-center">
                 <button
                   type="button"
-                  className="btn-secondary-soft inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-text-secondary"
+                  className="btn-secondary-soft inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:scale-105 active:scale-95 transition-all"
                   onClick={async () => {
                     try {
                       await ensureNarrativeDirs(repoRoot);
@@ -245,7 +273,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
                   Create starter doc
                 </button>
               </div>
-            </div>
+            </motion.div>
           ) : (
             <div className="card p-4 flex-1 space-y-2 overflow-y-auto">
               {docs.map((doc) => (

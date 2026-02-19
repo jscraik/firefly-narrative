@@ -32,7 +32,7 @@ export function FilesChanged({
   }, [selectedFile]);
 
   return (
-    <div className="card p-5">
+    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
       <div className="section-header">{title ?? 'FILES CHANGED'}</div>
       <div className="section-subheader">From git: files changed in this commit</div>
       <div className="mt-4 divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden">
@@ -54,8 +54,8 @@ export function FilesChanged({
               type="button"
               aria-pressed={selectedFile === f.path}
               className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all duration-150 ${selectedFile === f.path
-                  ? 'bg-accent-blue-bg border-l-[3px] border-l-accent-blue -ml-[3px] pl-[18px] shadow-sm'
-                  : 'hover:bg-bg-tertiary border-l-[3px] border-l-transparent'
+                ? 'bg-accent-blue-bg border-l-[3px] border-l-accent-blue -ml-[3px] pl-[18px] shadow-sm'
+                : 'hover:bg-bg-tertiary border-l-[3px] border-l-transparent'
                 }`}
               onClick={() => selectFile(f.path)}
             >

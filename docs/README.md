@@ -1,58 +1,42 @@
-# Docs Index
+# Documentation Index
 
-Short index of the repo’s documentation surfaces.
-
-## Scope
-
-- Covers documentation under `docs/`.
-- Focuses on developer setup and operational notes for the Narrative desktop app.
+This directory contains developer documentation and operational notes for the Narrative desktop application.
 
 ## Audience
 
 - Contributors and maintainers running, testing, or releasing the app.
+- Users looking for advanced configuration details.
 
 ## Contents
 
-- `docs/agents/development.md` — dev prerequisites + run/build commands
-- `docs/agents/testing.md` — lint, Typecheck, and test commands
-- `docs/agents/tauri.md` — tauri permissions + data locations
-- `docs/agents/repo-structure.md` — repo layout overview
-- `docs/agents/repair-agent.md` — autonomous CI repair agent workflow
-- `docs/assets/screenshots/` — app screenshots for README/docs
-- `docs/assets/verification/` — verification captures and snapshots
-- `docs/reports/` — audit and post-merge review reports
-- `docs/notes/plans/` — project planning notes
-- `docs/notes/archive/` — archived root-note files preserved for history
+- [`docs/agents/development.md`](agents/development.md) — Prerequisites, running locally, and build commands.
+- [`docs/agents/testing.md`](agents/testing.md) — Testing, type-checking, and linting.
+- [`docs/agents/tauri.md`](agents/tauri.md) — tauri permissions and data locations.
+- [`docs/agents/repo-structure.md`](agents/repo-structure.md) — Overview of the codebase layout.
+- [`docs/agents/repair-agent.md`](agents/repair-agent.md) — Workflow for the autonomous CI repair agent.
+- `docs/assets/screenshots/` — Visual assets for documentation (landing, dashboard, repo views).
+- `docs/reports/` — Audit and post-merge review reports.
 
-## Doc tooling
+## Documentation Checks
 
-- Vale config: `.vale.ini`
-- Vale styles: `styles/`
-- markdownlint config: `.markdownlint-cli2.yaml`
-- Brand assets: `brand/` (see `brand/README.md`)
-
-### Run checks (local)
+To verify documentation locally:
 
 ```bash
+# Run the project docs lint wrapper (skips Vale when unavailable)
 pnpm docs:lint
-```
 
-Manual commands:
-
-```bash
-vale --minAlertLevel=warning README.md docs/README.md docs/agents/*.md
+# Lint markdown files
 npx -y markdownlint-cli2 README.md docs/**/*.md brand/README.md
+
+# Check writing style (if configured)
+vale --minAlertLevel=warning README.md docs/README.md docs/agents/*.md
 ```
 
 ## Maintenance
 
-- Update this index and the README “Docs” section when adding or moving docs.
-
-## Verify
-
-- Ensure each linked file exists and matches the repo layout.
+- Update this index when adding new documentation pages.
+- Keep screenshots in `docs/assets/screenshots/` up-to-date as the UI evolves.
 
 ## Meta
 
-- Owner: repo maintainers (update as needed)
-- Last updated: 2026-02-16
+- **Last updated**: 2026-02-18

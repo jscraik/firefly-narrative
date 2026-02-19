@@ -18,6 +18,7 @@ import { TopNav, type Mode } from './ui/components/TopNav';
 import { UpdateIndicator, UpdatePrompt } from './ui/components/UpdatePrompt';
 import { BranchView } from './ui/views/BranchView';
 import { DashboardView } from './ui/views/DashboardView';
+import { FireflyLanding } from './ui/views/FireflyLanding';
 
 type AgentationComponentType = (typeof import('agentation'))['Agentation'];
 
@@ -119,7 +120,7 @@ function DocsView(props: {
 }
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('demo');
+  const [mode, setMode] = useState<Mode>('landing');
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter | null>(null);
   const [isExitingFilteredView, setIsExitingFilteredView] = useState(false);
   const [githubConnectorEnabled, setGithubConnectorEnabled] = useState(false);
@@ -342,6 +343,8 @@ export default function App() {
             onDrillDown={handleDrillDown}
             onModeChange={setMode}
           />
+        ) : mode === 'landing' ? (
+          <FireflyLanding onGetStarted={() => setMode('repo')} />
         ) : mode === 'docs' ? (
           <DocsView
             repoState={repoState}

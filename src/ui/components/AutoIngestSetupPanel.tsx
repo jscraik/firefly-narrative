@@ -1,6 +1,6 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { useEffect, useState } from 'react';
-import type { DiscoveredSources, IngestConfig } from '../../core/tauri/ingestConfig';
+import { useCallback, useEffect, useState } from 'react';
+import { discoverCaptureSources, type DiscoveredSources, type IngestConfig } from '../../core/tauri/ingestConfig';
 import { HelpPopover } from './HelpPopover';
 import { Toggle } from './Toggle';
 
@@ -15,6 +15,9 @@ export function AutoIngestSetupPanel(props: {
   const [cursorPaths, setCursorPaths] = useState('');
   const [codexPaths, setCodexPaths] = useState('');
   const [showAdvancedPaths, setShowAdvancedPaths] = useState(false);
+  const [detectionStatus, setDetectionStatus] = useState<'idle' | 'searching' | 'found' | 'not-found' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [hasAutoDetectedOnLoad, setHasAutoDetectedOnLoad] = useState(false);
 
   useEffect(() => {
     if (!config) return;
@@ -22,6 +25,58 @@ export function AutoIngestSetupPanel(props: {
     setCursorPaths(config.watchPaths.cursor.join('\n'));
     setCodexPaths((config.watchPaths.codexLogs ?? []).join('\n'));
   }, [config]);
+
+  const applyWatchPaths = useCallback((paths: { claude: string[]; cursor: string[]; codexLogs: string[] }, persist = true) => {
+    setClaudePaths(paths.claude.join('\n'));
+    setCursorPaths(paths.cursor.join('\n'));
+    setCodexPaths(paths.codexLogs.join('\n'));
+    if (persist) {
+      onUpdateWatchPaths(paths);
+    }
+  }, [onUpdateWatchPaths]);
+
+  const runAutoDetect = useCallback(async (persist = true) => {
+    setDetectionStatus('searching');
+    setStatusMessage('Auto-detecting source paths…');
+    try {
+      const discovered = await discoverCaptureSources();
+      const next = {
+        claude: discovered.claude,
+        cursor: discovered.cursor,
+        codexLogs: discovered.codexLogs,
+      };
+      const total = next.claude.length + next.cursor.length + next.codexLogs.length;
+      if (total === 0) {
+        setDetectionStatus('not-found');
+        setStatusMessage('No known source paths found. Add folders manually below.');
+        return;
+      }
+      applyWatchPaths(next, persist);
+      setDetectionStatus('found');
+      setStatusMessage(`Detected ${total} source path${total === 1 ? '' : 's'}.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      setDetectionStatus('error');
+      setStatusMessage(`Path auto-detect failed: ${message}`);
+    }
+  }, [applyWatchPaths]);
+
+  useEffect(() => {
+    if (!config || hasAutoDetectedOnLoad) return;
+    const hasAnyConfiguredPath = [
+      config.watchPaths.claude,
+      config.watchPaths.cursor,
+      config.watchPaths.codexLogs ?? [],
+    ].some((group) => group.length > 0);
+
+    if (hasAnyConfiguredPath) {
+      setHasAutoDetectedOnLoad(true);
+      return;
+    }
+
+    setHasAutoDetectedOnLoad(true);
+    void runAutoDetect(true);
+  }, [config, hasAutoDetectedOnLoad, runAutoDetect]);
 
   const discoveredSummary = (() => {
     if (!sources) return null;
@@ -95,6 +150,28 @@ export function AutoIngestSetupPanel(props: {
           <div className="text-[11px] text-text-tertiary">
             Add source folders quickly, then save watch paths. Open advanced editor only if you need manual path tuning.
           </div>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold"
+              onClick={() => void runAutoDetect(true)}
+              disabled={detectionStatus === 'searching'}
+            >
+              {detectionStatus === 'searching' ? 'Auto-detecting…' : 'Auto-detect paths'}
+            </button>
+            {statusMessage ? (
+              <span
+                className={`text-[11px] ${detectionStatus === 'error'
+                  ? 'text-accent-red'
+                  : detectionStatus === 'not-found'
+                    ? 'text-accent-orange'
+                    : 'text-text-tertiary'
+                  }`}
+              >
+                {statusMessage}
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <div className="rounded-lg border border-border-subtle bg-bg-tertiary p-3">
@@ -124,7 +201,7 @@ export function AutoIngestSetupPanel(props: {
             </button>
             <button
               type="button"
-              className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold"
+              className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
               onClick={async () => {
                 const dir = await pickDir();
                 if (!dir) return;
@@ -135,7 +212,7 @@ export function AutoIngestSetupPanel(props: {
             </button>
             <button
               type="button"
-              className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold"
+              className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
               onClick={async () => {
                 const dir = await pickDir();
                 if (!dir) return;
@@ -149,7 +226,7 @@ export function AutoIngestSetupPanel(props: {
           <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
-              className="inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-accent-blue-light"
+              className="inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-accent-blue-light transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
               onClick={() => {
                 const next = {
                   claude: claudePaths.split(/\r?\n/).map((p) => p.trim()).filter(Boolean),
@@ -210,4 +287,3 @@ export function AutoIngestSetupPanel(props: {
     </div>
   );
 }
-
