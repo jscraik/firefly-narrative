@@ -14,6 +14,7 @@ This directory contains developer documentation and operational notes for the Na
 - [`docs/agents/tauri.md`](agents/tauri.md) — tauri permissions and data locations.
 - [`docs/agents/repo-structure.md`](agents/repo-structure.md) — Overview of the codebase layout.
 - [`docs/agents/repair-agent.md`](agents/repair-agent.md) — Workflow for the autonomous CI repair agent.
+- [`docs/agents/hybrid-capture-rollout-runbook.md`](agents/hybrid-capture-rollout-runbook.md) — Release and fallback operations for hybrid capture reliability.
 - `docs/assets/screenshots/` — Visual assets for documentation (landing, dashboard, repo views).
 - `docs/reports/` — Audit and post-merge review reports.
 
@@ -39,4 +40,4 @@ vale --minAlertLevel=warning README.md docs/README.md docs/agents/*.md
 
 ## Meta
 
-- **Last updated**: 2026-02-18
+- **Last updated**: 2026-02-19

@@ -240,7 +240,7 @@ flowchart TD
 - [x] T7b Deterministic dedupe + precedence
 - [x] T8 Reliability metrics + health states
 - [x] T9 UI trust + fallback messaging
-- [ ] T10 Validation, docs, rollout gate (remaining: rollout thresholds/runbook hardening)
+- [x] T10 Validation, docs, rollout gate (rollout runbook + UI evidence captured; production thresholds remain tunable)
 
 ### T1. Path model + config schema updates
 - **depends_on:** []
