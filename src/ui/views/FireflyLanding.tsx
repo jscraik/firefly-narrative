@@ -1,12 +1,20 @@
 import { ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 import claudeIcon from '../../assets/icons/claude-color.svg';
 import geminiIcon from '../../assets/icons/gemini-color.svg';
 import kimiIcon from '../../assets/icons/kimi-color.svg';
 import ollamaIcon from '../../assets/icons/ollama.svg';
 import openaiIcon from '../../assets/icons/openai.svg';
+import { FireflyHero } from '../components/FireflyHero';
 
 export function FireflyLanding(props: { onGetStarted?: () => void }) {
     const { onGetStarted } = props;
+    const [isExiting, setIsExiting] = useState(false);
+
+    const handleGetStarted = () => {
+        if (isExiting) return;
+        setIsExiting(true);
+    };
 
     return (
         <div className="min-h-full w-full bg-bg-primary text-text-primary font-sans relative overflow-hidden flex flex-col transition-colors duration-300">
@@ -19,29 +27,38 @@ export function FireflyLanding(props: { onGetStarted?: () => void }) {
                 }}
             />
 
-
-
             {/* Main Content */}
             <main className="flex-1 flex flex-col items-center justify-center text-center px-4 relative z-10 mt-12">
-                <div className="max-w-4xl mx-auto space-y-8 animate-fade-in-up">
+                {/* FireflyHero — absolute layer, sits visually behind the h1 */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+                    <FireflyHero isExiting={isExiting} onExitComplete={onGetStarted} />
+                </div>
+
+                <div className="max-w-4xl mx-auto animate-fade-in-up relative">
 
                     <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-text-primary leading-[1.1] flex flex-col md:block items-center justify-center">
-                        <span className="brand-firefly mr-0 md:mr-4 animate-brand-breathe">Firefly</span>
+                        <span className="brand-firefly mr-0 md:mr-4">Firefly</span>
                         <span>Narrative</span>
                     </h1>
 
-                    <p className="text-2xl md:text-3xl text-text-secondary max-w-2xl mx-auto font-light leading-relaxed animate-fade-in-up delay-200">
-                        A new way to discover the narrative, share and collaborate across GIT and Agent Traces.
-                    </p>
+                    {/* Subtitle + CTA — mt: Tailwind mt-24 (96px) + 15px intentional drop = 111px */}
+                    <div className="mt-[111px] space-y-8">
+                        <p className="text-2xl md:text-3xl text-text-secondary max-w-3xl mx-auto font-light leading-relaxed animate-fade-in-up delay-200" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+                            Capture the ghost in the machine, discover the narrative.<br />A living trace of your intent, woven into every commit.
+                        </p>
 
-                    <div className="pt-8 animate-fade-in-up delay-300">
-                        <button
-                            type="button"
-                            onClick={onGetStarted}
-                            className="bg-text-primary text-bg-primary px-8 py-3 rounded-full font-medium text-lg inline-flex items-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 shadow-lg hover:shadow-[0_0_20px_rgba(var(--text-primary-rgb),0.3)]"
-                        >
-                            Get Started <ArrowRight className="w-5 h-5" />
-                        </button>
+                        {/* pt-[50px]: extra breathing room above the CTA button */}
+                        <div className="pt-[50px] relative z-20 animate-fade-in-up delay-300">
+                            <button
+                                type="button"
+                                id="cta-get-started"
+                                onClick={handleGetStarted}
+                                disabled={isExiting}
+                                className="bg-text-primary text-bg-primary px-8 py-3 rounded-full font-medium text-lg inline-flex items-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 shadow-lg hover:shadow-[0_0_20px_rgba(var(--text-primary-rgb),0.3)] disabled:opacity-60 disabled:scale-100 disabled:cursor-default"
+                            >
+                                Get Started <ArrowRight className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                 </div>
