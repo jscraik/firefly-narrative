@@ -1,5 +1,5 @@
 {
-  "generatedAtISO": "2026-02-19T21:05:09.704Z",
+  "generatedAtISO": "2026-02-20T19:37:42.051Z",
   "machineProfile": "dev-default",
   "os": "darwin 25.4.0",
   "runtimeMode": "playwright-headless",
@@ -12,9 +12,9 @@
     "layoutShiftCountMax": 0
   },
   "metrics": {
-    "frameCount": 605,
-    "averageFps": 60.077654091752876,
-    "p95FrameTimeMs": 17.19999999999891,
+    "frameCount": 609,
+    "averageFps": 60.09888190418144,
+    "p95FrameTimeMs": 17.90000000000009,
     "layoutShiftCount": 0,
     "layoutShiftValue": 0
   }

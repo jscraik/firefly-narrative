@@ -9,6 +9,7 @@ src-tauri/gen
 src-tauri/.cargo
 src-tauri/bin/*
 !src-tauri/bin/.gitkeep
+!src-tauri/bin/codex-app-server*
 
 # Logs
 npm-debug.log*
@@ -29,8 +30,13 @@ FORJAMIE.md
 
 # Generated icons (build artifacts)
 src-tauri/icons/*.png
+!src-tauri/icons/32x32.png
+!src-tauri/icons/128x128.png
+!src-tauri/icons/128x128@2x.png
 src-tauri/icons/*.icns
+!src-tauri/icons/icon.icns
 src-tauri/icons/*.ico
+!src-tauri/icons/icon.ico
 
 # Env
 .env
@@ -74,3 +80,5 @@ test-results/
 .lighthouseci/
 tmp_frames/
 package-lock.json
+
+FORJAMIE.md

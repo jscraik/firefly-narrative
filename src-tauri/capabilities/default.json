@@ -17,6 +17,11 @@
           "name": "git",
           "cmd": "git",
           "args": true
+        },
+        {
+          "name": "codex-app-server",
+          "cmd": "bin/codex-app-server",
+          "args": false
         }
       ]
     },

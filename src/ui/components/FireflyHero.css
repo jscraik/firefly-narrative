@@ -1,0 +1,460 @@
+/*
+ * FireflyHero.css
+ * Consolidated high-fidelity styles for the Firefly Narrative brand hero.
+ */
+
+/* ── Theme tokens for the hero ─────────────────────────────────────────────
+   Light-mode is the default (:root). Dark overrides live in [data-theme=dark].
+   All hardcoded colour values in the hero should resolve through these vars.
+──────────────────────────────────────────────────────────────────────────── */
+:root {
+  --hero-trace-base: rgba(80, 60, 20, 0.35);
+  /* warm dark brown, lighter than black     */
+  --hero-trace-pulse: rgba(0, 0, 0, 0.12);
+  /* visible subtle flow on light bg         */
+  --hero-packet-stroke: #a05010;
+  /* amber-800 so packets show on white      */
+  --hero-node-pad: rgba(60, 40, 10, 0.55);
+  /* dark amber pad instead of pure black    */
+  --hero-orb-core: 0 0 12px #fff,
+    0 0 28px color-mix(in srgb, var(--accent-orange) 70%, transparent),
+    0 0 60px color-mix(in srgb, var(--accent-orange) 30%, transparent),
+    0 0 110px color-mix(in srgb, var(--accent-orange) 12%, transparent);
+  /* tighter on light — doesn't bleed        */
+  --hero-grid-warmth: rgba(245, 158, 11, 0.07);
+  /* slightly stronger warmth in light       */
+  --hero-hud-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="dark"] {
+  --hero-trace-base: rgba(0, 0, 0, 0.4);
+  /* original near-black on dark bg          */
+  --hero-trace-pulse: rgba(255, 255, 255, 0.1);
+  /* original faint white flow               */
+  --hero-packet-stroke: #ffffff;
+  /* original white packet on dark           */
+  --hero-node-pad: #000000;
+  /* original black pad on dark              */
+  --hero-orb-core: 0 0 15px #fff,
+    0 0 35px color-mix(in srgb, var(--accent-orange) 80%, transparent),
+    0 0 80px color-mix(in srgb, var(--accent-orange) 40%, transparent),
+    0 0 160px color-mix(in srgb, var(--accent-orange) 20%, transparent),
+    0 0 300px color-mix(in srgb, var(--accent-orange) 10%, transparent);
+  /* original wide atmospheric spill         */
+  --hero-grid-warmth: rgba(245, 158, 11, 0.05);
+  /* original subtle warmth                  */
+  --hero-hud-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+
+.firefly-hero-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 500px;
+}
+
+.grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 50% 50%, var(--hero-grid-warmth) 0%, transparent 70%),
+    linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 60px 60px, 60px 60px;
+  z-index: -1;
+  opacity: 0.6;
+}
+
+
+/* --- FIREFLY ASSEMBLY --- */
+.firefly-stage {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 800px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Circuitry SVG */
+.circuitry-svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.trace-base {
+  fill: none;
+  stroke: var(--hero-trace-base);
+  stroke-width: 4;
+  opacity: 0.5;
+}
+
+.trace-copper {
+  fill: none;
+  stroke: var(--accent-orange);
+  opacity: 0.2;
+  stroke-linecap: round;
+}
+
+.trace-bg-pulse {
+  fill: none;
+  stroke: var(--hero-trace-pulse);
+  stroke-width: 0.8;
+  stroke-dasharray: 2, 20;
+  animation: bg-trace-flow 3s linear infinite;
+}
+
+@keyframes bg-trace-flow {
+  from {
+    stroke-dashoffset: 50;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.node-pad {
+  fill: var(--hero-node-pad);
+  stroke: var(--accent-orange);
+  stroke-width: 1.5;
+  opacity: 0.45;
+}
+
+.node-led {
+  fill: var(--accent-orange);
+  opacity: 0.6;
+  transition: fill 0.2s ease;
+}
+
+.node-ripple {
+  fill: none;
+  stroke: var(--accent-blue);
+  stroke-width: 2;
+  opacity: 0;
+  transform-origin: center;
+}
+
+@keyframes ripple-out {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.packet {
+  fill: none;
+  stroke: var(--hero-packet-stroke);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1, 1000;
+  opacity: 0;
+  filter: drop-shadow(0 0 8px var(--accent-orange));
+}
+
+.packet-active {
+  animation: packet-travel var(--p-duration, 1.4s) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes packet-travel {
+  0% {
+    stroke-dasharray: 1, 1000;
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 1;
+    stroke-dasharray: 25, 1000;
+  }
+
+  100% {
+    stroke-dashoffset: -450;
+    opacity: 0;
+  }
+}
+
+/* Core Assembly */
+.core-assembly {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.breathing-wrapper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  will-change: transform, opacity, filter;
+}
+
+.shard {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--accent-orange);
+  border-radius: 50%;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.shard-inner {
+  inset: 8px;
+  border-style: dashed;
+  animation: rotate-shard 16s linear infinite, jitter 6s infinite;
+}
+
+.shard-outer {
+  inset: -20px;
+  border-width: 1px;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  animation: rotate-shard 12s linear infinite reverse;
+  opacity: 0.2;
+}
+
+@keyframes rotate-shard {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes jitter {
+
+  0%,
+  100% {
+    transform: rotate(0deg) translate(0, 0);
+  }
+
+  4% {
+    transform: rotate(3deg) translate(2px, -1px);
+  }
+
+  8% {
+    transform: rotate(-2deg) translate(-1px, 1px);
+  }
+}
+
+.core-orb {
+  position: absolute;
+  inset: 12px;
+  background: #fffbeb;
+  border: none;
+  padding: 0;
+  border-radius: 50%;
+  box-shadow: var(--hero-orb-core);
+  cursor: pointer;
+  z-index: 5;
+  pointer-events: auto;
+}
+
+/* Orbital Ring */
+.orbital-ring {
+  position: absolute;
+  inset: -60px;
+  border: 1px solid color-mix(in srgb, var(--accent-orange) 15%, transparent);
+  border-radius: 50%;
+  transform: rotateX(72deg) rotateY(15deg);
+  animation: rotate-ring 15s linear infinite;
+  z-index: 4;
+}
+
+@keyframes rotate-ring {
+  from {
+    transform: rotateX(72deg) rotateY(15deg) rotateZ(0deg);
+  }
+
+  to {
+    transform: rotateX(72deg) rotateY(15deg) rotateZ(360deg);
+  }
+}
+
+/* HUD Tags */
+.hud-tag {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent-orange);
+  white-space: nowrap;
+  box-shadow: var(--hero-hud-shadow);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  background: rgba(11, 17, 30, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--accent-orange) 30%, transparent);
+  padding: 6px 14px;
+  pointer-events: none;
+}
+
+/* Particles */
+.ember {
+  position: absolute;
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Entrance Sequence */
+.boot-flicker {
+  animation: chromatic-flicker 0.6s step-end forwards;
+}
+
+/* Exit Sequence — CTA thread-travel transition */
+.firefly-hero-container.exiting .core-orb {
+  animation: orb-collapse 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.firefly-hero-container.exiting {
+  animation: hero-fade-out 0.45s ease-in 0.32s forwards;
+}
+
+@keyframes orb-collapse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  45% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes hero-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes chromatic-flicker {
+  0% {
+    filter: none;
+  }
+
+  10% {
+    filter: drop-shadow(-2px 0 #ff0000) drop-shadow(2px 0 #00ffff) brightness(2);
+  }
+
+  20% {
+    filter: none;
+  }
+
+  30% {
+    filter: drop-shadow(3px 0 #ff0000) drop-shadow(-3px 0 #00ffff) brightness(1.5);
+  }
+
+  40% {
+    filter: none;
+  }
+}
+
+/* -------------------------------------------------- */
+/* Responsive: scale the stage and hide HUD on mobile */
+/* -------------------------------------------------- */
+
+/* Tablet and below */
+@media (max-width: 768px) {
+  .firefly-stage {
+    width: 600px;
+    height: 600px;
+  }
+
+  .firefly-hero-container {
+    height: 400px;
+  }
+}
+
+/* Mobile — HUD tags clip off-screen, hide them */
+@media (max-width: 640px) {
+  .hud-tag {
+    display: none;
+  }
+
+  .firefly-stage {
+    width: 400px;
+    height: 400px;
+  }
+
+  .firefly-hero-container {
+    height: 320px;
+  }
+
+  /* Tame the orb glow on mobile so it doesn't wash out the subtitle */
+  .core-orb {
+    --hero-orb-core:
+      0 0 10px #fff,
+      0 0 25px color-mix(in srgb, var(--accent-orange) 70%, transparent),
+      0 0 50px color-mix(in srgb, var(--accent-orange) 30%, transparent);
+  }
+}
+
+/* -------------------------------------------------- */
+/* Reduced motion: respect prefers-reduced-motion      */
+/* @emilkowalski: "best animation is no animation"     */
+/* -------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .shard-inner,
+  .shard-outer,
+  .orbital-ring,
+  .trace-bg-pulse,
+  .boot-flicker {
+    animation: none;
+  }
+
+  .packet-active {
+    animation: none;
+    opacity: 0;
+  }
+
+  .firefly-hero-container.exiting .core-orb,
+  .firefly-hero-container.exiting {
+    animation: none;
+    opacity: 0;
+    transition: opacity 80ms ease-in;
+  }
+
+  .breathing-wrapper {
+    transition: none;
+  }
+
+  .core-orb {
+    box-shadow:
+      0 0 15px #fff,
+      0 0 35px color-mix(in srgb, var(--accent-orange) 80%, transparent);
+  }
+}

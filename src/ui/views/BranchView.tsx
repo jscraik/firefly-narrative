@@ -4,7 +4,13 @@ import { FileSelectionProvider, useFileSelection } from '../../core/context/File
 import { testRuns } from '../../core/demo/nearbyGridDemo';
 import { getLatestTestRunForCommit } from '../../core/repo/testRuns';
 import type { ActivityEvent } from '../../core/tauri/activity';
-import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
+import type {
+  CaptureReliabilityStatus,
+  CollectorMigrationStatus,
+  DiscoveredSources,
+  IngestConfig,
+  OtlpKeyStatus
+} from '../../core/tauri/ingestConfig';
 import { composeBranchNarrative } from '../../core/narrative/composeBranchNarrative';
 import { buildDecisionArchaeology } from '../../core/narrative/decisionArchaeology';
 import { evaluateNarrativeRollout } from '../../core/narrative/rolloutGovernance';
@@ -83,7 +89,12 @@ function BranchViewInner(props: {
   ingestConfig?: IngestConfig | null;
   otlpKeyStatus?: OtlpKeyStatus | null;
   discoveredSources?: DiscoveredSources | null;
+  collectorMigrationStatus?: CollectorMigrationStatus | null;
+  captureReliabilityStatus?: CaptureReliabilityStatus | null;
   onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => void;
+  onMigrateCollector?: (dryRun?: boolean) => Promise<unknown>;
+  onRollbackCollector?: () => Promise<unknown>;
+  onRefreshCaptureReliability?: () => Promise<unknown>;
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
@@ -123,7 +134,12 @@ function BranchViewInner(props: {
     ingestConfig,
     otlpKeyStatus,
     discoveredSources,
+    collectorMigrationStatus,
+    captureReliabilityStatus,
     onUpdateWatchPaths,
+    onMigrateCollector,
+    onRollbackCollector,
+    onRefreshCaptureReliability,
     onConfigureCodex,
     onRotateOtlpKey,
     onGrantCodexConsent,
@@ -705,6 +721,8 @@ function BranchViewInner(props: {
                 })()}
                 issueCount={ingestStatus.errorCount}
                 lastSeenISO={ingestStatus.lastImportAt}
+                captureMode={ingestStatus.captureMode}
+                captureModeMessage={ingestStatus.captureModeMessage}
                 recent={ingestActivityRecent ?? []}
                 onToggle={onToggleAutoIngest}
                 onRequestAll={onRequestIngestActivityAll}
@@ -780,8 +798,13 @@ function BranchViewInner(props: {
               ingestConfig={ingestConfig}
               otlpKeyStatus={otlpKeyStatus}
               discoveredSources={discoveredSources}
+              collectorMigrationStatus={collectorMigrationStatus}
+              captureReliabilityStatus={captureReliabilityStatus}
               onToggleAutoIngest={onToggleAutoIngest}
               onUpdateWatchPaths={onUpdateWatchPaths}
+              onMigrateCollector={onMigrateCollector}
+              onRollbackCollector={onRollbackCollector}
+              onRefreshCaptureReliability={onRefreshCaptureReliability}
               onConfigureCodex={onConfigureCodex}
               onRotateOtlpKey={onRotateOtlpKey}
               onGrantCodexConsent={onGrantCodexConsent}
@@ -855,7 +878,12 @@ export function BranchView(props: {
   ingestConfig?: IngestConfig | null;
   otlpKeyStatus?: OtlpKeyStatus | null;
   discoveredSources?: DiscoveredSources | null;
+  collectorMigrationStatus?: CollectorMigrationStatus | null;
+  captureReliabilityStatus?: CaptureReliabilityStatus | null;
   onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => void;
+  onMigrateCollector?: (dryRun?: boolean) => Promise<unknown>;
+  onRollbackCollector?: () => Promise<unknown>;
+  onRefreshCaptureReliability?: () => Promise<unknown>;
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;

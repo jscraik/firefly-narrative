@@ -5,19 +5,31 @@
 
 use rand::RngCore;
 
-const SERVICE: &str = "com.jamie.narrative-mvp";
+const SERVICE: &str = "com.jamie.firefly-narrative";
+const LEGACY_SERVICE: &str = "com.jamie.narrative-mvp";
 const OTLP_KEY_USER: &str = "otlp_api_key";
 
+fn entry_for(service: &str) -> Result<keyring::Entry, String> {
+    keyring::Entry::new(service, OTLP_KEY_USER).map_err(|e| e.to_string())
+}
+
 fn entry() -> Result<keyring::Entry, String> {
-    keyring::Entry::new(SERVICE, OTLP_KEY_USER).map_err(|e| e.to_string())
+    entry_for(SERVICE)
 }
 
 pub fn get_otlp_api_key() -> Result<Option<String>, String> {
-    let e = entry()?;
-    match e.get_password() {
+    let primary = entry()?;
+    match primary.get_password() {
         Ok(value) if !value.trim().is_empty() => Ok(Some(value)),
-        Ok(_) => Ok(None),
-        Err(keyring::Error::NoEntry) => Ok(None),
+        Ok(_) | Err(keyring::Error::NoEntry) => {
+            let legacy = entry_for(LEGACY_SERVICE)?;
+            match legacy.get_password() {
+                Ok(value) if !value.trim().is_empty() => Ok(Some(value)),
+                Ok(_) => Ok(None),
+                Err(keyring::Error::NoEntry) => Ok(None),
+                Err(err) => Err(err.to_string()),
+            }
+        }
         Err(err) => Err(err.to_string()),
     }
 }
@@ -31,12 +43,14 @@ pub fn set_otlp_api_key(value: &str) -> Result<(), String> {
 }
 
 pub fn delete_otlp_api_key() -> Result<(), String> {
-    let e = entry()?;
-    match e.delete_password() {
-        Ok(()) => Ok(()),
-        Err(keyring::Error::NoEntry) => Ok(()),
-        Err(err) => Err(err.to_string()),
+    for service in [SERVICE, LEGACY_SERVICE] {
+        let e = entry_for(service)?;
+        match e.delete_password() {
+            Ok(()) | Err(keyring::Error::NoEntry) => {}
+            Err(err) => return Err(err.to_string()),
+        }
     }
+    Ok(())
 }
 
 pub fn generate_otlp_api_key_hex() -> String {
@@ -47,9 +61,24 @@ pub fn generate_otlp_api_key_hex() -> String {
 }
 
 pub fn ensure_otlp_api_key() -> Result<String, String> {
-    if let Some(existing) = get_otlp_api_key()? {
-        return Ok(existing);
+    let primary = entry()?;
+    match primary.get_password() {
+        Ok(value) if !value.trim().is_empty() => return Ok(value),
+        Ok(_) | Err(keyring::Error::NoEntry) => {}
+        Err(err) => return Err(err.to_string()),
     }
+
+    // Migrate legacy keychain service entry when present.
+    let legacy = entry_for(LEGACY_SERVICE)?;
+    match legacy.get_password() {
+        Ok(value) if !value.trim().is_empty() => {
+            set_otlp_api_key(&value)?;
+            return Ok(value);
+        }
+        Ok(_) | Err(keyring::Error::NoEntry) => {}
+        Err(err) => return Err(err.to_string()),
+    }
+
     let key = generate_otlp_api_key_hex();
     set_otlp_api_key(&key)?;
     Ok(key)

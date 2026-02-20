@@ -417,7 +417,12 @@ export default function App() {
             ingestConfig={autoIngest.ingestConfig}
             otlpKeyStatus={autoIngest.otlpKeyStatus}
             discoveredSources={autoIngest.discoveredSources}
+            collectorMigrationStatus={autoIngest.collectorMigrationStatus}
+            captureReliabilityStatus={autoIngest.captureReliabilityStatus}
             onUpdateWatchPaths={autoIngest.updateWatchPaths}
+            onMigrateCollector={autoIngest.migrateCollector}
+            onRollbackCollector={autoIngest.rollbackCollector}
+            onRefreshCaptureReliability={autoIngest.refreshCaptureReliability}
             onConfigureCodex={autoIngest.configureCodexTelemetry}
             onRotateOtlpKey={autoIngest.rotateOtlpKey}
             onGrantCodexConsent={autoIngest.grantCodexConsent}

@@ -7,16 +7,28 @@ import { getIngestActivity, type ActivityEvent } from '../core/tauri/activity';
 import {
   autoImportSessionFile,
   configureCodexOtel,
+  codexAppServerInitialize,
+  codexAppServerSetStreamHealth,
   discoverCaptureSources,
+  getCaptureReliabilityStatus,
+  getCollectorMigrationStatus,
+  getCodexAppServerStatus,
   getIngestConfig,
   ensureOtlpApiKey,
   getOtlpKeyStatus,
   backfillRecentSessions,
   purgeExpiredSessions,
   resetOtlpApiKey,
+  rollbackCollectorMigration,
+  runCollectorMigration,
   setIngestConfig,
+  startCodexAppServer,
+  stopCodexAppServer,
   startFileWatcher,
   stopFileWatcher,
+  type CaptureReliabilityStatus,
+  type CodexAppServerStatus,
+  type CollectorMigrationStatus,
   type IngestConfig,
   type DiscoveredSources,
   type OtlpKeyStatus
@@ -24,6 +36,9 @@ import {
 
 export type IngestStatus = {
   enabled: boolean;
+  captureMode: 'OTEL_ONLY' | 'HYBRID_ACTIVE' | 'DEGRADED_STREAMING' | 'FAILURE';
+  captureModeMessage?: string;
+  migrationRequired: boolean;
   lastImportAt?: string;
   lastSource?: string;
   errorCount: number;
@@ -53,13 +68,19 @@ export function useAutoIngest(params: {
   const [sources, setSources] = useState<DiscoveredSources | null>(null);
   const [status, setStatus] = useState<IngestStatus>({
     enabled: false,
+    captureMode: 'FAILURE',
+    migrationRequired: false,
     errorCount: 0
   });
+  const [collectorMigration, setCollectorMigration] = useState<CollectorMigrationStatus | null>(null);
+  const [captureReliability, setCaptureReliability] = useState<CaptureReliabilityStatus | null>(null);
+  const [codexAppServerStatus, setCodexAppServerStatus] = useState<CodexAppServerStatus | null>(null);
   const [issues, setIssues] = useState<IngestIssue[]>([]);
   const [toast, setToast] = useState<IngestToast | null>(null);
   const [activityRecent, setActivityRecent] = useState<ActivityEvent[]>([]);
   const lastImportRef = useRef<{ source?: string; time?: string }>({});
   const idCounter = useRef(0);
+  const reliabilityRefreshInFlightRef = useRef(false);
 
   const refreshActivity = useCallback(async (limit: number) => {
     try {
@@ -104,6 +125,33 @@ export function useAutoIngest(params: {
       return [{ id, title, message, action }, ...prev];
     });
   }, []);
+
+  const refreshReliability = useCallback(async () => {
+    if (reliabilityRefreshInFlightRef.current) return;
+    reliabilityRefreshInFlightRef.current = true;
+    try {
+      const [migration, reliability, appServer] = await Promise.all([
+        getCollectorMigrationStatus(),
+        getCaptureReliabilityStatus(),
+        getCodexAppServerStatus(),
+      ]);
+
+      setCollectorMigration(migration);
+      setCaptureReliability(reliability);
+      setCodexAppServerStatus(appServer);
+      setStatus((prev) => ({
+        ...prev,
+        captureMode: reliability.mode,
+        captureModeMessage: reliability.reasons[0],
+        migrationRequired: migration.migrationRequired,
+      }));
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      recordIssue('Capture reliability check failed', message);
+    } finally {
+      reliabilityRefreshInFlightRef.current = false;
+    }
+  }, [recordIssue]);
 
   const showToast = useCallback((message: string) => {
     idCounter.current += 1;
@@ -151,11 +199,24 @@ export function useAutoIngest(params: {
         const config = await getIngestConfig();
         const key = await getOtlpKeyStatus();
         const discovered = await discoverCaptureSources();
+        const migration = await getCollectorMigrationStatus();
+        const reliability = await getCaptureReliabilityStatus();
+        const appServer = await getCodexAppServerStatus();
         if (!mounted) return;
         setConfig(config);
         setOtlpKey(key);
         setSources(discovered);
+        setCollectorMigration(migration);
+        setCaptureReliability(reliability);
+        setCodexAppServerStatus(appServer);
         setStatus((prev) => ({ ...prev, enabled: config.autoIngestEnabled }));
+        setStatus((prev) => ({
+          ...prev,
+          enabled: config.autoIngestEnabled,
+          captureMode: reliability.mode,
+          captureModeMessage: reliability.reasons[0],
+          migrationRequired: migration.migrationRequired,
+        }));
         await purgeExpiredSessions(repoId, config.retentionDays);
         await refreshActivity(3);
       } catch (e) {
@@ -169,6 +230,36 @@ export function useAutoIngest(params: {
       mounted = false;
     };
   }, [repoRoot, repoId, recordIssue, refreshActivity]);
+
+  useEffect(() => {
+    if (!repoRoot || !repoId) return;
+    if (!config?.autoIngestEnabled) return;
+    let cancelled = false;
+    let unlistenStatus: (() => void) | undefined;
+
+    const attach = async () => {
+      try {
+        unlistenStatus = await listen<CodexAppServerStatus>('codex-app-server-status', (event) => {
+          if (cancelled) return;
+          setCodexAppServerStatus(event.payload);
+        });
+      } catch {
+        // optional listener
+      }
+    };
+
+    attach();
+    const interval = setInterval(() => {
+      if (cancelled) return;
+      void refreshReliability();
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      if (unlistenStatus) unlistenStatus();
+    };
+  }, [repoRoot, repoId, config?.autoIngestEnabled, refreshReliability]);
 
   useEffect(() => {
     if (!config?.autoIngestEnabled || watchPaths.length === 0) return;
@@ -232,9 +323,11 @@ export function useAutoIngest(params: {
           stopFileWatcher();
           try {
             await setOtelReceiverEnabled(false);
+            await stopCodexAppServer();
           } catch (e) {
             recordIssue('Failed to disable Codex receiver', e instanceof Error ? e.message : String(e));
           }
+          await refreshReliability();
           return;
         }
 
@@ -271,21 +364,34 @@ export function useAutoIngest(params: {
             );
           }
         }
+
+        if (next.codex.streamEnrichmentEnabled && !next.codex.streamKillSwitch) {
+          try {
+            await startCodexAppServer();
+            await codexAppServerInitialize();
+            await codexAppServerSetStreamHealth(true);
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            recordIssue('Codex App Server degraded', msg);
+          }
+        }
+        await refreshReliability();
       } catch (e) {
         recordIssue('Auto-ingest toggle failed', e instanceof Error ? e.message : String(e));
       }
     },
-    [config, otlpKey?.present, repoId, refreshActivity, refreshBadges, recordIssue, showToast]
+    [config, otlpKey?.present, repoId, refreshActivity, refreshBadges, recordIssue, refreshReliability, showToast]
   );
 
   const updateWatchPaths = useCallback(async (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => {
     try {
       const next = await setIngestConfig({ watchPaths: paths });
       setConfig(next);
+      await refreshReliability();
     } catch (e) {
       recordIssue('Failed to update watch paths', e instanceof Error ? e.message : String(e));
     }
-  }, [recordIssue]);
+  }, [recordIssue, refreshReliability]);
 
   const configureCodexTelemetry = useCallback(async () => {
     if (!config) return;
@@ -299,10 +405,11 @@ export function useAutoIngest(params: {
       });
       setConfig(next);
       showToast('Codex telemetry configured');
+      await refreshReliability();
     } catch (e) {
       recordIssue('Codex config failed', e instanceof Error ? e.message : String(e));
     }
-  }, [config, recordIssue, showToast]);
+  }, [config, recordIssue, refreshReliability, showToast]);
 
   const rotateOtlpKey = useCallback(async () => {
     try {
@@ -318,13 +425,45 @@ export function useAutoIngest(params: {
     try {
       const now = new Date().toISOString();
       const next = await setIngestConfig({
-        consent: { codexTelemetryGranted: true, grantedAtISO: now }
+        consent: { codexTelemetryGranted: true, grantedAtIso: now }
       });
       setConfig(next);
     } catch (e) {
       recordIssue('Consent update failed', e instanceof Error ? e.message : String(e));
     }
   }, [recordIssue]);
+
+  const migrateCollector = useCallback(async (dryRun = false) => {
+    try {
+      const result = await runCollectorMigration(dryRun);
+      setCollectorMigration(result.status);
+      if (!dryRun && result.migrated) {
+        showToast('Collector migration completed');
+      } else if (dryRun) {
+        showToast('Collector migration dry-run ready');
+      }
+      await refreshReliability();
+      return result;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      recordIssue('Collector migration failed', message);
+      throw e;
+    }
+  }, [recordIssue, refreshReliability, showToast]);
+
+  const rollbackCollector = useCallback(async () => {
+    try {
+      const result = await rollbackCollectorMigration();
+      setCollectorMigration(result.status);
+      showToast('Collector migration rollback applied');
+      await refreshReliability();
+      return result;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      recordIssue('Collector rollback failed', message);
+      throw e;
+    }
+  }, [recordIssue, refreshReliability, showToast]);
 
   const dismissIssue = useCallback((id: string) => {
     setIssues((prev) => prev.filter((issue) => issue.id !== id));
@@ -335,6 +474,9 @@ export function useAutoIngest(params: {
     otlpEnvStatus: null,
     otlpKeyStatus: otlpKey,
     discoveredSources: sources,
+    collectorMigrationStatus: collectorMigration,
+    captureReliabilityStatus: captureReliability,
+    codexAppServerStatus,
     ingestStatus: status,
     activityRecent,
     getActivityAll: async () => getIngestActivity(repoId, 50),
@@ -345,6 +487,9 @@ export function useAutoIngest(params: {
     configureCodexTelemetry,
     rotateOtlpKey,
     grantCodexConsent,
+    migrateCollector,
+    rollbackCollector,
+    refreshCaptureReliability: refreshReliability,
     dismissIssue
   };
 }

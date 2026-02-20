@@ -337,9 +337,9 @@
 
   .firefly-orb,
   .firefly-wing {
-    animation: none !important;
-    transform: none !important;
-    transition: none !important;
+    animation: none;
+    transform: none;
+    transition: none;
   }
 
   [data-state='idle'] .firefly-wing.left,
@@ -363,19 +363,24 @@
 
 
 :root {
-  --firefly-brand-text: #b45309;
-  /* amber-700 */
-  --firefly-brand-shadow: 0 0 4px rgba(251, 191, 36, 0.4);
+  --firefly-brand-text: #c05e0a;
+  /* amber-700 saturated */
+  --firefly-brand-shadow:
+    0 0 6px rgba(251, 191, 36, 0.5),
+    0 0 14px rgba(251, 191, 36, 0.2);
 }
 
 :root[data-theme="dark"] {
-  --firefly-brand-text: #fffbeb;
+  --firefly-brand-text: #fef3c7;
   --firefly-brand-shadow:
-    0 0 4px rgba(251, 191, 36, 0.8),
-    /* Inner amber glow */
-    0 0 10px rgba(251, 191, 36, 0.4),
-    /* Outer amber glow */
-    0 0 20px rgba(251, 191, 36, 0.2);
+    0 0 6px rgba(251, 191, 36, 1),
+    /* tight inner glow */
+    0 0 16px rgba(251, 191, 36, 0.7),
+    /* mid amber halo */
+    0 0 36px rgba(251, 191, 36, 0.35),
+    /* outer warmth */
+    0 0 60px rgba(245, 158, 11, 0.15);
+  /* very wide ambient spill */
 }
 
 /* Typography for Logo */
@@ -383,7 +388,24 @@
   font-family: 'Caveat', cursive;
   font-weight: 700;
   color: var(--firefly-brand-text);
-  text-shadow: var(--firefly-brand-shadow);
-  /* Ambient spill */
   letter-spacing: 0.02em;
+  /* Light-mode default: tighter, more saturated glow so it reads against pale backgrounds.
+     FireflyHero writes --firefly-breath (0–1) each rAF frame. */
+  text-shadow:
+    0 0 calc(2px + var(--firefly-breath, 0.5) * 8px) rgba(180, 80, 0, calc(0.7 + var(--firefly-breath, 0.5) * 0.3)),
+    0 0 calc(6px + var(--firefly-breath, 0.5) * 12px) rgba(245, 158, 11, calc(0.4 + var(--firefly-breath, 0.5) * 0.4));
+}
+
+/* Dark-mode: wider, softer glow — luminous against the dark background */
+[data-theme="dark"] .brand-firefly {
+  text-shadow:
+    0 0 calc(4px + var(--firefly-breath, 0.5) * 14px) rgba(251, 191, 36, calc(0.55 + var(--firefly-breath, 0.5) * 0.45)),
+    0 0 calc(10px + var(--firefly-breath, 0.5) * 20px) rgba(245, 158, 11, calc(0.2 + var(--firefly-breath, 0.5) * 0.3));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-firefly {
+    /* Static mid-glow when animation is off */
+    text-shadow: var(--firefly-brand-shadow);
+  }
 }

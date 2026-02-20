@@ -2,7 +2,13 @@ import { useTheme } from '@design-studio/tokens';
 import { Activity, ChevronDown, FileCode, MessageSquare, Minimize2, PictureInPicture2, Search, Settings, TestTube } from 'lucide-react';
 import { Fragment, type KeyboardEvent, useEffect, useState } from 'react';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
-import type { DiscoveredSources, IngestConfig, OtlpKeyStatus } from '../../core/tauri/ingestConfig';
+import type {
+  CaptureReliabilityStatus,
+  CollectorMigrationStatus,
+  DiscoveredSources,
+  IngestConfig,
+  OtlpKeyStatus,
+} from '../../core/tauri/ingestConfig';
 import type {
   GitHubContextState,
   SessionExcerpt,
@@ -84,8 +90,13 @@ interface RightPanelTabsProps {
   ingestConfig?: IngestConfig | null;
   otlpKeyStatus?: OtlpKeyStatus | null;
   discoveredSources?: DiscoveredSources | null;
+  collectorMigrationStatus?: CollectorMigrationStatus | null;
+  captureReliabilityStatus?: CaptureReliabilityStatus | null;
   onToggleAutoIngest?: (enabled: boolean) => void;
   onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => void;
+  onMigrateCollector?: (dryRun?: boolean) => Promise<unknown>;
+  onRollbackCollector?: () => Promise<unknown>;
+  onRefreshCaptureReliability?: () => Promise<unknown>;
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
@@ -532,8 +543,13 @@ interface SettingsTabPanelProps {
   ingestConfig?: IngestConfig | null;
   otlpKeyStatus?: OtlpKeyStatus | null;
   discoveredSources?: DiscoveredSources | null;
+  collectorMigrationStatus?: CollectorMigrationStatus | null;
+  captureReliabilityStatus?: CaptureReliabilityStatus | null;
   onToggleAutoIngest?: (enabled: boolean) => void;
   onUpdateWatchPaths?: (paths: { claude: string[]; cursor: string[]; codexLogs: string[] }) => void;
+  onMigrateCollector?: (dryRun?: boolean) => Promise<unknown>;
+  onRollbackCollector?: () => Promise<unknown>;
+  onRefreshCaptureReliability?: () => Promise<unknown>;
   onConfigureCodex?: () => void;
   onRotateOtlpKey?: () => void;
   onGrantCodexConsent?: () => void;
@@ -562,8 +578,13 @@ function SettingsTabPanel({
   ingestConfig,
   otlpKeyStatus,
   discoveredSources,
+  collectorMigrationStatus,
+  captureReliabilityStatus,
   onToggleAutoIngest,
   onUpdateWatchPaths,
+  onMigrateCollector,
+  onRollbackCollector,
+  onRefreshCaptureReliability,
   onConfigureCodex,
   onRotateOtlpKey,
   onGrantCodexConsent,
@@ -595,8 +616,13 @@ function SettingsTabPanel({
       <AutoIngestSetupPanel
         config={ingestConfig ?? null}
         sources={discoveredSources ?? null}
+        migrationStatus={collectorMigrationStatus ?? null}
+        captureReliability={captureReliabilityStatus ?? null}
         onToggleAutoIngest={(enabled) => onToggleAutoIngest?.(enabled)}
         onUpdateWatchPaths={(paths) => onUpdateWatchPaths?.(paths)}
+        onMigrateCollector={onMigrateCollector}
+        onRollbackCollector={onRollbackCollector}
+        onRefreshReliability={onRefreshCaptureReliability}
       />
       <TelemetrySettingsPanel
         traceConfig={traceConfig}
@@ -704,8 +730,13 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
     ingestConfig,
     otlpKeyStatus,
     discoveredSources,
+    collectorMigrationStatus,
+    captureReliabilityStatus,
     onToggleAutoIngest,
     onUpdateWatchPaths,
+    onMigrateCollector,
+    onRollbackCollector,
+    onRefreshCaptureReliability,
     onConfigureCodex,
     onRotateOtlpKey,
     onGrantCodexConsent,
@@ -815,10 +846,15 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
           <SettingsTabPanel
             ingestConfig={ingestConfig}
             otlpKeyStatus={otlpKeyStatus}
-            discoveredSources={discoveredSources}
-            onToggleAutoIngest={onToggleAutoIngest}
-            onUpdateWatchPaths={onUpdateWatchPaths}
-            onConfigureCodex={onConfigureCodex}
+        discoveredSources={discoveredSources}
+        collectorMigrationStatus={collectorMigrationStatus}
+        captureReliabilityStatus={captureReliabilityStatus}
+        onToggleAutoIngest={onToggleAutoIngest}
+        onUpdateWatchPaths={onUpdateWatchPaths}
+        onMigrateCollector={onMigrateCollector}
+        onRollbackCollector={onRollbackCollector}
+        onRefreshCaptureReliability={onRefreshCaptureReliability}
+        onConfigureCodex={onConfigureCodex}
             onRotateOtlpKey={onRotateOtlpKey}
             onGrantCodexConsent={onGrantCodexConsent}
             githubConnectorEnabled={githubConnectorEnabled}

@@ -24,9 +24,23 @@ fn arg_value(args: &[String], name: &str) -> Option<String> {
 }
 
 fn default_db_path() -> Option<PathBuf> {
-    let identifier =
-        env::var("NARRATIVE_APP_ID").unwrap_or_else(|_| "com.jamie.narrative-mvp".into());
-    dirs::data_dir().map(|base| base.join(identifier).join("narrative.db"))
+    if let Ok(identifier) = env::var("NARRATIVE_APP_ID") {
+        return dirs::data_dir().map(|base| base.join(identifier).join("narrative.db"));
+    }
+
+    dirs::data_dir().map(|base| {
+        let primary = base
+            .join("com.jamie.firefly-narrative")
+            .join("narrative.db");
+        if primary.exists() {
+            return primary;
+        }
+        let legacy = base.join("com.jamie.narrative-mvp").join("narrative.db");
+        if legacy.exists() {
+            return legacy;
+        }
+        primary
+    })
 }
 
 async fn connect_db() -> Result<SqlitePool, String> {

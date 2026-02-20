@@ -27,8 +27,8 @@
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,
-    "resources": [
-      "bin/*"
+    "externalBin": [
+      "bin/codex-app-server"
     ],
     "icon": [
       "icons/32x32.png",

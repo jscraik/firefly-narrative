@@ -1,0 +1,4 @@
+@echo off
+REM Placeholder sidecar for Windows builds.
+echo narrative-codex-app-server-shim 0.1.0
+exit /b 0
