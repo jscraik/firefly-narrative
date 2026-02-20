@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/jscraik/firefly-narrative/compare/firefly-narrative-v0.11.0...firefly-narrative-v0.12.0) (2026-02-20)
+
+
+### Features
+
+* hybrid codex+claude capture reliability v1 scaffolding ([#25](https://github.com/jscraik/firefly-narrative/issues/25)) ([fb77f52](https://github.com/jscraik/firefly-narrative/commit/fb77f524abfbf92aa8e446cb704f969a2169e28c))
+
 ## [0.11.0](https://github.com/jscraik/firefly-narrative/compare/firefly-narrative-v0.10.0...firefly-narrative-v0.11.0) (2026-02-19)
 
 
