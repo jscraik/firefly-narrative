@@ -19,7 +19,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:perf": "playwright test e2e/firefly-visual-system-v1.spec.ts --grep @firefly-perf",
-    "test:lhci": "pnpm build && pnpm dlx @lhci/cli@0.15.1 autorun",
+    "test:lhci": "pnpm build && pnpm exec lhci autorun",
     "perf:baseline": "pnpm test:perf",
     "quality:review-loop": "pnpm test:a11y && pnpm test:lhci && pnpm test:perf",
     "otel:smoke": "node scripts/otel-smoke.mjs",

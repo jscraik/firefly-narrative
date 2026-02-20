@@ -7,6 +7,7 @@ use tauri::{command, AppHandle, Emitter, Manager, State};
 const RESTART_BUDGET: usize = 3;
 const RESTART_WINDOW_SECS: i64 = 60;
 const MAX_DEDUPE_LOG: usize = 200;
+const MAX_DEDUPE_SOURCES: usize = 10_000;
 const MAX_TRANSITIONS: usize = 100;
 
 #[derive(Clone, Default)]
@@ -125,6 +126,7 @@ struct CodexAppServerRuntime {
     status: CodexAppServerStatus,
     restart_attempts: VecDeque<i64>,
     dedupe_sources: HashMap<String, String>,
+    dedupe_key_order: VecDeque<String>,
     recent_dedupe: VecDeque<CodexStreamDedupeDecision>,
     stream_events_accepted: u64,
     stream_events_duplicates: u64,
@@ -246,13 +248,36 @@ fn register_start_failure(runtime: &mut CodexAppServerRuntime, message: String) 
     }
 }
 
+fn remember_dedupe_source(runtime: &mut CodexAppServerRuntime, key: &str, source: &str) {
+    runtime
+        .dedupe_sources
+        .insert(key.to_string(), source.to_string());
+
+    if let Some(pos) = runtime
+        .dedupe_key_order
+        .iter()
+        .position(|existing| existing == key)
+    {
+        runtime.dedupe_key_order.remove(pos);
+    }
+    runtime.dedupe_key_order.push_back(key.to_string());
+
+    while runtime.dedupe_key_order.len() > MAX_DEDUPE_SOURCES {
+        if let Some(evicted) = runtime.dedupe_key_order.pop_front() {
+            runtime.dedupe_sources.remove(&evicted);
+        }
+    }
+}
+
 fn apply_account_updated(status: &mut CodexAppServerStatus, auth_mode: &str, authenticated: bool) {
     let mode = normalize_auth_mode(auth_mode);
     if mode != "chatgpt" {
         status.auth_mode = mode.clone();
         status.auth_state = "needs_login".to_string();
         status.stream_healthy = false;
-        status.state = "degraded".to_string();
+        if status.state != "crash_loop" {
+            status.state = "degraded".to_string();
+        }
         status.last_error = Some(format!(
             "Unsupported auth mode for v1: {mode}. Expected chatgpt",
         ));
@@ -567,9 +592,7 @@ pub fn ingest_codex_stream_event(
             let incoming_priority = source_priority(&event_type, &incoming_source);
             let existing_priority = source_priority(&event_type, &existing_source);
             if incoming_priority > existing_priority {
-                runtime
-                    .dedupe_sources
-                    .insert(key.clone(), incoming_source.clone());
+                remember_dedupe_source(&mut runtime, &key, &incoming_source);
                 decision = "replaced".to_string();
                 runtime.stream_events_replaced += 1;
                 replaced_source = Some(existing_source.clone());
@@ -581,9 +604,7 @@ pub fn ingest_codex_stream_event(
             }
         }
     } else {
-        runtime
-            .dedupe_sources
-            .insert(key.clone(), incoming_source.clone());
+        remember_dedupe_source(&mut runtime, &key, &incoming_source);
         runtime.stream_events_accepted += 1;
         chosen_source = incoming_source;
     }
@@ -697,8 +718,9 @@ pub fn get_capture_reliability_status(
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_account_updated, event_identity_key, register_start_failure, source_priority,
-        CodexAppServerRuntime, CodexAppServerStatus, CodexStreamEventInput, RESTART_BUDGET,
+        apply_account_updated, event_identity_key, register_start_failure, remember_dedupe_source,
+        source_priority, CodexAppServerRuntime, CodexAppServerStatus, CodexStreamEventInput,
+        MAX_DEDUPE_SOURCES, RESTART_BUDGET,
     };
 
     #[test]
@@ -765,5 +787,30 @@ mod tests {
             .as_deref()
             .unwrap_or_default()
             .contains("Unsupported auth mode"));
+    }
+
+    #[test]
+    fn account_updated_unsupported_mode_preserves_crash_loop_state() {
+        let mut status = CodexAppServerStatus::default();
+        status.state = "crash_loop".to_string();
+        apply_account_updated(&mut status, "apikey", true);
+        assert_eq!(status.state, "crash_loop");
+        assert_eq!(status.auth_state, "needs_login");
+    }
+
+    #[test]
+    fn dedupe_source_cache_is_bounded() {
+        let mut runtime = CodexAppServerRuntime::default();
+        for idx in 0..(MAX_DEDUPE_SOURCES + 32) {
+            let key = format!("k-{idx}");
+            remember_dedupe_source(&mut runtime, &key, "otel");
+        }
+
+        assert_eq!(runtime.dedupe_sources.len(), MAX_DEDUPE_SOURCES);
+        assert_eq!(runtime.dedupe_key_order.len(), MAX_DEDUPE_SOURCES);
+        assert!(!runtime.dedupe_sources.contains_key("k-0"));
+        assert!(runtime
+            .dedupe_sources
+            .contains_key(&format!("k-{}", MAX_DEDUPE_SOURCES + 31)));
     }
 }

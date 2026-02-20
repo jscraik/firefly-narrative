@@ -242,7 +242,7 @@ tasks:
 - `pnpm test:coverage`
 - `pnpm test:integration`
 - `pnpm test:e2e`
-- `cargo test --manifest-path /Users/jamiecraik/dev/narrative/src-tauri/Cargo.toml`
+- `cargo test --manifest-path src-tauri/Cargo.toml`
 
 ## Assumptions and Defaults
 - OTEL remains durable baseline; stream enrichment remains additive.

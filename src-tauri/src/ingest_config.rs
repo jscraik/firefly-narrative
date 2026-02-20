@@ -289,9 +289,8 @@ fn enforce_collector_roots(collector: &mut CollectorConfig) -> Result<(), String
     let current_legacy = expand_tilde_to_abs(&collector.legacy_root)?;
 
     if current_canonical != expected_canonical || current_legacy != expected_legacy {
-        collector.migration.last_error = Some(
-            "Collector roots were reset to managed defaults for safety".to_string(),
-        );
+        collector.migration.last_error =
+            Some("Collector roots were reset to managed defaults for safety".to_string());
     }
 
     collector.canonical_root = default_canonical_collector_root();
@@ -450,30 +449,47 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
     let canonical = expand_tilde_to_abs(&ingest.collector.canonical_root)?;
     let legacy = expand_tilde_to_abs(&ingest.collector.legacy_root)?;
     let mut migrated_now = false;
+    let migration_attempt_at = iso_now();
 
-    // If legacy data exists and canonical root does not, perform an actual migration here
-    // so we do not accidentally mask required migration by creating canonical state only.
-    if legacy.exists() && canonical_requires_legacy_migration(&canonical)? {
-        let backup_abs = migration_backup_path(&canonical);
-        if backup_abs.exists() {
+    let migration_result = (|| -> Result<(), String> {
+        // If legacy data exists and canonical root does not, perform an actual migration here
+        // so we do not accidentally mask required migration by creating canonical state only.
+        if legacy.exists() && canonical_requires_legacy_migration(&canonical)? {
+            let backup_abs = migration_backup_path(&canonical);
+            if backup_abs.exists() {
+                return Err(format!(
+                    "Backup path already exists; refusing to overwrite: {}",
+                    backup_abs.display()
+                ));
+            }
+            copy_dir_recursive(&legacy, &backup_abs, false)?;
+            copy_dir_recursive(&legacy, &canonical, true)?;
+            ingest.collector.migration.last_backup_path =
+                Some(backup_abs.to_string_lossy().to_string());
+            ingest.collector.migration.status = "migrated".to_string();
+            ingest.collector.migration.last_attempt_at_iso = Some(iso_now());
+            ingest.collector.migration.last_error = None;
+            save_config(&ingest)?;
+            migrated_now = true;
+        } else if canonical.exists() {
+            // Canonical already exists; preserve prior status unless it is explicitly failed.
+            if ingest.collector.migration.status == "failed" {
+                ingest.collector.migration.status = "deferred".to_string();
+            }
+        }
+        Ok(())
+    })();
+
+    if let Err(err) = migration_result {
+        ingest.collector.migration.status = "failed".to_string();
+        ingest.collector.migration.last_attempt_at_iso = Some(migration_attempt_at);
+        ingest.collector.migration.last_error = Some(err.clone());
+        if let Err(save_err) = save_config(&ingest) {
             return Err(format!(
-                "Backup path already exists; refusing to overwrite: {}",
-                backup_abs.display()
+                "{err}; additionally failed to persist migration failure status: {save_err}"
             ));
         }
-        copy_dir_recursive(&legacy, &backup_abs, false)?;
-        copy_dir_recursive(&legacy, &canonical, true)?;
-        ingest.collector.migration.last_backup_path = Some(backup_abs.to_string_lossy().to_string());
-        ingest.collector.migration.status = "migrated".to_string();
-        ingest.collector.migration.last_attempt_at_iso = Some(iso_now());
-        ingest.collector.migration.last_error = None;
-        save_config(&ingest)?;
-        migrated_now = true;
-    } else if canonical.exists() {
-        // Canonical already exists; preserve prior status unless it is explicitly failed.
-        if ingest.collector.migration.status == "failed" {
-            ingest.collector.migration.status = "deferred".to_string();
-        }
+        return Err(err);
     }
 
     fs::create_dir_all(&canonical).map_err(|e| e.to_string())?;
@@ -506,10 +522,9 @@ fn validate_otel_endpoint(endpoint: &str) -> Result<String, String> {
     if !(trimmed.starts_with("http://") || trimmed.starts_with("https://")) {
         return Err("OTEL endpoint must start with http:// or https://".to_string());
     }
-    if trimmed
-        .chars()
-        .any(|ch| ch == '"' || ch == '\n' || ch == '\r' || ch == '\t' || ch == '\\' || ch.is_control())
-    {
+    if trimmed.chars().any(|ch| {
+        ch == '"' || ch == '\n' || ch == '\r' || ch == '\t' || ch == '\\' || ch.is_control()
+    }) {
         return Err("OTEL endpoint contains unsupported characters".to_string());
     }
     Ok(trimmed.to_string())
@@ -665,8 +680,8 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
             canonical_abs.display()
         ));
 
-    let migration_required =
-        legacy_abs.exists() && canonical_requires_legacy_migration(&canonical_abs)?;
+        let migration_required =
+            legacy_abs.exists() && canonical_requires_legacy_migration(&canonical_abs)?;
 
         if !legacy_abs.exists() && !canonical_abs.exists() {
             actions.push("No collector directory exists; create canonical root".to_string());
@@ -813,7 +828,10 @@ pub fn rollback_collector_migration() -> Result<CollectorMigrationResult, String
         ));
         rollback_snapshot = Some(snapshot);
     }
-    actions.push(format!("Restore into canonical root {}", canonical_abs.display()));
+    actions.push(format!(
+        "Restore into canonical root {}",
+        canonical_abs.display()
+    ));
     if let Err(copy_err) = copy_dir_recursive(&backup_abs, &canonical_abs, true) {
         let mut recovery_error: Option<String> = None;
         if rollback_snapshot.is_none() {
@@ -881,7 +899,8 @@ fn get_collector_migration_status_inner() -> Result<CollectorMigrationStatus, St
         legacy_root: config.collector.legacy_root,
         canonical_exists: canonical_abs.exists(),
         legacy_exists: legacy_abs.exists(),
-        migration_required: legacy_abs.exists() && canonical_requires_legacy_migration(&canonical_abs)?,
+        migration_required: legacy_abs.exists()
+            && canonical_requires_legacy_migration(&canonical_abs)?,
         status: config.collector.migration.status,
         last_attempt_at_iso: config.collector.migration.last_attempt_at_iso,
         last_error: config.collector.migration.last_error,
@@ -1021,13 +1040,14 @@ fn copy_dir_recursive(
 
 fn parse_toml_table_header(line: &str) -> Option<String> {
     let trimmed = line.trim();
-    if !(trimmed.starts_with('[') && trimmed.ends_with(']')) {
+    let header_only = trimmed.split('#').next().unwrap_or_default().trim_end();
+    if !(header_only.starts_with('[') && header_only.ends_with(']')) {
         return None;
     }
-    if trimmed.starts_with("[[") && trimmed.ends_with("]]") {
-        return Some(trimmed[2..trimmed.len() - 2].trim().to_string());
+    if header_only.starts_with("[[") && header_only.ends_with("]]") {
+        return Some(header_only[2..header_only.len() - 2].trim().to_string());
     }
-    Some(trimmed[1..trimmed.len() - 1].trim().to_string())
+    Some(header_only[1..header_only.len() - 1].trim().to_string())
 }
 
 fn is_otel_table(section: &str) -> bool {
@@ -1072,9 +1092,8 @@ fn upsert_otel_block(existing: &str, block: &str) -> String {
 mod tests {
     use super::{
         canonical_is_stub_or_empty, copy_dir_recursive, enforce_collector_roots,
-        normalize_codex_mode, normalize_codex_watch_paths, upsert_otel_block,
-        validate_otel_endpoint, CodexConfig,
-        CollectorConfig, WatchPaths,
+        normalize_codex_mode, normalize_codex_watch_paths, parse_toml_table_header,
+        upsert_otel_block, validate_otel_endpoint, CodexConfig, CollectorConfig, WatchPaths,
     };
     use std::fs;
 
@@ -1199,5 +1218,17 @@ value = 1
         assert!(updated.contains("log_user_prompt = false"));
         assert!(!updated.contains("[otel.exporter]"));
         assert_eq!(updated.matches("[otel]").count(), 1);
+    }
+
+    #[test]
+    fn parse_toml_table_header_supports_inline_comment() {
+        assert_eq!(
+            parse_toml_table_header("[otel] # comment"),
+            Some("otel".to_string())
+        );
+        assert_eq!(
+            parse_toml_table_header("[[otel.exporter]] # comment"),
+            Some("otel.exporter".to_string())
+        );
     }
 }

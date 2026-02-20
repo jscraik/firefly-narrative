@@ -61,22 +61,22 @@ pub fn generate_otlp_api_key_hex() -> String {
 }
 
 pub fn ensure_otlp_api_key() -> Result<String, String> {
-    if let Ok(primary) = entry() {
-        if let Ok(value) = primary.get_password() {
-            if !value.trim().is_empty() {
-                return Ok(value);
-            }
-        }
+    let primary = entry()?;
+    match primary.get_password() {
+        Ok(value) if !value.trim().is_empty() => return Ok(value),
+        Ok(_) | Err(keyring::Error::NoEntry) => {}
+        Err(err) => return Err(err.to_string()),
     }
 
     // Migrate legacy keychain service entry when present.
-    if let Ok(legacy) = entry_for(LEGACY_SERVICE) {
-        if let Ok(value) = legacy.get_password() {
-            if !value.trim().is_empty() {
-                set_otlp_api_key(&value)?;
-                return Ok(value);
-            }
+    let legacy = entry_for(LEGACY_SERVICE)?;
+    match legacy.get_password() {
+        Ok(value) if !value.trim().is_empty() => {
+            set_otlp_api_key(&value)?;
+            return Ok(value);
         }
+        Ok(_) | Err(keyring::Error::NoEntry) => {}
+        Err(err) => return Err(err.to_string()),
     }
 
     let key = generate_otlp_api_key_hex();

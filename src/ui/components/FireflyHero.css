@@ -414,7 +414,7 @@
 
   /* Tame the orb glow on mobile so it doesn't wash out the subtitle */
   .core-orb {
-    box-shadow:
+    --hero-orb-core:
       0 0 10px #fff,
       0 0 25px color-mix(in srgb, var(--accent-orange) 70%, transparent),
       0 0 50px color-mix(in srgb, var(--accent-orange) 30%, transparent);
