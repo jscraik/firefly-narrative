@@ -8,6 +8,7 @@ import {
   autoImportSessionFile,
   configureCodexOtel,
   codexAppServerInitialize,
+  codexAppServerSetStreamHealth,
   discoverCaptureSources,
   getCaptureReliabilityStatus,
   getCollectorMigrationStatus,
@@ -368,6 +369,7 @@ export function useAutoIngest(params: {
           try {
             await startCodexAppServer();
             await codexAppServerInitialize();
+            await codexAppServerSetStreamHealth(true);
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             recordIssue('Codex App Server degraded', msg);

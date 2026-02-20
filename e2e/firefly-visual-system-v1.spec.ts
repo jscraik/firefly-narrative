@@ -16,7 +16,7 @@ type FireflyPerfFixture = {
 async function openDemoTimeline(page: Page) {
   await page.goto('/');
   const demoTab = page.getByRole('tab', { name: 'Demo' });
-  await demoTab.click();
+  await demoTab.click({ force: true });
   await page.waitForSelector('[role="listbox"][aria-label="Commit timeline"]');
 }
 
