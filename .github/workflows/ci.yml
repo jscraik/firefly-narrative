@@ -106,5 +106,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      - name: Ensure required Tauri icon files exist
+        run: |
+          mkdir -p src-tauri/icons
+          for icon in 32x32.png 128x128.png 128x128@2x.png icon.icns icon.ico; do
+            if [ ! -f "src-tauri/icons/$icon" ]; then
+              touch "src-tauri/icons/$icon"
+            fi
+          done
+
       - name: Run Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
