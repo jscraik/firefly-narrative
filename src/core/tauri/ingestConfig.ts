@@ -80,6 +80,13 @@ export type CodexAppServerStatus = {
   lastTransitionAtIso?: string;
 };
 
+export type CodexAccountStatus = {
+  authState: 'needs_login' | 'authenticating' | 'authenticated' | 'logged_out';
+  authMode: string;
+  interactiveLoginRequired: boolean;
+  supportedModes: string[];
+};
+
 export type CaptureReliabilityStatus = {
   mode: 'OTEL_ONLY' | 'HYBRID_ACTIVE' | 'DEGRADED_STREAMING' | 'FAILURE';
   otelBaselineHealthy: boolean;
@@ -185,29 +192,27 @@ export async function codexAppServerInitialized(): Promise<CodexAppServerStatus>
   return await invoke<CodexAppServerStatus>('codex_app_server_initialized');
 }
 
-export async function codexAppServerAccountRead(): Promise<{
-  authState: string;
-  authMode: string;
-  interactiveLoginRequired: boolean;
-  supportedModes: string[];
-}> {
-  return await invoke('codex_app_server_account_read');
+export async function codexAppServerAccountRead(): Promise<CodexAccountStatus> {
+  return await invoke<CodexAccountStatus>('codex_app_server_account_read');
 }
 
-export async function codexAppServerLoginStart(): Promise<void> {
-  await invoke('codex_app_server_account_login_start');
+export async function codexAppServerLoginStart(): Promise<CodexAccountStatus> {
+  return await invoke<CodexAccountStatus>('codex_app_server_account_login_start');
 }
 
-export async function codexAppServerLoginCompleted(success: boolean): Promise<void> {
-  await invoke('codex_app_server_account_login_completed', { success });
+export async function codexAppServerLoginCompleted(success: boolean): Promise<CodexAccountStatus> {
+  return await invoke<CodexAccountStatus>('codex_app_server_account_login_completed', { success });
 }
 
-export async function codexAppServerAccountUpdated(authMode: string, authenticated: boolean): Promise<void> {
-  await invoke('codex_app_server_account_updated', { authMode, authenticated });
+export async function codexAppServerAccountUpdated(
+  authMode: string,
+  authenticated: boolean,
+): Promise<CodexAccountStatus> {
+  return await invoke<CodexAccountStatus>('codex_app_server_account_updated', { authMode, authenticated });
 }
 
-export async function codexAppServerLogout(): Promise<void> {
-  await invoke('codex_app_server_account_logout');
+export async function codexAppServerLogout(): Promise<CodexAccountStatus> {
+  return await invoke<CodexAccountStatus>('codex_app_server_account_logout');
 }
 
 export async function codexAppServerSetStreamHealth(healthy: boolean, reason?: string): Promise<CodexAppServerStatus> {

@@ -147,6 +147,10 @@ fn normalize_source(input: &str) -> String {
     }
 }
 
+fn normalize_auth_mode(input: &str) -> String {
+    input.trim().to_lowercase()
+}
+
 fn event_identity_key(input: &CodexStreamEventInput) -> String {
     format!(
         "v1|{}|{}|{}|{}|{}",
@@ -235,10 +239,44 @@ fn register_start_failure(runtime: &mut CodexAppServerRuntime, message: String) 
     runtime.status.stream_healthy = false;
     runtime.status.last_transition_at_iso = Some(now_iso());
 
-    if runtime.restart_attempts.len() > RESTART_BUDGET {
+    if runtime.restart_attempts.len() >= RESTART_BUDGET {
         runtime.status.state = "crash_loop".to_string();
     } else {
         runtime.status.state = "degraded".to_string();
+    }
+}
+
+fn apply_account_updated(status: &mut CodexAppServerStatus, auth_mode: &str, authenticated: bool) {
+    let mode = normalize_auth_mode(auth_mode);
+    if mode != "chatgpt" {
+        status.auth_mode = mode.clone();
+        status.auth_state = "needs_login".to_string();
+        status.stream_healthy = false;
+        status.state = "degraded".to_string();
+        status.last_error = Some(format!(
+            "Unsupported auth mode for v1: {mode}. Expected chatgpt",
+        ));
+        return;
+    }
+
+    status.auth_mode = mode;
+    if authenticated {
+        status.auth_state = "authenticated".to_string();
+        status.last_error = None;
+        if status.state != "crash_loop" {
+            status.state = if status.stream_healthy {
+                "healthy".to_string()
+            } else {
+                "degraded".to_string()
+            };
+        }
+    } else {
+        status.auth_state = "needs_login".to_string();
+        status.stream_healthy = false;
+        if status.state != "crash_loop" {
+            status.state = "degraded".to_string();
+        }
+        status.last_error = Some("Authentication required via sidecar account update".to_string());
     }
 }
 
@@ -392,15 +430,19 @@ pub fn codex_app_server_account_login_completed(
     success: bool,
 ) -> Result<CodexAccountStatus, String> {
     let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
-    runtime.status.auth_state = "needs_login".to_string();
-    runtime.status.last_transition_at_iso = Some(now_iso());
-    runtime.status.stream_healthy = false;
     if success {
-        runtime.status.last_error = Some(
-            "Authenticated assertions are ignored until sidecar callback verification is implemented"
-                .to_string(),
-        );
+        // Sidecar callback (account/updated) is the single source of truth for authenticated=true.
+        runtime.status.auth_state = "authenticating".to_string();
+        runtime.status.last_error = None;
+    } else {
+        runtime.status.auth_state = "needs_login".to_string();
+        runtime.status.stream_healthy = false;
+        if runtime.status.state != "crash_loop" {
+            runtime.status.state = "degraded".to_string();
+        }
+        runtime.status.last_error = Some("Authentication cancelled or failed".to_string());
     }
+    runtime.status.last_transition_at_iso = Some(now_iso());
     Ok(CodexAccountStatus {
         auth_state: runtime.status.auth_state.clone(),
         auth_mode: runtime.status.auth_mode.clone(),
@@ -413,26 +455,10 @@ pub fn codex_app_server_account_login_completed(
 pub fn codex_app_server_account_updated(
     state: State<'_, CodexAppServerState>,
     auth_mode: String,
-    _authenticated: bool,
+    authenticated: bool,
 ) -> Result<CodexAccountStatus, String> {
     let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
-    let mode = auth_mode.trim().to_lowercase();
-    if mode != "chatgpt" {
-        runtime.status.auth_state = "needs_login".to_string();
-        runtime.status.stream_healthy = false;
-        runtime.status.state = "degraded".to_string();
-        runtime.status.last_error = Some(format!(
-            "Unsupported auth mode for v1: {mode}. Expected chatgpt",
-        ));
-    } else {
-        runtime.status.auth_mode = mode;
-        runtime.status.auth_state = "needs_login".to_string();
-        runtime.status.stream_healthy = false;
-        runtime.status.last_error = Some(
-            "Authenticated assertions are ignored until sidecar callback verification is implemented"
-                .to_string(),
-        );
-    }
+    apply_account_updated(&mut runtime.status, &auth_mode, authenticated);
     runtime.status.last_transition_at_iso = Some(now_iso());
     Ok(CodexAccountStatus {
         auth_state: runtime.status.auth_state.clone(),
@@ -670,7 +696,10 @@ pub fn get_capture_reliability_status(
 
 #[cfg(test)]
 mod tests {
-    use super::{event_identity_key, source_priority, CodexStreamEventInput};
+    use super::{
+        apply_account_updated, event_identity_key, register_start_failure, source_priority,
+        CodexAppServerRuntime, CodexAppServerStatus, CodexStreamEventInput, RESTART_BUDGET,
+    };
 
     #[test]
     fn identity_key_is_stable() {
@@ -700,5 +729,41 @@ mod tests {
             source_priority("item/completed", "otel")
                 > source_priority("item/completed", "app_server_stream")
         );
+    }
+
+    #[test]
+    fn restart_budget_enters_crash_loop_at_threshold() {
+        let mut runtime = CodexAppServerRuntime::default();
+        for i in 0..RESTART_BUDGET {
+            register_start_failure(&mut runtime, format!("failure-{i}"));
+        }
+        assert_eq!(runtime.status.state, "crash_loop");
+        assert_eq!(runtime.status.restart_attempts_in_window, RESTART_BUDGET);
+    }
+
+    #[test]
+    fn chatgpt_account_updated_sets_authenticated_when_verified() {
+        let mut status = CodexAppServerStatus::default();
+        status.state = "degraded".to_string();
+        status.stream_healthy = true;
+        apply_account_updated(&mut status, "chatgpt", true);
+
+        assert_eq!(status.auth_state, "authenticated");
+        assert_eq!(status.state, "healthy");
+        assert!(status.last_error.is_none());
+    }
+
+    #[test]
+    fn account_updated_rejects_unsupported_mode() {
+        let mut status = CodexAppServerStatus::default();
+        apply_account_updated(&mut status, "apikey", true);
+        assert_eq!(status.auth_state, "needs_login");
+        assert_eq!(status.state, "degraded");
+        assert_eq!(status.auth_mode, "apikey");
+        assert!(status
+            .last_error
+            .as_deref()
+            .unwrap_or_default()
+            .contains("Unsupported auth mode"));
     }
 }
