@@ -410,6 +410,7 @@ pub fn get_otlp_env_status() -> Result<OtlpEnvStatus, String> {
 
 #[command(rename_all = "camelCase")]
 pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
+    let endpoint = validate_otel_endpoint(&endpoint)?;
     let home = dirs::home_dir().ok_or_else(|| "Could not determine home directory".to_string())?;
     let config_dir = home.join(".codex");
     let config_path = config_dir.join("config.toml");
@@ -448,10 +449,11 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
     enforce_collector_roots(&mut ingest.collector)?;
     let canonical = expand_tilde_to_abs(&ingest.collector.canonical_root)?;
     let legacy = expand_tilde_to_abs(&ingest.collector.legacy_root)?;
+    let mut migrated_now = false;
 
     // If legacy data exists and canonical root does not, perform an actual migration here
     // so we do not accidentally mask required migration by creating canonical state only.
-    if legacy.exists() && !canonical.exists() {
+    if legacy.exists() && canonical_requires_legacy_migration(&canonical)? {
         let backup_abs = migration_backup_path(&canonical);
         if backup_abs.exists() {
             return Err(format!(
@@ -463,6 +465,10 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
         copy_dir_recursive(&legacy, &canonical, true)?;
         ingest.collector.migration.last_backup_path = Some(backup_abs.to_string_lossy().to_string());
         ingest.collector.migration.status = "migrated".to_string();
+        ingest.collector.migration.last_attempt_at_iso = Some(iso_now());
+        ingest.collector.migration.last_error = None;
+        save_config(&ingest)?;
+        migrated_now = true;
     } else if canonical.exists() {
         // Canonical already exists; preserve prior status unless it is explicitly failed.
         if ingest.collector.migration.status == "failed" {
@@ -484,9 +490,29 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
     ingest.collector.migration.last_attempt_at_iso = Some(iso_now());
     ingest.collector.migration.last_error = None;
+    if migrated_now {
+        ingest.collector.migration.status = "migrated".to_string();
+    }
     save_config(&ingest)?;
 
     Ok(())
+}
+
+fn validate_otel_endpoint(endpoint: &str) -> Result<String, String> {
+    let trimmed = endpoint.trim();
+    if trimmed.is_empty() {
+        return Err("OTEL endpoint cannot be empty".to_string());
+    }
+    if !(trimmed.starts_with("http://") || trimmed.starts_with("https://")) {
+        return Err("OTEL endpoint must start with http:// or https://".to_string());
+    }
+    if trimmed
+        .chars()
+        .any(|ch| ch == '"' || ch == '\n' || ch == '\r' || ch == '\t' || ch == '\\' || ch.is_control())
+    {
+        return Err("OTEL endpoint contains unsupported characters".to_string());
+    }
+    Ok(trimmed.to_string())
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -639,7 +665,8 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
             canonical_abs.display()
         ));
 
-        let migration_required = legacy_abs.exists() && !canonical_abs.exists();
+    let migration_required =
+        legacy_abs.exists() && canonical_requires_legacy_migration(&canonical_abs)?;
 
         if !legacy_abs.exists() && !canonical_abs.exists() {
             actions.push("No collector directory exists; create canonical root".to_string());
@@ -680,7 +707,11 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
             config.collector.migration.status = "failed".to_string();
             config.collector.migration.last_attempt_at_iso = Some(attempt_at);
             config.collector.migration.last_error = Some(err.clone());
-            let _ = save_config(&config);
+            if let Err(save_err) = save_config(&config) {
+                return Err(format!(
+                    "{err}; additionally failed to persist migration failure status: {save_err}"
+                ));
+            }
         }
         return Err(err);
     }
@@ -711,20 +742,31 @@ pub fn rollback_collector_migration() -> Result<CollectorMigrationResult, String
     let mut config = load_config().unwrap_or_default();
     normalize_collector_config(&mut config.collector);
     enforce_collector_roots(&mut config.collector)?;
+    let attempt_at = iso_now();
     let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
-    let backup_path = config
-        .collector
-        .migration
-        .last_backup_path
-        .clone()
-        .ok_or_else(|| "No backup snapshot available to rollback".to_string())?;
+    let backup_path = match config.collector.migration.last_backup_path.clone() {
+        Some(path) => path,
+        None => {
+            let err = "No backup snapshot available to rollback".to_string();
+            config.collector.migration.status = "failed".to_string();
+            config.collector.migration.last_attempt_at_iso = Some(attempt_at.clone());
+            config.collector.migration.last_error = Some(err.clone());
+            save_config(&config)?;
+            return Err(err);
+        }
+    };
     let backup_abs = expand_tilde_to_abs(&backup_path)?;
 
     if !backup_abs.exists() {
-        return Err(format!(
+        let err = format!(
             "Backup path not found; cannot rollback: {}",
             backup_abs.display()
-        ));
+        );
+        config.collector.migration.status = "failed".to_string();
+        config.collector.migration.last_attempt_at_iso = Some(attempt_at.clone());
+        config.collector.migration.last_error = Some(err.clone());
+        save_config(&config)?;
+        return Err(err);
     }
 
     let mut actions = vec![format!(
@@ -742,19 +784,29 @@ pub fn rollback_collector_migration() -> Result<CollectorMigrationResult, String
                 chrono::Utc::now().timestamp_millis()
             ));
         if snapshot.exists() {
-            return Err(format!(
+            let err = format!(
                 "Rollback snapshot destination already exists: {}",
                 snapshot.display()
-            ));
+            );
+            config.collector.migration.status = "failed".to_string();
+            config.collector.migration.last_attempt_at_iso = Some(attempt_at.clone());
+            config.collector.migration.last_error = Some(err.clone());
+            save_config(&config)?;
+            return Err(err);
         }
-        fs::rename(&canonical_abs, &snapshot).map_err(|e| {
-            format!(
+        if let Err(e) = fs::rename(&canonical_abs, &snapshot) {
+            let err = format!(
                 "Failed to snapshot current canonical collector {} -> {}: {}",
                 canonical_abs.display(),
                 snapshot.display(),
                 e
-            )
-        })?;
+            );
+            config.collector.migration.status = "failed".to_string();
+            config.collector.migration.last_attempt_at_iso = Some(attempt_at.clone());
+            config.collector.migration.last_error = Some(err.clone());
+            save_config(&config)?;
+            return Err(err);
+        }
         actions.push(format!(
             "Snapshot current canonical collector to {}",
             snapshot.display()
@@ -763,16 +815,48 @@ pub fn rollback_collector_migration() -> Result<CollectorMigrationResult, String
     }
     actions.push(format!("Restore into canonical root {}", canonical_abs.display()));
     if let Err(copy_err) = copy_dir_recursive(&backup_abs, &canonical_abs, true) {
-        if !canonical_abs.exists() {
-            if let Some(snapshot) = rollback_snapshot.as_ref() {
-                let _ = fs::rename(snapshot, &canonical_abs);
+        let mut recovery_error: Option<String> = None;
+        if rollback_snapshot.is_none() {
+            if let Err(remove_err) = remove_path_recursively(&canonical_abs) {
+                recovery_error = Some(format!(
+                    "failed to clear partial canonical restore: {}",
+                    remove_err
+                ));
+            }
+        } else if let Some(snapshot) = rollback_snapshot.as_ref() {
+            if let Err(remove_err) = remove_path_recursively(&canonical_abs) {
+                recovery_error = Some(format!(
+                    "failed to clear partial canonical restore: {}",
+                    remove_err
+                ));
+            } else if let Err(rename_err) = fs::rename(snapshot, &canonical_abs) {
+                recovery_error = Some(format!(
+                    "failed to restore snapshot {} -> {}: {}",
+                    snapshot.display(),
+                    canonical_abs.display(),
+                    rename_err
+                ));
             }
         }
-        return Err(copy_err);
+        let composed_error = if let Some(recovery_error) = recovery_error {
+            format!("{copy_err}; rollback recovery failed: {recovery_error}")
+        } else {
+            copy_err
+        };
+        config.collector.migration.status = "failed".to_string();
+        config.collector.migration.last_attempt_at_iso = Some(attempt_at.clone());
+        config.collector.migration.last_error = Some(composed_error.clone());
+        save_config(&config)?;
+        return Err(composed_error);
+    }
+    if let Some(snapshot) = rollback_snapshot.as_ref() {
+        if snapshot.exists() {
+            let _ = remove_path_recursively(snapshot);
+        }
     }
 
     config.collector.migration.status = "deferred".to_string();
-    config.collector.migration.last_attempt_at_iso = Some(iso_now());
+    config.collector.migration.last_attempt_at_iso = Some(attempt_at);
     config.collector.migration.last_error = None;
     save_config(&config)?;
 
@@ -797,7 +881,7 @@ fn get_collector_migration_status_inner() -> Result<CollectorMigrationStatus, St
         legacy_root: config.collector.legacy_root,
         canonical_exists: canonical_abs.exists(),
         legacy_exists: legacy_abs.exists(),
-        migration_required: legacy_abs.exists() && !canonical_abs.exists(),
+        migration_required: legacy_abs.exists() && canonical_requires_legacy_migration(&canonical_abs)?,
         status: config.collector.migration.status,
         last_attempt_at_iso: config.collector.migration.last_attempt_at_iso,
         last_error: config.collector.migration.last_error,
@@ -809,6 +893,40 @@ fn iso_now() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
 }
 
+fn canonical_requires_legacy_migration(canonical_abs: &std::path::Path) -> Result<bool, String> {
+    if !canonical_abs.exists() {
+        return Ok(true);
+    }
+    canonical_is_stub_or_empty(canonical_abs)
+}
+
+fn canonical_is_stub_or_empty(canonical_abs: &std::path::Path) -> Result<bool, String> {
+    if !canonical_abs.exists() {
+        return Ok(true);
+    }
+    if canonical_abs.is_file() {
+        return Ok(true);
+    }
+    if !canonical_abs.is_dir() {
+        return Ok(true);
+    }
+
+    let mut names: Vec<String> = fs::read_dir(canonical_abs)
+        .map_err(|e| e.to_string())?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.file_name().to_string_lossy().to_string())
+        .collect();
+    names.retain(|name| !name.starts_with('.'));
+
+    if names.is_empty() {
+        return Ok(true);
+    }
+    if names.len() == 1 && names[0] == "narrative-collector-state.json" {
+        return Ok(true);
+    }
+    Ok(false)
+}
+
 fn expand_tilde_to_abs(path: &str) -> Result<PathBuf, String> {
     if let Some(stripped) = path.strip_prefix("~/") {
         let home =
@@ -816,6 +934,24 @@ fn expand_tilde_to_abs(path: &str) -> Result<PathBuf, String> {
         return Ok(home.join(stripped));
     }
     Ok(PathBuf::from(path))
+}
+
+fn remove_path_recursively(path: &std::path::Path) -> Result<(), String> {
+    if !path.exists() {
+        return Ok(());
+    }
+    let meta = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
+    if meta.file_type().is_symlink() {
+        return Err(format!(
+            "Refusing to remove symlink during rollback recovery: {}",
+            path.display()
+        ));
+    }
+    if meta.is_dir() {
+        fs::remove_dir_all(path).map_err(|e| e.to_string())
+    } else {
+        fs::remove_file(path).map_err(|e| e.to_string())
+    }
 }
 
 fn migration_backup_path(canonical_abs: &std::path::Path) -> PathBuf {
@@ -883,47 +1019,51 @@ fn copy_dir_recursive(
     Ok(())
 }
 
+fn parse_toml_table_header(line: &str) -> Option<String> {
+    let trimmed = line.trim();
+    if !(trimmed.starts_with('[') && trimmed.ends_with(']')) {
+        return None;
+    }
+    if trimmed.starts_with("[[") && trimmed.ends_with("]]") {
+        return Some(trimmed[2..trimmed.len() - 2].trim().to_string());
+    }
+    Some(trimmed[1..trimmed.len() - 1].trim().to_string())
+}
+
+fn is_otel_table(section: &str) -> bool {
+    section == "otel" || section.starts_with("otel.")
+}
+
 fn upsert_otel_block(existing: &str, block: &str) -> String {
     if existing.trim().is_empty() {
         return format!("{block}\n");
     }
 
-    let lines = existing.lines().collect::<Vec<_>>();
-    let mut out = Vec::new();
-    let mut in_otel = false;
-    let mut otel_written = false;
+    let mut out: Vec<&str> = Vec::new();
+    let mut in_otel_section = false;
 
-    for (idx, line) in lines.iter().enumerate() {
-        let trimmed = line.trim();
-        if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            if in_otel && !otel_written {
-                out.push(block.trim_end());
-                otel_written = true;
+    for line in existing.lines() {
+        if let Some(section) = parse_toml_table_header(line) {
+            if is_otel_table(&section) {
+                in_otel_section = true;
+                continue;
             }
-            in_otel = trimmed == "[otel]";
+            in_otel_section = false;
         }
 
-        if in_otel {
-            // Skip existing otel lines; we'll replace with block.
-            if idx + 1 < lines.len() {
-                let next = lines[idx + 1].trim();
-                if next.starts_with('[') && next.ends_with(']') {
-                    out.push(block.trim_end());
-                    otel_written = true;
-                }
-            }
+        if in_otel_section {
             continue;
         }
-
-        out.push(*line);
+        out.push(line);
     }
 
-    if !otel_written {
-        if !out.is_empty() && !out.last().unwrap_or(&"").is_empty() {
-            out.push("");
-        }
-        out.push(block.trim_end());
+    while out.last().is_some_and(|line| line.trim().is_empty()) {
+        out.pop();
     }
+    if !out.is_empty() {
+        out.push("");
+    }
+    out.push(block.trim_end());
 
     out.join("\n") + "\n"
 }
@@ -931,8 +1071,10 @@ fn upsert_otel_block(existing: &str, block: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        copy_dir_recursive, enforce_collector_roots, normalize_codex_mode, normalize_codex_watch_paths,
-        CodexConfig, CollectorConfig, WatchPaths,
+        canonical_is_stub_or_empty, copy_dir_recursive, enforce_collector_roots,
+        normalize_codex_mode, normalize_codex_watch_paths, upsert_otel_block,
+        validate_otel_endpoint, CodexConfig,
+        CollectorConfig, WatchPaths,
     };
     use std::fs;
 
@@ -997,5 +1139,65 @@ mod tests {
         assert_eq!(collector.canonical_root, super::CANONICAL_COLLECTOR_ROOT);
         assert_eq!(collector.legacy_root, super::LEGACY_COLLECTOR_ROOT);
         assert!(collector.migration.last_error.is_some());
+    }
+
+    #[test]
+    fn canonical_stub_detection_treats_state_only_dir_as_empty() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let canonical = tmp.path().join("collector");
+        fs::create_dir_all(&canonical).expect("mkdir");
+        fs::write(
+            canonical.join("narrative-collector-state.json"),
+            "{\"configured\":true}",
+        )
+        .expect("write");
+        assert!(canonical_is_stub_or_empty(&canonical).expect("stub check"));
+    }
+
+    #[test]
+    fn canonical_stub_detection_treats_file_path_as_needing_migration() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let canonical = tmp.path().join("collector");
+        fs::write(&canonical, "not-a-directory").expect("write");
+        assert!(canonical_is_stub_or_empty(&canonical).expect("stub check"));
+    }
+
+    #[test]
+    fn canonical_stub_detection_treats_real_content_as_migrated() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let canonical = tmp.path().join("collector");
+        fs::create_dir_all(canonical.join("sessions")).expect("mkdir");
+        fs::write(canonical.join("sessions/data.jsonl"), "[]").expect("write");
+        assert!(!canonical_is_stub_or_empty(&canonical).expect("stub check"));
+    }
+
+    #[test]
+    fn validate_otel_endpoint_rejects_toml_injection_chars() {
+        assert!(validate_otel_endpoint("https://localhost:4318/v1/logs").is_ok());
+        assert!(validate_otel_endpoint("https://localhost:4318/v1/logs\"\n[evil]").is_err());
+    }
+
+    #[test]
+    fn upsert_otel_block_replaces_nested_otel_tables() {
+        let existing = r#"
+[core]
+enabled = true
+
+[otel]
+log_user_prompt = true
+
+[otel.exporter]
+protocol = "grpc"
+
+[after]
+value = 1
+"#;
+        let block = "[otel]\nexporter = { otlp-http = { endpoint = \"http://127.0.0.1:4318/v1/logs\" } }\nlog_user_prompt = false\n";
+        let updated = upsert_otel_block(existing, block);
+        assert!(updated.contains("[core]"));
+        assert!(updated.contains("[after]"));
+        assert!(updated.contains("log_user_prompt = false"));
+        assert!(!updated.contains("[otel.exporter]"));
+        assert_eq!(updated.matches("[otel]").count(), 1);
     }
 }
