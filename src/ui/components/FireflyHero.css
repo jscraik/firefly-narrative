@@ -433,23 +433,23 @@
   .orbital-ring,
   .trace-bg-pulse,
   .boot-flicker {
-    animation: none !important;
+    animation: none;
   }
 
   .packet-active {
-    animation: none !important;
+    animation: none;
     opacity: 0;
   }
 
   .firefly-hero-container.exiting .core-orb,
   .firefly-hero-container.exiting {
-    animation: none !important;
+    animation: none;
     opacity: 0;
     transition: opacity 80ms ease-in;
   }
 
   .breathing-wrapper {
-    transition: none !important;
+    transition: none;
   }
 
   .core-orb {
