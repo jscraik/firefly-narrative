@@ -185,6 +185,11 @@ export const FireflyHero: React.FC<FireflyHeroProps> = ({
     if (!isExiting) return;
 
     // 1. Burst mode: status confirms signal sent
+    // Cancel any in-flight orb burst recovery so it can't overwrite exit state
+    if (orbBurstTimerRef.current) {
+      clearTimeout(orbBurstTimerRef.current);
+      orbBurstTimerRef.current = null;
+    }
     setIsBursting(true);
     setStatus('SIGNAL_SENT');
     mouseX.jump(0);
