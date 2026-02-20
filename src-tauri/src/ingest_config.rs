@@ -10,6 +10,8 @@ use crate::secret_store;
 
 pub const CANONICAL_COLLECTOR_ROOT: &str = "~/.agents/otel/collector";
 pub const LEGACY_COLLECTOR_ROOT: &str = "~/.codex/otel-collector";
+pub const APP_IDENTIFIER: &str = "com.jamie.firefly-narrative";
+pub const LEGACY_APP_IDENTIFIER: &str = "com.jamie.narrative-mvp";
 
 fn default_chatgpt_auth_mode() -> String {
     "chatgpt".to_string()
@@ -189,7 +191,7 @@ impl Default for IngestConfig {
 }
 
 pub fn load_config() -> Result<IngestConfig, String> {
-    let path = config_path()?;
+    let path = config_path_for_read()?;
     if !path.exists() {
         return Ok(IngestConfig::default());
     }
@@ -357,9 +359,22 @@ pub fn config_path() -> Result<PathBuf, String> {
     // Cross-platform equivalent of Tauri's app_data_dir resolution:
     // dirs::data_dir() / <bundle_identifier> / ingest-config.json
     let base = dirs::data_dir().ok_or_else(|| "Could not determine data directory".to_string())?;
-    Ok(base
-        .join("com.jamie.narrative-mvp")
-        .join("ingest-config.json"))
+    Ok(base.join(APP_IDENTIFIER).join("ingest-config.json"))
+}
+
+fn config_path_for_read() -> Result<PathBuf, String> {
+    let canonical = config_path()?;
+    if canonical.exists() {
+        return Ok(canonical);
+    }
+
+    let base = dirs::data_dir().ok_or_else(|| "Could not determine data directory".to_string())?;
+    let legacy = base.join(LEGACY_APP_IDENTIFIER).join("ingest-config.json");
+    if legacy.exists() {
+        return Ok(legacy);
+    }
+
+    Ok(canonical)
 }
 
 #[command(rename_all = "camelCase")]
@@ -432,6 +447,29 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
     normalize_collector_config(&mut ingest.collector);
     enforce_collector_roots(&mut ingest.collector)?;
     let canonical = expand_tilde_to_abs(&ingest.collector.canonical_root)?;
+    let legacy = expand_tilde_to_abs(&ingest.collector.legacy_root)?;
+
+    // If legacy data exists and canonical root does not, perform an actual migration here
+    // so we do not accidentally mask required migration by creating canonical state only.
+    if legacy.exists() && !canonical.exists() {
+        let backup_abs = migration_backup_path(&canonical);
+        if backup_abs.exists() {
+            return Err(format!(
+                "Backup path already exists; refusing to overwrite: {}",
+                backup_abs.display()
+            ));
+        }
+        copy_dir_recursive(&legacy, &backup_abs, false)?;
+        copy_dir_recursive(&legacy, &canonical, true)?;
+        ingest.collector.migration.last_backup_path = Some(backup_abs.to_string_lossy().to_string());
+        ingest.collector.migration.status = "migrated".to_string();
+    } else if canonical.exists() {
+        // Canonical already exists; preserve prior status unless it is explicitly failed.
+        if ingest.collector.migration.status == "failed" {
+            ingest.collector.migration.status = "deferred".to_string();
+        }
+    }
+
     fs::create_dir_all(&canonical).map_err(|e| e.to_string())?;
     let state_file = canonical.join("narrative-collector-state.json");
     let state_payload = serde_json::json!({
@@ -444,7 +482,6 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
         serde_json::to_string_pretty(&state_payload).map_err(|e| e.to_string())?,
     )
     .map_err(|e| e.to_string())?;
-    ingest.collector.migration.status = "migrated".to_string();
     ingest.collector.migration.last_attempt_at_iso = Some(iso_now());
     ingest.collector.migration.last_error = None;
     save_config(&ingest)?;
@@ -590,57 +627,72 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
     enforce_collector_roots(&mut config.collector)?;
     let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
     let legacy_abs = expand_tilde_to_abs(&config.collector.legacy_root)?;
+    let attempt_at = iso_now();
 
     let mut actions = Vec::new();
     let mut migrated = false;
-
-    actions.push(format!(
-        "Assess legacy ({}) and canonical ({}) collector roots",
-        legacy_abs.display(),
-        canonical_abs.display()
-    ));
-
-    let migration_required = legacy_abs.exists() && !canonical_abs.exists();
-
-    if !legacy_abs.exists() && !canonical_abs.exists() {
-        actions.push("No collector directory exists; create canonical root".to_string());
-        if !dry_run {
-            fs::create_dir_all(&canonical_abs).map_err(|e| e.to_string())?;
-        }
-        migrated = !dry_run;
-    } else if migration_required {
-        let backup_abs = migration_backup_path(&canonical_abs);
+    let mut backup_path = config.collector.migration.last_backup_path.clone();
+    let migration_result = (|| -> Result<(), String> {
         actions.push(format!(
-            "Create non-destructive backup snapshot at {}",
-            backup_abs.display()
-        ));
-        actions.push(format!(
-            "Copy legacy collector data from {} to canonical {}",
+            "Assess legacy ({}) and canonical ({}) collector roots",
             legacy_abs.display(),
             canonical_abs.display()
         ));
-        if !dry_run {
-            // Back up legacy before copying it into the canonical path so rollback can restore.
-            copy_dir_recursive(&legacy_abs, &backup_abs, true)?;
-            copy_dir_recursive(&legacy_abs, &canonical_abs, true)?;
-            config.collector.migration.last_backup_path =
-                Some(backup_abs.to_string_lossy().to_string());
-            migrated = true;
+
+        let migration_required = legacy_abs.exists() && !canonical_abs.exists();
+
+        if !legacy_abs.exists() && !canonical_abs.exists() {
+            actions.push("No collector directory exists; create canonical root".to_string());
+            if !dry_run {
+                fs::create_dir_all(&canonical_abs).map_err(|e| e.to_string())?;
+            }
+        } else if migration_required {
+            let backup_abs = migration_backup_path(&canonical_abs);
+            actions.push(format!(
+                "Create non-destructive backup snapshot at {}",
+                backup_abs.display()
+            ));
+            actions.push(format!(
+                "Copy legacy collector data from {} to canonical {}",
+                legacy_abs.display(),
+                canonical_abs.display()
+            ));
+            if !dry_run {
+                if backup_abs.exists() {
+                    return Err(format!(
+                        "Backup path already exists; refusing to overwrite: {}",
+                        backup_abs.display()
+                    ));
+                }
+                copy_dir_recursive(&legacy_abs, &backup_abs, false)?;
+                copy_dir_recursive(&legacy_abs, &canonical_abs, true)?;
+                backup_path = Some(backup_abs.to_string_lossy().to_string());
+                migrated = true;
+            }
+        } else {
+            actions.push("Canonical collector already exists; no migration required".to_string());
         }
-    } else {
-        actions.push("Canonical collector already exists; no migration required".to_string());
-        migrated = true;
+        Ok(())
+    })();
+
+    if let Err(err) = migration_result {
+        if !dry_run {
+            config.collector.migration.status = "failed".to_string();
+            config.collector.migration.last_attempt_at_iso = Some(attempt_at);
+            config.collector.migration.last_error = Some(err.clone());
+            let _ = save_config(&config);
+        }
+        return Err(err);
     }
 
     if !dry_run {
-        config.collector.migration.status = if migrated {
-            "migrated".to_string()
-        } else {
-            "failed".to_string()
-        };
-        config.collector.migration.last_attempt_at_iso = Some(iso_now());
+        config.collector.migration.last_backup_path = backup_path;
+        config.collector.migration.last_attempt_at_iso = Some(attempt_at);
+        config.collector.migration.last_error = None;
         if migrated {
-            config.collector.migration.last_error = None;
+            config.collector.migration.status = "migrated".to_string();
+        } else if config.collector.migration.status == "failed" {
+            config.collector.migration.status = "deferred".to_string();
         }
         save_config(&config)?;
     }
@@ -675,14 +727,49 @@ pub fn rollback_collector_migration() -> Result<CollectorMigrationResult, String
         ));
     }
 
-    let actions = vec![
-        format!(
-            "Restore collector data from backup {}",
-            backup_abs.display()
-        ),
-        format!("Restore into canonical root {}", canonical_abs.display()),
-    ];
-    copy_dir_recursive(&backup_abs, &canonical_abs, true)?;
+    let mut actions = vec![format!(
+        "Restore collector data from backup {}",
+        backup_abs.display()
+    )];
+    let mut rollback_snapshot: Option<PathBuf> = None;
+    if canonical_abs.exists() {
+        let snapshot = canonical_abs
+            .parent()
+            .map(std::path::Path::to_path_buf)
+            .unwrap_or_else(|| canonical_abs.clone())
+            .join(format!(
+                "collector-rollback-current-{}",
+                chrono::Utc::now().timestamp_millis()
+            ));
+        if snapshot.exists() {
+            return Err(format!(
+                "Rollback snapshot destination already exists: {}",
+                snapshot.display()
+            ));
+        }
+        fs::rename(&canonical_abs, &snapshot).map_err(|e| {
+            format!(
+                "Failed to snapshot current canonical collector {} -> {}: {}",
+                canonical_abs.display(),
+                snapshot.display(),
+                e
+            )
+        })?;
+        actions.push(format!(
+            "Snapshot current canonical collector to {}",
+            snapshot.display()
+        ));
+        rollback_snapshot = Some(snapshot);
+    }
+    actions.push(format!("Restore into canonical root {}", canonical_abs.display()));
+    if let Err(copy_err) = copy_dir_recursive(&backup_abs, &canonical_abs, true) {
+        if !canonical_abs.exists() {
+            if let Some(snapshot) = rollback_snapshot.as_ref() {
+                let _ = fs::rename(snapshot, &canonical_abs);
+            }
+        }
+        return Err(copy_err);
+    }
 
     config.collector.migration.status = "deferred".to_string();
     config.collector.migration.last_attempt_at_iso = Some(iso_now());
@@ -736,7 +823,7 @@ fn migration_backup_path(canonical_abs: &std::path::Path) -> PathBuf {
         .parent()
         .map(std::path::Path::to_path_buf)
         .unwrap_or_else(|| canonical_abs.to_path_buf());
-    let stamp = chrono::Utc::now().format("%Y%m%dT%H%M%SZ");
+    let stamp = chrono::Utc::now().timestamp_millis();
     parent.join(format!("collector-backup-{stamp}"))
 }
 
