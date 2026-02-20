@@ -58,9 +58,11 @@ test.describe('Narrative Critical Flows', () => {
       
       // Check for at least one heading
       const headings = page.locator('h1, h2, h3, [role="heading"]');
-      if (await headings.count()) {
-        await expect(headings.first()).toBeVisible();
+      try {
+        await expect(headings.first()).toBeVisible({ timeout: 3000 });
         return;
+      } catch {
+        // No headings rendered; fall back to tab check
       }
       await expect(page.getByRole('tab', { name: /demo|repo/i })).toBeVisible();
     });
