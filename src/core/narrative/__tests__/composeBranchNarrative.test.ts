@@ -24,6 +24,13 @@ function baseModel(): BranchViewModel {
   };
 }
 
+function normalizeGeneratedAtIso<T extends { generatedAtISO?: string }>(value: T): T {
+  return {
+    ...value,
+    generatedAtISO: '<normalized>',
+  };
+}
+
 describe('composeBranchNarrative', () => {
   it('returns failed state when no commits are available', () => {
     const narrative = composeBranchNarrative(baseModel());
@@ -126,7 +133,9 @@ describe('composeBranchNarrative', () => {
       },
     });
 
-    expect(withColdStartCalibration).toEqual(withoutCalibration);
+    expect(normalizeGeneratedAtIso(withColdStartCalibration)).toEqual(
+      normalizeGeneratedAtIso(withoutCalibration)
+    );
   });
 
   it('clamps calibrated confidence values within policy bounds', () => {

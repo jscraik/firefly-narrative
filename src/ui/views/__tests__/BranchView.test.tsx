@@ -208,10 +208,12 @@ vi.mock("../../components/Timeline", () => ({
     nodes,
     selectedId,
     onSelect,
+    pulseCommitId,
   }: {
     nodes: Array<{ id: string; label?: string }>;
     selectedId: string | null;
     onSelect: (id: string) => void;
+    pulseCommitId?: string | null;
   }) => (
     <div data-testid="timeline-mock">
       {nodes.map((node) => (
@@ -219,6 +221,7 @@ vi.mock("../../components/Timeline", () => ({
           {node.label ?? node.id}
         </button>
       ))}
+      <output data-testid="timeline-pulse-id">{pulseCommitId ?? ""}</output>
       <output data-testid="selected-node">{selectedId ?? "none"}</output>
     </div>
   ),
@@ -733,5 +736,41 @@ describe("BranchView transition and integration coverage", () => {
       ([eventName]) => eventName === "feedback_submitted",
     );
     expect(feedbackEvents).toHaveLength(0);
+  });
+
+  it("pulses each newly session-linked commit in order", async () => {
+    vi.useFakeTimers();
+    try {
+      const props = buildProps({
+        model: createModel({
+          timeline: [
+            { id: "aaaa1111", type: "commit", label: "Commit A", badges: [{ type: "session" }] },
+            { id: "bbbb2222", type: "commit", label: "Commit B", badges: [{ type: "session" }] },
+            { id: "cccc3333", type: "commit", label: "Commit C" },
+          ],
+        }),
+      });
+
+      render(<BranchView {...props} />);
+
+      expect(screen.getByTestId("timeline-pulse-id")).toHaveTextContent("");
+
+      await act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(screen.getByTestId("timeline-pulse-id")).toHaveTextContent("aaaa1111");
+
+      await act(() => {
+        vi.advanceTimersByTime(1700);
+      });
+      expect(screen.getByTestId("timeline-pulse-id")).toHaveTextContent("bbbb2222");
+
+      await act(() => {
+        vi.advanceTimersByTime(1700);
+      });
+      expect(screen.getByTestId("timeline-pulse-id")).toHaveTextContent("");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

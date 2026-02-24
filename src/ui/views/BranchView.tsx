@@ -541,6 +541,11 @@ function BranchViewInner(props: {
   }, [branchScopeKey]);
 
   useEffect(() => {
+    pulsedCommits.current.clear();
+    setPulseCommitId(null);
+  }, [branchScopeKey]);
+
+  useEffect(() => {
     if (!repoId) return;
     const key = `${repoId}:${model.meta?.branchName ?? 'unknown'}`;
     if (narrativeViewedKeyRef.current === key) return;
@@ -704,26 +709,36 @@ function BranchViewInner(props: {
     return guard.cancel;
   }, [createRequestGuard, selectedCommitSha, selectedNodeId, selectedFile, loadTraceRangesForFile, setActionError]);
 
-  // Pulse commit badge once on first successful import
+  // Pulse commit badges when a new session-linked commit is first observed.
   useEffect(() => {
-    // Find commits with session badges (linked sessions)
-    const linkedCommits = model.timeline.filter(node =>
-      node.badges?.some(b => b.type === 'session')
-    );
+    const linkedCommitIds = model.timeline
+      .filter((node) => node.badges?.some((badge) => badge.type === 'session'))
+      .map((node) => node.id);
+    const unpulsedCommitIds = linkedCommitIds.filter((id) => !pulsedCommits.current.has(id));
 
-    for (const commit of linkedCommits) {
-      if (!pulsedCommits.current.has(commit.id)) {
-        // First time seeing this linked commit - trigger pulse once
-        pulsedCommits.current.add(commit.id);
-        setPulseCommitId(commit.id);
+    if (unpulsedCommitIds.length === 0) return;
 
-        // Clear pulse state after animation completes (1.5s animation + buffer)
-        const timer = setTimeout(() => {
-          setPulseCommitId(null);
-        }, 1600);
-        return () => clearTimeout(timer);
-      }
-    }
+    const timers: Array<ReturnType<typeof setTimeout>> = [];
+    const pulseGapMs = 1800;
+    const pulseDurationMs = 1600;
+
+    unpulsedCommitIds.forEach((id, index) => {
+      const startDelayMs = index * pulseGapMs;
+      const startPulseTimer = setTimeout(() => {
+        pulsedCommits.current.add(id);
+        setPulseCommitId(id);
+
+        const clearPulseTimer = setTimeout(() => {
+          setPulseCommitId((current) => (current === id ? null : current));
+        }, pulseDurationMs);
+        timers.push(clearPulseTimer);
+      }, startDelayMs);
+      timers.push(startPulseTimer);
+    });
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
   }, [model.timeline]);
 
   const handleFileClickFromSession = (path: string) => {

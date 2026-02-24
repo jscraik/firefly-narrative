@@ -85,6 +85,37 @@ export function useTraceCollector({
   setActionError
 }: UseTraceCollectorProps): UseTraceCollectorReturn {
   const _repoStateRef = useRef({ repoRoot, repoId, timeline, model: null as BranchViewModel | null });
+  const isMountedRef = useRef(true);
+  const repoContextRef = useRef({ repoRoot, repoId });
+  const actionRequestVersionRef = useRef(0);
+
+  useEffect(() => {
+    repoContextRef.current = { repoRoot, repoId };
+    actionRequestVersionRef.current += 1;
+  }, [repoRoot, repoId]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      actionRequestVersionRef.current += 1;
+    };
+  }, []);
+
+  const beginActionGuard = useCallback(() => {
+    const expectedRepoRoot = repoContextRef.current.repoRoot;
+    const expectedRepoId = repoContextRef.current.repoId;
+    const requestVersion = actionRequestVersionRef.current + 1;
+    actionRequestVersionRef.current = requestVersion;
+
+    const isStaleRequest = () =>
+      !isMountedRef.current
+      || actionRequestVersionRef.current !== requestVersion
+      || repoContextRef.current.repoRoot !== expectedRepoRoot
+      || repoContextRef.current.repoId !== expectedRepoId;
+
+    return { expectedRepoRoot, expectedRepoId, isStaleRequest };
+  }, []);
+
   const applyScopedRepoUpdate = useCallback(
     (expectedRepoId: number, updater: (prev: BranchViewModel) => BranchViewModel) => {
       setRepoState((prev) => {
@@ -151,66 +182,78 @@ export function useTraceCollector({
 
   const updateCodexOtelPath = useCallback(
     async (path: string) => {
+      const { expectedRepoRoot, expectedRepoId, isStaleRequest } = beginActionGuard();
       setActionError(null);
 
       try {
-        if (!repoRoot || repoId <= 0) {
+        if (!expectedRepoRoot || expectedRepoId <= 0) {
           throw new Error('Open a repository before configuring trace ingestion.');
         }
         // Get current trace config from model (will need to be passed in or stored)
         const baseConfig = defaultTraceConfig();
         const nextConfig = { ...baseConfig, codexOtelLogPath: path };
-        await saveTraceConfig(repoRoot, nextConfig);
+        await saveTraceConfig(expectedRepoRoot, nextConfig);
+        if (isStaleRequest()) return;
         const _ingest = await ingestCodexOtelLogFile({
-          repoRoot,
-          repoId,
+          repoRoot: expectedRepoRoot,
+          repoId: expectedRepoId,
           logPath: path
         });
+        if (isStaleRequest()) return;
         const commitShas = timeline.map((n) => n.id);
-        const trace = await scanAgentTraceRecords(repoRoot, repoId, commitShas);
+        const trace = await scanAgentTraceRecords(expectedRepoRoot, expectedRepoId, commitShas);
+        if (isStaleRequest()) return;
 
-        applyScopedRepoUpdate(repoId, (prev) => applyTraceUpdate(prev, trace));
+        applyScopedRepoUpdate(expectedRepoId, (prev) => applyTraceUpdate(prev, trace));
       } catch (e: unknown) {
+        if (isStaleRequest()) return;
         setActionError(e instanceof Error ? e.message : String(e));
       }
     },
-    [repoRoot, repoId, timeline, applyScopedRepoUpdate, setActionError]
+    [beginActionGuard, timeline, applyScopedRepoUpdate, setActionError]
   );
 
   const exportAgentTrace = useCallback(
     async (nodeId: string, files: FileChange[]) => {
+      const { expectedRepoRoot, expectedRepoId, isStaleRequest } = beginActionGuard();
       setActionError(null);
 
       try {
-        if (!repoRoot || repoId <= 0) {
+        if (!expectedRepoRoot || expectedRepoId <= 0) {
           throw new Error('Open a repository before exporting a trace.');
         }
-        const sessionId = await getSessionLinkForCommit(repoId, nodeId);
+        const sessionId = await getSessionLinkForCommit(expectedRepoId, nodeId);
+        if (isStaleRequest()) return;
         const record = await generateDerivedTraceRecord({
-          repoRoot,
+          repoRoot: expectedRepoRoot,
           commitSha: nodeId,
           files,
           sessionId
         });
-        await writeGeneratedTraceRecord(repoRoot, record);
+        if (isStaleRequest()) return;
+        await writeGeneratedTraceRecord(expectedRepoRoot, record);
+        if (isStaleRequest()) return;
 
         const commitShas = timeline.map((n) => n.id);
-        const trace = await scanAgentTraceRecords(repoRoot, repoId, commitShas);
+        const trace = await scanAgentTraceRecords(expectedRepoRoot, expectedRepoId, commitShas);
+        if (isStaleRequest()) return;
 
-        applyScopedRepoUpdate(repoId, (prev) => applyTraceUpdate(prev, trace));
+        applyScopedRepoUpdate(expectedRepoId, (prev) => applyTraceUpdate(prev, trace));
       } catch (e: unknown) {
+        if (isStaleRequest()) return;
         setActionError(e instanceof Error ? e.message : String(e));
       }
     },
-    [repoRoot, repoId, timeline, applyScopedRepoUpdate, setActionError]
+    [beginActionGuard, timeline, applyScopedRepoUpdate, setActionError]
   );
 
   const runOtlpSmokeTestHandler = useCallback(
     async (nodeId: string, files: FileChange[]) => {
+      const { expectedRepoRoot, expectedRepoId, isStaleRequest } = beginActionGuard();
       setActionError(null);
 
       try {
-        if (!repoRoot || repoId <= 0) {
+        if (!expectedRepoRoot || expectedRepoId <= 0) {
           throw new Error('Open a repository before running the smoke test.');
         }
         if (files.length === 0) {
@@ -218,20 +261,23 @@ export function useTraceCollector({
         }
 
         await runOtlpSmokeTest(
-          repoRoot,
+          expectedRepoRoot,
           nodeId,
           files.map((file) => file.path)
         );
+        if (isStaleRequest()) return;
 
         const commitShas = timeline.map((n) => n.id);
-        const trace = await scanAgentTraceRecords(repoRoot, repoId, commitShas);
+        const trace = await scanAgentTraceRecords(expectedRepoRoot, expectedRepoId, commitShas);
+        if (isStaleRequest()) return;
 
-        applyScopedRepoUpdate(repoId, (prev) => applyTraceUpdate(prev, trace));
+        applyScopedRepoUpdate(expectedRepoId, (prev) => applyTraceUpdate(prev, trace));
       } catch (e: unknown) {
+        if (isStaleRequest()) return;
         setActionError(e instanceof Error ? e.message : String(e));
       }
     },
-    [repoRoot, repoId, timeline, applyScopedRepoUpdate, setActionError]
+    [beginActionGuard, timeline, applyScopedRepoUpdate, setActionError]
   );
 
   const openCodexOtelDocs = useCallback(async () => {

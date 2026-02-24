@@ -83,4 +83,73 @@ describe('useRepoFileExistence', () => {
 
     expect(result.current['src/file.ts']).toBe(false);
   });
+
+  it('does not repeatedly re-check paths that failed existence lookup', async () => {
+    mockFileExists.mockImplementation((repoRoot: string, path: string) => {
+      if (repoRoot === '/repo/1' && path === 'src/missing.ts') {
+        return Promise.reject(new Error('missing'));
+      }
+      return Promise.resolve(true);
+    });
+
+    const { result, rerender } = renderHook(
+      ({ repoRoot, paths }) => useRepoFileExistence(repoRoot, paths),
+      { initialProps: { repoRoot: '/repo/1', paths: ['src/missing.ts', 'src/existing.ts'] } }
+    );
+
+    await waitFor(() => {
+      expect(result.current['src/existing.ts']).toBe(true);
+    });
+
+    const missingCallsAfterFirstPass = mockFileExists.mock.calls.filter(
+      ([repo, path]) => repo === '/repo/1' && path === 'src/missing.ts'
+    ).length;
+    expect(missingCallsAfterFirstPass).toBe(1);
+
+    rerender({ repoRoot: '/repo/1', paths: ['src/missing.ts', 'src/existing.ts', 'src/new.ts'] });
+
+    await waitFor(() => {
+      expect(result.current['src/new.ts']).toBe(true);
+    });
+
+    const missingCallsAfterRerender = mockFileExists.mock.calls.filter(
+      ([repo, path]) => repo === '/repo/1' && path === 'src/missing.ts'
+    ).length;
+    expect(missingCallsAfterRerender).toBe(1);
+  });
+
+  it('retries transient failures after the retry window', async () => {
+    const originalNow = vi.spyOn(Date, 'now');
+    originalNow.mockReturnValue(1_000);
+
+    let callCount = 0;
+    mockFileExists.mockImplementation(async (_repoRoot: string, path: string) => {
+      if (path === 'src/missing.ts') {
+        callCount += 1;
+        if (callCount === 1) {
+          throw new Error('temporary issue');
+        }
+        return false;
+      }
+      return true;
+    });
+
+    const { rerender } = renderHook(
+      ({ repoRoot }) => useRepoFileExistence(repoRoot, ['src/missing.ts']),
+      { initialProps: { repoRoot: '/repo/1' } }
+    );
+
+    await waitFor(() => {
+      expect(callCount).toBe(1);
+    });
+
+    originalNow.mockReturnValue(1_000 + 6_000);
+    rerender({ repoRoot: '/repo/1' });
+
+    await waitFor(() => {
+      expect(callCount).toBe(2);
+    });
+
+    originalNow.mockRestore();
+  });
 });

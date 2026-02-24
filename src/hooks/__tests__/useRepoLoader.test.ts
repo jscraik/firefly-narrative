@@ -170,6 +170,20 @@ describe('useRepoLoader', () => {
     expect(result.current.attributionPrefs?.repoId).toBe(2);
   });
 
+  it('reports dialog errors when repository picker fails to open', async () => {
+    mockOpen.mockRejectedValueOnce(new Error('dialog unavailable'));
+
+    const { result } = renderHook(() => useRepoLoader());
+
+    await act(async () => {
+      await result.current.openRepo();
+    });
+
+    expect(result.current.actionError).toBe('dialog unavailable');
+    expect(result.current.repoState.status).toBe('idle');
+    expect(mockIndexRepo).not.toHaveBeenCalled();
+  });
+
   it('clears prefs and ignores late attribution responses after leaving ready state', async () => {
     const deferred = createDeferred<AttributionPrefs>();
     mockGetAttributionPrefs.mockImplementation(async () => deferred.promise);
@@ -389,6 +403,55 @@ describe('useRepoLoader', () => {
     expect(result.current.attributionPrefs?.repoId).toBe(2);
   });
 
+  it('ignores stale preference update result when a newer update finishes first', async () => {
+    const firstUpdate = createDeferred<AttributionPrefs>();
+    mockGetAttributionPrefs.mockImplementation(async () => createPrefs(1));
+    mockSetAttributionPrefs
+      .mockImplementationOnce(async () => firstUpdate.promise)
+      .mockImplementationOnce(async () => ({
+        ...createPrefs(1),
+        showLineOverlays: true,
+      }));
+
+    const { result } = renderHook(() => useRepoLoader());
+
+    act(() => {
+      result.current.setRepoState(createReadyState(1));
+    });
+
+    await waitFor(() => {
+      expect(result.current.attributionPrefs?.repoId).toBe(1);
+    });
+
+    let firstRequest: Promise<void> | undefined;
+    let secondRequest: Promise<void> | undefined;
+    await act(async () => {
+      firstRequest = result.current.updateAttributionPrefs({ showLineOverlays: false });
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(mockSetAttributionPrefs).toHaveBeenNthCalledWith(1, 1, { showLineOverlays: false });
+    });
+
+    await act(async () => {
+      secondRequest = result.current.updateAttributionPrefs({ showLineOverlays: true });
+      await secondRequest;
+    });
+
+    expect(result.current.attributionPrefs?.showLineOverlays).toBe(true);
+
+    await act(async () => {
+      firstUpdate.resolve({
+        ...createPrefs(1),
+        showLineOverlays: false,
+      });
+      await firstRequest;
+    });
+
+    expect(result.current.attributionPrefs?.showLineOverlays).toBe(true);
+  });
+
   it('ignores stale purge refresh result after repo switch', async () => {
     const deferredPurge = createDeferred<{ removed: number }>();
     mockGetAttributionPrefs.mockImplementation(async (repoId: number) => createPrefs(repoId));
@@ -431,5 +494,36 @@ describe('useRepoLoader', () => {
     });
 
     expect(result.current.attributionPrefs?.repoId).toBe(2);
+  });
+
+  it('does not finalize repo activation side effects after hook unmount', async () => {
+    const indexDeferred = createDeferred<ReturnType<typeof createIndexResult>>();
+
+    mockOpen.mockResolvedValue('/repo/1');
+    mockIndexRepo.mockImplementation(async () => indexDeferred.promise);
+
+    const { result, unmount } = renderHook(() => useRepoLoader());
+
+    let openRequest: Promise<void> | undefined;
+    await act(async () => {
+      openRequest = result.current.openRepo();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(mockIndexRepo).toHaveBeenCalledWith('/repo/1', 60, expect.any(Function));
+    });
+
+    unmount();
+
+    await act(async () => {
+      indexDeferred.resolve(createIndexResult(1, '/repo/1'));
+      await openRequest;
+      await Promise.resolve();
+    });
+
+    expect(mockSetActiveRepoRoot).not.toHaveBeenCalled();
+    expect(mockSetOtelReceiverEnabled).not.toHaveBeenCalled();
+    expect(mockDetectCodexOtelPromptExport).not.toHaveBeenCalled();
   });
 });

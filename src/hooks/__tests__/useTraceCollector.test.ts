@@ -5,6 +5,8 @@ import { useTraceCollector } from '../useTraceCollector';
 
 const mockListen = vi.hoisted(() => vi.fn());
 const mockScanAgentTraceRecords = vi.hoisted(() => vi.fn());
+const mockIngestCodexOtelLogFile = vi.hoisted(() => vi.fn());
+const mockSaveTraceConfig = vi.hoisted(() => vi.fn());
 
 vi.mock('@tauri-apps/api/event', () => ({
   listen: mockListen,
@@ -16,7 +18,7 @@ vi.mock('@tauri-apps/plugin-shell', () => ({
 
 vi.mock('../../core/repo/agentTrace', () => ({
   generateDerivedTraceRecord: vi.fn(),
-  ingestCodexOtelLogFile: vi.fn(),
+  ingestCodexOtelLogFile: mockIngestCodexOtelLogFile,
   scanAgentTraceRecords: mockScanAgentTraceRecords,
   writeGeneratedTraceRecord: vi.fn(),
 }));
@@ -26,7 +28,7 @@ vi.mock('../../core/tauri/otelReceiver', () => ({
 }));
 
 vi.mock('../../core/repo/traceConfig', () => ({
-  saveTraceConfig: vi.fn(),
+  saveTraceConfig: mockSaveTraceConfig,
   defaultTraceConfig: vi.fn(() => ({ codexOtelLogPath: '', codexOtelReceiverEnabled: false })),
 }));
 
@@ -49,6 +51,8 @@ function createDeferred<T>(): Deferred<T> {
 describe('useTraceCollector listener cleanup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIngestCodexOtelLogFile.mockResolvedValue(undefined);
+    mockSaveTraceConfig.mockResolvedValue(undefined);
     mockScanAgentTraceRecords.mockResolvedValue({
       byCommit: {
         c1: {
@@ -190,5 +194,39 @@ describe('useTraceCollector listener cleanup', () => {
     expect(state.traceSummaries).toBeUndefined();
     expect(state.stats.prompts).toBe(0);
     expect(state.timeline[0].badges).toBeUndefined();
+  });
+
+  it('ignores stale action errors after repository context changes', async () => {
+    const saveDeferred = createDeferred<void>();
+    mockSaveTraceConfig.mockImplementationOnce(async () => saveDeferred.promise);
+
+    const setActionError = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ repoRoot, repoId }) =>
+        useTraceCollector({
+          repoRoot,
+          repoId,
+          timeline: [{ id: 'c1' }],
+          setRepoState: vi.fn(),
+          setActionError,
+        }),
+      { initialProps: { repoRoot: '/repo/1', repoId: 1 } }
+    );
+
+    const pending = result.current.updateCodexOtelPath('/tmp/codex-otel.log');
+
+    await waitFor(() => {
+      expect(mockSaveTraceConfig).toHaveBeenCalledWith('/repo/1', expect.any(Object));
+    });
+
+    rerender({ repoRoot: '/repo/2', repoId: 2 });
+
+    await act(async () => {
+      saveDeferred.reject(new Error('save failed'));
+      await pending;
+    });
+
+    expect(setActionError).toHaveBeenCalledWith(null);
+    expect(setActionError).not.toHaveBeenCalledWith('save failed');
   });
 });

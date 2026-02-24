@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   exportSessionLinkNote,
   getStoryAnchorStatus,
@@ -10,6 +10,13 @@ import {
   uninstallRepoHooks,
   type StoryAnchorCommitStatus,
 } from '../../core/story-anchors-api';
+
+function areStringArraysEqual(left: string[] | null, right: string[] | null) {
+  if (left === right) return true;
+  if (!left || !right) return false;
+  if (left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+}
 
 export function StoryAnchorsPanel(props: {
   repoId: number | null;
@@ -24,6 +31,7 @@ export function StoryAnchorsPanel(props: {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null);
+  const actionRequestVersionRef = useRef(0);
   const [repoCounts, setRepoCounts] = useState<{
     total: number;
     attribution: number;
@@ -31,38 +39,118 @@ export function StoryAnchorsPanel(props: {
     lineage: number;
     complete: number;
   } | null>(null);
+  const refreshRequestVersionRef = useRef(0);
+  const isMountedRef = useRef(true);
+  const repoIdRef = useRef<number | null>(repoId);
+  const repoRootRef = useRef<string | null>(repoRoot);
+  const selectedCommitShaRef = useRef<string | null>(selectedCommitSha);
+  const indexedCommitShasRef = useRef<string[] | null>(indexedCommitShas ?? null);
+
+  useEffect(() => {
+    repoIdRef.current = repoId;
+    repoRootRef.current = repoRoot;
+    selectedCommitShaRef.current = selectedCommitSha;
+    indexedCommitShasRef.current = indexedCommitShas ?? null;
+  }, [repoId, repoRoot, selectedCommitSha, indexedCommitShas]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const canRun = Boolean(repoId && repoRoot);
   const canRunCommitActions = Boolean(repoId && selectedCommitSha);
   const canRunRepoActions = Boolean(repoId && indexedCommitShas && indexedCommitShas.length > 0);
 
   const refresh = useCallback(async () => {
-    if (!repoId || !repoRoot) return;
+    const expectedRepoId = repoId;
+    const expectedRepoRoot = repoRoot;
+    const expectedSelectedCommitSha = selectedCommitSha;
+    const requestVersion = refreshRequestVersionRef.current + 1;
+    refreshRequestVersionRef.current = requestVersion;
+    const isStaleRequest = () =>
+      !isMountedRef.current ||
+      refreshRequestVersionRef.current !== requestVersion ||
+      repoIdRef.current !== expectedRepoId ||
+      repoRootRef.current !== expectedRepoRoot ||
+      selectedCommitShaRef.current !== expectedSelectedCommitSha;
+
+    if (!expectedRepoId || !expectedRepoRoot) return;
 
     try {
-      const res = await getRepoHooksStatus(repoId);
+      const res = await getRepoHooksStatus(expectedRepoId);
+      if (isStaleRequest()) return;
       setHookInstalled(res.installed);
       setHooksDir(res.hooksDir);
     } catch {
+      if (isStaleRequest()) return;
       setHookInstalled(null);
       setHooksDir(null);
     }
 
-    if (selectedCommitSha) {
+    if (expectedSelectedCommitSha) {
       try {
-        const rows = await getStoryAnchorStatus(repoId, [selectedCommitSha]);
+        const rows = await getStoryAnchorStatus(expectedRepoId, [expectedSelectedCommitSha]);
+        if (isStaleRequest()) return;
         setStatus(rows[0] ?? null);
       } catch {
+        if (isStaleRequest()) return;
         setStatus(null);
       }
     } else {
+      if (isStaleRequest()) return;
       setStatus(null);
     }
   }, [repoId, repoRoot, selectedCommitSha]);
 
+  const beginAction = useCallback(() => {
+    const expectedRepoId = repoIdRef.current;
+    const expectedRepoRoot = repoRootRef.current;
+    const expectedSelectedCommitSha = selectedCommitShaRef.current;
+    const expectedIndexedCommitShas = indexedCommitShasRef.current
+      ? [...indexedCommitShasRef.current]
+      : null;
+    const requestVersion = actionRequestVersionRef.current + 1;
+    actionRequestVersionRef.current = requestVersion;
+    const isStaleRequest = () =>
+      !isMountedRef.current ||
+      actionRequestVersionRef.current !== requestVersion ||
+      repoIdRef.current !== expectedRepoId ||
+      repoRootRef.current !== expectedRepoRoot ||
+      selectedCommitShaRef.current !== expectedSelectedCommitSha ||
+      !areStringArraysEqual(indexedCommitShasRef.current, expectedIndexedCommitShas);
+
+    return {
+      expectedRepoId,
+      expectedSelectedCommitSha,
+      expectedIndexedCommitShas,
+      isStaleRequest,
+    };
+  }, []);
+
+  const finalizeAction = useCallback(
+    (isStaleRequest: () => boolean, clearExportProgress = false) => {
+      if (!isMountedRef.current) return;
+      if (isStaleRequest()) return;
+
+      if (clearExportProgress) {
+        setExportProgress(null);
+      }
+      setBusy(false);
+      void refresh();
+    },
+    [refresh]
+  );
+
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    setBusy(false);
+    setExportProgress(null);
+  }, [repoId, repoRoot, indexedCommitShas, selectedCommitSha]);
 
   return (
     <div className="mt-6 flex flex-col gap-3 rounded-lg border border-border-light bg-bg-secondary p-4">
@@ -91,17 +179,19 @@ export function StoryAnchorsPanel(props: {
               disabled={busy || !repoId}
               className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
               onClick={async () => {
-                if (!repoId) return;
+                const { expectedRepoId, isStaleRequest } = beginAction();
+                if (!expectedRepoId) return;
                 setBusy(true);
                 setMessage(null);
                 try {
-                  await installRepoHooks(repoId);
+                  await installRepoHooks(expectedRepoId);
+                  if (isStaleRequest()) return;
                   setMessage('Installed repo hooks.');
                 } catch (e) {
+                  if (isStaleRequest()) return;
                   setMessage(e instanceof Error ? e.message : String(e));
                 } finally {
-                  setBusy(false);
-                  refresh();
+                  finalizeAction(isStaleRequest);
                 }
               }}
             >
@@ -112,17 +202,19 @@ export function StoryAnchorsPanel(props: {
               disabled={busy || !repoId}
               className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
               onClick={async () => {
-                if (!repoId) return;
+                const { expectedRepoId, isStaleRequest } = beginAction();
+                if (!expectedRepoId) return;
                 setBusy(true);
                 setMessage(null);
                 try {
-                  await uninstallRepoHooks(repoId);
+                  await uninstallRepoHooks(expectedRepoId);
+                  if (isStaleRequest()) return;
                   setMessage('Uninstalled repo hooks.');
                 } catch (e) {
+                  if (isStaleRequest()) return;
                   setMessage(e instanceof Error ? e.message : String(e));
                 } finally {
-                  setBusy(false);
-                  refresh();
+                  finalizeAction(isStaleRequest);
                 }
               }}
             >
@@ -162,11 +254,13 @@ export function StoryAnchorsPanel(props: {
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
                 className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
-                  if (!repoId || !indexedCommitShas?.length) return;
+                  const { expectedRepoId, expectedIndexedCommitShas, isStaleRequest } = beginAction();
+                  if (!expectedRepoId || !expectedIndexedCommitShas?.length) return;
                   setBusy(true);
                   setMessage(null);
                   try {
-                    const rows = await getStoryAnchorStatus(repoId, indexedCommitShas);
+                    const rows = await getStoryAnchorStatus(expectedRepoId, expectedIndexedCommitShas);
+                    if (isStaleRequest()) return;
                     const total = rows.length;
                     const attribution = rows.filter((r) => r.hasAttributionNote).length;
                     const sessions = rows.filter((r) => r.hasSessionsNote).length;
@@ -176,14 +270,14 @@ export function StoryAnchorsPanel(props: {
                     ).length;
                     setRepoCounts({ total, attribution, sessions, lineage, complete });
                     setMessage(`Refreshed Story Anchors status for ${total} commits.`);
-                  } catch (e) {
-                    setRepoCounts(null);
-                    setMessage(e instanceof Error ? e.message : String(e));
-                  } finally {
-                    setBusy(false);
-                    refresh();
-                  }
-                }}
+                } catch (e) {
+                  if (isStaleRequest()) return;
+                  setRepoCounts(null);
+                  setMessage(e instanceof Error ? e.message : String(e));
+                } finally {
+                  finalizeAction(isStaleRequest);
+                }
+              }}
               >
                 Refresh indexed status
               </button>
@@ -192,19 +286,21 @@ export function StoryAnchorsPanel(props: {
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
                 className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
-                  if (!repoId || !indexedCommitShas?.length) return;
+                  const { expectedRepoId, expectedIndexedCommitShas, isStaleRequest } = beginAction();
+                  if (!expectedRepoId || !expectedIndexedCommitShas?.length) return;
                   setBusy(true);
                   setMessage(null);
                   try {
-                    const res = await importSessionLinkNotesBatch(repoId, indexedCommitShas);
+                    const res = await importSessionLinkNotesBatch(expectedRepoId, expectedIndexedCommitShas);
+                    if (isStaleRequest()) return;
                     setMessage(`Imported sessions notes: ${res.imported}/${res.total}.`);
-                  } catch (e) {
-                    setMessage(e instanceof Error ? e.message : String(e));
-                  } finally {
-                    setBusy(false);
-                    refresh();
-                  }
-                }}
+                } catch (e) {
+                  if (isStaleRequest()) return;
+                  setMessage(e instanceof Error ? e.message : String(e));
+                } finally {
+                  finalizeAction(isStaleRequest);
+                }
+              }}
               >
                 Import sessions notes
               </button>
@@ -213,29 +309,32 @@ export function StoryAnchorsPanel(props: {
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
                 className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
-                  if (!repoId || !indexedCommitShas?.length) return;
+                  const { expectedRepoId, expectedIndexedCommitShas, isStaleRequest } = beginAction();
+                  if (!expectedRepoId || !expectedIndexedCommitShas?.length) return;
                   setBusy(true);
                   setMessage(null);
-                  setExportProgress({ done: 0, total: indexedCommitShas.length });
+                  setExportProgress({ done: 0, total: expectedIndexedCommitShas.length });
                   let ok = 0;
                   let failed = 0;
                   try {
-                    for (let i = 0; i < indexedCommitShas.length; i += 1) {
-                      const sha = indexedCommitShas[i];
+                    for (let i = 0; i < expectedIndexedCommitShas.length; i += 1) {
+                      const sha = expectedIndexedCommitShas[i];
                       try {
-                        await exportSessionLinkNote(repoId, sha);
+                        await exportSessionLinkNote(expectedRepoId, sha);
+                        if (isStaleRequest()) return;
                         ok += 1;
                       } catch {
                         failed += 1;
                       } finally {
-                        setExportProgress({ done: i + 1, total: indexedCommitShas.length });
+                        if (!isStaleRequest()) {
+                          setExportProgress({ done: i + 1, total: expectedIndexedCommitShas.length });
+                        }
                       }
                     }
+                    if (isStaleRequest()) return;
                     setMessage(`Exported sessions notes: ok=${ok}, failed=${failed}.`);
-                  } finally {
-                    setExportProgress(null);
-                    setBusy(false);
-                    refresh();
+                } finally {
+                    finalizeAction(isStaleRequest, true);
                   }
                 }}
               >
@@ -246,20 +345,22 @@ export function StoryAnchorsPanel(props: {
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
                 className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light disabled:opacity-50"
                 onClick={async () => {
-                  if (!repoId || !indexedCommitShas?.length) return;
+                  const { expectedRepoId, expectedIndexedCommitShas, isStaleRequest } = beginAction();
+                  if (!expectedRepoId || !expectedIndexedCommitShas?.length) return;
                   setBusy(true);
                   setMessage(null);
                   try {
-                    const res = await migrateAttributionNotesRef(repoId, indexedCommitShas);
+                    const res = await migrateAttributionNotesRef(expectedRepoId, expectedIndexedCommitShas);
+                    if (isStaleRequest()) return;
                     setMessage(`Migrate attribution ref: ${res.migrated}/${res.total}.`);
-                  } catch (e) {
-                    setMessage(e instanceof Error ? e.message : String(e));
-                  } finally {
-                    setBusy(false);
-                    refresh();
-                  }
-                }}
-              >
+                } catch (e) {
+                  if (isStaleRequest()) return;
+                  setMessage(e instanceof Error ? e.message : String(e));
+                } finally {
+                  finalizeAction(isStaleRequest);
+                }
+              }}
+            >
                 Migrate attribution ref
               </button>
               <button
@@ -267,22 +368,24 @@ export function StoryAnchorsPanel(props: {
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
                 className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                 onClick={async () => {
-                  if (!repoId || !indexedCommitShas?.length) return;
+                  const { expectedRepoId, expectedIndexedCommitShas, isStaleRequest } = beginAction();
+                  if (!expectedRepoId || !expectedIndexedCommitShas?.length) return;
                   setBusy(true);
                   setMessage(null);
                   try {
-                    const res = await reconcileAfterRewrite(repoId, indexedCommitShas, false);
+                    const res = await reconcileAfterRewrite(expectedRepoId, expectedIndexedCommitShas, false);
+                    if (isStaleRequest()) return;
                     setMessage(
                       `Reconcile (dry-run): recovered attribution=${res.recoveredAttribution}, sessions=${res.recoveredSessions}, wrote=${res.wroteNotes}.`
                     );
-                  } catch (e) {
-                    setMessage(e instanceof Error ? e.message : String(e));
-                  } finally {
-                    setBusy(false);
-                    refresh();
-                  }
-                }}
-              >
+                } catch (e) {
+                  if (isStaleRequest()) return;
+                  setMessage(e instanceof Error ? e.message : String(e));
+                } finally {
+                  finalizeAction(isStaleRequest);
+                }
+              }}
+            >
                 Reconcile (dry-run)
               </button>
               <button
@@ -290,22 +393,24 @@ export function StoryAnchorsPanel(props: {
                 disabled={busy || !canRunRepoActions || !repoId || !indexedCommitShas}
                 className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light disabled:opacity-50"
                 onClick={async () => {
-                  if (!repoId || !indexedCommitShas?.length) return;
+                  const { expectedRepoId, expectedIndexedCommitShas, isStaleRequest } = beginAction();
+                  if (!expectedRepoId || !expectedIndexedCommitShas?.length) return;
                   setBusy(true);
                   setMessage(null);
                   try {
-                    const res = await reconcileAfterRewrite(repoId, indexedCommitShas, true);
+                    const res = await reconcileAfterRewrite(expectedRepoId, expectedIndexedCommitShas, true);
+                    if (isStaleRequest()) return;
                     setMessage(
                       `Reconcile (write): recovered attribution=${res.recoveredAttribution}, sessions=${res.recoveredSessions}, wrote=${res.wroteNotes}.`
                     );
-                  } catch (e) {
-                    setMessage(e instanceof Error ? e.message : String(e));
-                  } finally {
-                    setBusy(false);
-                    refresh();
-                  }
-                }}
-              >
+                } catch (e) {
+                  if (isStaleRequest()) return;
+                  setMessage(e instanceof Error ? e.message : String(e));
+                } finally {
+                  finalizeAction(isStaleRequest);
+                }
+              }}
+            >
                 Reconcile (write)
               </button>
             </div>
@@ -331,17 +436,19 @@ export function StoryAnchorsPanel(props: {
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
                   className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
-                    if (!repoId || !selectedCommitSha) return;
+                    const { expectedRepoId, expectedSelectedCommitSha, isStaleRequest } = beginAction();
+                    if (!expectedRepoId || !expectedSelectedCommitSha) return;
                     setBusy(true);
                     setMessage(null);
                     try {
-                      const res = await importSessionLinkNotesBatch(repoId, [selectedCommitSha]);
+                      const res = await importSessionLinkNotesBatch(expectedRepoId, [expectedSelectedCommitSha]);
+                      if (isStaleRequest()) return;
                       setMessage(`Imported sessions note: ${res.imported}/${res.total}.`);
                     } catch (e) {
+                      if (isStaleRequest()) return;
                       setMessage(e instanceof Error ? e.message : String(e));
                     } finally {
-                      setBusy(false);
-                      refresh();
+                      finalizeAction(isStaleRequest);
                     }
                   }}
                 >
@@ -352,17 +459,19 @@ export function StoryAnchorsPanel(props: {
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
                   className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
-                    if (!repoId || !selectedCommitSha) return;
+                    const { expectedRepoId, expectedSelectedCommitSha, isStaleRequest } = beginAction();
+                    if (!expectedRepoId || !expectedSelectedCommitSha) return;
                     setBusy(true);
                     setMessage(null);
                     try {
-                      const res = await exportSessionLinkNote(repoId, selectedCommitSha);
+                      const res = await exportSessionLinkNote(expectedRepoId, expectedSelectedCommitSha);
+                      if (isStaleRequest()) return;
                       setMessage(`Export sessions note: ${res.status}.`);
                     } catch (e) {
+                      if (isStaleRequest()) return;
                       setMessage(e instanceof Error ? e.message : String(e));
                     } finally {
-                      setBusy(false);
-                      refresh();
+                      finalizeAction(isStaleRequest);
                     }
                   }}
                 >
@@ -373,19 +482,21 @@ export function StoryAnchorsPanel(props: {
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
                   className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover disabled:opacity-50"
                   onClick={async () => {
-                    if (!repoId || !selectedCommitSha) return;
+                    const { expectedRepoId, expectedSelectedCommitSha, isStaleRequest } = beginAction();
+                    if (!expectedRepoId || !expectedSelectedCommitSha) return;
                     setBusy(true);
                     setMessage(null);
                     try {
-                      const res = await reconcileAfterRewrite(repoId, [selectedCommitSha], false);
+                      const res = await reconcileAfterRewrite(expectedRepoId, [expectedSelectedCommitSha], false);
+                      if (isStaleRequest()) return;
                       setMessage(
                         `Reconcile: recovered attribution=${res.recoveredAttribution}, sessions=${res.recoveredSessions}.`
                       );
                     } catch (e) {
+                      if (isStaleRequest()) return;
                       setMessage(e instanceof Error ? e.message : String(e));
                     } finally {
-                      setBusy(false);
-                      refresh();
+                      finalizeAction(isStaleRequest);
                     }
                   }}
                 >
@@ -396,19 +507,21 @@ export function StoryAnchorsPanel(props: {
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
                   className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light disabled:opacity-50"
                   onClick={async () => {
-                    if (!repoId || !selectedCommitSha) return;
+                    const { expectedRepoId, expectedSelectedCommitSha, isStaleRequest } = beginAction();
+                    if (!expectedRepoId || !expectedSelectedCommitSha) return;
                     setBusy(true);
                     setMessage(null);
                     try {
-                      const res = await reconcileAfterRewrite(repoId, [selectedCommitSha], true);
+                      const res = await reconcileAfterRewrite(expectedRepoId, [expectedSelectedCommitSha], true);
+                      if (isStaleRequest()) return;
                       setMessage(
                         `Reconcile (write): recovered attribution=${res.recoveredAttribution}, sessions=${res.recoveredSessions}, wrote=${res.wroteNotes}.`
                       );
                     } catch (e) {
+                      if (isStaleRequest()) return;
                       setMessage(e instanceof Error ? e.message : String(e));
                     } finally {
-                      setBusy(false);
-                      refresh();
+                      finalizeAction(isStaleRequest);
                     }
                   }}
                 >
@@ -419,17 +532,19 @@ export function StoryAnchorsPanel(props: {
                   disabled={busy || !canRunCommitActions || !repoId || !selectedCommitSha}
                   className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light disabled:opacity-50"
                   onClick={async () => {
-                    if (!repoId || !selectedCommitSha) return;
+                    const { expectedRepoId, expectedSelectedCommitSha, isStaleRequest } = beginAction();
+                    if (!expectedRepoId || !expectedSelectedCommitSha) return;
                     setBusy(true);
                     setMessage(null);
                     try {
-                      const res = await migrateAttributionNotesRef(repoId, [selectedCommitSha]);
+                      const res = await migrateAttributionNotesRef(expectedRepoId, [expectedSelectedCommitSha]);
+                      if (isStaleRequest()) return;
                       setMessage(`Migrate attribution ref: ${res.migrated}/${res.total}.`);
                     } catch (e) {
+                      if (isStaleRequest()) return;
                       setMessage(e instanceof Error ? e.message : String(e));
                     } finally {
-                      setBusy(false);
-                      refresh();
+                      finalizeAction(isStaleRequest);
                     }
                   }}
                 >

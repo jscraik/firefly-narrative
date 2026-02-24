@@ -124,4 +124,50 @@ describe('useUpdater', () => {
 
     expect(result.current.status?.type).toBe('available');
   });
+
+  it('ignores stale install completion after dismissing during download', async () => {
+    const update = createUpdate('4.0.0');
+    const installDeferred = createDeferred<void>();
+    update.downloadAndInstall.mockImplementation(async (onEvent: (event: { event: string; data?: { contentLength?: number; chunkLength?: number } }) => void) => {
+      onEvent({ event: 'Started', data: { contentLength: 100 } });
+      onEvent({ event: 'Progress', data: { chunkLength: 50 } });
+      await installDeferred.promise;
+      onEvent({ event: 'Finished' });
+    });
+
+    mockCheck.mockResolvedValueOnce(update);
+
+    const { result } = renderHook(() => useUpdater());
+
+    await act(async () => {
+      await result.current.checkForUpdates();
+    });
+
+    expect(result.current.status?.type).toBe('available');
+
+    let installRequest: Promise<void> | undefined;
+    await act(async () => {
+      installRequest = result.current.downloadAndInstall();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.status?.type).toBe('downloading');
+    });
+
+    act(() => {
+      result.current.dismiss();
+    });
+
+    expect(result.current.status).toBeNull();
+
+    await act(async () => {
+      installDeferred.resolve();
+      await installRequest;
+    });
+
+    expect(result.current.status).toBeNull();
+    expect(mockAsk).not.toHaveBeenCalled();
+    expect(mockRelaunch).not.toHaveBeenCalled();
+  });
 });

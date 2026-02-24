@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AtlasCapabilities,
   AtlasDoctorReport,
@@ -47,6 +47,8 @@ type InfoState = {
 
 export function AtlasSearchPanel(props: { repoId: number | null }) {
   const { repoId } = props;
+  const infoRequestVersionRef = useRef(0);
+  const rebuildRequestVersionRef = useRef(0);
 
   const [info, setInfo] = useState<InfoState>({
     loading: false,
@@ -78,6 +80,9 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
 
   const refreshInfo = useCallback(async () => {
     if (!repoId) return;
+    const requestVersion = infoRequestVersionRef.current + 1;
+    infoRequestVersionRef.current = requestVersion;
+    const isStaleRequest = () => infoRequestVersionRef.current !== requestVersion;
 
     setInfo((prev) => ({ ...prev, loading: true, error: null }));
 
@@ -87,6 +92,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
         atlasIntrospect(repoId),
         atlasDoctorReport(repoId),
       ]);
+      if (isStaleRequest()) return;
 
       if (!capEnv.ok) {
         setInfo({ loading: false, error: capEnv.error, capabilities: null, introspect: null, doctor: null });
@@ -109,6 +115,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
         doctor: doctorEnv.value,
       });
     } catch (e: unknown) {
+      if (isStaleRequest()) return;
       setInfo({
         loading: false,
         error: { code: 'INTERNAL', message: e instanceof Error ? e.message : String(e) },
@@ -120,6 +127,9 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
   }, [repoId]);
 
   useEffect(() => {
+    infoRequestVersionRef.current += 1;
+    rebuildRequestVersionRef.current += 1;
+
     if (!repoId) {
       setInfo({ loading: false, error: null, capabilities: null, introspect: null, doctor: null });
       setRebuildLoading(false);
@@ -132,6 +142,9 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
 
   const handleRebuild = useCallback(async () => {
     if (!repoId) return;
+    const requestVersion = rebuildRequestVersionRef.current + 1;
+    rebuildRequestVersionRef.current = requestVersion;
+    const isStaleRebuild = () => rebuildRequestVersionRef.current !== requestVersion;
 
     setRebuildLoading(true);
     setRebuildError(null);
@@ -140,6 +153,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
     try {
       // atlas_doctor_rebuild_derived expects args: { request: { repoId } }
       const env = await atlasDoctorRebuildDerived(repoId);
+      if (isStaleRebuild()) return;
       if (!env.ok) {
         setRebuildLoading(false);
         setRebuildError(env.error);
@@ -150,8 +164,10 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
       setRebuildLoading(false);
 
       await refreshInfo();
+      if (isStaleRebuild()) return;
       await refreshSelectedSession();
     } catch (e: unknown) {
+      if (isStaleRebuild()) return;
       setRebuildLoading(false);
       setRebuildError({ code: 'INTERNAL', message: e instanceof Error ? e.message : String(e) });
     }

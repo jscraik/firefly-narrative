@@ -18,6 +18,11 @@ import { TopNav, type Mode } from './ui/components/TopNav';
 import { UpdateIndicator, UpdatePrompt } from './ui/components/UpdatePrompt';
 import { BranchView } from './ui/views/BranchView';
 import { DashboardView } from './ui/views/DashboardView';
+import {
+  DEV_FALLBACK_REPO_PATH,
+  applyDocsAutoloadError,
+  applyDocsAutoloadSuccess
+} from './ui/views/docsAutoLoad';
 
 
 type AgentationComponentType = (typeof import('agentation'))['Agentation'];
@@ -69,7 +74,7 @@ const EMPTY_MODEL: BranchViewModel = {
  * Docs view wrapper that auto-loads the current directory as repo if needed.
  * This ensures Docs mode works even when switching from Demo mode.
  */
-function DocsView(props: {
+export function DocsView(props: {
   repoState: RepoState;
   setRepoState: React.Dispatch<React.SetStateAction<RepoState>>;
   onClose: () => void;
@@ -107,16 +112,16 @@ function DocsView(props: {
       setIsLoading(true);
       try {
         // Dev-only fallback to a local repo path (when in Tauri)
-        const defaultPath = '/Users/jamiecraik/dev/narrative';
+        const defaultPath = DEV_FALLBACK_REPO_PATH;
 
         setRepoState({ status: 'loading', path: defaultPath });
 
         const { model, repo } = await indexRepo(defaultPath, 60);
-        setRepoState({ status: 'ready', path: defaultPath, model, repo });
+        setRepoState((prev) => applyDocsAutoloadSuccess(prev, defaultPath, model, repo));
       } catch (e) {
         console.error('[DocsView] Failed to auto-load repo:', e);
-        // Don't change state on error - let the UI show "No Repository Open" or fallback
-        setRepoState({ status: 'error', message: String(e) });
+        // Don't overwrite newer repo state with stale auto-load errors.
+        setRepoState((prev) => applyDocsAutoloadError(prev, e));
       } finally {
         setIsLoading(false);
       }

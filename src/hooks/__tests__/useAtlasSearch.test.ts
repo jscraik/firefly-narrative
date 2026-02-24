@@ -143,4 +143,65 @@ describe('useAtlasSearch', () => {
     expect(result.current.selectedSession).toBeNull();
     expect(result.current.sessionLoading).toBe(false);
   });
+
+  it('ignores stale session loads after clearing selection', async () => {
+    const staleSession = createDeferred<AtlasEnvelope<AtlasGetSessionResponse>>();
+    mockAtlasGetSession.mockImplementation(() => staleSession.promise);
+
+    const { result } = renderHook(
+      () => useAtlasSearch(1, { debounceMs: 0 })
+    );
+
+    const hit = createSearchHit('session-1');
+    act(() => {
+      result.current.selectHit(hit);
+    });
+
+    await waitFor(() => {
+      expect(mockAtlasGetSession).toHaveBeenCalledWith({ repoId: 1, sessionId: 'session-1', maxChunks: 12 });
+      expect(result.current.sessionLoading).toBe(true);
+    });
+
+    act(() => {
+      result.current.clearSelection();
+    });
+
+    await act(async () => {
+      staleSession.resolve(okSessionEnvelope('session-1'));
+      await staleSession.promise;
+      await Promise.resolve();
+    });
+
+    expect(result.current.selectedHit).toBeNull();
+    expect(result.current.selectedSession).toBeNull();
+    expect(result.current.sessionLoading).toBe(false);
+  });
+
+  it('does not update state after unmount while session load is pending', async () => {
+    const pendingSession = createDeferred<AtlasEnvelope<AtlasGetSessionResponse>>();
+    mockAtlasGetSession.mockImplementation(() => pendingSession.promise);
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { result, unmount } = renderHook(() => useAtlasSearch(1, { debounceMs: 0 }));
+
+    act(() => {
+      result.current.selectHit(createSearchHit('session-1'));
+    });
+
+    await waitFor(() => {
+      expect(mockAtlasGetSession).toHaveBeenCalledWith({ repoId: 1, sessionId: 'session-1', maxChunks: 12 });
+    });
+
+    unmount();
+
+    await act(async () => {
+      pendingSession.resolve(okSessionEnvelope('session-1'));
+      await pendingSession.promise;
+      await Promise.resolve();
+    });
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
 });

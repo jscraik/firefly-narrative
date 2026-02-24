@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import type { BranchViewModel } from '../core/types';
 import { basename } from './basename';
@@ -30,8 +30,38 @@ export function useTestImport({
   setRepoState,
   setActionError,
 }: UseTestImportProps): UseTestImportReturn {
+  const repoIdRef = useRef(repoId);
+  const repoRootRef = useRef(repoRoot);
+  const requestVersionRef = useRef(0);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    repoIdRef.current = repoId;
+    repoRootRef.current = repoRoot;
+    requestVersionRef.current += 1;
+  }, [repoId, repoRoot]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const isActiveRequest = (expectedRepoId: number, expectedRepoRoot: string, requestVersion: number) =>
+    isMountedRef.current &&
+    repoIdRef.current === expectedRepoId &&
+    repoRootRef.current === expectedRepoRoot &&
+    requestVersionRef.current === requestVersion;
+
   const importJUnitForCommit = useCallback(
     async (commitSha: string) => {
+      const expectedRepoId = repoIdRef.current;
+      const expectedRepoRoot = repoRootRef.current;
+      const requestVersion = requestVersionRef.current + 1;
+      requestVersionRef.current = requestVersion;
+      const isStaleRequest = () => !isActiveRequest(expectedRepoId, expectedRepoRoot, requestVersion);
+
+      if (!isMountedRef.current) return;
       setActionError(null);
 
       try {
@@ -43,10 +73,16 @@ export function useTestImport({
 
         if (!selected || Array.isArray(selected)) return;
 
-        await ensureNarrativeDirs(repoRoot);
+        if (!isActiveRequest(expectedRepoId, expectedRepoRoot, requestVersion)) return;
+
+        await ensureNarrativeDirs(expectedRepoRoot);
 
         const raw = await readTextFile(selected);
+        if (!isActiveRequest(expectedRepoId, expectedRepoRoot, requestVersion)) return;
+
         const sha = await sha256Hex(raw);
+        if (!isActiveRequest(expectedRepoId, expectedRepoRoot, requestVersion)) return;
+
         const parsed = parseJUnitXml(raw);
 
         const importedAtISO = new Date().toISOString();
@@ -54,10 +90,11 @@ export function useTestImport({
         const rel = `tests/imported/${isoStampForFile()}_${sha.slice(0, 8)}_junit.xml`;
 
         // Strict provenance: if we cannot store the raw copy in `.narrative/`, fail import.
-        await writeNarrativeFile(repoRoot, rel, raw);
+        await writeNarrativeFile(expectedRepoRoot, rel, raw);
+        if (!isActiveRequest(expectedRepoId, expectedRepoRoot, requestVersion)) return;
 
         const saved = await saveTestRun({
-          repoId,
+          repoId: expectedRepoId,
           commitSha,
           format: 'junit',
           importedAtISO,
@@ -69,10 +106,13 @@ export function useTestImport({
           skipped: parsed.skipped,
           cases: parsed.cases,
         });
+        if (isStaleRequest()) return;
+        if (!isMountedRef.current) return;
 
         const badge = testBadgeForRun(saved);
 
         // Update timeline badge + testRunId for immediate UI feedback.
+        if (!isMountedRef.current) return;
         setRepoState((prev) => {
           const timeline = prev.timeline.map((n) => {
             if (n.id !== commitSha) return n;
@@ -86,10 +126,12 @@ export function useTestImport({
           return { ...prev, timeline };
         });
       } catch (e: unknown) {
+        if (isStaleRequest()) return;
+        if (!isMountedRef.current) return;
         setActionError(e instanceof Error ? e.message : String(e));
       }
     },
-    [repoRoot, repoId, setActionError, setRepoState]
+    [repoRoot, setActionError, setRepoState]
   );
 
   return { importJUnitForCommit };

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSessionImport, type UseSessionImportProps } from '../../hooks/useSessionImport';
 import type { BranchViewModel, TimelineNode } from '../types';
 
@@ -46,6 +46,7 @@ import { redactSecrets } from '../security/redact';
 import { linkSessionToCommit, deleteSessionLinkBySessionIdWithCommit } from '../repo/sessionLinking';
 import { refreshSessionBadges } from '../repo/sessionBadges';
 import { importAgentTraceFile, scanAgentTraceRecords } from '../repo/agentTrace';
+import type { TraceScanResult } from '../repo/agentTrace';
 import { exportSessionLinkNote } from '../story-anchors-api';
 
 const mockOpen = vi.mocked(open);
@@ -59,6 +60,22 @@ const mockRefreshSessionBadges = vi.mocked(refreshSessionBadges);
 const mockImportAgentTraceFile = vi.mocked(importAgentTraceFile);
 const mockScanAgentTraceRecords = vi.mocked(scanAgentTraceRecords);
 const mockExportSessionLinkNote = vi.mocked(exportSessionLinkNote);
+
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (error?: unknown) => void;
+};
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  let reject!: (error?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 describe('useSessionImport', () => {
   const mockTimeline: TimelineNode[] = [
@@ -332,6 +349,59 @@ describe('useSessionImport', () => {
 
       consoleSpy.mockRestore();
     });
+
+    it('ignores stale importSession errors after repository switch', async () => {
+      const linkDeferred = createDeferred<{
+        commitSha: string;
+        confidence: number;
+        autoLinked: boolean;
+        temporalScore: number;
+        fileScore: number;
+        needsReview: boolean;
+      }>();
+
+      const setActionError = vi.fn();
+
+      mockOpen.mockResolvedValue('/path/to/session.json');
+      mockReadTextFile.mockResolvedValue(JSON.stringify({ tool: 'codex', messages: [] }));
+      mockRedactSecrets.mockReturnValue({ redacted: JSON.stringify({ tool: 'codex', messages: [] }), hits: [] });
+      mockSha256Hex.mockResolvedValue('abc123');
+      mockLinkSessionToCommit.mockImplementationOnce(async () => linkDeferred.promise);
+
+      const { result, rerender } = renderHook(
+        ({ props }) => useSessionImport(props),
+        { initialProps: { props: { ...defaultProps, setActionError } } }
+      );
+
+      const pendingImport = result.current.importSession();
+
+      await waitFor(() => {
+        expect(mockLinkSessionToCommit).toHaveBeenCalledWith(1, expect.any(Object));
+      });
+
+      const repo2Model: BranchViewModel = {
+        ...mockModel,
+        timeline: [{ id: 'def456', type: 'commit', label: 'Repo 2 commit', atISO: '2024-01-02T00:00:00Z', status: 'ok' }],
+        meta: { repoPath: '/repo-2', branchName: 'main', headSha: 'def456', repoId: 2 },
+      };
+      rerender({
+        props: {
+          ...defaultProps,
+          repoRoot: '/repo-2',
+          repoId: 2,
+          model: repo2Model,
+          setActionError,
+        },
+      });
+
+      await act(async () => {
+        linkDeferred.reject(new Error('link failed'));
+        await pendingImport;
+      });
+
+      expect(setActionError).toHaveBeenCalledWith(null);
+      expect(setActionError).not.toHaveBeenCalledWith('link failed');
+    });
   });
 
   describe('importKimiSession', () => {
@@ -413,6 +483,58 @@ describe('useSessionImport', () => {
       expect(mockSetRepoState).toHaveBeenCalled();
     });
 
+    it('ignores trace state updates when current model repoId differs from import repoId', async () => {
+      const mockFilePath = '/path/to/trace.json';
+      const mockTraceData = {
+        byCommit: {
+          abc123: {
+            commitSha: 'abc123',
+            aiLines: 10,
+            humanLines: 5,
+            mixedLines: 0,
+            unknownLines: 0,
+            aiPercent: 67,
+            modelIds: ['gpt-4'],
+            toolNames: ['codex']
+          }
+        },
+        byFileByCommit: {},
+        totals: { conversations: 1, ranges: 10 },
+      };
+
+      mockOpen.mockResolvedValue(mockFilePath);
+      mockImportAgentTraceFile.mockResolvedValue({ recordId: 'trace-1', storedPath: '/path/to/stored', redactions: [] });
+      mockScanAgentTraceRecords.mockResolvedValue(mockTraceData);
+
+      const mockSetRepoState = vi.fn();
+      const props = { ...defaultProps, setRepoState: mockSetRepoState };
+
+      const { result } = renderHook(() => useSessionImport(props));
+
+      await act(async () => {
+        await result.current.importAgentTrace();
+      });
+
+      expect(mockSetRepoState).toHaveBeenCalledTimes(1);
+      const updater = mockSetRepoState.mock.calls[0][0] as (prev: BranchViewModel) => BranchViewModel;
+
+      const baseMeta = mockModel.meta ?? {
+        repoPath: '/test/repo',
+        branchName: 'main',
+        headSha: 'abc123',
+        repoId: 1,
+      };
+      const otherRepoModel: BranchViewModel = {
+        ...mockModel,
+        meta: { ...baseMeta, repoId: 2, repoPath: '/other/repo' },
+      };
+      const next = updater(otherRepoModel);
+
+      expect(next).toBe(otherRepoModel);
+      expect(next.traceSummaries).toBeUndefined();
+      expect(next.stats.prompts).toBe(0);
+    });
+
     it('should handle importAgentTraceFile errors', async () => {
       const mockError = new Error('Invalid trace format');
       mockOpen.mockResolvedValue('/path/to/trace.json');
@@ -425,6 +547,70 @@ describe('useSessionImport', () => {
       });
 
       expect(defaultProps.setActionError).toHaveBeenCalledWith('Invalid trace format');
+    });
+
+    it('ignores stale trace updates after repository switch', async () => {
+      const scanDeferred = createDeferred<TraceScanResult>();
+
+      mockOpen.mockResolvedValue('/path/to/trace.json');
+      mockImportAgentTraceFile.mockResolvedValue({
+        recordId: 'trace-1',
+        storedPath: '/path/to/stored',
+        redactions: []
+      });
+      mockScanAgentTraceRecords.mockImplementationOnce(async () => scanDeferred.promise);
+
+      const mockSetRepoState = vi.fn();
+      const setActionError = vi.fn();
+      const { result, rerender } = renderHook(
+        ({ props }) => useSessionImport(props),
+        { initialProps: { props: { ...defaultProps, setRepoState: mockSetRepoState, setActionError } } }
+      );
+
+      const pendingImport = result.current.importAgentTrace();
+
+      await waitFor(() => {
+        expect(mockScanAgentTraceRecords).toHaveBeenCalledWith('/test/repo', 1, ['abc123']);
+      });
+
+      const repo2Model: BranchViewModel = {
+        ...mockModel,
+        timeline: [{ id: 'def456', type: 'commit', label: 'Repo 2 commit', atISO: '2024-01-02T00:00:00Z', status: 'ok' }],
+        meta: { repoPath: '/repo-2', branchName: 'main', headSha: 'def456', repoId: 2 },
+      };
+      rerender({
+        props: {
+          ...defaultProps,
+          repoRoot: '/repo-2',
+          repoId: 2,
+          model: repo2Model,
+          setRepoState: mockSetRepoState,
+          setActionError,
+        },
+      });
+
+      await act(async () => {
+        scanDeferred.resolve({
+          byCommit: {
+            abc123: {
+              commitSha: 'abc123',
+              aiLines: 10,
+              humanLines: 5,
+              mixedLines: 0,
+              unknownLines: 0,
+              aiPercent: 67,
+              modelIds: ['gpt-4'],
+              toolNames: ['codex'],
+            },
+          },
+          byFileByCommit: {},
+          totals: { conversations: 1, ranges: 10 },
+        });
+        await pendingImport;
+      });
+
+      expect(mockSetRepoState).not.toHaveBeenCalled();
+      expect(setActionError).toHaveBeenCalledWith(null);
     });
   });
 
