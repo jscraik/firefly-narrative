@@ -18,9 +18,19 @@ import { TopNav, type Mode } from './ui/components/TopNav';
 import { UpdateIndicator, UpdatePrompt } from './ui/components/UpdatePrompt';
 import { BranchView } from './ui/views/BranchView';
 import { DashboardView } from './ui/views/DashboardView';
-import { FireflyLanding } from './ui/views/FireflyLanding';
+
 
 type AgentationComponentType = (typeof import('agentation'))['Agentation'];
+type TauriRuntimeWindow = Window & {
+  __TAURI_INTERNALS__?: { invoke?: unknown };
+  __TAURI_IPC__?: unknown;
+};
+
+function isTauriRuntime(): boolean {
+  if (typeof window === 'undefined') return false;
+  const tauriWindow = window as TauriRuntimeWindow;
+  return Boolean(tauriWindow.__TAURI_INTERNALS__?.invoke || tauriWindow.__TAURI_IPC__);
+}
 
 function normalizeWebhookUrl(url: string | undefined): string | undefined {
   if (!url?.trim()) {
@@ -68,19 +78,35 @@ function DocsView(props: {
   const [isLoading, setIsLoading] = useState(false);
 
   // Auto-load current directory as repo when Docs is opened without a loaded repo
+  // Only attempt auto-load once per component mount to avoid infinite loops on error.
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
+
   useEffect(() => {
-    if (repoState.status !== 'idle' && repoState.status !== 'error') {
+    if (repoState.status === 'ready' || repoState.status === 'loading') {
       return; // Already loaded or loading
     }
 
+    // Only attempt auto-load once
+    if (hasAttemptedLoad) return;
+
     const loadCurrentDir = async () => {
+      setHasAttemptedLoad(true);
+
+      // If we are in the browser (no Tauri), gracefully set to idle without crashing
+      // We can't index local git repos from a browser environment.
+      const isTauri = isTauriRuntime();
+      if (!isTauri) {
+        setRepoState(prev => prev.status === 'idle' ? prev : { status: 'idle' });
+        return;
+      }
+
       if (!import.meta.env.DEV) {
         return;
       }
 
       setIsLoading(true);
       try {
-        // Dev-only fallback to a local repo path
+        // Dev-only fallback to a local repo path (when in Tauri)
         const defaultPath = '/Users/jamiecraik/dev/narrative';
 
         setRepoState({ status: 'loading', path: defaultPath });
@@ -89,21 +115,43 @@ function DocsView(props: {
         setRepoState({ status: 'ready', path: defaultPath, model, repo });
       } catch (e) {
         console.error('[DocsView] Failed to auto-load repo:', e);
-        // Don't change state on error - let the UI show "No Repository Open"
-        setRepoState({ status: 'idle' });
+        // Don't change state on error - let the UI show "No Repository Open" or fallback
+        setRepoState({ status: 'error', message: String(e) });
       } finally {
         setIsLoading(false);
       }
     };
 
     loadCurrentDir();
-  }, [repoState.status, setRepoState]);
+  }, [repoState.status, setRepoState, hasAttemptedLoad]);
 
   if (repoState.status === 'loading' || isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-bg-tertiary p-6">
         <div className="rounded-2xl border border-border-light bg-bg-secondary px-6 py-5 text-center text-text-tertiary shadow-sm">
           <div className="text-sm font-medium text-text-secondary">Loading repository...</div>
+        </div>
+      </div>
+    );
+  }
+
+  const isTauri = isTauriRuntime();
+  if (!isTauri && repoState.status === 'idle') {
+    return (
+      <div className="flex h-full items-center justify-center bg-bg-tertiary p-6">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border-light bg-bg-secondary px-8 py-10 text-center shadow-sm max-w-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-amber-bg text-accent-amber">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <title>Desktop app required warning</title>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-text-primary mb-1">Desktop App Required</h3>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              The Docs view needs access to your local file system to generate documentation. Please open Firefly Narrative in the desktop app to use this feature.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -120,9 +168,10 @@ function DocsView(props: {
 }
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('landing');
+  const [mode, setMode] = useState<Mode>('demo');
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter | null>(null);
   const [isExitingFilteredView, setIsExitingFilteredView] = useState(false);
+  const clearFilterTimerRef = useRef<number | null>(null);
   const [githubConnectorEnabled, setGithubConnectorEnabled] = useState(false);
   const [AgentationComponent, setAgentationComponent] = useState<AgentationComponentType | null>(null);
   const rawAgentationWebhookUrl = import.meta.env.VITE_AGENTATION_WEBHOOK_URL as string | undefined;
@@ -298,8 +347,13 @@ export default function App() {
     // Trigger exit animation
     setIsExitingFilteredView(true);
 
+    if (clearFilterTimerRef.current !== null) {
+      window.clearTimeout(clearFilterTimerRef.current);
+      clearFilterTimerRef.current = null;
+    }
+
     // After animation completes, clear filter and restore focus
-    setTimeout(() => {
+    clearFilterTimerRef.current = window.setTimeout(() => {
       setDashboardFilter(null);
       setIsExitingFilteredView(false);
       // Restore focus to the element that was focused before drill-down
@@ -307,7 +361,16 @@ export default function App() {
         lastFocusedElementRef.current.focus();
         lastFocusedElementRef.current = null;
       }
+      clearFilterTimerRef.current = null;
     }, 180); // Match transition duration
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (clearFilterTimerRef.current !== null) {
+        window.clearTimeout(clearFilterTimerRef.current);
+      }
+    };
   }, []);
 
   return (
@@ -337,13 +400,7 @@ export default function App() {
       </TopNav>
 
       {/* `min-h-0` is critical so nested flex children can scroll instead of overflowing */}
-      <div
-        className={
-          mode === 'landing'
-            ? 'flex-1 min-h-0 bg-bg-tertiary'
-            : 'flex-1 min-h-0 overflow-hidden bg-bg-tertiary'
-        }
-      >
+      <div className="flex-1 min-h-0 overflow-hidden bg-bg-tertiary">
         {mode === 'dashboard' ? (
           <DashboardView
             repoState={repoState}
@@ -352,8 +409,6 @@ export default function App() {
             onDrillDown={handleDrillDown}
             onModeChange={setMode}
           />
-        ) : mode === 'landing' ? (
-          <FireflyLanding onGetStarted={() => setMode('repo')} />
         ) : mode === 'docs' ? (
           <DocsView
             repoState={repoState}

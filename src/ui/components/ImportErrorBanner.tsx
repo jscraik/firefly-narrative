@@ -65,7 +65,7 @@ export function ImportErrorBanner({ error, onDismiss }: ImportErrorBannerProps) 
   const help = getErrorHelp(error);
 
   return (
-    <div className="rounded-xl border border-accent-red-light bg-accent-red-bg p-4 text-sm">
+    <div className="rounded-xl border border-accent-error-warm-light bg-accent-error-warm-bg p-4 text-sm">
       <div className="flex items-start gap-3">
         <AlertCircle className="w-5 h-5 text-accent-red mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">

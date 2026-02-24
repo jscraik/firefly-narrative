@@ -15,6 +15,9 @@
  */
 
 @theme {
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
   /* Surfaces */
   --color-bg-primary: var(--background);
   --color-bg-secondary: var(--secondary);
@@ -49,6 +52,11 @@
   --color-accent-red: var(--accent-red);
   --color-accent-red-light: color-mix(in oklab, var(--accent-red) 20%, var(--background) 80%);
   --color-accent-red-bg: color-mix(in oklab, var(--accent-red) 12%, var(--background) 88%);
+
+  /* Warm error — amber-tinted red for on-brand error states */
+  --color-accent-error-warm: color-mix(in oklab, var(--accent-red) 70%, var(--accent-orange) 30%);
+  --color-accent-error-warm-light: color-mix(in oklab, var(--accent-error-warm) 20%, var(--background) 80%);
+  --color-accent-error-warm-bg: color-mix(in oklab, var(--accent-error-warm) 12%, var(--background) 88%);
 
   --color-accent-amber: var(--accent-orange);
   --color-accent-amber-light: color-mix(in oklab, var(--accent-orange) 20%, var(--background) 80%);
@@ -599,18 +607,16 @@ body {
 /* Section header */
 .section-header {
   font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--text-primary);
-  text-transform: uppercase;
   margin-bottom: 6px;
 }
 
 .section-subheader {
   font-size: 11px;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 /* Intent arrow */
@@ -709,17 +715,17 @@ body {
 /* Selected state - use primary blue ring instead of red/focus ring */
 .timeline-dot.selected {
   box-shadow:
-    0 0 0 2px var(--accent-blue),
+    0 0 0 2px var(--accent-amber),
     0 0 0 4px color-mix(in srgb, var(--background) 90%, transparent),
-    0 0 14px 2px var(--accent-blue-light);
+    0 0 14px 2px var(--accent-amber-light);
   transform: scale(1.25);
 }
 
 .timeline-dot.selected:hover {
   box-shadow:
-    0 0 0 2px var(--accent-blue),
+    0 0 0 2px var(--accent-amber),
     0 0 0 4px color-mix(in srgb, var(--background) 90%, transparent),
-    0 0 18px 3px var(--accent-blue-light);
+    0 0 18px 3px var(--accent-amber-light);
   transform: scale(1.35);
 }
 
@@ -1256,4 +1262,29 @@ a:focus-visible,
 
 .delay-700 {
   animation-delay: 700ms;
+}
+
+/* ── Stagger entrance animation ────────────────────────── */
+
+@keyframes stagger-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-enter {
+  animation: stagger-fade-in 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation-delay: calc(var(--stagger-index, 0) * 80ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger-enter {
+    animation: none;
+  }
 }

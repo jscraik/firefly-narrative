@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { BarChart3, BookOpen, GitBranch, Link2 } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, GitBranch, Link2 } from 'lucide-react';
 import { useDialKit } from 'dialkit';
 
 type PlaceholderVariant = 'repo' | 'dashboard' | 'docs';
@@ -7,9 +7,11 @@ type PlaceholderVariant = 'repo' | 'dashboard' | 'docs';
 export function RepositoryPlaceholderCard({
   className = '',
   variant = 'repo',
+  onOpenRepo,
 }: {
   className?: string;
   variant?: PlaceholderVariant;
+  onOpenRepo?: () => void;
 }) {
   const tune = useDialKit('Placeholder Card', {
     animations: {
@@ -30,7 +32,7 @@ export function RepositoryPlaceholderCard({
       animate: {
         boxShadow: [
           "0 0 0 1px var(--border-subtle)",
-          "0 0 0 2px var(--accent-blue-light)",
+          "0 0 0 2px var(--accent-amber-light)",
           "0 0 0 1px var(--border-subtle)"
         ],
         backgroundColor: [
@@ -60,17 +62,50 @@ export function RepositoryPlaceholderCard({
   const isDashboard = variant === 'dashboard';
   const isDocs = variant === 'docs';
 
-  let title = 'No Repository Loaded';
-  if (isDashboard) title = 'No Dashboard Loaded';
-  if (isDocs) title = 'No Documentation Loaded';
+  let title = 'No repository loaded';
+  if (isDashboard) title = 'No dashboard loaded';
+  if (isDocs) title = 'No documentation loaded';
 
   let message =
-    'Narrative will display timeline, docs, and linked sessions as soon as a repository is available.';
+    'Open a repository to see your timeline, docs, and linked AI sessions in one place.';
   if (isDashboard) {
-    message = 'Load a repository to see contribution metrics, trends, and developer insights.';
+    message = 'Open a repository to see contribution metrics, trends, and developer insights.';
   } else if (isDocs) {
-    message = 'Narrative will render markdown documentation from the .narrative directory once a repository is loaded.';
+    message = 'Documentation will render once a repository with a .narrative directory is loaded.';
   }
+
+  const quickActions = isDashboard
+    ? [
+      {
+        title: 'Explore Trends',
+        detail: 'Commit velocity, test health, and activity patterns',
+      },
+      {
+        title: 'Trace AI Work',
+        detail: 'Session attribution from Claude/Codex/Cursor',
+      },
+    ]
+    : isDocs
+      ? [
+        {
+          title: 'Browse Guides',
+          detail: 'Render markdown docs from your repository',
+        },
+        {
+          title: 'Keep Context',
+          detail: 'Surface narrative plans, decisions, and references',
+        },
+      ]
+      : [
+        {
+          title: 'Explore History',
+          detail: 'Commit timeline + changed files + context',
+        },
+        {
+          title: 'Link Sessions',
+          detail: 'Connect Claude/Codex/Cursor activity to commits',
+        },
+      ];
 
   return (
     <motion.div
@@ -85,7 +120,7 @@ export function RepositoryPlaceholderCard({
         transition={ANIMATION.breathingIcon.transition}
         whileHover={{
           scale: 1.05,
-          boxShadow: "0 0 0 3px var(--accent-blue-light)",
+          boxShadow: "0 0 0 3px var(--accent-amber-light)",
           transition: { duration: 0.2 }
         }}
       >
@@ -110,25 +145,38 @@ export function RepositoryPlaceholderCard({
       </motion.div>
 
       <div className="mt-8 grid grid-cols-1 gap-4 text-left text-xs sm:grid-cols-2">
-        <motion.div
-          className="rounded-lg border border-border-subtle bg-bg-subtle p-4"
-          {...ANIMATION.gridItem(0)}
-        >
-          <div className="mb-1 text-sm font-semibold text-text-primary">Explore History</div>
-          <div className="text-text-tertiary">Commit timeline + changed files + context</div>
-        </motion.div>
-
-        <motion.div
-          className="rounded-lg border border-border-subtle bg-bg-subtle p-4"
-          {...ANIMATION.gridItem(1)}
-        >
-          <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-text-primary">
-            <Link2 className="h-3.5 w-3.5 text-text-tertiary" />
-            Link Sessions
-          </div>
-          <div className="text-text-tertiary">Claude/Codex/Cursor session attribution</div>
-        </motion.div>
+        {quickActions.map((action, index) => (
+          <motion.div
+            key={action.title}
+            className="rounded-lg border border-border-subtle bg-bg-subtle p-4"
+            {...ANIMATION.gridItem(index)}
+          >
+            <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-text-primary">
+              <Link2 className="h-3.5 w-3.5 text-text-tertiary" />
+              {action.title}
+            </div>
+            <div className="text-text-tertiary">{action.detail}</div>
+          </motion.div>
+        ))}
       </div>
+
+      {onOpenRepo && (
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
+          className="mt-6"
+        >
+          <button
+            type="button"
+            onClick={onOpenRepo}
+            className="inline-flex items-center gap-2 rounded-xl border border-accent-amber-light bg-accent-amber-bg px-5 py-2.5 text-sm font-semibold text-accent-amber transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:bg-accent-amber-light hover:scale-105 active:scale-95 active:duration-75"
+          >
+            Open a repository
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </motion.div>
+      )}
 
       <motion.p
         className="mt-6 text-xs italic text-text-tertiary"

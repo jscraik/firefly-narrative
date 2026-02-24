@@ -18,8 +18,8 @@ export function NarrativeGovernancePanel({ report, observability }: NarrativeGov
     <div className="card p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="section-header">ROLLOUT GOVERNANCE</div>
-          <div className="section-subheader mt-0.5">rubric, kill-switch matrix, and observability</div>
+          <div className="section-header">Rollout governance</div>
+          <div className="section-subheader mt-0.5">Rubric, kill-switch matrix, and observability</div>
         </div>
         <div className={`rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ${statusClasses(report.status)}`}>
           {report.status}

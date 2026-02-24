@@ -8,6 +8,7 @@ import './styles.css';
 import './styles/firefly.css';
 import 'dialkit/styles.css';
 import { DialRoot } from 'dialkit';
+import { DialKitEnhancer } from './ui/components/DialKitEnhancer';
 
 const root = document.getElementById('root');
 
@@ -20,6 +21,7 @@ ReactDOM.createRoot(root).render(
     <ThemeProvider defaultTheme="system">
       <App />
       <DialRoot />
+      <DialKitEnhancer />
     </ThemeProvider>
   </React.StrictMode>
 );

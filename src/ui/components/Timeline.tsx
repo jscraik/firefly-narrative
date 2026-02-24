@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useDialKit } from 'dialkit';
 import type { TimelineNode as TimelineNodeType } from '../../core/types';
 import type { FireflyEvent } from '../../hooks/useFirefly';
@@ -21,6 +22,7 @@ export interface TimelineProps {
   pulseCommitId?: string | null;
   fireflyEvent?: FireflyEvent;
   fireflyDisabled?: boolean;
+  fireflyBurstType?: 'success' | 'error' | null;
   onFireflyTrackingSettled?: (payload: FireflyTrackingSettlePayload) => void;
 }
 
@@ -31,6 +33,7 @@ export function Timeline({
   pulseCommitId,
   fireflyEvent = { type: 'idle', selectedNodeId: null },
   fireflyDisabled = false,
+  fireflyBurstType = null,
   onFireflyTrackingSettled,
 }: TimelineProps) {
   const tune = useDialKit('Timeline', {
@@ -51,6 +54,20 @@ export function Timeline({
   const [fireflyPos, setFireflyPos] = useState({ x: 0, y: 0 });
   const nodeRefs = useRef<Map<string, HTMLElement>>(new Map());
   const settleRafRef = useRef<number | null>(null);
+  const keyboardPulseTimerRef = useRef<number | null>(null);
+  const [keyboardPulseId, setKeyboardPulseId] = useState<string | null>(null);
+
+  const scheduleKeyboardPulseClear = useCallback(() => {
+    if (keyboardPulseTimerRef.current !== null) {
+      window.clearTimeout(keyboardPulseTimerRef.current);
+      keyboardPulseTimerRef.current = null;
+    }
+
+    keyboardPulseTimerRef.current = window.setTimeout(() => {
+      setKeyboardPulseId(null);
+      keyboardPulseTimerRef.current = null;
+    }, 300);
+  }, []);
 
   const measureFireflyPosition = useCallback(() => {
     if (!selectedId) return null;
@@ -124,6 +141,14 @@ export function Timeline({
     };
   }, [measureFireflyPosition, onFireflyTrackingSettled, selectedId, containerRef]);
 
+  useEffect(() => {
+    return () => {
+      if (keyboardPulseTimerRef.current !== null) {
+        window.clearTimeout(keyboardPulseTimerRef.current);
+      }
+    };
+  }, []);
+
   const maskStyle = {
     maskImage: `linear-gradient(to right, transparent, black ${tune.layout.maskWidth}px, black calc(100% - ${tune.layout.maskWidth}px), transparent)`,
     WebkitMaskImage: `linear-gradient(to right, transparent, black ${tune.layout.maskWidth}px, black calc(100% - ${tune.layout.maskWidth}px), transparent)`,
@@ -153,30 +178,58 @@ export function Timeline({
             if (event.key === 'ArrowLeft') {
               event.preventDefault();
               scrollToNode('prev');
+              const idx = sorted.findIndex(n => n.id === selectedId);
+              if (idx > 0) {
+                const prevId = sorted[idx - 1].id;
+                setKeyboardPulseId(prevId);
+                scheduleKeyboardPulseClear();
+              }
             } else if (event.key === 'ArrowRight') {
               event.preventDefault();
               scrollToNode('next');
+              const idx = sorted.findIndex(n => n.id === selectedId);
+              if (idx >= 0 && idx < sorted.length - 1) {
+                const nextId = sorted[idx + 1].id;
+                setKeyboardPulseId(nextId);
+                scheduleKeyboardPulseClear();
+              }
             }
           }}
         >
           {/* Connection line - visible path */}
           <div className="pointer-events-none absolute left-0 right-0 top-[38px] h-[1px] bg-border-subtle" />
 
-          <div className="relative flex min-w-max items-start gap-2 px-4 py-2">
+          <motion.div
+            className="relative flex min-w-max items-start gap-2 px-4 py-2"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: {
+                transition: { staggerChildren: 0.05 }
+              }
+            }}
+          >
             {sorted.map((n) => (
-              <TimelineNodeComponent
+              <motion.div
                 key={n.id}
-                ref={(el) => {
-                  if (el) nodeRefs.current.set(n.id, el);
-                  else nodeRefs.current.delete(n.id);
+                variants={{
+                  hidden: { opacity: 0, y: 15 },
+                  visible: { opacity: 1, y: 0 }
                 }}
-                node={n}
-                selected={selectedId === n.id}
-                pulsing={pulseCommitId === n.id}
-                onSelect={() => onSelect(n.id)}
-              />
+              >
+                <TimelineNodeComponent
+                  ref={(el) => {
+                    if (el) nodeRefs.current.set(n.id, el);
+                    else nodeRefs.current.delete(n.id);
+                  }}
+                  node={n}
+                  selected={selectedId === n.id}
+                  pulsing={pulseCommitId === n.id || keyboardPulseId === n.id}
+                  onSelect={() => onSelect(n.id)}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {/* Firefly Signal */}
           <FireflySignal
@@ -184,6 +237,7 @@ export function Timeline({
             y={fireflyPos.y}
             event={fireflyEvent}
             disabled={fireflyDisabled}
+            burstType={fireflyBurstType}
           />
         </div>
 

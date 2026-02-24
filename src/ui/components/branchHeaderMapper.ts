@@ -7,7 +7,7 @@ import type {
   HeaderMetricUnavailableReason,
 } from '../../core/types';
 
-type BranchMode = 'demo' | 'repo' | 'docs' | 'dashboard' | 'landing';
+type BranchMode = 'demo' | 'repo' | 'docs' | 'dashboard';
 type RepoStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 export interface BranchHeaderDeriveInput {

@@ -1,12 +1,12 @@
 import { ArrowRight } from 'lucide-react';
 import { useState } from 'react';
-import claudeIcon from '../../assets/icons/claude-color.svg';
-import geminiIcon from '../../assets/icons/gemini-color.svg';
-import kimiIcon from '../../assets/icons/kimi-color.svg';
-import ollamaIcon from '../../assets/icons/ollama.svg';
-import openaiIcon from '../../assets/icons/openai.svg';
+import claudeIcon from '../src/assets/icons/claude-color.svg';
+import geminiIcon from '../src/assets/icons/gemini-color.svg';
+import kimiIcon from '../src/assets/icons/kimi-color.svg';
+import ollamaIcon from '../src/assets/icons/ollama.svg';
+import openaiIcon from '../src/assets/icons/openai.svg';
 import './FireflyLanding.css';
-import { FireflyHero } from '../components/FireflyHero';
+import { FireflyHero } from './FireflyHero';
 
 export function FireflyLanding(props: { onGetStarted?: () => void }) {
     const { onGetStarted } = props;
@@ -17,29 +17,29 @@ export function FireflyLanding(props: { onGetStarted?: () => void }) {
         invertLogo?: boolean;
         currentColorLogo?: boolean;
     }[] = [
-        {
-            name: 'OpenAI Codex CLI',
-            icon: openaiIcon,
-            currentColorLogo: true,
-        },
-        {
-            name: 'Claude Code',
-            icon: claudeIcon,
-        },
-        {
-            name: 'Gemini CLI',
-            icon: geminiIcon,
-        },
-        {
-            name: 'Kimi CLI',
-            icon: kimiIcon,
-        },
-        {
-            name: 'Ollama',
-            icon: ollamaIcon,
-            currentColorLogo: true,
-        },
-    ];
+            {
+                name: 'OpenAI Codex CLI',
+                icon: openaiIcon,
+                currentColorLogo: true,
+            },
+            {
+                name: 'Claude Code',
+                icon: claudeIcon,
+            },
+            {
+                name: 'Gemini CLI',
+                icon: geminiIcon,
+            },
+            {
+                name: 'Kimi CLI',
+                icon: kimiIcon,
+            },
+            {
+                name: 'Ollama',
+                icon: ollamaIcon,
+                currentColorLogo: true,
+            },
+        ];
 
     const handleGetStarted = () => {
         if (isExiting) return;

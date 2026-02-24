@@ -139,7 +139,7 @@ export function CaptureActivityStrip(props: {
       <div className="card p-3 flex flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-xs font-semibold text-text-secondary">CAPTURE</div>
+            <div className="text-xs font-semibold text-text-secondary">Capture</div>
             <div className="text-[11px] text-text-tertiary mt-0.5">
               {enabled
                 ? `On · Sources: ${sourcesLabel || '—'} · Issues: ${issueCount}`
@@ -154,7 +154,7 @@ export function CaptureActivityStrip(props: {
                       ? 'bg-accent-blue-bg text-accent-blue border-accent-blue-light'
                       : captureMode === 'DEGRADED_STREAMING'
                         ? 'bg-accent-amber-bg text-accent-amber border-accent-amber-light'
-                        : 'bg-accent-red-bg text-accent-red border-accent-red-light'
+                        : 'bg-accent-error-warm-bg text-accent-error-warm border-accent-error-warm-light'
                     }`}
                 >
                   {captureMode}
@@ -191,7 +191,7 @@ export function CaptureActivityStrip(props: {
 
         <div className="pt-1">
           <div className="flex items-center justify-between">
-            <div className="text-[11px] font-semibold text-text-secondary">RECENT</div>
+            <div className="text-[11px] font-semibold text-text-secondary">Recent</div>
             <button
               type="button"
               className="text-[11px] text-text-tertiary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:text-text-secondary hover:scale-105"

@@ -44,6 +44,10 @@ export interface UseFireflyReturn {
   toggle: (nextEnabled?: boolean) => Promise<void>;
   /** Current semantic firefly event/state */
   event: FireflyEvent;
+  /** Temporary animation burst type */
+  burstType: 'success' | 'error' | null;
+  /** Imperative trigger for one-off semantic bursts */
+  triggerBurst: (type: 'success' | 'error') => void;
 }
 
 function buildInsightKey(
@@ -151,6 +155,20 @@ export function useFirefly(options: UseFireflyOptions): UseFireflyReturn {
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState<FireflyEvent>({ type: 'idle', selectedNodeId: null });
   const [dwellTick, setDwellTick] = useState(0);
+  const [burstType, setBurstType] = useState<'success' | 'error' | null>(null);
+  const burstTimerRef = useRef<number | null>(null);
+
+  const triggerBurst = useCallback((type: 'success' | 'error') => {
+    if (burstTimerRef.current !== null) {
+      window.clearTimeout(burstTimerRef.current);
+      burstTimerRef.current = null;
+    }
+    setBurstType(type);
+    burstTimerRef.current = window.setTimeout(() => {
+      setBurstType(null);
+      burstTimerRef.current = null;
+    }, 1000);
+  }, []);
 
   const eventRef = useRef(event);
   const enabledRef = useRef(enabled);
@@ -369,6 +387,9 @@ export function useFirefly(options: UseFireflyOptions): UseFireflyReturn {
       if (dwellTimerRef.current !== null) {
         window.clearTimeout(dwellTimerRef.current);
       }
+      if (burstTimerRef.current !== null) {
+        window.clearTimeout(burstTimerRef.current);
+      }
     };
   }, []);
 
@@ -377,5 +398,7 @@ export function useFirefly(options: UseFireflyOptions): UseFireflyReturn {
     loading,
     toggle,
     event,
+    burstType,
+    triggerBurst,
   };
 }

@@ -321,12 +321,12 @@ function DiffDock({
   return (
     <>
       <div className="card flex-none overflow-hidden">
-        <div className="w-full flex items-center gap-2 bg-bg-secondary px-4 py-2 text-xs font-medium text-text-secondary">
+        <div className="w-full flex items-center gap-2 px-2 py-2 bg-bg-secondary text-xs font-medium text-text-secondary">
           <button
             type="button"
             onClick={onToggleExpanded}
             title="Toggle diff panel"
-            className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98] hover:text-text-primary outline-none focus-visible:ring-1 focus-visible:ring-accent-blue/30"
+            className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md px-2 py-1 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98] hover:bg-bg-hover outline-none focus-visible:ring-1 focus-visible:ring-accent-blue/30"
           >
             <span className="flex min-w-0 items-center gap-2">
               <FileCode className="w-3.5 h-3.5" />

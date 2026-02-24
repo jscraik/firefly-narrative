@@ -10,6 +10,8 @@ export interface FireflySignalProps {
   event?: FireflyEvent;
   /** Whether the firefly is disabled (hidden) */
   disabled?: boolean;
+  /** Custom burst animation (transient) */
+  burstType?: 'success' | 'error' | null;
 }
 
 /**
@@ -26,6 +28,7 @@ export function FireflySignal({
   y,
   event = { type: 'idle', selectedNodeId: null },
   disabled = false,
+  burstType = null,
 }: FireflySignalProps) {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
@@ -72,7 +75,8 @@ export function FireflySignal({
           'firefly-orb',
           `firefly-${event.type}`,
           motionClass,
-        ].join(' ')}
+          burstType ? `firefly-burst-${burstType}` : '',
+        ].filter(Boolean).join(' ')}
       />
     </div>
   );
