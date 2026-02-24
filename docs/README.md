@@ -44,7 +44,9 @@ pnpm agentation:dev
 pnpm tauri:dev
 ```
 
-If the Agentation panel shows an empty websocket URL on startup, open `/Users/jamiecraik/dev/agent-skills/frontend/agentation/SKILL.md` for the integration workflow and verify the `webhookUrl` defaults to `http://localhost:8787`.
+If the Agentation panel is missing or shows an empty websocket URL on startup, open `/Users/jamiecraik/dev/agent-skills/frontend/agentation/SKILL.md` for the integration workflow and verify:
+- `VITE_AGENTATION_ENDPOINT=http://localhost:4747` (enables panel)
+- `VITE_AGENTATION_WEBHOOK_URL=http://localhost:8787`
 
 ## Documentation Checks
 

@@ -1,0 +1,60 @@
+---
+status: pending
+priority: p2
+issue_id: CR-012
+tags:
+  - code-review
+  - security
+  - quality
+  - narrative
+dependencies: []
+---
+
+## Problem Statement
+Prompt/eval governance requirements in the plan are only partially implemented: rubric checks exist, but prompt versioning and adversarial prompt-injection checks are not present.
+
+## Findings
+- The plan calls for prompt template versioning and adversarial prompt-injection checks.
+- Current implementation includes rollout rubric logic and tests.
+- No implementation was found for adversarial prompt-injection checks or prompt-version tracking metadata.
+
+### Evidence
+- `/Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-18-feat-vision-parity-track-plan.md` (line ~255)
+- Existing governance code: `/Users/jamiecraik/dev/firefly-narrative/src/core/narrative/rolloutGovernance.ts`
+- Existing tests: `/Users/jamiecraik/dev/firefly-narrative/src/core/narrative/__tests__/rolloutGovernance.test.ts`
+
+## Proposed Solutions
+### Option 1 (Recommended): Add prompt metadata + adversarial test suite
+- **Effort:** Medium
+- **Risk:** Low
+- **Pros:** Aligns implementation with planned security governance.
+- **Approach:** Introduce prompt template IDs/versions and add adversarial payload tests that must pass before rollout.
+
+### Option 2: Add lightweight static policy checks
+- **Effort:** Small
+- **Risk:** Medium
+- **Pros:** Quick baseline protection.
+- **Approach:** Add lint/policy checks for dangerous prompt constructs and required template metadata.
+
+### Option 3: De-scope governance requirements in plan
+- **Effort:** Small
+- **Risk:** High
+- **Pros:** Clarifies current state.
+- **Approach:** Explicitly mark adversarial checks/versioning as deferred and track in backlog.
+
+## Recommended Action
+
+## Technical Details
+- Affected area: narrative prompt/eval safety governance.
+- Impact: reduced assurance against injection-like prompt failures.
+
+## Acceptance Criteria
+- [ ] Prompt templates have explicit version metadata.
+- [ ] Adversarial prompt-injection tests exist and run in CI.
+- [ ] Governance docs map 1:1 to implemented checks.
+
+## Work Log
+- 2026-02-24: Logged missing prompt-versioning and adversarial-test controls relative to plan.
+
+## Resources
+- `/Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-18-feat-vision-parity-track-plan.md`

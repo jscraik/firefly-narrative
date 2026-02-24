@@ -32,7 +32,7 @@ function isTauriRuntime(): boolean {
   return Boolean(tauriWindow.__TAURI_INTERNALS__?.invoke || tauriWindow.__TAURI_IPC__);
 }
 
-function normalizeWebhookUrl(url: string | undefined): string | undefined {
+function normalizeHttpUrl(url: string | undefined): string | undefined {
   if (!url?.trim()) {
     return undefined;
   }
@@ -174,8 +174,12 @@ export default function App() {
   const clearFilterTimerRef = useRef<number | null>(null);
   const [githubConnectorEnabled, setGithubConnectorEnabled] = useState(false);
   const [AgentationComponent, setAgentationComponent] = useState<AgentationComponentType | null>(null);
+  const rawAgentationEndpoint = import.meta.env.VITE_AGENTATION_ENDPOINT as string | undefined;
+  const normalizedAgentationEndpoint = normalizeHttpUrl(rawAgentationEndpoint);
+  const isAgentationEnabled = import.meta.env.DEV && Boolean(normalizedAgentationEndpoint);
+
   const rawAgentationWebhookUrl = import.meta.env.VITE_AGENTATION_WEBHOOK_URL as string | undefined;
-  const normalizedAgentationWebhookUrl = normalizeWebhookUrl(rawAgentationWebhookUrl);
+  const normalizedAgentationWebhookUrl = normalizeHttpUrl(rawAgentationWebhookUrl);
   const agentationWebhookUrl = normalizedAgentationWebhookUrl ?? 'http://localhost:8787';
 
   useEffect(() => {
@@ -194,7 +198,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
+    if (!isAgentationEnabled) {
+      setAgentationComponent(null);
+      return;
+    }
 
     let cancelled = false;
     import('agentation')
@@ -210,22 +217,24 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAgentationEnabled]);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
 
-    if (!rawAgentationWebhookUrl) {
-      console.warn(
-        '[Agentation] VITE_AGENTATION_WEBHOOK_URL is not set. Using default http://localhost:8787.'
-      );
+    if (rawAgentationEndpoint && !normalizedAgentationEndpoint) {
+      console.warn('[Agentation] VITE_AGENTATION_ENDPOINT is invalid. Use an http(s) URL.');
       return;
     }
 
-    if (!normalizedAgentationWebhookUrl) {
+    if (!isAgentationEnabled) {
+      return;
+    }
+
+    if (rawAgentationWebhookUrl && !normalizedAgentationWebhookUrl) {
       console.warn('[Agentation] VITE_AGENTATION_WEBHOOK_URL is invalid. Use an http(s) URL.');
     }
-  }, [normalizedAgentationWebhookUrl]);
+  }, [isAgentationEnabled, normalizedAgentationEndpoint, normalizedAgentationWebhookUrl, rawAgentationEndpoint, rawAgentationWebhookUrl]);
 
   // Clear dashboard filter when switching away from repo mode (optional UX enhancement)
   useEffect(() => {
@@ -497,9 +506,9 @@ export default function App() {
           <RepoEmptyState setRepoState={setRepoState} />
         )}
       </div>
-      {import.meta.env.DEV && AgentationComponent && (
+      {isAgentationEnabled && AgentationComponent && (
         <AgentationComponent
-          endpoint="http://localhost:4747"
+          endpoint={normalizedAgentationEndpoint!}
           webhookUrl={agentationWebhookUrl}
           onSessionCreated={(sessionId) => {
             console.log('Session started:', sessionId);

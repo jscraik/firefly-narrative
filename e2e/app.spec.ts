@@ -20,4 +20,19 @@ test.describe('Narrative App', () => {
     const header = page.locator('header, nav, [role="navigation"]').first();
     await expect(header).toBeVisible();
   });
+
+  test('does not call Agentation MCP endpoint unless explicitly enabled', async ({ page }) => {
+    const agentationRequests: string[] = [];
+
+    page.on('request', (request) => {
+      if (request.url().startsWith('http://localhost:4747')) {
+        agentationRequests.push(request.url());
+      }
+    });
+
+    await page.goto('/');
+    await page.waitForTimeout(500);
+
+    expect(agentationRequests).toEqual([]);
+  });
 });

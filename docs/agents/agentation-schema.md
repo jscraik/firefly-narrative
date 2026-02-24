@@ -104,9 +104,9 @@ type AgentationEventType =
 The Narrative app includes the `Agentation` React component in `src/App.tsx`:
 
 ```tsx
-{import.meta.env.DEV && (
+{import.meta.env.DEV && import.meta.env.VITE_AGENTATION_ENDPOINT && (
   <Agentation
-    endpoint="http://localhost:4747"
+    endpoint={import.meta.env.VITE_AGENTATION_ENDPOINT}
     webhookUrl={import.meta.env.VITE_AGENTATION_WEBHOOK_URL}
     onSessionCreated={(sessionId) => {
       console.log("Session started:", sessionId);
@@ -132,6 +132,7 @@ cp .env.agentation.example .env.local
 1. Ensure Vite has:
 
 ```bash
+VITE_AGENTATION_ENDPOINT=http://localhost:4747
 VITE_AGENTATION_WEBHOOK_URL=http://localhost:8787
 ```
 
@@ -147,6 +148,8 @@ Expected:
 - MCP endpoint in panel points to `http://localhost:4747`.
 - Webhook URL is present and points to `http://localhost:8787`.
 - Submitting an annotation triggers a local POST to `http://localhost:8787`.
+
+Note: if `VITE_AGENTATION_ENDPOINT` is unset, the Agentation panel stays disabled to keep local baseline runs free of expected connection-refused noise.
 
 In this repo the app also falls back to `http://localhost:8787` if the env var is unset, but setting it explicitly keeps automation reliable across shells.
 
