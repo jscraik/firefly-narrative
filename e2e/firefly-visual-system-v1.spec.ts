@@ -15,8 +15,8 @@ type FireflyPerfFixture = {
 
 async function openDemoTimeline(page: Page) {
   await page.goto('/');
-  const demoTab = page.getByRole('tab', { name: 'Demo' });
-  await demoTab.click({ force: true });
+  // The app now boots to Demo mode by default.
+  // Wait for the timeline to appear instead of clicking the Demo tab.
   await page.waitForSelector('[role="listbox"][aria-label="Commit timeline"]');
 }
 
@@ -46,7 +46,7 @@ test.describe('Firefly Visual System v1', () => {
   test('surfaces toggle persistence failures in ImportErrorBanner when they occur', async ({ page }) => {
     await openDemoTimeline(page);
 
-    await page.getByRole('tab', { name: 'Settings' }).click();
+    await page.getByRole('tab', { name: 'Settings' }).evaluate((el: HTMLElement) => el.click());
     const isDevRuntime = await page.getByText('Dev Theme Override').isVisible().catch(() => false);
 
     const toggle = page.getByLabel(/toggle firefly signal/i);
@@ -80,15 +80,15 @@ test.describe('Firefly Visual System v1', () => {
     const fixture = await loadPerfFixture();
     const thresholds = process.env.CI
       ? {
-          averageFpsMin: 20,
-          p95FrameTimeMsMax: 80,
-          layoutShiftCountMax: 0,
-        }
+        averageFpsMin: 20,
+        p95FrameTimeMsMax: 80,
+        layoutShiftCountMax: 0,
+      }
       : {
-          averageFpsMin: 55,
-          p95FrameTimeMsMax: 20,
-          layoutShiftCountMax: 0,
-        };
+        averageFpsMin: 55,
+        p95FrameTimeMsMax: 20,
+        layoutShiftCountMax: 0,
+      };
 
     await openDemoTimeline(page);
 

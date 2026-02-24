@@ -23,10 +23,10 @@ function getIntentType(text: string): IntentType {
 export function IntentList({ items }: { items: IntentItem[] }) {
   return (
     <div className="card p-5">
-      <div className="section-header">INTENT</div>
-      <div className="section-subheader">based on prompts / commit messages</div>
+      <div className="section-header">Intent</div>
+      <div className="section-subheader">Based on prompts / commit messages</div>
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-3 space-y-2">
         {items.map((it) => {
           const type = it.type ?? getIntentType(it.text);
           const config = INTENT_CONFIG[type];

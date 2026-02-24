@@ -37,7 +37,11 @@
     "app:dev": "bash scripts/dev-native.sh",
     "agentation:webhook": "PORT=${PORT:-8787} TRIGGER_EVENTS=${TRIGGER_EVENTS:-submit} node scripts/agentation-autopilot.mjs",
     "agentation:dev": "bash scripts/agentation-dev.sh",
-    "agentation:critique": "AGENTATION_MODE=critique PORT=${PORT:-8787} TRIGGER_EVENTS=${TRIGGER_EVENTS:-submit} node scripts/agentation-autopilot.mjs"
+    "agentation:critique": "AGENTATION_MODE=critique PORT=${PORT:-8787} TRIGGER_EVENTS=${TRIGGER_EVENTS:-submit} node scripts/agentation-autopilot.mjs",
+    "test:artifacts": "bash scripts/test-with-artifacts.sh all",
+    "test:artifacts:unit": "bash scripts/test-with-artifacts.sh unit",
+    "test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
+    "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e"
   },
   "dependencies": {
     "@design-studio/runtime": "file:vendor/design-studio/design-studio-runtime-2.0.0.tgz",

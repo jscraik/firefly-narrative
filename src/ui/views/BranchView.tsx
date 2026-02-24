@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AttributionPrefs, AttributionPrefsUpdate } from '../../core/attribution-api';
 import { FileSelectionProvider, useFileSelection } from '../../core/context/FileSelectionContext';
@@ -37,6 +38,7 @@ import { useFirefly } from '../../hooks/useFirefly';
 import { useTestImport } from '../../hooks/useTestImport';
 import { BranchNarrativePanel } from '../components/BranchNarrativePanel';
 import { BranchHeader } from '../components/BranchHeader';
+import { BranchSummaryBar } from '../components/BranchSummaryBar';
 import {
   createBranchHeaderRequestIdentityKey,
   deriveBranchHeaderViewModel,
@@ -56,6 +58,38 @@ import { SkeletonFiles } from '../components/Skeleton';
 import { Timeline, type FireflyTrackingSettlePayload } from '../components/Timeline';
 import { shouldRouteEvidenceToRawDiff } from './branchViewEvidence';
 
+
+/* ─────────────────────────────────────────────────────────
+ * ANIMATION STORYBOARD
+ *
+ * Read top-to-bottom. Each `at` value is ms after trigger.
+ *
+ *    0ms   waiting for trigger
+ *  100ms   summary bar appears
+ *  180ms   branch header appears
+ *  260ms   narrative panel appears
+ *  340ms   details (governance, etc) appear
+ *  420ms   intents appear
+ *  500ms   files changed appears
+ *  580ms   right panel tabs appear
+ *  660ms   timeline appears
+ * ───────────────────────────────────────────────────────── */
+const TIMING = {
+  summary: 100,
+  header: 180,
+  narrative: 260,
+  details: 340,
+  intents: 420,
+  files: 500,
+  rightPanel: 580,
+  timeline: 660,
+};
+
+const PANEL = {
+  initialY: 8,
+  finalY: 0,
+  spring: { type: 'spring' as const, stiffness: 300, damping: 30 },
+};
 
 function BranchViewInner(props: {
   model: BranchViewModel;
@@ -156,6 +190,24 @@ function BranchViewInner(props: {
   }, [model]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(defaultSelectedId);
+  const [stage, setStage] = useState(0);
+
+  useEffect(() => {
+    setStage(0);
+    const timers: NodeJS.Timeout[] = [];
+
+    timers.push(setTimeout(() => setStage(1), TIMING.summary));
+    timers.push(setTimeout(() => setStage(2), TIMING.header));
+    timers.push(setTimeout(() => setStage(3), TIMING.narrative));
+    timers.push(setTimeout(() => setStage(4), TIMING.details));
+    timers.push(setTimeout(() => setStage(5), TIMING.intents));
+    timers.push(setTimeout(() => setStage(6), TIMING.files));
+    timers.push(setTimeout(() => setStage(7), TIMING.rightPanel));
+    timers.push(setTimeout(() => setStage(8), TIMING.timeline));
+
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
   // Track which commits have already pulsed (once per app session)
   const pulsedCommits = useRef<Set<string>>(new Set());
   const [pulseCommitId, setPulseCommitId] = useState<string | null>(null);
@@ -212,12 +264,12 @@ function BranchViewInner(props: {
     const result = !branchHeaderParityEnabled
       ? deriveLegacyBranchHeaderViewModel(model, dashboardFilter)
       : deriveBranchHeaderViewModel({
-          mode: model.source === 'git' ? 'repo' : 'demo',
-          repoStatus: 'ready',
-          model,
-          dashboardFilter,
-          featureEnabled: true,
-        });
+        mode: model.source === 'git' ? 'repo' : 'demo',
+        repoStatus: 'ready',
+        model,
+        dashboardFilter,
+        featureEnabled: true,
+      });
 
     const end = typeof performance !== 'undefined' ? performance.now() : Date.now();
     headerDerivationDurationMsRef.current = Math.max(0, end - start);
@@ -685,53 +737,103 @@ function BranchViewInner(props: {
     if (!selectedCommitSha) return;
     await importJUnitForCommit(selectedCommitSha);
     await refreshRepoTestRun();
+    firefly.triggerBurst('success');
   };
 
   return (
-    <div className={`flex h-full flex-col animate-in fade-in slide-in-from-bottom-1 motion-page-enter ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 motion-page-exit fill-mode-forwards' : ''}`}>
+    <div className={`flex h-full flex-col motion-page-enter ${isExitingFilteredView ? 'animate-out fade-out slide-out-to-top-2 motion-page-exit fill-mode-forwards' : ''}`}>
       <IngestToast toast={ingestToast ?? null} />
       <div className="flex-1 overflow-hidden bg-bg-secondary">
         <div className="flex flex-col gap-5 p-6 lg:p-8 h-full overflow-y-auto bg-bg-tertiary lg:grid lg:grid-cols-12 lg:overflow-hidden">
           {/* Left column */}
           <div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
-            <BranchHeader viewModel={headerViewModel} onClearFilter={onClearFilter} />
-            <BranchNarrativePanel
-              narrative={narrative}
-              projections={projections}
-              audience={audience}
-              detailLevel={effectiveDetailLevel}
-              killSwitchActive={killSwitchActive}
-              killSwitchReason={criticalRule?.rationale}
-              onAudienceChange={handleAudienceChange}
-              onDetailLevelChange={handleDetailLevelChange}
-              onOpenEvidence={handleOpenEvidence}
-              onOpenRawDiff={handleOpenRawDiff}
-            />
-            <NarrativeGovernancePanel report={rolloutReport} observability={observability} />
-            <DecisionArchaeologyPanel entries={archaeologyEntries} onOpenEvidence={handleOpenEvidence} />
-            {ingestStatus ? (
-              <CaptureActivityStrip
-                enabled={ingestStatus.enabled}
-                sourcesLabel={(() => {
-                  const out: string[] = [];
-                  if (discoveredSources?.claude?.length) out.push('Claude');
-                  if (discoveredSources?.cursor?.length) out.push('Cursor');
-                  if (discoveredSources?.codexLogs?.length) out.push('Codex');
-                  return out.join(', ');
-                })()}
-                issueCount={ingestStatus.errorCount}
-                lastSeenISO={ingestStatus.lastImportAt}
-                captureMode={ingestStatus.captureMode}
-                captureModeMessage={ingestStatus.captureModeMessage}
-                recent={ingestActivityRecent ?? []}
-                onToggle={onToggleAutoIngest}
-                onRequestAll={onRequestIngestActivityAll}
+            <motion.div
+              initial={{ opacity: 0, y: PANEL.initialY }}
+              animate={{ opacity: stage >= 1 ? 1 : 0, y: stage >= 1 ? PANEL.finalY : PANEL.initialY }}
+              transition={PANEL.spring}
+            >
+              <BranchSummaryBar model={model} />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: PANEL.initialY }}
+              animate={{ opacity: stage >= 2 ? 1 : 0, y: stage >= 2 ? PANEL.finalY : PANEL.initialY }}
+              transition={PANEL.spring}
+            >
+              <BranchHeader viewModel={headerViewModel} onClearFilter={onClearFilter} />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: PANEL.initialY }}
+              animate={{ opacity: stage >= 3 ? 1 : 0, y: stage >= 3 ? PANEL.finalY : PANEL.initialY }}
+              transition={PANEL.spring}
+            >
+              <BranchNarrativePanel
+                narrative={narrative}
+                projections={projections}
+                audience={audience}
+                detailLevel={effectiveDetailLevel}
+                killSwitchActive={killSwitchActive}
+                killSwitchReason={criticalRule?.rationale}
+                onAudienceChange={handleAudienceChange}
+                onDetailLevelChange={handleDetailLevelChange}
+                onOpenEvidence={handleOpenEvidence}
+                onOpenRawDiff={handleOpenRawDiff}
               />
-            ) : null}
+            </motion.div>
+
+            <motion.details
+              className="group"
+              initial={{ opacity: 0, y: PANEL.initialY }}
+              animate={{ opacity: stage >= 4 ? 1 : 0, y: stage >= 4 ? PANEL.finalY : PANEL.initialY }}
+              transition={PANEL.spring}
+            >
+              <summary className="cursor-pointer text-sm font-medium text-text-tertiary hover:text-text-primary transition-colors py-2 select-none list-none flex items-center gap-2">
+                <span className="w-4 h-4 flex items-center justify-center rounded-sm bg-bg-primary group-open:bg-bg-hover transition-colors">
+                  <svg className="w-3 h-3 transition-transform group-open:rotate-90" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <title>Toggle details panel</title>
+                    <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                Show details
+              </summary>
+              <div className="flex flex-col gap-5 pt-3">
+                <NarrativeGovernancePanel report={rolloutReport} observability={observability} />
+                <DecisionArchaeologyPanel entries={archaeologyEntries} onOpenEvidence={handleOpenEvidence} />
+                {ingestStatus ? (
+                  <CaptureActivityStrip
+                    enabled={ingestStatus.enabled}
+                    sourcesLabel={(() => {
+                      const out: string[] = [];
+                      if (discoveredSources?.claude?.length) out.push('Claude');
+                      if (discoveredSources?.cursor?.length) out.push('Cursor');
+                      if (discoveredSources?.codexLogs?.length) out.push('Codex');
+                      return out.join(', ');
+                    })()}
+                    issueCount={ingestStatus.errorCount}
+                    lastSeenISO={ingestStatus.lastImportAt}
+                    captureMode={ingestStatus.captureMode}
+                    captureModeMessage={ingestStatus.captureModeMessage}
+                    recent={ingestActivityRecent ?? []}
+                    onToggle={onToggleAutoIngest}
+                    onRequestAll={onRequestIngestActivityAll}
+                  />
+                ) : null}
+              </div>
+            </motion.details>
+
             {ingestIssues && onDismissIngestIssue ? (
               <NeedsAttentionList issues={ingestIssues} onDismiss={onDismissIngestIssue} />
             ) : null}
-            <IntentList items={model.intent} />
+
+            <motion.div
+              initial={{ opacity: 0, y: PANEL.initialY }}
+              animate={{ opacity: stage >= 5 ? 1 : 0, y: stage >= 5 ? PANEL.finalY : PANEL.initialY }}
+              transition={PANEL.spring}
+            >
+              <IntentList items={model.intent} />
+            </motion.div>
+
             {/* Breadcrumb navigation */}
             {selectedNode && (
               <div className="flex items-center gap-2 px-1">
@@ -744,10 +846,14 @@ function BranchViewInner(props: {
               </div>
             )}
 
-            <div>
+            <motion.div
+              initial={{ opacity: 0, y: PANEL.initialY }}
+              animate={{ opacity: stage >= 6 ? 1 : 0, y: stage >= 6 ? PANEL.finalY : PANEL.initialY }}
+              transition={PANEL.spring}
+            >
               {loadingFiles ? (
                 <div className="card p-5">
-                  <div className="section-header">FILES CHANGED</div>
+                  <div className="section-header">Files changed</div>
                   <div className="section-subheader mt-0.5">loading…</div>
                   <div className="mt-4">
                     <SkeletonFiles count={5} />
@@ -756,11 +862,11 @@ function BranchViewInner(props: {
               ) : (
                 <FilesChanged
                   files={files}
-                  title="FILES CHANGED"
+                  title="Files changed"
                   traceByFile={selectedNodeId ? model.traceSummaries?.byFileByCommit[selectedNodeId] : undefined}
                 />
               )}
-            </div>
+            </motion.div>
 
             {actionError && (
               <ImportErrorBanner
@@ -771,7 +877,12 @@ function BranchViewInner(props: {
           </div>
 
           {/* Right column - Tabbed interface */}
-          <div className="flex flex-col min-w-0 lg:col-span-5 lg:overflow-hidden">
+          <motion.div
+            className="flex flex-col min-w-0 lg:col-span-5 lg:overflow-hidden"
+            initial={{ opacity: 0, y: PANEL.initialY }}
+            animate={{ opacity: stage >= 7 ? 1 : 0, y: stage >= 7 ? PANEL.finalY : PANEL.initialY }}
+            transition={PANEL.spring}
+          >
             <RightPanelTabs
               // Session
               sessionExcerpts={model.sessionExcerpts}
@@ -829,19 +940,26 @@ function BranchViewInner(props: {
               fireflyEnabled={firefly.enabled}
               onToggleFirefly={firefly.toggle}
             />
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      <Timeline
-        nodes={model.timeline}
-        selectedId={selectedNodeId}
-        onSelect={handleSelectNode}
-        pulseCommitId={pulseCommitId}
-        fireflyEvent={firefly.event}
-        fireflyDisabled={!firefly.enabled}
-        onFireflyTrackingSettled={handleFireflyTrackingSettled}
-      />
+      <motion.div
+        initial={{ opacity: 0, y: PANEL.initialY }}
+        animate={{ opacity: stage >= 8 ? 1 : 0, y: stage >= 8 ? PANEL.finalY : PANEL.initialY }}
+        transition={PANEL.spring}
+      >
+        <Timeline
+          nodes={model.timeline}
+          selectedId={selectedNodeId}
+          onSelect={handleSelectNode}
+          pulseCommitId={pulseCommitId}
+          fireflyEvent={firefly.event}
+          fireflyDisabled={!firefly.enabled}
+          fireflyBurstType={firefly.burstType}
+          onFireflyTrackingSettled={handleFireflyTrackingSettled}
+        />
+      </motion.div>
     </div>
   );
 }

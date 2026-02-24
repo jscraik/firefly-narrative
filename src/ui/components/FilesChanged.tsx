@@ -33,7 +33,7 @@ export function FilesChanged({
 
   return (
     <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
-      <div className="section-header">{title ?? 'FILES CHANGED'}</div>
+      <div className="section-header">{title ?? 'Files changed'}</div>
       <div className="section-subheader">From git: files changed in this commit</div>
       <div className="mt-4 divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden">
         {files.length === 0 ? (
