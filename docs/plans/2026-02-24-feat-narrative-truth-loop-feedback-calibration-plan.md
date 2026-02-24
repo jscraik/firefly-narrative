@@ -359,7 +359,7 @@ Secondary:
 - kill-switch drill proves immediate return to baseline narrative behavior.
 
 ## Sources & References
-- **Origin brainstorm:** [`docs/brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md`](/Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md)
+- **Origin brainstorm:** [`docs/brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md`](../brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md)
   - Carried-forward decisions: dual-role feedback actors; ranking+confidence scope; per-repo learning only; fallback reduction as primary KPI.
 - Similar implementations:
   - `src/core/narrative/composeBranchNarrative.ts:69`
@@ -370,7 +370,7 @@ Secondary:
 - Institutional learning:
   - `docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`
 - Phase 1 decision gate artifact:
-  - `/Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-24-narrative-truth-loop-phase1-sqlite-decision-gate.md`
+  - `docs/plans/2026-02-24-narrative-truth-loop-phase1-sqlite-decision-gate.md`
 
 ### External references (deepening pass)
 - React `useTransition`: [https://react.dev/reference/react/useTransition](https://react.dev/reference/react/useTransition)

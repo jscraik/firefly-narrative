@@ -153,6 +153,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
             ))}
             <button
               type="button"
+              disabled={killSwitchActive}
               onClick={() =>
                 onSubmitFeedback({
                   actorRole: feedbackActorRole,
@@ -161,7 +162,9 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
                   detailLevel,
                 })
               }
-              className="rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1 text-xs text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
+              className={`rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1 text-xs text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary ${
+                killSwitchActive ? 'cursor-not-allowed opacity-60' : ''
+              }`}
             >
               Missing decision
             </button>
@@ -187,6 +190,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
                 <div className="mt-2 flex items-center gap-1">
                   <button
                     type="button"
+                    disabled={killSwitchActive}
                     onClick={() =>
                       onSubmitFeedback({
                         actorRole: feedbackActorRole,
@@ -196,12 +200,15 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
                         detailLevel,
                       })
                     }
-                    className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
+                    className={`rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary ${
+                      killSwitchActive ? 'cursor-not-allowed opacity-60' : ''
+                    }`}
                   >
                     This is key
                   </button>
                   <button
                     type="button"
+                    disabled={killSwitchActive}
                     onClick={() =>
                       onSubmitFeedback({
                         actorRole: feedbackActorRole,
@@ -211,7 +218,9 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
                         detailLevel,
                       })
                     }
-                    className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
+                    className={`rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary ${
+                      killSwitchActive ? 'cursor-not-allowed opacity-60' : ''
+                    }`}
                   >
                     Wrong
                   </button>

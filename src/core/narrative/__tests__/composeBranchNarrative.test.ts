@@ -126,7 +126,12 @@ describe('composeBranchNarrative', () => {
       },
     });
 
-    expect(withColdStartCalibration).toEqual(withoutCalibration);
+    const { generatedAtISO: withoutGeneratedAtISO, ...withoutCalibrationStable } = withoutCalibration;
+    const { generatedAtISO: withGeneratedAtISO, ...withColdStartCalibrationStable } = withColdStartCalibration;
+
+    expect(withoutGeneratedAtISO).toBeTypeOf('string');
+    expect(withGeneratedAtISO).toBeTypeOf('string');
+    expect(withColdStartCalibrationStable).toEqual(withoutCalibrationStable);
   });
 
   it('clamps calibrated confidence values within policy bounds', () => {

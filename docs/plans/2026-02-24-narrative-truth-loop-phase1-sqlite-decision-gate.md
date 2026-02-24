@@ -19,10 +19,10 @@ status: approved
 - `.narrative/meta` remains out-of-scope for canonical writes in v1.
 
 ## Migration Verification
-- Added migration: `/Users/jamiecraik/dev/firefly-narrative/src-tauri/migrations/013_narrative_feedback.sql`
-- Added migration: `/Users/jamiecraik/dev/firefly-narrative/src-tauri/migrations/014_narrative_feedback_hardening.sql`
-- Registered migration version 13 in: `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/lib.rs`
-- Registered migration version 14 in: `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/lib.rs`
+- Added migration: `src-tauri/migrations/013_narrative_feedback.sql`
+- Added migration: `src-tauri/migrations/014_narrative_feedback_hardening.sql`
+- Registered migration version 13 in: `src-tauri/src/lib.rs`
+- Registered migration version 14 in: `src-tauri/src/lib.rs`
 - Rust compile validation run:
   - `cargo test --manifest-path src-tauri/Cargo.toml --no-run` ✅
 
