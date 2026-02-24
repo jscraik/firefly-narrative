@@ -10,7 +10,7 @@ jobs:
   no-committed-artifacts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Fail if release/local artifacts are committed
         shell: bash
