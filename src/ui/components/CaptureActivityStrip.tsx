@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ActivityEvent } from '../../core/tauri/activity';
 import { Toggle } from './Toggle';
 
@@ -104,23 +104,44 @@ export function CaptureActivityStrip(props: {
   const [drawerItems, setDrawerItems] = useState<ActivityEvent[] | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
+  const drawerRequestVersionRef = useRef(0);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const lastSeen = useMemo(() => formatTime(lastSeenISO), [lastSeenISO]);
 
   const openDrawer = useCallback(async () => {
-    setDrawerOpen(true);
     if (!onRequestAll) return;
+    const requestVersion = drawerRequestVersionRef.current + 1;
+    drawerRequestVersionRef.current = requestVersion;
+    const isStaleRequest = () =>
+      !isMountedRef.current || drawerRequestVersionRef.current !== requestVersion;
+
+    setDrawerOpen(true);
     setDrawerLoading(true);
     try {
       const items = await onRequestAll();
+      if (isStaleRequest()) return;
       setDrawerItems(items);
+    } catch {
+      if (isStaleRequest()) return;
+      setDrawerItems([]);
     } finally {
-      setDrawerLoading(false);
+      if (!isStaleRequest()) {
+        setDrawerLoading(false);
+      }
     }
   }, [onRequestAll]);
 
   const closeDrawer = useCallback(() => {
+    drawerRequestVersionRef.current += 1;
     setDrawerOpen(false);
+    setDrawerLoading(false);
   }, []);
 
   const filteredItems = useMemo(() => {

@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle, RefreshCw, Upload, XCircle } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   importSessionFile,
   importSessionFiles,
@@ -20,58 +20,124 @@ export function SessionImportPanel({ repoId }: SessionImportPanelProps) {
   const [result, setResult] = useState<BatchImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const isMountedRef = useRef(true);
+  const scanRequestVersionRef = useRef(0);
+  const importRequestVersionRef = useRef(0);
+  const repoIdRef = useRef(repoId);
+
+  useEffect(() => {
+    repoIdRef.current = repoId;
+    scanRequestVersionRef.current += 1;
+    importRequestVersionRef.current += 1;
+    setImporting(false);
+    setScanning(false);
+    setResult(null);
+    setError(null);
+    setSelectedPaths(new Set());
+  }, [repoId]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleScan = useCallback(async () => {
+    const expectedRepoId = repoIdRef.current;
+    const requestVersion = scanRequestVersionRef.current + 1;
+    scanRequestVersionRef.current = requestVersion;
+    const isStaleRequest = () =>
+      !isMountedRef.current ||
+      scanRequestVersionRef.current !== requestVersion ||
+      repoIdRef.current !== expectedRepoId;
+
     setScanning(true);
     setError(null);
     try {
       const found = await scanForSessionFiles();
+      if (isStaleRequest()) return;
       setSessions(found);
       if (found.length === 0) {
         setError('No session files found in standard locations (~/.claude, ~/.cursor, etc.)');
       }
     } catch (e) {
+      if (isStaleRequest()) return;
       setError(e instanceof Error ? e.message : 'Scan failed');
     } finally {
-      setScanning(false);
+      if (!isMountedRef.current) return;
+      if (!isStaleRequest()) {
+        setScanning(false);
+      }
     }
   }, []);
 
   const handleImportSelected = useCallback(async () => {
-    if (selectedPaths.size === 0) return;
+    const pathsToImport = Array.from(selectedPaths);
+    if (pathsToImport.length === 0) return;
+    const expectedRepoId = repoIdRef.current;
+    const requestVersion = importRequestVersionRef.current + 1;
+    importRequestVersionRef.current = requestVersion;
+    const isStaleRequest = () =>
+      !isMountedRef.current ||
+      importRequestVersionRef.current !== requestVersion ||
+      repoIdRef.current !== expectedRepoId;
 
     setImporting(true);
     setError(null);
     setResult(null);
 
     try {
-      const result = await importSessionFiles(repoId, Array.from(selectedPaths));
+      const result = await importSessionFiles(expectedRepoId, pathsToImport);
+      if (isStaleRequest()) return;
       setResult(result);
       // Clear selection after successful import
       if (result.failed.length === 0) {
-        setSelectedPaths(new Set());
+        setSelectedPaths((prev) => {
+          const next = new Set(prev);
+          for (const path of pathsToImport) {
+            next.delete(path);
+          }
+          return next;
+        });
       }
     } catch (e) {
+      if (isStaleRequest()) return;
       setError(e instanceof Error ? e.message : 'Import failed');
     } finally {
-      setImporting(false);
+      if (!isMountedRef.current) return;
+      if (!isStaleRequest()) {
+        setImporting(false);
+      }
     }
-  }, [repoId, selectedPaths]);
+  }, [selectedPaths]);
 
   const handleImportSingle = useCallback(async (path: string) => {
+    const expectedRepoId = repoIdRef.current;
+    const requestVersion = importRequestVersionRef.current + 1;
+    importRequestVersionRef.current = requestVersion;
+    const isStaleRequest = () =>
+      !isMountedRef.current ||
+      importRequestVersionRef.current !== requestVersion ||
+      repoIdRef.current !== expectedRepoId;
+
     setImporting(true);
     setError(null);
     setResult(null);
 
     try {
-      const result = await importSessionFile(repoId, path);
+      const result = await importSessionFile(expectedRepoId, path);
+      if (isStaleRequest()) return;
       setResult(result);
     } catch (e) {
+      if (isStaleRequest()) return;
       setError(e instanceof Error ? e.message : 'Import failed');
     } finally {
-      setImporting(false);
+      if (!isMountedRef.current) return;
+      if (!isStaleRequest()) {
+        setImporting(false);
+      }
     }
-  }, [repoId]);
+  }, []);
 
   const toggleSelection = useCallback((path: string) => {
     setSelectedPaths(prev => {

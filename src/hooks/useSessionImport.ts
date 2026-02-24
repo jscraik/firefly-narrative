@@ -1,6 +1,6 @@
 import { basename } from './basename';
 import { mergeSanitizerHits, sanitizePayloadMessages } from './sessionUtils';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { importAgentTraceFile } from '../core/repo/agentTrace';
 import { linkSessionToCommit, deleteSessionLinkBySessionIdWithCommit } from '../core/repo/sessionLinking';
@@ -41,7 +41,59 @@ export function useSessionImport({
   setRepoState,
   setActionError
 }: UseSessionImportProps): UseSessionImportReturn {
+  const isMountedRef = useRef(true);
+  const requestVersionRef = useRef(0);
+  const repoContextRef = useRef({
+    repoRoot,
+    repoId,
+    timeline: model.timeline
+  });
+
+  useEffect(() => {
+    repoContextRef.current = {
+      repoRoot,
+      repoId,
+      timeline: model.timeline
+    };
+    requestVersionRef.current += 1;
+  }, [repoRoot, repoId, model.timeline]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      requestVersionRef.current += 1;
+    };
+  }, []);
+
+  const beginActionGuard = useCallback(() => {
+    const expectedRepoRoot = repoContextRef.current.repoRoot;
+    const expectedRepoId = repoContextRef.current.repoId;
+    const expectedTimeline = repoContextRef.current.timeline;
+    const requestVersion = requestVersionRef.current + 1;
+    requestVersionRef.current = requestVersion;
+    const isStaleRequest = () =>
+      !isMountedRef.current
+      || requestVersionRef.current !== requestVersion
+      || repoContextRef.current.repoRoot !== expectedRepoRoot
+      || repoContextRef.current.repoId !== expectedRepoId;
+
+    return { expectedRepoRoot, expectedRepoId, expectedTimeline, isStaleRequest };
+  }, []);
+
+  const applyScopedRepoUpdate = useCallback(
+    (expectedRepoId: number, updater: (prev: BranchViewModel) => BranchViewModel) => {
+      setRepoState((prev) => {
+        if (prev.meta?.repoId !== undefined && prev.meta.repoId !== expectedRepoId) {
+          return prev;
+        }
+        return updater(prev);
+      });
+    },
+    [setRepoState]
+  );
+
   const importSession = useCallback(async () => {
+    const { expectedRepoRoot, expectedRepoId, expectedTimeline, isStaleRequest } = beginActionGuard();
     setActionError(null);
 
     try {
@@ -52,10 +104,13 @@ export function useSessionImport({
       });
 
       if (!selected || Array.isArray(selected)) return;
+      if (isStaleRequest()) return;
 
       const raw = await readTextFile(selected);
+      if (isStaleRequest()) return;
       const { redacted, hits } = redactSecrets(raw);
       const sha = await sha256Hex(redacted);
+      if (isStaleRequest()) return;
 
       let payload: unknown;
       try {
@@ -78,7 +133,8 @@ export function useSessionImport({
       };
 
       const rel = `sessions/imported/${isoStampForFile()}_${sha.slice(0, 8)}.json`;
-      await writeNarrativeFile(repoRoot, rel, JSON.stringify(wrapper, null, 2));
+      await writeNarrativeFile(expectedRepoRoot, rel, JSON.stringify(wrapper, null, 2));
+      if (isStaleRequest()) return;
 
       // Extract messages for linking
       let messages: SessionMessage[];
@@ -115,22 +171,27 @@ export function useSessionImport({
       };
 
       // Link to best matching commit
-      const link = await linkSessionToCommit(repoId, sessionExcerpt);
+      const link = await linkSessionToCommit(expectedRepoId, sessionExcerpt);
+      if (isStaleRequest()) return;
       // Best-effort: keep Story Anchors sessions note updated.
       try {
-        await exportSessionLinkNote(repoId, link.commitSha);
+        await exportSessionLinkNote(expectedRepoId, link.commitSha);
+        if (isStaleRequest()) return;
       } catch (e) {
+        if (isStaleRequest()) return;
         console.warn('[Sessions] Export sessions note failed:', e);
       }
 
       // Reload excerpts and update badges
-      await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { limit: 10 });
+      await refreshSessionBadges(expectedRepoRoot, expectedRepoId, expectedTimeline, setRepoState, { limit: 10 });
     } catch (e: unknown) {
+      if (isStaleRequest()) return;
       setActionError(e instanceof Error ? e.message : String(e));
     }
-  }, [repoRoot, repoId, model.timeline, setRepoState, setActionError]);
+  }, [beginActionGuard, setRepoState, setActionError]);
 
   const importKimiSession = useCallback(async () => {
+    const { expectedRepoRoot, expectedRepoId, expectedTimeline, isStaleRequest } = beginActionGuard();
     setActionError(null);
 
     try {
@@ -141,10 +202,13 @@ export function useSessionImport({
       });
 
       if (!selected || Array.isArray(selected)) return;
+      if (isStaleRequest()) return;
 
       const raw = await readTextFile(selected);
+      if (isStaleRequest()) return;
       const { redacted, hits } = redactSecrets(raw);
       const sha = await sha256Hex(redacted);
+      if (isStaleRequest()) return;
       const parsed = parseKimiContextJsonl(redacted);
 
       if (parsed.messages.length === 0) {
@@ -184,7 +248,8 @@ export function useSessionImport({
       };
 
       const rel = `sessions/imported/${isoStampForFile()}_${sha.slice(0, 8)}_kimi.json`;
-      await writeNarrativeFile(repoRoot, rel, JSON.stringify(wrapper, null, 2));
+      await writeNarrativeFile(expectedRepoRoot, rel, JSON.stringify(wrapper, null, 2));
+      if (isStaleRequest()) return;
 
       // Create session excerpt for linking
       const sessionExcerpt: SessionExcerpt = {
@@ -198,22 +263,27 @@ export function useSessionImport({
       };
 
       // Link to best matching commit
-      const link = await linkSessionToCommit(repoId, sessionExcerpt);
+      const link = await linkSessionToCommit(expectedRepoId, sessionExcerpt);
+      if (isStaleRequest()) return;
       // Best-effort: keep Story Anchors sessions note updated.
       try {
-        await exportSessionLinkNote(repoId, link.commitSha);
+        await exportSessionLinkNote(expectedRepoId, link.commitSha);
+        if (isStaleRequest()) return;
       } catch (e) {
+        if (isStaleRequest()) return;
         console.warn('[Sessions] Export sessions note failed:', e);
       }
 
       // Reload excerpts and update badges
-      await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { limit: 10 });
+      await refreshSessionBadges(expectedRepoRoot, expectedRepoId, expectedTimeline, setRepoState, { limit: 10 });
     } catch (e: unknown) {
+      if (isStaleRequest()) return;
       setActionError(e instanceof Error ? e.message : String(e));
     }
-  }, [repoRoot, repoId, model.timeline, setRepoState, setActionError]);
+  }, [beginActionGuard, setRepoState, setActionError]);
 
   const importAgentTrace = useCallback(async () => {
+    const { expectedRepoRoot, expectedRepoId, expectedTimeline, isStaleRequest } = beginActionGuard();
     setActionError(null);
 
     try {
@@ -224,39 +294,48 @@ export function useSessionImport({
       });
 
       if (!selected || Array.isArray(selected)) return;
+      if (isStaleRequest()) return;
 
-      await importAgentTraceFile(repoRoot, repoId, selected);
+      await importAgentTraceFile(expectedRepoRoot, expectedRepoId, selected);
+      if (isStaleRequest()) return;
 
-      const commitShas = model.timeline.map((n) => n.id);
-      const trace = await scanAgentTraceRecords(repoRoot, repoId, commitShas);
+      const commitShas = expectedTimeline.map((n) => n.id);
+      const trace = await scanAgentTraceRecords(expectedRepoRoot, expectedRepoId, commitShas);
+      if (isStaleRequest()) return;
 
-      setRepoState((prev) => applyTraceUpdate(prev, trace));
+      applyScopedRepoUpdate(expectedRepoId, (prev) => applyTraceUpdate(prev, trace));
     } catch (e: unknown) {
+      if (isStaleRequest()) return;
       setActionError(e instanceof Error ? e.message : String(e));
     }
-  }, [repoRoot, repoId, model, setRepoState, setActionError]);
+  }, [beginActionGuard, applyScopedRepoUpdate, setActionError]);
 
   const unlinkSession = useCallback(
     async (sessionId: string) => {
+      const { expectedRepoRoot, expectedRepoId, expectedTimeline, isStaleRequest } = beginActionGuard();
       setActionError(null);
 
       try {
-        const commitSha = await deleteSessionLinkBySessionIdWithCommit(repoId, sessionId);
+        const commitSha = await deleteSessionLinkBySessionIdWithCommit(expectedRepoId, sessionId);
+        if (isStaleRequest()) return;
         if (commitSha) {
           try {
-            await exportSessionLinkNote(repoId, commitSha);
+            await exportSessionLinkNote(expectedRepoId, commitSha);
+            if (isStaleRequest()) return;
           } catch (e) {
+            if (isStaleRequest()) return;
             console.warn('[Sessions] Export sessions note failed:', e);
           }
         }
 
         // Reload excerpts and update badges
-        await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { unlinkMode: true, limit: 10 });
+        await refreshSessionBadges(expectedRepoRoot, expectedRepoId, expectedTimeline, setRepoState, { unlinkMode: true, limit: 10 });
       } catch (e: unknown) {
+        if (isStaleRequest()) return;
         setActionError(e instanceof Error ? e.message : String(e));
       }
     },
-    [repoRoot, repoId, model.timeline, setRepoState, setActionError]
+    [beginActionGuard, setRepoState, setActionError]
   );
 
   return {

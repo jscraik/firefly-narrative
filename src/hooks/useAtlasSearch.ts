@@ -44,6 +44,7 @@ export function useAtlasSearch(repoId: number | null, opts?: { limit?: number; d
 
   const searchSeq = useRef(0);
   const sessionSeq = useRef(0);
+  const isMountedRef = useRef(true);
 
   // Reset when repo changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: repoId is intentionally included so we reset local search/selection state when switching repos.
@@ -51,6 +52,7 @@ export function useAtlasSearch(repoId: number | null, opts?: { limit?: number; d
     // Invalidate all in-flight async work tied to the previous repository.
     searchSeq.current += 1;
     sessionSeq.current += 1;
+    isMountedRef.current = true;
 
     setQuery('');
     setResults([]);
@@ -61,6 +63,9 @@ export function useAtlasSearch(repoId: number | null, opts?: { limit?: number; d
     setSelectedSession(null);
     setSessionLoading(false);
     setSessionError(null);
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [repoId]);
 
   // Debounced search
@@ -83,7 +88,7 @@ export function useAtlasSearch(repoId: number | null, opts?: { limit?: number; d
     const handle = window.setTimeout(() => {
       (async () => {
         const env = await atlasSearch({ repoId, query: q, limit });
-        if (seq !== searchSeq.current) return;
+        if (!isMountedRef.current || seq !== searchSeq.current) return;
 
         if (!env.ok) {
           setLoading(false);
@@ -98,7 +103,7 @@ export function useAtlasSearch(repoId: number | null, opts?: { limit?: number; d
         setTruncated(Boolean(env.meta?.truncated));
         setLoading(false);
       })().catch((e: unknown) => {
-        if (seq !== searchSeq.current) return;
+        if (!isMountedRef.current || seq !== searchSeq.current) return;
         setLoading(false);
         setResults([]);
         setTruncated(false);
@@ -129,7 +134,7 @@ export function useAtlasSearch(repoId: number | null, opts?: { limit?: number; d
         maxChunks: maxSessionChunks,
       });
 
-      if (seq !== sessionSeq.current) return;
+      if (!isMountedRef.current || seq !== sessionSeq.current) return;
 
       if (!env.ok) {
         setSelectedSession(null);
@@ -141,7 +146,7 @@ export function useAtlasSearch(repoId: number | null, opts?: { limit?: number; d
       setSelectedSession(env.value);
       setSessionLoading(false);
     } catch (e: unknown) {
-      if (seq !== sessionSeq.current) return;
+      if (!isMountedRef.current || seq !== sessionSeq.current) return;
       setSelectedSession(null);
       setSessionLoading(false);
       setSessionError({
@@ -157,6 +162,7 @@ export function useAtlasSearch(repoId: number | null, opts?: { limit?: number; d
   }, [loadSession]);
 
   const clearSelection = useCallback(() => {
+    sessionSeq.current += 1;
     setSelectedHit(null);
     setSelectedSession(null);
     setSessionError(null);

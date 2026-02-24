@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { BookOpen, ChevronRight, FileText, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -50,10 +50,35 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [_error, setError] = useState<string>('');
+  const docsRequestVersionRef = useRef(0);
+  const contentRequestVersionRef = useRef(0);
+  const previousRepoRootRef = useRef(repoRoot);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (previousRepoRootRef.current === repoRoot) return;
+    previousRepoRootRef.current = repoRoot;
+    setDocs([]);
+    setSelectedDoc(null);
+    setContent('');
+    setLoading(false);
+  }, [repoRoot]);
 
   // List available documentation files from .narrative/
   const refreshDocs = useCallback(async () => {
+    const requestVersion = docsRequestVersionRef.current + 1;
+    docsRequestVersionRef.current = requestVersion;
+
     if (!repoRoot) {
+      if (docsRequestVersionRef.current !== requestVersion) return;
       setDocs([]);
       return;
     }
@@ -85,9 +110,13 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
         })
       );
 
+      if (docsRequestVersionRef.current !== requestVersion) return;
+      if (!isMountedRef.current) return;
       setDocs(docList);
       setError('');
     } catch (err) {
+      if (docsRequestVersionRef.current !== requestVersion) return;
+      if (!isMountedRef.current) return;
       console.error('Failed to list docs:', err);
       // Don't show error for empty/no directory - just empty list
       setDocs([]);
@@ -101,8 +130,12 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
 
   // Load selected document content
   useEffect(() => {
+    const requestVersion = contentRequestVersionRef.current + 1;
+    contentRequestVersionRef.current = requestVersion;
+
     if (!selectedDoc || !repoRoot) {
       setContent('');
+      setLoading(false);
       return;
     }
 
@@ -110,18 +143,24 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
       setLoading(true);
       try {
         const fileContent = await readNarrativeFile(repoRoot, selectedDoc.path);
+        if (contentRequestVersionRef.current !== requestVersion) return;
+        if (!isMountedRef.current) return;
         setContent(fileContent);
         setError('');
       } catch (err) {
+        if (contentRequestVersionRef.current !== requestVersion) return;
+        if (!isMountedRef.current) return;
         console.error('Failed to load doc:', err);
         setContent(`# Error\n\nFailed to load ${selectedDoc.name}`);
         setError(String(err));
       } finally {
-        setLoading(false);
+        if (contentRequestVersionRef.current === requestVersion && isMountedRef.current) {
+          setLoading(false);
+        }
       }
     };
 
-    loadDoc();
+    void loadDoc();
   }, [selectedDoc, repoRoot]);
 
   // Custom components for ReactMarkdown
@@ -261,7 +300,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
                         '',
                         '- Place docs in `.narrative/` so they can be shared alongside narratives.',
                         ''
-                      ].join('\\n');
+                      ].join('\n');
                       await writeNarrativeFile(repoRoot, rel, starter);
                       await refreshDocs();
                     } catch (e) {
