@@ -321,38 +321,28 @@ function DiffDock({
   return (
     <>
       <div className="card flex-none overflow-hidden">
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={onToggleExpanded}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onToggleExpanded();
-            }
-          }}
-          title="Toggle diff panel"
-          className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-bg-secondary text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98] hover:bg-bg-hover cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-accent-blue/30"
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <FileCode className="w-3.5 h-3.5" />
-            <span className="truncate">{selectedFile ? selectedFile.split('/').pop() : 'Diff'}</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <button
-              type="button"
-              className="btn-secondary-soft inline-flex items-center rounded-md px-1.5 py-1 text-[10px] text-text-tertiary"
-              onClick={(event) => {
-                event.stopPropagation();
-                onTogglePip();
-              }}
-              title={diffPip ? 'Dock diff panel' : 'Pop out diff panel'}
-              aria-label={diffPip ? 'Dock diff panel' : 'Pop out diff panel'}
-            >
-              {diffPip ? <Minimize2 className="h-3 w-3" /> : <PictureInPicture2 className="h-3 w-3" />}
-            </button>
+        <div className="w-full flex items-center gap-2 bg-bg-secondary px-4 py-2 text-xs font-medium text-text-secondary">
+          <button
+            type="button"
+            onClick={onToggleExpanded}
+            title="Toggle diff panel"
+            className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98] hover:text-text-primary outline-none focus-visible:ring-1 focus-visible:ring-accent-blue/30"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <FileCode className="w-3.5 h-3.5" />
+              <span className="truncate">{selectedFile ? selectedFile.split('/').pop() : 'Diff'}</span>
+            </span>
             <ChevronDown className={`h-3.5 w-3.5 transition-transform ${diffExpanded ? '' : '-rotate-90'}`} />
-          </span>
+          </button>
+          <button
+            type="button"
+            className="btn-secondary-soft inline-flex items-center rounded-md px-1.5 py-1 text-[10px] text-text-tertiary"
+            onClick={onTogglePip}
+            title={diffPip ? 'Dock diff panel' : 'Pop out diff panel'}
+            aria-label={diffPip ? 'Dock diff panel' : 'Pop out diff panel'}
+          >
+            {diffPip ? <Minimize2 className="h-3 w-3" /> : <PictureInPicture2 className="h-3 w-3" />}
+          </button>
         </div>
         {diffExpanded && !diffPip && (
           <div className="max-h-[400px] overflow-auto border-t border-border-light">
