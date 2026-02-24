@@ -8,8 +8,9 @@ use tauri::command;
 
 use crate::secret_store;
 
-pub const CANONICAL_COLLECTOR_ROOT: &str = "~/.agents/otel/collector";
-pub const LEGACY_COLLECTOR_ROOT: &str = "~/.codex/otel-collector";
+pub const CANONICAL_COLLECTOR_ROOT: &str = "~/.agents/otel-collector";
+pub const LEGACY_COLLECTOR_ROOT: &str = "~/.agents/otel/collector";
+pub const SECONDARY_LEGACY_COLLECTOR_ROOT: &str = "~/.codex/otel-collector";
 pub const APP_IDENTIFIER: &str = "com.jamie.firefly-narrative";
 pub const LEGACY_APP_IDENTIFIER: &str = "com.jamie.narrative-mvp";
 
@@ -310,7 +311,10 @@ fn normalize_codex_watch_paths(paths: &mut WatchPaths) {
         if p.ends_with("/.codex/log") || p.ends_with("~/.codex/log") {
             continue; // never watch internal logs dir
         }
-        if p.contains(".codex/otel-collector") {
+        if p.contains(".codex/otel-collector")
+            || p.contains(".agents/otel/collector")
+            || p.contains(".agents/otel-collector")
+        {
             continue; // collector state path is not a session-log source
         }
         if p.contains(".codex/archived-sessions") {
@@ -447,14 +451,15 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
     normalize_collector_config(&mut ingest.collector);
     enforce_collector_roots(&mut ingest.collector)?;
     let canonical = expand_tilde_to_abs(&ingest.collector.canonical_root)?;
-    let legacy = expand_tilde_to_abs(&ingest.collector.legacy_root)?;
+    let legacy_sources = existing_legacy_collector_sources(&ingest.collector.legacy_root)?;
     let mut migrated_now = false;
     let migration_attempt_at = iso_now();
 
     let migration_result = (|| -> Result<(), String> {
         // If legacy data exists and canonical root does not, perform an actual migration here
         // so we do not accidentally mask required migration by creating canonical state only.
-        if legacy.exists() && canonical_requires_legacy_migration(&canonical)? {
+        if !legacy_sources.is_empty() && canonical_requires_legacy_migration(&canonical)? {
+            let source = &legacy_sources[0];
             let backup_abs = migration_backup_path(&canonical);
             if backup_abs.exists() {
                 return Err(format!(
@@ -462,8 +467,8 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
                     backup_abs.display()
                 ));
             }
-            copy_dir_recursive(&legacy, &backup_abs, false)?;
-            copy_dir_recursive(&legacy, &canonical, true)?;
+            copy_dir_recursive(source, &backup_abs, false)?;
+            copy_dir_recursive(source, &canonical, true)?;
             ingest.collector.migration.last_backup_path =
                 Some(backup_abs.to_string_lossy().to_string());
             ingest.collector.migration.status = "migrated".to_string();
@@ -667,7 +672,7 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
     normalize_collector_config(&mut config.collector);
     enforce_collector_roots(&mut config.collector)?;
     let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
-    let legacy_abs = expand_tilde_to_abs(&config.collector.legacy_root)?;
+    let legacy_sources = existing_legacy_collector_sources(&config.collector.legacy_root)?;
     let attempt_at = iso_now();
 
     let mut actions = Vec::new();
@@ -675,20 +680,25 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
     let mut backup_path = config.collector.migration.last_backup_path.clone();
     let migration_result = (|| -> Result<(), String> {
         actions.push(format!(
-            "Assess legacy ({}) and canonical ({}) collector roots",
-            legacy_abs.display(),
+            "Assess legacy roots ({}) and canonical ({}) collector root",
+            legacy_sources
+                .iter()
+                .map(|path| path.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
             canonical_abs.display()
         ));
 
         let migration_required =
-            legacy_abs.exists() && canonical_requires_legacy_migration(&canonical_abs)?;
+            !legacy_sources.is_empty() && canonical_requires_legacy_migration(&canonical_abs)?;
 
-        if !legacy_abs.exists() && !canonical_abs.exists() {
+        if legacy_sources.is_empty() && !canonical_abs.exists() {
             actions.push("No collector directory exists; create canonical root".to_string());
             if !dry_run {
                 fs::create_dir_all(&canonical_abs).map_err(|e| e.to_string())?;
             }
         } else if migration_required {
+            let source = &legacy_sources[0];
             let backup_abs = migration_backup_path(&canonical_abs);
             actions.push(format!(
                 "Create non-destructive backup snapshot at {}",
@@ -696,7 +706,7 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
             ));
             actions.push(format!(
                 "Copy legacy collector data from {} to canonical {}",
-                legacy_abs.display(),
+                source.display(),
                 canonical_abs.display()
             ));
             if !dry_run {
@@ -706,8 +716,8 @@ pub fn run_collector_migration(dry_run: Option<bool>) -> Result<CollectorMigrati
                         backup_abs.display()
                     ));
                 }
-                copy_dir_recursive(&legacy_abs, &backup_abs, false)?;
-                copy_dir_recursive(&legacy_abs, &canonical_abs, true)?;
+                copy_dir_recursive(source, &backup_abs, false)?;
+                copy_dir_recursive(source, &canonical_abs, true)?;
                 backup_path = Some(backup_abs.to_string_lossy().to_string());
                 migrated = true;
             }
@@ -892,15 +902,15 @@ fn get_collector_migration_status_inner() -> Result<CollectorMigrationStatus, St
     normalize_collector_config(&mut config.collector);
     enforce_collector_roots(&mut config.collector)?;
     let canonical_abs = expand_tilde_to_abs(&config.collector.canonical_root)?;
-    let legacy_abs = expand_tilde_to_abs(&config.collector.legacy_root)?;
+    let legacy_sources = existing_legacy_collector_sources(&config.collector.legacy_root)?;
+    let legacy_exists = !legacy_sources.is_empty();
 
     Ok(CollectorMigrationStatus {
         canonical_root: config.collector.canonical_root,
         legacy_root: config.collector.legacy_root,
         canonical_exists: canonical_abs.exists(),
-        legacy_exists: legacy_abs.exists(),
-        migration_required: legacy_abs.exists()
-            && canonical_requires_legacy_migration(&canonical_abs)?,
+        legacy_exists,
+        migration_required: legacy_exists && canonical_requires_legacy_migration(&canonical_abs)?,
         status: config.collector.migration.status,
         last_attempt_at_iso: config.collector.migration.last_attempt_at_iso,
         last_error: config.collector.migration.last_error,
@@ -953,6 +963,17 @@ fn expand_tilde_to_abs(path: &str) -> Result<PathBuf, String> {
         return Ok(home.join(stripped));
     }
     Ok(PathBuf::from(path))
+}
+
+fn existing_legacy_collector_sources(primary_legacy_root: &str) -> Result<Vec<PathBuf>, String> {
+    let mut sources = Vec::new();
+    for candidate in [primary_legacy_root, SECONDARY_LEGACY_COLLECTOR_ROOT] {
+        let abs = expand_tilde_to_abs(candidate)?;
+        if abs.exists() && !sources.iter().any(|existing| existing == &abs) {
+            sources.push(abs);
+        }
+    }
+    Ok(sources)
 }
 
 fn remove_path_recursively(path: &std::path::Path) -> Result<(), String> {
@@ -1121,6 +1142,8 @@ mod tests {
             codex_logs: vec![
                 "~/.codex/sessions".to_string(),
                 "~/.codex/otel-collector".to_string(),
+                "~/.agents/otel/collector".to_string(),
+                "~/.agents/otel-collector".to_string(),
                 "~/.codex/log".to_string(),
             ],
         };

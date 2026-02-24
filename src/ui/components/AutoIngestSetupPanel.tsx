@@ -179,10 +179,10 @@ export function AutoIngestSetupPanel(props: {
         <div className="rounded-lg border border-border-subtle bg-bg-secondary p-3">
           <div className="text-xs font-semibold text-text-secondary">Collector migration</div>
           <div className="mt-1 text-[11px] text-text-tertiary">
-            Canonical root: <span className="font-mono">{migrationStatus?.canonicalRoot ?? '~/.agents/otel/collector'}</span>
+            Canonical root: <span className="font-mono">{migrationStatus?.canonicalRoot ?? '~/.agents/otel-collector'}</span>
           </div>
           <div className="mt-1 text-[11px] text-text-tertiary">
-            Legacy root: <span className="font-mono">{migrationStatus?.legacyRoot ?? '~/.codex/otel-collector'}</span>
+            Legacy root: <span className="font-mono">{migrationStatus?.legacyRoot ?? '~/.agents/otel/collector'}</span>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span

@@ -21,7 +21,7 @@ Provide a deterministic, operator-friendly release process for hybrid Codex+Clau
 
 This runbook covers:
 
-- canonical collector migration (`~/.agents/otel/collector`)
+- canonical collector migration (`~/.agents/otel-collector`)
 - Codex App Server streaming enrichment
 - crash-loop safeguards and OTEL-only fallback
 - recovery criteria for re-enabling hybrid mode
@@ -107,6 +107,7 @@ Recovery sequence:
 - Preview migration: `run_collector_migration(dry_run=true)`
 - Execute migration: `run_collector_migration(dry_run=false)`
 - Roll back from backup: `rollback_collector_migration`
+- Operator note: do not pre-create collector directories manually. Narrative creates and manages the canonical root during configure/migration.
 
 ## Verification Checklist
 
