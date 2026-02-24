@@ -13,8 +13,10 @@ const ALLOWED_FEEDBACK_TYPES = new Set([
   'branch_missing_decision',
 ]);
 const ALLOWED_TARGET_KINDS = new Set(['highlight', 'branch']);
+const ALLOWED_DETAIL_LEVELS = new Set(['summary', 'evidence', 'diff']);
 const MAX_INSERT_RETRIES = 2;
 const RETRY_BACKOFF_MS = 40;
+const RETRY_JITTER_MS = 25;
 const DEFAULT_WINDOW_START_ISO = '1970-01-01T00:00:00.000Z';
 
 let schemaReady = false;
@@ -76,7 +78,8 @@ async function executeWithRetry(
       if (!isTransientPersistenceError(error) || attempt >= MAX_INSERT_RETRIES) {
         throw error;
       }
-      await sleep(backoff);
+      const jitter = Math.floor(Math.random() * RETRY_JITTER_MS);
+      await sleep(backoff + jitter);
       attempt += 1;
       backoff *= 2;
     }
@@ -100,6 +103,7 @@ export function createFeedbackIdempotencyKey(args: {
     args.action.feedbackType,
     args.action.targetKind,
     targetId,
+    args.action.detailLevel,
     minuteBucket,
   ].join(':');
 }
@@ -133,6 +137,9 @@ async function ensureNarrativeFeedbackSchema(): Promise<void> {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_narrative_feedback_repo_target_type ON narrative_feedback_events(repo_id, target_id, feedback_type)'
     );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_narrative_feedback_repo_type_role ON narrative_feedback_events(repo_id, feedback_type, actor_role)'
+    );
 
     await db.execute(
       `CREATE TABLE IF NOT EXISTS narrative_calibration_profiles (
@@ -149,6 +156,20 @@ async function ensureNarrativeFeedbackSchema(): Promise<void> {
         updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
         FOREIGN KEY(repo_id) REFERENCES repos(id) ON DELETE CASCADE
       )`
+    );
+    await db.execute(
+      `CREATE TABLE IF NOT EXISTS narrative_calibration_audit_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        repo_id INTEGER NOT NULL,
+        event_type TEXT NOT NULL,
+        idempotency_key TEXT,
+        payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+        FOREIGN KEY(repo_id) REFERENCES repos(id) ON DELETE CASCADE
+      )`
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_narrative_calibration_audit_repo_created ON narrative_calibration_audit_events(repo_id, created_at)'
     );
 
     schemaReady = true;
@@ -190,6 +211,31 @@ type CalibrationProfileRow = {
 type FeedbackInsertResult = {
   rowsAffected?: number;
 };
+
+async function appendNarrativeAuditEvent(args: {
+  repoId: number;
+  eventType: 'feedback_submitted' | 'calibration_recomputed';
+  idempotencyKey?: string;
+  payload: Record<string, unknown>;
+}): Promise<void> {
+  const db = await getDb();
+  const payloadJson = JSON.stringify(args.payload);
+  try {
+    await executeWithRetry(
+      db.execute.bind(db),
+      `INSERT INTO narrative_calibration_audit_events (
+        repo_id,
+        event_type,
+        idempotency_key,
+        payload_json
+      ) VALUES ($1, $2, $3, $4)`,
+      [args.repoId, args.eventType, args.idempotencyKey ?? null, payloadJson]
+    );
+  } catch (error) {
+    // Keep feedback flow non-blocking if audit persistence fails.
+    console.warn('[narrativeFeedback] Failed to write calibration audit event', error);
+  }
+}
 
 async function loadHighlightAdjustments(
   repoId: number,
@@ -266,7 +312,8 @@ async function recomputeCalibrationProfile(repoId: number): Promise<NarrativeCal
   );
   const confidenceScale = round(clamp(1 + rankingBias * 0.25, 0.9, 1.1));
 
-  await db.execute(
+  await executeWithRetry(
+    db.execute.bind(db),
     `INSERT INTO narrative_calibration_profiles (
       repo_id,
       ranking_bias,
@@ -304,6 +351,19 @@ async function recomputeCalibrationProfile(repoId: number): Promise<NarrativeCal
   );
 
   const highlightAdjustments = await loadHighlightAdjustments(repoId, windowStartISO);
+  await appendNarrativeAuditEvent({
+    repoId,
+    eventType: 'calibration_recomputed',
+    payload: {
+      rankingBias,
+      confidenceOffset,
+      confidenceScale,
+      sampleCount,
+      windowStartISO,
+      windowEndISO,
+      branchMissingDecisionCount: missingCount,
+    },
+  });
 
   return {
     repoId,
@@ -322,7 +382,7 @@ async function recomputeCalibrationProfile(repoId: number): Promise<NarrativeCal
 
 export type SubmitNarrativeFeedbackInput = {
   repoId: number;
-  branchName?: string;
+  branchName: string;
   action: NarrativeFeedbackAction;
   idempotencyKey?: string;
   atISO?: string;
@@ -343,6 +403,9 @@ export async function submitNarrativeFeedback(
   if (!Number.isFinite(input.repoId) || input.repoId <= 0) {
     throw new Error('Narrative feedback requires a valid repoId.');
   }
+  if (!input.branchName?.trim()) {
+    throw new Error('Narrative feedback requires a branchName.');
+  }
 
   if (TARGET_ID_REQUIRED.has(input.action.feedbackType) && !input.action.targetId) {
     throw new Error('Highlight feedback requires a targetId.');
@@ -358,6 +421,17 @@ export async function submitNarrativeFeedback(
 
   if (!ALLOWED_TARGET_KINDS.has(input.action.targetKind)) {
     throw new Error('Narrative feedback target kind is invalid.');
+  }
+
+  if (!ALLOWED_DETAIL_LEVELS.has(input.action.detailLevel)) {
+    throw new Error('Narrative feedback detail level is invalid.');
+  }
+
+  if (
+    (input.action.feedbackType === 'highlight_key' || input.action.feedbackType === 'highlight_wrong') &&
+    input.action.targetKind !== 'highlight'
+  ) {
+    throw new Error('Highlight feedback must target kind "highlight".');
   }
 
   if (input.action.feedbackType === 'branch_missing_decision' && input.action.targetKind !== 'branch') {
@@ -396,7 +470,7 @@ export async function submitNarrativeFeedback(
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
     [
       input.repoId,
-      input.branchName ?? 'unknown-branch',
+      input.branchName,
       verifiedAction.actorRole,
       verifiedAction.feedbackType,
       verifiedAction.targetKind,
@@ -408,7 +482,25 @@ export async function submitNarrativeFeedback(
   )) as FeedbackInsertResult;
 
   const inserted = Number(insertResult.rowsAffected ?? 0) > 0;
-  const profile = await recomputeCalibrationProfile(input.repoId);
+  const profile = inserted
+    ? await recomputeCalibrationProfile(input.repoId)
+    : ((await getNarrativeCalibrationProfile(input.repoId)) ??
+      (await recomputeCalibrationProfile(input.repoId)));
+  await appendNarrativeAuditEvent({
+    repoId: input.repoId,
+    eventType: 'feedback_submitted',
+    idempotencyKey,
+    payload: {
+      inserted,
+      branchName: input.branchName,
+      feedbackType: verifiedAction.feedbackType,
+      targetKind: verifiedAction.targetKind,
+      targetId: verifiedAction.targetId ?? null,
+      actorRole: verifiedAction.actorRole,
+      detailLevel: verifiedAction.detailLevel,
+      atISO,
+    },
+  });
 
   return {
     inserted,

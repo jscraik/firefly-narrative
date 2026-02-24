@@ -199,6 +199,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             sql: include_str!("../migrations/013_narrative_feedback.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 14,
+            description: "add_narrative_feedback_hardening",
+            sql: include_str!("../migrations/014_narrative_feedback_hardening.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

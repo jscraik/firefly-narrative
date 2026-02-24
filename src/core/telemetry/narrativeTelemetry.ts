@@ -28,6 +28,7 @@ export type HeaderQualityReasonCode =
 export type NarrativeTelemetryPayload = {
   schemaVersion?: NarrativeTelemetrySchemaVersion;
   branch?: string;
+  viewInstanceId?: string;
   source?: 'demo' | 'git';
   detailLevel?: 'summary' | 'evidence' | 'diff';
   audience?: 'executive' | 'manager' | 'engineer';

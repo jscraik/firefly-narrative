@@ -142,6 +142,7 @@ Implement a repo-local feedback loop with two layers:
 - **Architecture impacts:** additive path over existing `composeBranchNarrative` and `BranchNarrativePanel` flows; no rewrite.
 - **Performance implications:** feedback write must be async and non-blocking for UI; calibration lookup should be O(1)/cached per repo session.
 - **Security/privacy:** feedback stores role + event metadata only; avoid secrets/PII by design; maintain local-first storage posture.
+- **Persistence hardening:** apply SQLite hardening PRAGMAs (`foreign_keys`, `trusted_schema`, WAL/busy timeout) and append-only calibration audit events for forensic traceability.
 - **Explainability:** expose calibration provenance in debug telemetry/logs to avoid opaque behavior.
 
 ### Research Insights
@@ -261,6 +262,8 @@ erDiagram
 - [x] Keep rollout governance thresholds unchanged in v1; only inputs may change via confidence/evidence effects (see brainstorm origin).
 - [x] Extend telemetry schema in `src/core/telemetry/narrativeTelemetry.ts` with feedback event names and payload fields.
 - [x] Add a denominator telemetry event (for example `narrative_viewed`) so fallback-rate KPI is mathematically well-defined.
+- [x] Emit and propagate `viewInstanceId` correlation fields so `narrative_viewed` and `fallback_used` can be joined deterministically.
+- [x] Document baseline eligibility rules for newly opted-in repos (shadow period + minimum denominator threshold).
 - [x] Add/extend tests in:
   - `src/ui/components/__tests__/BranchNarrativePanel.test.tsx`
   - `src/ui/views/__tests__/BranchView.test.tsx`
@@ -269,6 +272,7 @@ erDiagram
   - new persistence tests under `src-tauri/src/...` or `src/core/repo/...` depending on storage choice.
 - [x] Ensure failure mode: persistence/calibration errors never block baseline narrative render or raw diff fallback.
 - [x] Enforce idempotent feedback writes (duplicate submissions do not inflate calibration).
+- [x] Include `detailLevel` in idempotency key derivation and skip recompute on ignored duplicate writes to cap write-path load.
 - [x] Enforce cold-start neutrality (no feedback => baseline outputs).
 - [x] Enforce calibration clamps via tests (no out-of-policy adjustments).
 - [x] Add a calibration feature flag / kill switch path separate from baseline narrative path.
@@ -284,6 +288,12 @@ Primary (from brainstorm):
 - Baseline: 14-day pre-enable rolling window for opted-in repos.
 - Target: ≥20% relative reduction in `fallback_rate` by day 14 after enablement.
 - Guardrail: no >5% increase in `kill_switch_triggered` rate over the same comparison windows.
+
+**KPI operational contract (implementation-bound):**
+- `narrative_viewed` emits once per branch-view scope and includes `viewInstanceId` to anchor denominator instances.
+- `fallback_used` carries the same `viewInstanceId` for the active scope, so numerator/denominator joins are reproducible.
+- Newly opted-in repos must run a 14-day shadow baseline period (flag off, telemetry on) before eligibility for relative-reduction scoring.
+- If a repo has fewer than 50 denominator events in baseline, use cohort baseline for decisioning and mark repo-level KPI as underpowered.
 
 Secondary:
 - `Key:Wrong` feedback ratio trend by repo,
