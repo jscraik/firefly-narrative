@@ -275,6 +275,10 @@ export type BranchNarrative = {
   confidence: number;
   highlights: NarrativeHighlight[];
   evidenceLinks: NarrativeEvidenceLink[];
+  promptTemplate?: {
+    id: string;
+    version: string;
+  };
   fallbackReason?: string;
 };
 

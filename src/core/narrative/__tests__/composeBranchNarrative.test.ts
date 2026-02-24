@@ -51,6 +51,10 @@ describe('composeBranchNarrative', () => {
     expect(narrative.summary).toContain('Primary intent');
     expect(narrative.highlights.length).toBeGreaterThan(0);
     expect(narrative.evidenceLinks.some((link) => link.kind === 'commit')).toBe(true);
+    expect(narrative.promptTemplate).toEqual({
+      id: 'branch-narrative-v1',
+      version: '2026-02-24',
+    });
   });
 
   it('applies calibration adjustments to highlight ordering and confidence', () => {

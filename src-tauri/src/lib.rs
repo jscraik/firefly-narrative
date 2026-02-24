@@ -1,4 +1,6 @@
 mod activity;
+mod adapters;
+mod agent_tools;
 mod atlas;
 pub mod attribution;
 mod codex_app_server;
@@ -217,6 +219,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             // Linking algorithm commands
             link_commands::link_session_to_commit,
             link_commands::import_and_link_session_file,
+            agent_tools::session_tools::agent_list_sessions,
+            agent_tools::session_tools::agent_get_session,
+            agent_tools::session_tools::agent_link_session_to_commit,
+            agent_tools::session_tools::agent_link_session,
             // Import commands
             import::commands::import_session_files,
             import::commands::import_session_file,

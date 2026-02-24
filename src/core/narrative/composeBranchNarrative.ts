@@ -6,8 +6,16 @@ import type {
   NarrativeHighlight,
   TimelineNode,
 } from '../types';
+import {
+  NARRATIVE_PROMPT_TEMPLATE_ID,
+  NARRATIVE_PROMPT_TEMPLATE_VERSION,
+} from './promptGovernance';
 
 export const BRANCH_NARRATIVE_SCHEMA_VERSION = 1;
+export const BRANCH_NARRATIVE_PROMPT_TEMPLATE = {
+  id: NARRATIVE_PROMPT_TEMPLATE_ID,
+  version: NARRATIVE_PROMPT_TEMPLATE_VERSION,
+} as const;
 
 function clamp(value: number, min = 0, max = 1): number {
   return Math.min(max, Math.max(min, value));
@@ -174,6 +182,7 @@ export function composeBranchNarrative(
       confidence: 0,
       highlights: [],
       evidenceLinks: [],
+      promptTemplate: BRANCH_NARRATIVE_PROMPT_TEMPLATE,
       fallbackReason: 'Open raw git history once commits are available.',
     };
   }
@@ -187,6 +196,7 @@ export function composeBranchNarrative(
       confidence: overallConfidence,
       highlights,
       evidenceLinks,
+      promptTemplate: BRANCH_NARRATIVE_PROMPT_TEMPLATE,
       fallbackReason: 'Narrative confidence is low. Verify with evidence and raw diff before relying on this summary.',
     };
   }
@@ -199,5 +209,6 @@ export function composeBranchNarrative(
     confidence: overallConfidence,
     highlights,
     evidenceLinks,
+    promptTemplate: BRANCH_NARRATIVE_PROMPT_TEMPLATE,
   };
 }
