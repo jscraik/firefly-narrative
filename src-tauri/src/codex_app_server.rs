@@ -570,7 +570,7 @@ fn emit_mode_transition(
 fn spawn_sidecar_process(path: &Path) -> Result<SidecarProcess, String> {
     let mut command = Command::new(path);
     command
-        .stdin(Stdio::null())
+        .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
 
