@@ -94,3 +94,7 @@ Narrative is a Tauri desktop app that layers AI session narratives onto git hist
 
 ## Notes
 - For standalone landing-page work, confirm scope in `docs/agents/landing-page-separation.md` before screenshots.
+
+## Repository preflight helper
+- Use `scripts/codex-preflight.sh` before multi-step, destructive, or path-sensitive workflows.
+- Source it with `source scripts/codex-preflight.sh` and run `preflight_repo` (or `preflight_js`, `preflight_py`, `preflight_rust`) as a guard before changing repo state.
