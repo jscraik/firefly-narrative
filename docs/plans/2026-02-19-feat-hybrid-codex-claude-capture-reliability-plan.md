@@ -3,13 +3,13 @@ title: feat: Hybrid Codex-Claude Capture Reliability v2 (TDD Remediation)
 type: feat
 date: 2026-02-19
 status: solved
-brainstorm: /Users/jamiecraik/dev/narrative/docs/brainstorms/2026-02-19-hybrid-capture-reliability-brainstorm.md
-resolved_by: /Users/jamiecraik/dev/firefly-narrative/docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md
+brainstorm: docs/brainstorms/2026-02-19-hybrid-capture-reliability-brainstorm.md
+resolved_by: docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md
 ---
 
 # feat: Hybrid Codex-Claude Capture Reliability v2 (TDD Remediation)
 
-> Lifecycle note (2026-02-24): This plan is completed and reconciled with solution evidence in `/Users/jamiecraik/dev/firefly-narrative/docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`. Codex App Server runtime completion follow-through is captured in `/Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-24-feat-codex-app-server-completion-plan.md`. Remaining unchecked boxes are historical implementation checkpoints.
+> Lifecycle note (2026-02-24): This plan is completed and reconciled with solution evidence in `docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`. Codex App Server runtime completion follow-through is captured in `docs/plans/2026-02-24-feat-codex-app-server-completion-plan.md`. Remaining unchecked boxes are historical implementation checkpoints.
 
 ## Table of Contents
 - [Objective](#objective)
@@ -46,7 +46,7 @@ Replace prior “scaffold complete” posture with an execution-ready, test-firs
 
 ## Public API and Contract Changes
 ### Backend (Rust/Tauri)
-- `/Users/jamiecraik/dev/narrative/src-tauri/src/codex_app_server.rs`
+- `src-tauri/src/codex_app_server.rs`
   - Replace stringly runtime state with typed FSM enums.
   - Implement real supervised sidecar actor (`spawn/supervise/shutdown`).
   - Remove/privatize renderer access to:
@@ -55,7 +55,7 @@ Replace prior “scaffold complete” posture with an execution-ready, test-firs
   - Keep user-safe commands: status/read, initialize/initialized, auth operations, kill-switch, thread snapshot, dedupe-log (read-only).
 
 ### TypeScript Bridge
-- `/Users/jamiecraik/dev/narrative/src/core/tauri/ingestConfig.ts`
+- `src/core/tauri/ingestConfig.ts`
   - Add `CodexAccountStatus` literal-union type.
   - Change auth wrappers from `Promise<void>` to `Promise<CodexAccountStatus>`.
   - Add wrappers:
@@ -63,14 +63,14 @@ Replace prior “scaffold complete” posture with an execution-ready, test-firs
     - `codexAppServerRequestThreadSnapshot`
 
 ### Hook/UI Contract
-- `/Users/jamiecraik/dev/narrative/src/hooks/useAutoIngest.ts`
+- `src/hooks/useAutoIngest.ts`
   - Expose: `recoverHybrid`, `fallbackToOtelOnly`, `retryAuth`, `restartSidecar`.
-- `/Users/jamiecraik/dev/narrative/src/ui/components/AutoIngestSetupPanel.tsx`
+- `src/ui/components/AutoIngestSetupPanel.tsx`
   - Add degraded/failure action controls wired to hook callbacks.
   - Remove user-visible `UNKNOWN`; keep internal loading-only state.
 
 ### Capability Hardening
-- `/Users/jamiecraik/dev/narrative/src-tauri/capabilities/default.json`
+- `src-tauri/capabilities/default.json`
   - Remove `shell:default`.
   - Narrow shell execution to explicit commands only.
   - Remove or strictly scope `sql:allow-execute` for renderer surface.
@@ -143,7 +143,7 @@ tasks:
 - Exit: integration + Rust lanes execute in CI.
 
 ### T2 — R1 RED backend supervision/FSM tests first
-- Add failing tests in `/Users/jamiecraik/dev/narrative/src-tauri/src/codex_app_server.rs` for:
+- Add failing tests in `src-tauri/src/codex_app_server.rs` for:
   - spawn fail path
   - restart threshold exactness (`>=3`)
   - illegal transition rejection
@@ -198,7 +198,7 @@ tasks:
 - Exit: security and capability regression tests pass.
 
 ### T9 — R8 CI and measurable go/no-go evidence
-- Update `/Users/jamiecraik/dev/narrative/.github/workflows/ci.yml`:
+- Update `.github/workflows/ci.yml`:
   - OS matrix: ubuntu, macOS, windows
   - required lanes: lint, typecheck, vitest coverage, integration, e2e smoke, cargo test
 - Produce `reliability-gates.json` artifact with threshold checks.
@@ -206,8 +206,8 @@ tasks:
 
 ### T10 — R9 Docs and runbook truth sync
 - Update:
-  - `/Users/jamiecraik/dev/narrative/docs/plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md`
-  - `/Users/jamiecraik/dev/narrative/docs/agents/hybrid-capture-rollout-runbook.md`
+  - `docs/plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md`
+  - `docs/agents/hybrid-capture-rollout-runbook.md`
 - Add explicit FAILURE branch handling + rollback success criteria.
 - Remove all unsupported “done” claims.
 - Exit: docs match runtime behavior + CI evidence.

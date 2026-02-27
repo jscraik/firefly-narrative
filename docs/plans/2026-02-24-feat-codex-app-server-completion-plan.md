@@ -3,7 +3,7 @@ title: feat: Complete Codex App Server runtime
 type: feat
 status: completed
 date: 2026-02-24
-origin: /Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md
+origin: ../brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md
 ---
 
 # feat: Complete Codex App Server runtime
@@ -14,8 +14,8 @@ origin: /Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-code
 **Deepened on:** 2026-02-24
 **Sections enhanced:** 15
 **Research inputs used:**
-- `/Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md`
-- `/Users/jamiecraik/dev/firefly-narrative/docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`
+- `../brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md`
+- `docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`
 - [Tauri event system](https://v2.tauri.app/develop/calling-rust/)
 - [Tauri frontend listen API](https://v2.tauri.app/develop/_sections/frontend-listen/)
 - [Tokio process/task docs](https://docs.rs/tokio)
@@ -85,8 +85,8 @@ origin: /Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-code
 
 - [x] Introduce a **migration-safe deprecation path** for internal-only command removal:
   - Keep `codex_app_server_set_stream_health` and `ingest_codex_stream_event` available for one release via internal aliases.
-  - Add `#[deprecated]`-style TODO in `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs` and `/Users/jamiecraik/dev/firefly-narrative/src/lib.rs`.
-  - Remove renderer calls from TS/React in `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and `/Users/jamiecraik/dev/firefly-narrative/src/hooks/useAutoIngest.ts` only after event-path is in place.
+  - Add `#[deprecated]`-style TODO in `src-tauri/src/codex_app_server.rs` and `src/lib.rs`.
+  - Remove renderer calls from TS/React in `src/core/tauri/ingestConfig.ts` and `src/hooks/useAutoIngest.ts` only after event-path is in place.
   - Delete public commands in a follow-up step once no runtime path depends on them.
 - [x] Define explicit event contracts for all new server-emitted events and publish exact payloads.
 - [x] Expand sidecar supervisor architecture with explicit async lifecycle ownership and shutdown semantics (start/monitor/terminate/join behavior).
@@ -165,7 +165,7 @@ type LiveSessionEventPayload =
 
 ### `live_sessions` migration checklist (must be completed before stream persistence work)
 
-- Add migration file under `/Users/jamiecraik/dev/firefly-narrative/src-tauri/migrations/`:
+- Add migration file under `src-tauri/migrations/`:
   - `CREATE TABLE live_sessions (...)`
   - unique index on `(thread_id, turn_id, item_id, event_type)`,
   - index on `last_activity_at`,
@@ -209,10 +209,10 @@ Ship the remaining Codex App Server runtime completion work as a scoped `feat` f
 - Target reliability over feature breadth: prioritize deterministic state transitions before UI polish.
 ## Problem Statement / Motivation
 Current Codex App Server behavior is not yet complete for production use because the runtime is not owning stream process lifecycle or enforcing protocol-level stream integrity. Evidence of the gap includes:
-- `start_codex_app_server` only updates in-memory status and sets a warning when the binary exists (no spawn/supervision path) in `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs:361-377`.
-- Handshake is currently a flag-only change (`codex_app_server_initialize` and `codex_app_server_initialized`) with no real completion path in `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs:399-420`.
+- `start_codex_app_server` only updates in-memory status and sets a warning when the binary exists (no spawn/supervision path) in `src-tauri/src/codex_app_server.rs:361-377`.
+- Handshake is currently a flag-only change (`codex_app_server_initialize` and `codex_app_server_initialized`) with no real completion path in `src-tauri/src/codex_app_server.rs:399-420`.
 - Stream health and stream-event ingest are still renderer-callable commands (`codex_app_server_set_stream_health`, `ingest_codex_stream_event`) and not internal-only control paths.
-- `useAutoIngest` currently sets stream health directly from UI flow, which bypasses server-side state truth and creates spoofable/degraded states: see `/Users/jamiecraik/dev/firefly-narrative/src/hooks/useAutoIngest.ts:413-420`.
+- `useAutoIngest` currently sets stream health directly from UI flow, which bypasses server-side state truth and creates spoofable/degraded states: see `src/hooks/useAutoIngest.ts:413-420`.
 
 
 ### Research Insights
@@ -223,7 +223,7 @@ Current Codex App Server behavior is not yet complete for production use because
 ## Scope and Boundaries
 - **In scope:** Codex App Server-only runtime completion (Tauri backend + TS command bridge + auto-ingest orchestration and tests).
 - **Out of scope:** Universal adapter framework, OTLP adapter manager, MCP discover/reconnect architecture, Kimi integration, IDE/CLI extension tracks.
-- **Source of truth:** `/Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md` (must keep decisions intact; see section below).
+- **Source of truth:** `../brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md` (must keep decisions intact; see section below).
 
 
 ### Research Insights
@@ -232,7 +232,7 @@ Current Codex App Server behavior is not yet complete for production use because
 - Maintain migration/backfill work inside `src-tauri` + TS hooks only.
 - Include rollback path and feature-flag notes for any environment mismatch.
 ## What Was Carried From Brainstorm
-(see brainstorm: `/Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md`)
+(see brainstorm: `../brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md`)
 
 - Decision 1: Codex App Server-only scope; exclude broader universal work.
 - Decision 2: Sidecar supervision (`spawn/monitor/shutdown/reconnect`) is mandatory.
@@ -278,7 +278,7 @@ Implement an actor-first runtime where the sidecar process is managed in Rust, e
 ## Technical Approach
 
 ### Architecture
-Create a dedicated Codex App Server runtime actor module extension in `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs` and keep public Tauri commands strictly as safe control/read methods.
+Create a dedicated Codex App Server runtime actor module extension in `src-tauri/src/codex_app_server.rs` and keep public Tauri commands strictly as safe control/read methods.
 
 - **New runtime state additions:** child process handle, child monitor task handles, last handshake timestamps, reconnect policy state, approval waiter map, and in-memory completion buffers.
 - **Command ownership model:**
@@ -296,7 +296,7 @@ Move from stringly ad-hoc state to explicit enums for:
 Update transitions in a single helper so every transition updates `last_transition_at_iso` and emits status.
 
 ### Sidecar Supervision
-In `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs`:
+In `src-tauri/src/codex_app_server.rs`:
 - Detect and spawn executable path discovered by `detect_sidecar_path`.
 - Track child PID and stderr/stdout readers.
 - Implement `graceful_shutdown` with timeout and hard kill fallback.
@@ -317,7 +317,7 @@ In `ingest_codex_stream_event` path:
 - Emit `session:live:event` from backend on user-facing deltas and approvals.
 
 ### Persistence and Cleanup
-Add bounded persistence at `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src` and migrations:
+Add bounded persistence at `src-tauri/src` and migrations:
 - Add `live_sessions` table with:
   - `session_id`, `thread_id`, `repo_id`, `last_activity_at`, `payload`, `source`, `status`, `created_at`, `updated_at`, dedupe keys.
 - Implement LRU retention on `last_activity_at` and max rows + TTL policy.
@@ -336,11 +336,11 @@ Add bounded persistence at `/Users/jamiecraik/dev/firefly-narrative/src-tauri/sr
 - Keep `codex_app_server_set_stream_kill_switch` and auth gates as the only way to disable stream flow.
 
 ### Frontend/TS Contract Updates
-In `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and `/Users/jamiecraik/dev/firefly-narrative/src/hooks/useAutoIngest.ts`:
+In `src/core/tauri/ingestConfig.ts` and `src/hooks/useAutoIngest.ts`:
 - Remove invocations of `codexAppServerSetStreamHealth`; keep UI/flow only requesting start/stop/init/initialized and auth operations.
 - Add helper wrappers for new internal-safe events if required for UI status telemetry.
 - Update listener behavior to consume server-emitted `session:live:event`/approval results.
-- Update tests under `/Users/jamiecraik/dev/firefly-narrative/src/hooks/__tests__/useAutoIngest.test.ts` and mocks.
+- Update tests under `src/hooks/__tests__/useAutoIngest.test.ts` and mocks.
 
 
 ### Research Insights
@@ -381,12 +381,12 @@ In `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and 
 ## Implementation Plan
 
 ### Execution Owner Map
-- **Runtime Owner** — Rust/Tauri runtime lifecycle and command surface (`/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs`, `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/lib.rs`).
+- **Runtime Owner** — Rust/Tauri runtime lifecycle and command surface (`src-tauri/src/codex_app_server.rs`, `src-tauri/src/lib.rs`).
 - **Protocol Owner** — handshake/approval/event payload contracts and parser integrity.
-- **Data Owner** — SQLite migrations and bounded retention (`/Users/jamiecraik/dev/firefly-narrative/src-tauri/migrations/`).
-- **Frontend Owner** — Tauri wrappers/listeners and hook behavior (`/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts`, `/Users/jamiecraik/dev/firefly-narrative/src/hooks/useAutoIngest.ts`).
+- **Data Owner** — SQLite migrations and bounded retention (`src-tauri/migrations/`).
+- **Frontend Owner** — Tauri wrappers/listeners and hook behavior (`src/core/tauri/ingestConfig.ts`, `src/hooks/useAutoIngest.ts`).
 - **QA Owner** — test matrix and deterministic assertions (`cargo test`, `pnpm test`).
-- **Ops Owner** — runbook validation and release readiness (`/Users/jamiecraik/dev/firefly-narrative/docs/agents/hybrid-capture-rollout-runbook.md`).
+- **Ops Owner** — runbook validation and release readiness (`docs/agents/hybrid-capture-rollout-runbook.md`).
 
 ### Prioritized Execute-First Phase Order
 1. **Phase 0 — Baseline Hardening (blocker):** must land first to lock safety rails and migration scaffold.
@@ -398,18 +398,18 @@ In `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and 
 
 ### Phase 0 — Baseline Hardening
 - [x] **P0-01** — Owner: **Runtime Owner**
-      Add state-machine unit tests in `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs` for lifecycle states and restart budget (`>= 3 restarts in 60s`).
+      Add state-machine unit tests in `src-tauri/src/codex_app_server.rs` for lifecycle states and restart budget (`>= 3 restarts in 60s`).
 - [x] **P0-02** — Owner: **Runtime Owner**
       Add command-surface hardening tests proving renderer cannot mutate stream health directly.
 - [x] **P0-03** — Owner: **Data Owner**
-      Add `live_sessions` migration scaffold + migration tests in `/Users/jamiecraik/dev/firefly-narrative/src-tauri/migrations/`.
+      Add `live_sessions` migration scaffold + migration tests in `src-tauri/migrations/`.
 - [x] **P0-04** — Owner: **QA Owner**
       Ensure phase test commands pass locally: `cargo test` for runtime module and targeted `pnpm test` for ingest/hook mocks.
 - [x] **Exit gate (required):** No phase-1 work starts until P0-01..P0-04 are green.
 
 ### Phase 1 — Sidecar actor + lifecycle
 - [x] **P1-01** — Owner: **Runtime Owner**
-      Implement sidecar actor struct + supervisor loop (spawn/monitor/shutdown/reconnect) in `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs`.
+      Implement sidecar actor struct + supervisor loop (spawn/monitor/shutdown/reconnect) in `src-tauri/src/codex_app_server.rs`.
 - [x] **P1-02** — Owner: **Runtime Owner**
       Update `start_codex_app_server` to spawn process and transition `starting -> running` only after readiness signal.
 - [x] **P1-03** — Owner: **Runtime Owner**
@@ -452,7 +452,7 @@ In `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and 
 - [x] **P4-02** — Owner: **Protocol Owner**
       Add explicit observability metrics/logs for parse errors, approval outcomes, restart causes, and dropped completions.
 - [x] **P4-03** — Owner: **Ops Owner**
-      Update `/Users/jamiecraik/dev/firefly-narrative/docs/agents/hybrid-capture-rollout-runbook.md` with new actor-owned verification steps and evidence capture.
+      Update `docs/agents/hybrid-capture-rollout-runbook.md` with new actor-owned verification steps and evidence capture.
 - [x] **P4-04** — Owner: **QA Owner**
       Add security/regression tests for reconnect failure modes and command-surface guardrails.
 - [x] **Exit gate (required):** Runbook and telemetry prove operational recovery paths without UI-side mutation.
@@ -461,9 +461,9 @@ In `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and 
 - [x] **P5-01** — Owner: **QA Owner**
       Run full validation suite (`cargo test`, `pnpm test`, stream recovery smoke) and archive results.
 - [x] **P5-02** — Owner: **Ops Owner**
-      Complete rollout checklist and mark each operational assertion verified in `/Users/jamiecraik/dev/firefly-narrative/docs/agents/hybrid-capture-rollout-runbook.md`.
+      Complete rollout checklist and mark each operational assertion verified in `docs/agents/hybrid-capture-rollout-runbook.md`.
 - [x] **P5-03** — Owner: **Runtime Owner**
-      Update plan status references in `/Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md` if completion criteria are satisfied.
+      Update plan status references in `docs/plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md` if completion criteria are satisfied.
 - [x] **P5-04** — Owner: **Frontend Owner**
       Validate final TS command/event contract parity with Rust exports and test mocks.
 - [x] **Exit gate (release):** All phase gates passed, no open P0/P1 defects, runbook and tests signed off.
@@ -498,9 +498,9 @@ In `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and 
 - **Crash-loop drift:** bounded backoff/retry counters must be persisted in memory only; no cross-boot state leak.
 
 ### API Surface Parity
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/lib.rs` command list must reflect removal of direct UI-mutable stream commands.
-- `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` wrappers must stay aligned with Rust commands.
-- Test mocks in `/Users/jamiecraik/dev/firefly-narrative/src/hooks/__tests__/useAutoIngest.test.ts` must match the updated wrapper set.
+- `src-tauri/src/lib.rs` command list must reflect removal of direct UI-mutable stream commands.
+- `src/core/tauri/ingestConfig.ts` wrappers must stay aligned with Rust commands.
+- Test mocks in `src/hooks/__tests__/useAutoIngest.test.ts` must match the updated wrapper set.
 
 
 ### Research Insights
@@ -538,7 +538,7 @@ In `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and 
 - Define explicit measurable thresholds: restart recovery p95, completion persistence ratio, no UI-only stream-health flips in tests, bounded growth.
 - Keep these metrics in PR description and release notes.
 ## Dependencies and Risks
-- **Dependencies:** `tokio` process APIs, SQLite migration tooling, existing session persistence helpers in `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/import/commands.rs`.
+- **Dependencies:** `tokio` process APIs, SQLite migration tooling, existing session persistence helpers in `src-tauri/src/import/commands.rs`.
 - **Risks:** missing sidecar binary in dev/prod, protocol drift between sidecar and parser, long-running actor lifecycle complexity, migration backfill for existing sessions.
 - **Mitigations:** feature-flaged rollout path, fallback OTEL-only behavior, explicit runbook-run checks.
 
@@ -550,13 +550,13 @@ In `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and 
 - Keep migration dependency explicit with versioned schema migration path.
 ## Testing Strategy
 - Rust tests:
-  - Unit tests in `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs` for state machine and lifecycle.
-  - Existing integration-style tests under `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/import/commands.rs` helpers for persistence behavior.
+  - Unit tests in `src-tauri/src/codex_app_server.rs` for state machine and lifecycle.
+  - Existing integration-style tests under `src-tauri/src/import/commands.rs` helpers for persistence behavior.
 - Frontend tests:
-  - `vitest` tests in `/Users/jamiecraik/dev/firefly-narrative/src/hooks/__tests__/useAutoIngest.test.ts`.
+  - `vitest` tests in `src/hooks/__tests__/useAutoIngest.test.ts`.
   - Update mocks for removed wrappers and event-driven flow.
 - Runbook and docs:
-  - `pnpm test` (or relevant subsets) and update checks in `/Users/jamiecraik/dev/firefly-narrative/docs/agents/hybrid-capture-rollout-runbook.md`.
+  - `pnpm test` (or relevant subsets) and update checks in `docs/agents/hybrid-capture-rollout-runbook.md`.
 
 
 ### Research Insights
@@ -572,15 +572,15 @@ In `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts` and 
 
 - Current state is “None”; if this changes, convert each question into a follow-up issue to keep this plan executable.
 ## Resources and References
-- **Origin:** [`/Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md`](/Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md)
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs`
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/lib.rs`
-- `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts`
-- `/Users/jamiecraik/dev/firefly-narrative/src/hooks/useAutoIngest.ts`
-- `/Users/jamiecraik/dev/firefly-narrative/src/hooks/__tests__/useAutoIngest.test.ts`
-- `/Users/jamiecraik/dev/firefly-narrative/docs/agents/hybrid-capture-rollout-runbook.md`
-- `/Users/jamiecraik/dev/firefly-narrative/docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`
-- `/Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md`
+- **Origin:** [`../brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md`](../brainstorms/2026-02-24-codex-app-server-completion-brainstorm.md)
+- `src-tauri/src/codex_app_server.rs`
+- `src-tauri/src/lib.rs`
+- `src/core/tauri/ingestConfig.ts`
+- `src/hooks/useAutoIngest.ts`
+- `src/hooks/__tests__/useAutoIngest.test.ts`
+- `docs/agents/hybrid-capture-rollout-runbook.md`
+- `docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`
+- `docs/plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md`
 
 ### Research Insights
 

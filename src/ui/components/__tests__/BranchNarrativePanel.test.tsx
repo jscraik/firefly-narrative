@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { BranchNarrative, StakeholderProjections } from '../../../core/types';
+import type { BranchNarrative, NarrativeRecallLaneItem, StakeholderProjections } from '../../../core/types';
 import { BranchNarrativePanel } from '../BranchNarrativePanel';
 
 const narrative: BranchNarrative = {
@@ -34,6 +34,25 @@ const narrative: BranchNarrative = {
     },
   ],
 };
+
+const recallLaneItems: NarrativeRecallLaneItem[] = [
+  {
+    id: 'r1',
+    title: 'Fix critical validation path',
+    whyThisMatters: 'Largest signal from latest commit.',
+    confidence: 0.88,
+    confidenceTier: 'high',
+    evidenceLinks: [
+      {
+        id: 'commit:abc123',
+        kind: 'commit',
+        label: 'Commit abc123',
+        commitSha: 'abc123',
+      },
+    ],
+    source: 'highlight',
+  },
+];
 
 const projections: StakeholderProjections = {
   executive: {
@@ -69,6 +88,7 @@ describe('BranchNarrativePanel', () => {
         audience="manager"
         detailLevel="summary"
         feedbackActorRole="developer"
+        recallLaneItems={recallLaneItems}
         onAudienceChange={vi.fn()}
         onFeedbackActorRoleChange={vi.fn()}
         onDetailLevelChange={onDetailLevelChange}
@@ -79,6 +99,9 @@ describe('BranchNarrativePanel', () => {
     );
 
     expect(screen.getByText('Summary text')).toBeInTheDocument();
+    expect(screen.getByText('Recall lane')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Evidence' })).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Evidence' }));
     expect(onDetailLevelChange).toHaveBeenCalledWith('evidence');
   });
@@ -105,6 +128,75 @@ describe('BranchNarrativePanel', () => {
     expect(onOpenEvidence).toHaveBeenCalledTimes(1);
   });
 
+  it('opens recall lane evidence with lane telemetry context', () => {
+    const onOpenEvidence = vi.fn();
+    render(
+      <BranchNarrativePanel
+        narrative={narrative}
+        projections={projections}
+        audience="manager"
+        detailLevel="summary"
+        feedbackActorRole="developer"
+        recallLaneItems={recallLaneItems}
+        onAudienceChange={vi.fn()}
+        onFeedbackActorRoleChange={vi.fn()}
+        onDetailLevelChange={vi.fn()}
+        onSubmitFeedback={vi.fn()}
+        onOpenEvidence={onOpenEvidence}
+        onOpenRawDiff={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open evidence' }));
+    expect(onOpenEvidence).toHaveBeenCalledWith(
+      recallLaneItems[0].evidenceLinks[0],
+      expect.objectContaining({
+        source: 'recall_lane',
+        recallLaneItemId: 'r1',
+        recallLaneConfidenceBand: 'high',
+      })
+    );
+  });
+
+  it('falls back to raw diff from recall lane when no evidence link exists', () => {
+    const onOpenRawDiff = vi.fn();
+    render(
+      <BranchNarrativePanel
+        narrative={narrative}
+        projections={projections}
+        audience="manager"
+        detailLevel="summary"
+        feedbackActorRole="developer"
+        recallLaneItems={[
+          {
+            id: 'r-no-evidence',
+            title: 'Inspect fallback state',
+            whyThisMatters: 'No direct evidence available.',
+            confidence: 0.2,
+            confidenceTier: 'low',
+            evidenceLinks: [],
+            source: 'fallback',
+          },
+        ]}
+        onAudienceChange={vi.fn()}
+        onFeedbackActorRoleChange={vi.fn()}
+        onDetailLevelChange={vi.fn()}
+        onSubmitFeedback={vi.fn()}
+        onOpenEvidence={vi.fn()}
+        onOpenRawDiff={onOpenRawDiff}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open raw diff' }));
+    expect(onOpenRawDiff).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: 'recall_lane',
+        recallLaneItemId: 'r-no-evidence',
+        recallLaneConfidenceBand: 'low',
+      }),
+    );
+  });
+
   it('submits highlight and branch feedback actions', () => {
     const onSubmitFeedback = vi.fn();
     render(
@@ -128,6 +220,15 @@ describe('BranchNarrativePanel', () => {
       expect.objectContaining({
         actorRole: 'reviewer',
         feedbackType: 'highlight_key',
+        targetKind: 'highlight',
+      })
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Wrong' }));
+    expect(onSubmitFeedback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorRole: 'reviewer',
+        feedbackType: 'highlight_wrong',
         targetKind: 'highlight',
       })
     );

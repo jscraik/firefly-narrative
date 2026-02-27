@@ -237,6 +237,20 @@ export type NarrativeEvidenceLink = {
   sessionId?: string;
 };
 
+export type NarrativeConfidenceTier = 'low' | 'medium' | 'high';
+
+export type NarrativeRecallLaneItemSource = 'highlight' | 'fallback';
+
+export type NarrativeRecallLaneItem = {
+  id: string;
+  title: string;
+  whyThisMatters: string;
+  confidence: number;
+  confidenceTier: NarrativeConfidenceTier;
+  evidenceLinks: NarrativeEvidenceLink[];
+  source: NarrativeRecallLaneItemSource;
+};
+
 export type NarrativeHighlight = {
   id: string;
   title: string;

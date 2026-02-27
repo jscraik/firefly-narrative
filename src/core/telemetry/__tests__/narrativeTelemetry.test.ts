@@ -49,6 +49,29 @@ describe('narrativeTelemetry', () => {
     dispatchSpy.mockRestore();
   });
 
+
+  it('supports recall-lane evidence telemetry fields', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+    trackNarrativeEvent('evidence_opened', {
+      branch: 'feature/recall-lane',
+      detailLevel: 'summary',
+      source: 'recall_lane',
+      evidenceKind: 'commit',
+      confidence: 0.91,
+      recallLaneItemId: 'recall:123',
+      recallLaneConfidenceBand: 'high',
+    });
+
+    expect(dispatchSpy).toHaveBeenCalledTimes(1);
+    const event = dispatchSpy.mock.calls[0]?.[0] as CustomEvent;
+    expect(event.detail.payload.source).toBe('recall_lane');
+    expect(event.detail.payload.recallLaneItemId).toBe('recall:123');
+    expect(event.detail.payload.recallLaneConfidenceBand).toBe('high');
+
+    dispatchSpy.mockRestore();
+  });
+
   it('dispatches feedback events with typed payload fields', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
 

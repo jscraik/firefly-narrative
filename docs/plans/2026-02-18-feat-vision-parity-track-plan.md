@@ -3,7 +3,7 @@ title: Vision Parity Track — Narrative-First Progressive Disclosure
 type: feat
 date: 2026-02-18
 status: draft
-brainstorm: "/Users/jamiecraik/dev/narrative/docs/brainstorms/2026-02-18-vision-alignment-brainstorm.md"
+brainstorm: "docs/brainstorms/2026-02-18-vision-alignment-brainstorm.md"
 ---
 
 # Vision Parity Track Plan
@@ -254,9 +254,9 @@ Add expanded quality rubric scoring, kill-switch matrix, and deeper observabilit
 - Retention model: classify raw metadata vs derived narrative artifacts and define purge semantics for both.
 - Prompt/eval governance: version prompt templates, maintain golden rubric set, add adversarial prompt-injection checks.
   - Implemented in:
-    - `/Users/jamiecraik/dev/firefly-narrative/src/core/narrative/promptGovernance.ts`
-    - `/Users/jamiecraik/dev/firefly-narrative/src/core/narrative/composeBranchNarrative.ts` (`promptTemplate.id/version`)
-    - `/Users/jamiecraik/dev/firefly-narrative/src/core/narrative/rolloutGovernance.ts` (`prompt_template_unversioned`, `prompt_injection_signal` rules)
+    - `src/core/narrative/promptGovernance.ts`
+    - `src/core/narrative/composeBranchNarrative.ts` (`promptTemplate.id/version`)
+    - `src/core/narrative/rolloutGovernance.ts` (`prompt_template_unversioned`, `prompt_injection_signal` rules)
 
 ## Validation Plan
 
@@ -268,7 +268,7 @@ Add expanded quality rubric scoring, kill-switch matrix, and deeper observabilit
 - Contract tests for v1 execution-loop state transitions (`running|ready|needs_attention|failed`).
 - Accessibility checks: keyboard traversal, focus order, reduced-motion parity, contrast in all disclosure states.
 - Security checks: malicious PR payload tests, redaction regression corpus, connector consent/revoke tests (Phase 2 gate before T7 release).
-- Adversarial prompt checks: `/Users/jamiecraik/dev/firefly-narrative/src/core/narrative/__tests__/rolloutGovernance.test.ts` includes prompt-injection and missing-template governance tests.
+- Adversarial prompt checks: `src/core/narrative/__tests__/rolloutGovernance.test.ts` includes prompt-injection and missing-template governance tests.
 - Rollback drills: verify global kill switch and fallback behavior.
 
 ## Risks and Mitigations

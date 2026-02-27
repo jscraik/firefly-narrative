@@ -863,13 +863,13 @@ pub async fn agent_find_sessions_for_commit(
 ```
 
 **Implementation evidence (2026-02-24):**
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/agent_tools/session_tools.rs`
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/lib.rs` invoke registration:
+- `src-tauri/src/agent_tools/session_tools.rs`
+- `src-tauri/src/lib.rs` invoke registration:
   - `agent_list_sessions`
   - `agent_get_session`
   - `agent_link_session_to_commit`
   - `agent_link_session`
-- `/Users/jamiecraik/dev/firefly-narrative/src/core/repo/agentSessionTools.ts` TypeScript wrappers.
+- `src/core/repo/agentSessionTools.ts` TypeScript wrappers.
 
 **Update system prompt** in `AGENTS.md`:
 ```markdown

@@ -3,7 +3,7 @@ title: "feat: Narrative Truth Loop Feedback Calibration"
 type: feat
 status: completed
 date: 2026-02-24
-origin: docs/brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md
+origin: ../brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md
 ---
 
 # feat: Narrative Truth Loop Feedback Calibration
@@ -50,7 +50,7 @@ Section 4: Data model and quality gates — feedback event schema, profile deriv
 Section 5: Validation and rollout — cross-layer scenarios, canary strategy, measurable success criteria.
 
 ## Overview
-Add a **Narrative Truth Loop** that captures explicit human feedback on branch narratives and uses it to improve future narrative quality at the **repo scope** (see brainstorm: `docs/brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md`).
+Add a **Narrative Truth Loop** that captures explicit human feedback on branch narratives and uses it to improve future narrative quality at the **repo scope** (see brainstorm: `../brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md`).
 
 V1 scope is intentionally bounded:
 - feedback actors: developer + reviewer/manager,
@@ -74,7 +74,7 @@ The highest-value outcome is lower fallback-to-raw-diff behavior after users vie
 
 ## Research Consolidation
 ### Brainstorm foundation (within 14 days)
-Found and used: `docs/brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md` (2026-02-24).
+Found and used: `../brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md` (2026-02-24).
 
 ### Local repo patterns
 - Narrative generation: `src/core/narrative/composeBranchNarrative.ts:108`
@@ -359,7 +359,7 @@ Secondary:
 - kill-switch drill proves immediate return to baseline narrative behavior.
 
 ## Sources & References
-- **Origin brainstorm:** [`docs/brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md`](/Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md)
+- **Origin brainstorm:** [`../brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md`](../brainstorms/2026-02-24-narrative-truth-loop-brainstorm.md)
   - Carried-forward decisions: dual-role feedback actors; ranking+confidence scope; per-repo learning only; fallback reduction as primary KPI.
 - Similar implementations:
   - `src/core/narrative/composeBranchNarrative.ts:69`
@@ -370,7 +370,7 @@ Secondary:
 - Institutional learning:
   - `docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`
 - Phase 1 decision gate artifact:
-  - `/Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-24-narrative-truth-loop-phase1-sqlite-decision-gate.md`
+  - `docs/plans/2026-02-24-narrative-truth-loop-phase1-sqlite-decision-gate.md`
 
 ### External references (deepening pass)
 - React `useTransition`: [https://react.dev/reference/react/useTransition](https://react.dev/reference/react/useTransition)

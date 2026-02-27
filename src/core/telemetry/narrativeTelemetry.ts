@@ -11,6 +11,8 @@ export type NarrativeTelemetryEventName =
   | 'kill_switch_triggered'
   | 'ui.quality.render_decision';
 
+type NarrativeEvidenceSource = 'demo' | 'git' | 'recall_lane';
+
 export type NarrativeHeaderKind = 'hidden' | 'shell' | 'full';
 export type NarrativeRepoStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type NarrativeTransitionType = 'initial' | 'state_change';
@@ -29,7 +31,7 @@ export type NarrativeTelemetryPayload = {
   schemaVersion?: NarrativeTelemetrySchemaVersion;
   branch?: string;
   viewInstanceId?: string;
-  source?: 'demo' | 'git';
+  source?: NarrativeEvidenceSource;
   detailLevel?: 'summary' | 'evidence' | 'diff';
   audience?: 'executive' | 'manager' | 'engineer';
   evidenceKind?: 'commit' | 'session' | 'file' | 'diff';
@@ -47,6 +49,8 @@ export type NarrativeTelemetryPayload = {
   feedbackType?: 'highlight_key' | 'highlight_wrong' | 'branch_missing_decision';
   feedbackTargetKind?: 'highlight' | 'branch';
   feedbackActorRole?: 'developer' | 'reviewer';
+  recallLaneItemId?: string;
+  recallLaneConfidenceBand?: 'low' | 'medium' | 'high';
 };
 
 export type NarrativeRenderDecisionInput = {

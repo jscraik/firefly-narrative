@@ -3,9 +3,9 @@
 > Date: 2026-02-17
 > Status: Ready for planning handoff
 > Related plans:
-> - `/Users/jamiecraik/dev/narrative/docs/plans/2026-02-17-feat-firefly-signal-system-plan.md`
-> - `/Users/jamiecraik/dev/narrative/docs/plans/2026-02-17-feat-firefly-signal-system-plan-deepened.md`
-> - `/Users/jamiecraik/dev/narrative/docs/plans/2026-02-17-feat-firefly-signal-system-plan-revised.md`
+> - `docs/plans/2026-02-17-feat-firefly-signal-system-plan.md`
+> - `docs/plans/2026-02-17-feat-firefly-signal-system-plan-deepened.md`
+> - `docs/plans/2026-02-17-feat-firefly-signal-system-plan-revised.md`
 
 ## Table of Contents
 

@@ -1,13 +1,23 @@
 import type {
   BranchNarrative,
+  NarrativeConfidenceTier,
+  NarrativeEvidenceLink,
   NarrativeFeedbackAction,
   NarrativeFeedbackActorRole,
   NarrativeDetailLevel,
-  NarrativeEvidenceLink,
+  NarrativeRecallLaneItem,
   StakeholderAudience,
   StakeholderProjection,
   StakeholderProjections,
 } from '../../core/types';
+
+type RecallLaneEvidenceContext = {
+  source?: 'recall_lane';
+  recallLaneItemId?: string;
+  recallLaneConfidenceBand?: NarrativeConfidenceTier;
+};
+
+type OpenEvidenceHandler = (link: NarrativeEvidenceLink, context?: RecallLaneEvidenceContext) => void;
 
 type BranchNarrativePanelProps = {
   narrative: BranchNarrative;
@@ -17,12 +27,13 @@ type BranchNarrativePanelProps = {
   feedbackActorRole: NarrativeFeedbackActorRole;
   killSwitchActive?: boolean;
   killSwitchReason?: string;
+  recallLaneItems?: NarrativeRecallLaneItem[];
   onAudienceChange: (audience: StakeholderAudience) => void;
   onFeedbackActorRoleChange: (role: NarrativeFeedbackActorRole) => void;
   onDetailLevelChange: (level: NarrativeDetailLevel) => void;
   onSubmitFeedback: (feedback: NarrativeFeedbackAction) => void;
-  onOpenEvidence: (link: NarrativeEvidenceLink) => void;
-  onOpenRawDiff: () => void;
+  onOpenEvidence: OpenEvidenceHandler;
+  onOpenRawDiff: (laneContext?: RecallLaneEvidenceContext) => void;
 };
 
 function DetailButton(props: {
@@ -52,6 +63,12 @@ function DetailButton(props: {
   );
 }
 
+function confidenceTierStyle(tier: NarrativeRecallLaneItem['confidenceTier']): string {
+  if (tier === 'high') return 'text-accent-green';
+  if (tier === 'medium') return 'text-accent-amber';
+  return 'text-text-muted';
+}
+
 function projectionFallback(audience: StakeholderAudience, narrative: BranchNarrative): StakeholderProjection {
   return {
     audience,
@@ -71,6 +88,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
     feedbackActorRole,
     killSwitchActive = false,
     killSwitchReason,
+    recallLaneItems = [],
     onAudienceChange,
     onFeedbackActorRoleChange,
     onDetailLevelChange,
@@ -79,6 +97,24 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
     onOpenRawDiff,
   } = props;
   const projection = projections[audience] ?? projectionFallback(audience, narrative);
+
+  const handleRecallLaneOpen = (item: NarrativeRecallLaneItem) => {
+    const firstEvidence = item.evidenceLinks[0];
+    if (firstEvidence) {
+      onOpenEvidence(firstEvidence, {
+        source: 'recall_lane',
+        recallLaneItemId: item.id,
+        recallLaneConfidenceBand: item.confidenceTier,
+      });
+      return;
+    }
+
+    onOpenRawDiff({
+      source: 'recall_lane',
+      recallLaneItemId: item.id,
+      recallLaneConfidenceBand: item.confidenceTier,
+    });
+  };
 
   return (
     <div className="card p-5">
@@ -117,6 +153,42 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
 
       {detailLevel === 'summary' && (
         <div className="mt-4 space-y-3">
+          <div className="rounded-lg border border-border-subtle bg-bg-primary p-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-text-muted">Recall lane</div>
+            {recallLaneItems.length === 0 ? (
+              <p className="mt-2 text-xs text-text-tertiary" aria-live="polite">
+                No ranked actions yet. Open evidence or raw diff to validate this branch manually.
+              </p>
+            ) : (
+              <ol className="mt-2 space-y-2" aria-live="polite">
+                {recallLaneItems.map((item) => {
+                  const actionLabel = item.evidenceLinks[0] ? 'Open evidence' : 'Open raw diff';
+                  return (
+                    <li
+                      key={item.id}
+                      className="rounded-md border border-border-subtle bg-bg-secondary p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-sm font-medium text-text-primary">{item.title}</span>
+                        <span className={`text-[11px] font-medium uppercase ${confidenceTierStyle(item.confidenceTier)}`}>
+                          {item.confidenceTier} {(item.confidence * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-text-tertiary">{item.whyThisMatters}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleRecallLaneOpen(item)}
+                        className="mt-2 rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
+                      >
+                        {actionLabel}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </div>
+
           <div className="flex items-center gap-1">
             {(['executive', 'manager', 'engineer'] as const).map((option) => (
               <button
@@ -257,7 +329,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
           </p>
           <button
             type="button"
-            onClick={onOpenRawDiff}
+            onClick={() => onOpenRawDiff()}
             className="mt-3 inline-flex rounded-md border border-border-light bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-primary"
           >
             Open raw diff context
