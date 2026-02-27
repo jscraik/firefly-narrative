@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFileSelection } from '../../../core/context/FileSelectionContext';
 import { testRuns } from '../../../core/demo/nearbyGridDemo';
+import { buildRecallLane } from '../../../core/narrative/recallLane';
 import { composeBranchNarrative } from '../../../core/narrative/composeBranchNarrative';
 import { buildDecisionArchaeology } from '../../../core/narrative/decisionArchaeology';
 import { evaluateNarrativeRollout } from '../../../core/narrative/rolloutGovernance';
@@ -17,6 +18,7 @@ import type {
   NarrativeEvidenceLink,
   NarrativeFeedbackAction,
   NarrativeFeedbackActorRole,
+  NarrativeConfidenceTier,
   NarrativeObservabilityMetrics,
   StakeholderAudience,
   TestRun,
@@ -137,6 +139,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
   const narrativeViewedKeyRef = useRef<string | null>(null);
   const narrativeViewInstanceIdRef = useRef<string | null>(null);
   const isMountedRef = useRef(true);
+  const activeBranchScopeRef = useRef<string | null>(null);
   const feedbackContextRef = useRef<string>('');
 
   const requestIdentityKey = useMemo(
@@ -215,6 +218,12 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     () => composeBranchNarrative(model, { calibration: calibrationEnabled ? narrativeCalibration : null }),
     [model, narrativeCalibration]
   );
+  const recallLaneItems = useMemo(() => {
+    return buildRecallLane(narrative, {
+      maxItems: 3,
+      confidenceFloor: 0,
+    });
+  }, [narrative]);
   const projections = useMemo(
     () =>
       buildStakeholderProjections({
@@ -242,6 +251,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
   const killSwitchActive = rolloutReport.status === 'rollback';
   const effectiveDetailLevel: NarrativeDetailLevel = killSwitchActive ? 'diff' : detailLevel;
   const branchScopeKey = `${model.meta?.repoPath ?? ''}:${model.meta?.branchName ?? ''}`;
+  activeBranchScopeRef.current = branchScopeKey;
 
   const selectedNode = useMemo(
     () => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
@@ -546,7 +556,15 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     });
   }, [bumpObservability, detailLevel, killSwitchActive, model.meta?.branchName, narrative.confidence]);
 
-  const handleOpenRawDiff = useCallback(() => {
+  const handleOpenRawDiff = useCallback((laneContext?: {
+    source?: 'recall_lane';
+    recallLaneItemId?: string;
+    recallLaneConfidenceBand?: NarrativeConfidenceTier;
+  }) => {
+    if (activeBranchScopeRef.current !== branchScopeKey) {
+      return;
+    }
+
     setDetailLevel('diff');
     if (!selectedFile && files[0]?.path) {
       selectFile(files[0].path);
@@ -556,29 +574,68 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
       branch: model.meta?.branchName,
       detailLevel: 'diff',
       confidence: narrative.confidence,
+      source: laneContext?.source === 'recall_lane' ? 'recall_lane' : model.source,
+      recallLaneItemId: laneContext?.recallLaneItemId,
+      recallLaneConfidenceBand: laneContext?.recallLaneConfidenceBand,
       viewInstanceId: narrativeViewInstanceIdRef.current ?? undefined,
     });
-  }, [bumpObservability, files, model.meta?.branchName, narrative.confidence, selectFile, selectedFile]);
+  }, [
+    bumpObservability,
+    files,
+    model.meta?.branchName,
+    model.source,
+    narrative.confidence,
+    selectFile,
+    selectedFile,
+    branchScopeKey,
+  ]);
 
-  const handleOpenEvidence = useCallback((link: NarrativeEvidenceLink) => {
-    if (link.commitSha) {
-      setTrackingSettledNodeId(null);
-      setSelectedNodeId(link.commitSha);
-    }
-    if (shouldRouteEvidenceToRawDiff(link)) {
-      handleOpenRawDiff();
-    }
-    if (link.filePath) {
-      selectFile(link.filePath);
-    }
-    bumpObservability('evidenceOpenedCount');
-    trackNarrativeEvent('evidence_opened', {
-      branch: model.meta?.branchName,
-      detailLevel: effectiveDetailLevel,
-      evidenceKind: link.kind,
-      confidence: narrative.confidence,
-    });
-  }, [bumpObservability, effectiveDetailLevel, handleOpenRawDiff, model.meta?.branchName, narrative.confidence, selectFile]);
+  const handleOpenEvidence = useCallback(
+    (
+      link: NarrativeEvidenceLink,
+      laneContext?: {
+        source?: 'recall_lane';
+        recallLaneItemId?: string;
+        recallLaneConfidenceBand?: NarrativeConfidenceTier;
+      }
+    ) => {
+      if (activeBranchScopeRef.current !== branchScopeKey) {
+        return;
+      }
+
+      if (link.commitSha) {
+        setTrackingSettledNodeId(null);
+        setSelectedNodeId(link.commitSha);
+      }
+      if (shouldRouteEvidenceToRawDiff(link)) {
+        handleOpenRawDiff(laneContext);
+      }
+      if (link.filePath) {
+        selectFile(link.filePath);
+      }
+      bumpObservability('evidenceOpenedCount');
+      trackNarrativeEvent('evidence_opened', {
+        branch: model.meta?.branchName,
+        detailLevel: effectiveDetailLevel,
+        evidenceKind: link.kind,
+        confidence: narrative.confidence,
+        source: laneContext?.source === 'recall_lane' ? 'recall_lane' : model.source,
+        recallLaneItemId: laneContext?.recallLaneItemId,
+        recallLaneConfidenceBand: laneContext?.recallLaneConfidenceBand,
+        viewInstanceId: narrativeViewInstanceIdRef.current ?? undefined,
+      });
+    },
+    [
+      bumpObservability,
+      branchScopeKey,
+      effectiveDetailLevel,
+      handleOpenRawDiff,
+      model.meta?.branchName,
+      model.source,
+      narrative.confidence,
+      selectFile,
+    ]
+  );
 
   const handleAudienceChange = useCallback((nextAudience: StakeholderAudience) => {
     if (nextAudience === audience) return;
@@ -767,6 +824,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
       feedbackActorRole,
       killSwitchActive,
       killSwitchReason: criticalRule?.rationale,
+      recallLaneItems,
       onAudienceChange: handleAudienceChange,
       onFeedbackActorRoleChange: handleFeedbackRoleChange,
       onDetailLevelChange: handleDetailLevelChange,
