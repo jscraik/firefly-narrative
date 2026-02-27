@@ -25,7 +25,43 @@
 open https://github.com/jscraik/firefly-narrative/releases/latest
 ```
 
+If the DMG download/install fails on macOS, use this fallback:
+
+1. Download the release artifacts manually from the same page and ensure you picked the matching architecture.
+2. For a direct install fallback:
+   - `Control + click` / right-click the DMG (or app) and choose **Open**.
+   - If macOS still blocks it, run:
+     ```bash
+     xattr -dr com.apple.quarantine '/Applications/Firefly Narrative.app'
+     ```
+   - If that still fails, install via local build:
+     ```bash
+     pnpm install
+     pnpm tauri:build:full
+     ```
+
 </div>
+
+### Supported download paths
+
+- **GitHub Releases (recommended):** `https://github.com/jscraik/firefly-narrative/releases/latest`
+- **Local build fallback:** `pnpm tauri:build:full` (works on supported OS with Node + Rust toolchain)
+
+### OS fallback notes
+
+| OS | What to download | Fallback notes |
+| --- | --- | --- |
+| macOS (Apple Silicon) | `firefly-narrative_*_aarch64-apple-darwin.dmg` | Use **right-click + Open** if Gatekeeper blocks it. If still blocked, remove quarantine: `xattr -dr com.apple.quarantine '/Applications/Firefly Narrative.app'`. |
+| macOS (Intel) | `firefly-narrative_*_x86_64-apple-darwin.dmg` | Same fallback commands as above if install is blocked. |
+| Windows | `firefly-narrative_*_x64.msi` (or `.exe` if no MSI is present) | If installer is blocked, run PowerShell once with admin: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`. |
+| Linux | `firefly-narrative_*_amd64.AppImage`, `.deb`, or `.rpm` | If AppImage won’t run: `chmod +x ./firefly-narrative.AppImage`. |
+
+If your OS/arch package is unavailable or blocked, use a local build fallback:
+
+```bash
+pnpm install
+pnpm tauri:build:full
+```
 
 ---
 
