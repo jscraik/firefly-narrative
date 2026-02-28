@@ -1,0 +1,28 @@
+flowchart LR
+  subgraph Ingest["Ingest Layer"]
+    TraceIngest["traceIngest.ts"]
+    FileWatcher["file_watcher.rs"]
+  end
+
+  subgraph Storage["Storage Layer"]
+    SQLite[(SQLite DB)]
+    GitNotes["gitNotes.ts"]
+  end
+
+  subgraph Query["Query Layer"]
+    Sessions["sessions.ts"]
+    Narrative["composeBranchNarrative.ts"]
+  end
+
+  subgraph UI["UI Layer"]
+    BranchPanel["BranchNarrativePanel"]
+    TelemetryPanel["TelemetrySettingsPanel"]
+  end
+
+  TraceIngest --> SQLite
+  FileWatcher --> SQLite
+  SQLite --> Sessions
+  SQLite --> Narrative
+  Sessions --> BranchPanel
+  Narrative --> BranchPanel
+  GitNotes --> Narrative

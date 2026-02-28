@@ -1,0 +1,23 @@
+sequenceDiagram
+  participant App as Tauri App
+  participant Sidecar as Codex Sidecar
+  participant Server as Codex Server
+  participant GitHub as GitHub OAuth
+
+  App->>Sidecar: initialize
+  Sidecar->>Server: stdio handshake
+  Server-->>Sidecar: initialized
+  Sidecar-->>App: ready
+
+  App->>Sidecar: login
+  Sidecar->>Server: auth request
+  Server->>GitHub: OAuth flow
+  GitHub-->>Server: auth code
+  Server-->>Sidecar: auth token
+  Sidecar-->>App: authenticated
+
+  App->>Sidecar: live events subscribe
+  loop Stream Events
+    Server-->>Sidecar: event
+    Sidecar-->>App: event
+  end

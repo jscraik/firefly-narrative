@@ -1,0 +1,528 @@
+graph TD
+  subgraph __cdb4ee2a["."]
+    vite_integration_config_033b7d32["vite.integration.config"]
+    vite_config_c473fba0["vite.config"]
+    playwright_config_c5f93a12["playwright.config"]
+  end
+  subgraph src_25a66342["src"]
+    setupTests_a1881263["setupTests"]
+    axe_config_5dab6a88["axe-config"]
+    main_0d6e4079["main"]
+    App_0d04bfeb["App"]
+  end
+  subgraph landing_d6709cd4["landing"]
+    vite_config_1_736b3c02["vite.config"]
+    main_1_24354b9b["main"]
+    FireflyLanding_fc73711c["FireflyLanding"]
+    FireflyHero_6e604372["FireflyHero"]
+  end
+  subgraph e2e_6d8749c4["e2e"]
+    firefly_visual_system_v1_spec_def11f59["firefly-visual-system-v1.spec"]
+    critical_flows_spec_66db3f9a["critical-flows.spec"]
+    app_spec_fe94aeca["app.spec"]
+    agentation_baseline_spec_7c288669["agentation-baseline.spec"]
+  end
+  subgraph src_integration_fab67eb1["src/integration"]
+    harness_integration_test_065db339["harness.integration.test"]
+  end
+  subgraph src_hooks_daacbe88["src/hooks"]
+    useUpdater_db2b740b["useUpdater"]
+    useTraceCollector_e3f811c3["useTraceCollector"]
+    useTimelineNavigation_806cd7e6["useTimelineNavigation"]
+    useTestImport_136ded43["useTestImport"]
+    useSourceLensData_c1b2d5d3["useSourceLensData"]
+    useSessionImport_69292424["useSessionImport"]
+    useRepoLoader_df6f8864["useRepoLoader"]
+    useRepoFileExistence_7e258dc3["useRepoFileExistence"]
+    useKeyboardShortcuts_c0879d98["useKeyboardShortcuts"]
+    useFirefly_4b28bfda["useFirefly"]
+    useCommitData_29c16895["useCommitData"]
+    useAutoIngest_56f90d17["useAutoIngest"]
+    useAtlasSearch_7d18f6f2["useAtlasSearch"]
+    sessionUtils_d704722d["sessionUtils"]
+    isoStampForFile_4bc02af0["isoStampForFile"]
+    basename_2910774c["basename"]
+  end
+  subgraph src_core_2ac6ecef["src/core"]
+    types_8d846022["types"]
+    story_anchors_api_279f63a1["story-anchors-api"]
+    rules_6c621d1a["rules"]
+    attribution_api_b53df9d9["attribution-api"]
+    atlas_api_0fe43c81["atlas-api"]
+  end
+  subgraph fixtures_calibration_dataset_44184cc0["fixtures/calibration-dataset"]
+    generate_dataset_d06adda7["generate-dataset"]
+    calibration_run_script_85d7a923["calibration-run-script"]
+  end
+  subgraph src_ui_views_74be6bc1["src/ui/views"]
+    docsAutoLoad_44c379b9["docsAutoLoad"]
+    branchViewEvidence_9e7c8d82["branchViewEvidence"]
+    branchView_types_1fc9620a["branchView.types"]
+    branchView_constants_91490435["branchView.constants"]
+    DocsView_37d8072c["DocsView"]
+    DashboardView_16aa3601["DashboardView"]
+    BranchViewLayout_2f34f6b8["BranchViewLayout"]
+    BranchView_16f1e1f8["BranchView"]
+  end
+  subgraph src_ui_components_0fcf59a2["src/ui/components"]
+    branchHeaderMapper_4dd9295b["branchHeaderMapper"]
+    UpdatePrompt_8bfa5fb8["UpdatePrompt"]
+    TraceTranscriptPanel_d443bb3b["TraceTranscriptPanel"]
+    TopNav_8615cc91["TopNav"]
+    Toggle_3d03a1de["Toggle"]
+    TimelineNode_8b6735fa["TimelineNode"]
+    TimelineNavButtons_cf793ac5["TimelineNavButtons"]
+    Timeline_9dcff98e["Timeline"]
+    TestResultsPanel_e82e112c["TestResultsPanel"]
+    TelemetrySettingsPanel_092f60ae["TelemetrySettingsPanel"]
+    StoryAnchorsPanel_dd7a121f["StoryAnchorsPanel"]
+    StepsSummaryCard_9d9d3d07["StepsSummaryCard"]
+    SourceLensView_034e671f["SourceLensView"]
+    SourceLensStats_a046f588["SourceLensStats"]
+    SourceLensLineTable_35653c59["SourceLensLineTable"]
+    SourceLensEmptyStates_0d01a55e["SourceLensEmptyStates"]
+    Skeleton_ea5f6bdc["Skeleton"]
+    SessionImportPanel_44d8f995["SessionImportPanel"]
+    SessionExcerpts_30b0b8dc["SessionExcerpts"]
+    Select_2a78025d["Select"]
+    RightPanelTabs_29002826["RightPanelTabs"]
+    RepositoryPlaceholderCard_2ded572d["RepositoryPlaceholderCard"]
+    RepoEmptyState_40528d79["RepoEmptyState"]
+    NeedsAttentionList_62f25e04["NeedsAttentionList"]
+    NarrativeGovernancePanel_18468a63["NarrativeGovernancePanel"]
+    MermaidDiagram_5d578741["MermaidDiagram"]
+    IntentList_2ae18a16["IntentList"]
+    IngestToast_ef341876["IngestToast"]
+    IngestStatusStrip_11dfe0c2["IngestStatusStrip"]
+    ImportErrorBanner_d00028a3["ImportErrorBanner"]
+    HelpPopover_954f9250["HelpPopover"]
+    GitHubConnectorPanel_f94f3952["GitHubConnectorPanel"]
+    FireflySignal_b76b6c4c["FireflySignal"]
+    FireflyHero_stories_80e010e9["FireflyHero.stories"]
+    Firefly_c924d48a["Firefly"]
+    FilesChanged_eb0b117d["FilesChanged"]
+    DocsOverviewPanel_161198dc["DocsOverviewPanel"]
+    DiffViewer_7e36d3d0["DiffViewer"]
+    Dialog_69b51517["Dialog"]
+    DecisionArchaeologyPanel_bd32c4aa["DecisionArchaeologyPanel"]
+    Checkbox_d103a138["Checkbox"]
+    CaptureActivityStrip_ca040f21["CaptureActivityStrip"]
+    Breadcrumb_2bd873d6["Breadcrumb"]
+    BranchSummaryBar_843c8e56["BranchSummaryBar"]
+    BranchNarrativePanel_c0952487["BranchNarrativePanel"]
+    BranchHeader_d067325d["BranchHeader"]
+    BadgePill_b0287413["BadgePill"]
+    AutoIngestSetupPanel_4e463af3["AutoIngestSetupPanel"]
+    AuthorBadge_9ac9f202["AuthorBadge"]
+    AttributionSettingsPanel_7cbc28fe["AttributionSettingsPanel"]
+    AtlasSearchPanel_3daa12fa["AtlasSearchPanel"]
+    AiContributionBadge_a0737f87["AiContributionBadge"]
+    AgentTraceSummary_3b3c264c["AgentTraceSummary"]
+  end
+  subgraph src_hooks___tests___f973763d["src/hooks/__tests__"]
+    useUpdater_test_0bde52b0["useUpdater.test"]
+    useTraceCollector_test_1261d5ea["useTraceCollector.test"]
+    useTestImport_test_da639ade["useTestImport.test"]
+    useSourceLensData_test_7459bf0f["useSourceLensData.test"]
+    useRepoLoader_test_c0765b39["useRepoLoader.test"]
+    useRepoFileExistence_test_ae1ae469["useRepoFileExistence.test"]
+    useKeyboardShortcuts_test_b00dfaeb["useKeyboardShortcuts.test"]
+    useFirefly_test_2c284fc9["useFirefly.test"]
+    useAutoIngest_test_c64ef81e["useAutoIngest.test"]
+    useAtlasSearch_test_603682cd["useAtlasSearch.test"]
+  end
+  subgraph src_core_utils_b8ce8d35["src/core/utils"]
+    url_28e5ebab["url"]
+  end
+  subgraph src_core_telemetry_91e10e26["src/core/telemetry"]
+    narrativeTelemetry_70dfa1c5["narrativeTelemetry"]
+  end
+  subgraph src_core_security_2eb5ce5d["src/core/security"]
+    toolSanitizer_93dad926["toolSanitizer"]
+    redact_18f1255e["redact"]
+    hash_d04b98f4["hash"]
+  end
+  subgraph src_core_tauri_8c917b2a["src/core/tauri"]
+    settings_cde0fb0d["settings"]
+    otelReceiver_bd752dec["otelReceiver"]
+    narrativeFs_b94b096d["narrativeFs"]
+    ingestConfig_c7e6037b["ingestConfig"]
+    gitDiff_a3685ce7["gitDiff"]
+    activity_0651863b["activity"]
+  end
+  subgraph src_core_models_eab017d7["src/core/models"]
+    emptyBranchModel_b002cef5["emptyBranchModel"]
+  end
+  subgraph src_core_narrative_45601e5b["src/core/narrative"]
+    stakeholderProjections_df026476["stakeholderProjections"]
+    rolloutGovernance_513faed5["rolloutGovernance"]
+    recallLane_27810870["recallLane"]
+    promptGovernance_f53dd659["promptGovernance"]
+    decisionArchaeology_df265c52["decisionArchaeology"]
+    composeBranchNarrative_2a286eb3["composeBranchNarrative"]
+  end
+  subgraph src_core_repo_4e3f2b57["src/core/repo"]
+    traceTypes_f94d53f8["traceTypes"]
+    traceScan_d94d6b75["traceScan"]
+    traceParser_f261b9c1["traceParser"]
+    traceIngest_a4da94ac["traceIngest"]
+    traceConfig_7e9b1320["traceConfig"]
+    testRuns_ebc7ce74["testRuns"]
+    shell_ce635c4e["shell"]
+    sessions_1225ae6c["sessions"]
+    sessionLinking_8e056ceb["sessionLinking"]
+    sessionBadges_4a38460b["sessionBadges"]
+    otelAdapter_570cff77["otelAdapter"]
+    narrativeFeedback_16021c8c["narrativeFeedback"]
+    meta_ea3bd73e["meta"]
+    kimiAdapter_baf31ed8["kimiAdapter"]
+    junit_018bb207["junit"]
+    indexer_70fa78e5["indexer"]
+    githubContext_f8e56c92["githubContext"]
+    gitNotes_8e1bf058["gitNotes"]
+    git_9a881b9b["git"]
+    db_7bdc25d1["db"]
+    codexConfig_229b7351["codexConfig"]
+    agentTrace_bc847946["agentTrace"]
+    agentSessionTools_413c0d20["agentSessionTools"]
+  end
+  subgraph src_core_demo_e53a8aaf["src/core/demo"]
+    nearbyGridDemo_82adb7f2["nearbyGridDemo"]
+  end
+  subgraph src_core___tests___ed539443["src/core/__tests__"]
+    attribution_api_test_e7248f37["attribution-api.test"]
+    useSessionImport_test_cd169d3d["useSessionImport.test"]
+  end
+  subgraph src_ui_views_branch_view_99ec316e["src/ui/views/branch-view"]
+    useBranchViewController_d4c2a4b8["useBranchViewController"]
+    useBranchSelectionData_213a448c["useBranchSelectionData"]
+  end
+  subgraph src_ui_views___tests___18e98739["src/ui/views/__tests__"]
+    docsAutoLoad_test_e6636ba5["docsAutoLoad.test"]
+    branchViewEvidence_test_c375af04["branchViewEvidence.test"]
+    BranchView_test_9e320760["BranchView.test"]
+    DashboardView_test_bc2935bd["DashboardView.test"]
+    BranchView_test_1_123b1973["BranchView.test"]
+  end
+  subgraph src_ui_components_right_panel_tabs_632001a1["src/ui/components/right-panel-tabs"]
+    types_1_4ecdf56e["types"]
+    RightPanelTabPanels_82d72294["RightPanelTabPanels"]
+    RightPanelTabBar_431349ca["RightPanelTabBar"]
+    DiffDock_195b6999["DiffDock"]
+    AppearanceCard_05dda86e["AppearanceCard"]
+  end
+  subgraph src_ui_components_session_excerpts_5fd0109d["src/ui/components/session-excerpts"]
+    sessionExcerpts_utils_07a2d1bb["sessionExcerpts.utils"]
+    SessionExcerptsParts_f3184ff0["SessionExcerptsParts"]
+  end
+  subgraph src_ui_components___tests___16ffd0d6["src/ui/components/__tests__"]
+    branchHeaderMapper_test_8c33a8eb["branchHeaderMapper.test"]
+    TelemetrySettingsPanel_test_50d8c8a4["TelemetrySettingsPanel.test"]
+    StoryAnchorsPanel_test_e6427ced["StoryAnchorsPanel.test"]
+    SessionImportPanel_test_2f6412b2["SessionImportPanel.test"]
+    RightPanelTabs_test_bf4d2cd2["RightPanelTabs.test"]
+    FireflySignal_test_3aabe6b2["FireflySignal.test"]
+    DocsOverviewPanel_test_41f82ab6["DocsOverviewPanel.test"]
+  end
+  subgraph src_ui_components_dashboard_329e77f7["src/ui/components/dashboard"]
+    timeRangeUtils_e17b2759["timeRangeUtils"]
+    TopFilesTable_aaff44a1["TopFilesTable"]
+    MetricsGrid_4b46425d["MetricsGrid"]
+    MetricCard_0f9b6c6e["MetricCard"]
+    DashboardLoadingState_dca2319d["DashboardLoadingState"]
+    DashboardHeader_a24e8484["DashboardHeader"]
+    DashboardErrorState_eb2effe9["DashboardErrorState"]
+    DashboardEmptyState_2c6487fe["DashboardEmptyState"]
+  end
+  subgraph src_core_telemetry___tests___8a50de0e["src/core/telemetry/__tests__"]
+    narrativeTelemetry_test_7c45515b["narrativeTelemetry.test"]
+  end
+  subgraph src_core_tauri___tests___974a95c6["src/core/tauri/__tests__"]
+    codexAppServerContractParity_test_dfc03ace["codexAppServerContractParity.test"]
+  end
+  subgraph src_core_narrative___tests___83bc6369["src/core/narrative/__tests__"]
+    stakeholderProjections_test_acd24bfb["stakeholderProjections.test"]
+    rolloutGovernance_test_0319f65e["rolloutGovernance.test"]
+    recallLane_test_8805a359["recallLane.test"]
+    composeBranchNarrative_test_2f222be5["composeBranchNarrative.test"]
+  end
+  subgraph src_core_repo___tests___e4ce460a["src/core/repo/__tests__"]
+    sessionBadges_test_fee13cc0["sessionBadges.test"]
+    otelAdapter_test_23268a07["otelAdapter.test"]
+    narrativeFeedback_test_f057f0d1["narrativeFeedback.test"]
+    junit_test_d62cfa25["junit.test"]
+    indexer_test_d492f0aa["indexer.test"]
+    githubContext_test_9f6470f8["githubContext.test"]
+    gitNotes_test_cb7d89bf["gitNotes.test"]
+    agentTraceNormalization_test_f7097cf9["agentTraceNormalization.test"]
+  end
+  subgraph src_core_context_40ea73f0["src/core/context"]
+    FileSelectionContext_d451fba0["FileSelectionContext"]
+  end
+  subgraph src_ui_components_story_anchors_3dbc0e68["src/ui/components/story-anchors"]
+    StoryAnchorsSections_793c218e["StoryAnchorsSections"]
+  end
+  subgraph src_ui_components_auto_ingest_setup_88c8363b["src/ui/components/auto-ingest-setup"]
+    AutoIngestSetupSections_6d07e0ab["AutoIngestSetupSections"]
+  end
+  useTraceCollector_e3f811c3 --> otelReceiver_bd752dec
+  useTraceCollector_e3f811c3 --> traceConfig_7e9b1320
+  useTraceCollector_e3f811c3 --> traceConfig_7e9b1320
+  useTraceCollector_e3f811c3 --> sessionLinking_8e056ceb
+  useTestImport_136ded43 --> basename_2910774c
+  useTestImport_136ded43 --> narrativeFs_b94b096d
+  useTestImport_136ded43 --> hash_d04b98f4
+  useTestImport_136ded43 --> isoStampForFile_4bc02af0
+  useTestImport_136ded43 --> junit_018bb207
+  useTestImport_136ded43 --> testRuns_ebc7ce74
+  useSessionImport_69292424 --> basename_2910774c
+  useSessionImport_69292424 --> sessionUtils_d704722d
+  useSessionImport_69292424 --> agentTrace_bc847946
+  useSessionImport_69292424 --> sessionLinking_8e056ceb
+  useSessionImport_69292424 --> sessionBadges_4a38460b
+  useSessionImport_69292424 --> kimiAdapter_baf31ed8
+  useSessionImport_69292424 --> hash_d04b98f4
+  useSessionImport_69292424 --> redact_18f1255e
+  useSessionImport_69292424 --> toolSanitizer_93dad926
+  useSessionImport_69292424 --> isoStampForFile_4bc02af0
+  useSessionImport_69292424 --> narrativeFs_b94b096d
+  useSessionImport_69292424 --> story_anchors_api_279f63a1
+  useSessionImport_69292424 --> agentTrace_bc847946
+  useRepoLoader_df6f8864 --> codexConfig_229b7351
+  useRepoLoader_df6f8864 --> indexer_70fa78e5
+  useRepoLoader_df6f8864 --> otelReceiver_bd752dec
+  useRepoFileExistence_7e258dc3 --> narrativeFs_b94b096d
+  useFirefly_4b28bfda --> settings_cde0fb0d
+  useCommitData_29c16895 --> agentTrace_bc847946
+  useCommitData_29c16895 --> git_9a881b9b
+  useCommitData_29c16895 --> indexer_70fa78e5
+  useCommitData_29c16895 --> nearbyGridDemo_82adb7f2
+  useAutoIngest_56f90d17 --> sessionBadges_4a38460b
+  useAutoIngest_56f90d17 --> otelReceiver_bd752dec
+  useAutoIngest_56f90d17 --> activity_0651863b
+  useAtlasSearch_7d18f6f2 --> atlas_api_0fe43c81
+  sessionUtils_d704722d --> toolSanitizer_93dad926
+  useUpdater_test_0bde52b0 --> useUpdater_db2b740b
+  useTraceCollector_test_1261d5ea --> useTraceCollector_e3f811c3
+  useTestImport_test_da639ade --> useTestImport_136ded43
+  useSourceLensData_test_7459bf0f --> useSourceLensData_c1b2d5d3
+  useRepoLoader_test_c0765b39 --> useRepoLoader_df6f8864
+  useRepoFileExistence_test_ae1ae469 --> useRepoFileExistence_7e258dc3
+  useKeyboardShortcuts_test_b00dfaeb --> useKeyboardShortcuts_c0879d98
+  useFirefly_test_2c284fc9 --> settings_cde0fb0d
+  useAutoIngest_test_c64ef81e --> useAutoIngest_56f90d17
+  useAtlasSearch_test_603682cd --> useAtlasSearch_7d18f6f2
+  rolloutGovernance_513faed5 --> promptGovernance_f53dd659
+  traceScan_d94d6b75 --> narrativeFs_b94b096d
+  traceScan_d94d6b75 --> traceParser_f261b9c1
+  traceScan_d94d6b75 --> traceIngest_a4da94ac
+  traceIngest_a4da94ac --> db_7bdc25d1
+  traceIngest_a4da94ac --> redact_18f1255e
+  traceIngest_a4da94ac --> narrativeFs_b94b096d
+  traceIngest_a4da94ac --> traceParser_f261b9c1
+  traceIngest_a4da94ac --> otelAdapter_570cff77
+  traceConfig_7e9b1320 --> narrativeFs_b94b096d
+  testRuns_ebc7ce74 --> db_7bdc25d1
+  sessions_1225ae6c --> narrativeFs_b94b096d
+  sessionBadges_4a38460b --> sessions_1225ae6c
+  sessionBadges_4a38460b --> sessionLinking_8e056ceb
+  sessionBadges_4a38460b --> sessionLinking_8e056ceb
+  otelAdapter_570cff77 --> git_9a881b9b
+  otelAdapter_570cff77 --> gitDiff_a3685ce7
+  narrativeFeedback_16021c8c --> db_7bdc25d1
+  meta_ea3bd73e --> narrativeFs_b94b096d
+  indexer_70fa78e5 --> composeBranchNarrative_2a286eb3
+  indexer_70fa78e5 --> db_7bdc25d1
+  indexer_70fa78e5 --> git_9a881b9b
+  indexer_70fa78e5 --> sessions_1225ae6c
+  indexer_70fa78e5 --> agentTrace_bc847946
+  indexer_70fa78e5 --> traceConfig_7e9b1320
+  indexer_70fa78e5 --> attribution_api_b53df9d9
+  indexer_70fa78e5 --> story_anchors_api_279f63a1
+  indexer_70fa78e5 --> testRuns_ebc7ce74
+  githubContext_f8e56c92 --> redact_18f1255e
+  githubContext_f8e56c92 --> narrativeFs_b94b096d
+  gitNotes_8e1bf058 --> git_9a881b9b
+  git_9a881b9b --> shell_ce635c4e
+  codexConfig_229b7351 --> narrativeFs_b94b096d
+  agentTrace_bc847946 --> redact_18f1255e
+  agentTrace_bc847946 --> db_7bdc25d1
+  agentTrace_bc847946 --> narrativeFs_b94b096d
+  agentTrace_bc847946 --> otelAdapter_570cff77
+  agentTrace_bc847946 --> gitDiff_a3685ce7
+  useBranchViewController_d4c2a4b8 --> FileSelectionContext_d451fba0
+  useBranchViewController_d4c2a4b8 --> nearbyGridDemo_82adb7f2
+  useBranchViewController_d4c2a4b8 --> recallLane_27810870
+  useBranchViewController_d4c2a4b8 --> composeBranchNarrative_2a286eb3
+  useBranchViewController_d4c2a4b8 --> decisionArchaeology_df265c52
+  useBranchViewController_d4c2a4b8 --> rolloutGovernance_513faed5
+  useBranchViewController_d4c2a4b8 --> stakeholderProjections_df026476
+  useBranchViewController_d4c2a4b8 --> githubContext_f8e56c92
+  useBranchViewController_d4c2a4b8 --> narrativeFeedback_16021c8c
+  useBranchViewController_d4c2a4b8 --> testRuns_ebc7ce74
+  useBranchViewController_d4c2a4b8 --> narrativeTelemetry_70dfa1c5
+  useBranchViewController_d4c2a4b8 --> useFirefly_4b28bfda
+  useBranchViewController_d4c2a4b8 --> useTestImport_136ded43
+  useBranchViewController_d4c2a4b8 --> branchView_constants_91490435
+  useBranchViewController_d4c2a4b8 --> branchViewEvidence_9e7c8d82
+  useBranchViewController_d4c2a4b8 --> useBranchSelectionData_213a448c
+  branchViewEvidence_test_c375af04 --> branchViewEvidence_9e7c8d82
+  BranchView_test_9e320760 --> branchViewEvidence_9e7c8d82
+  stakeholderProjections_test_acd24bfb --> stakeholderProjections_df026476
+  rolloutGovernance_test_0319f65e --> rolloutGovernance_513faed5
+  recallLane_test_8805a359 --> recallLane_27810870
+  sessionBadges_test_fee13cc0 --> sessionBadges_4a38460b
+  otelAdapter_test_23268a07 --> otelAdapter_570cff77
+  otelAdapter_test_23268a07 --> git_9a881b9b
+  otelAdapter_test_23268a07 --> gitDiff_a3685ce7
+  otelAdapter_test_23268a07 --> git_9a881b9b
+  otelAdapter_test_23268a07 --> gitDiff_a3685ce7
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  junit_test_d62cfa25 --> junit_018bb207
+  indexer_test_d492f0aa --> indexer_70fa78e5
+  indexer_test_d492f0aa --> sessions_1225ae6c
+  indexer_test_d492f0aa --> agentTrace_bc847946
+  indexer_test_d492f0aa --> traceConfig_7e9b1320
+  indexer_test_d492f0aa --> attribution_api_b53df9d9
+  indexer_test_d492f0aa --> testRuns_ebc7ce74
+  githubContext_test_9f6470f8 --> githubContext_f8e56c92
+  gitNotes_test_cb7d89bf --> git_9a881b9b
+  agentTraceNormalization_test_f7097cf9 --> agentTrace_bc847946
+  main_0d6e4079 --> App_0d04bfeb
+  App_0d04bfeb --> emptyBranchModel_b002cef5
+  App_0d04bfeb --> otelReceiver_bd752dec
+  App_0d04bfeb --> url_28e5ebab
+  App_0d04bfeb --> useAutoIngest_56f90d17
+  App_0d04bfeb --> useCommitData_29c16895
+  App_0d04bfeb --> useRepoLoader_df6f8864
+  App_0d04bfeb --> useSessionImport_69292424
+  App_0d04bfeb --> useTraceCollector_e3f811c3
+  App_0d04bfeb --> useUpdater_db2b740b
+  App_0d04bfeb --> RepoEmptyState_40528d79
+  App_0d04bfeb --> TopNav_8615cc91
+  App_0d04bfeb --> UpdatePrompt_8bfa5fb8
+  App_0d04bfeb --> BranchView_16f1e1f8
+  App_0d04bfeb --> DashboardView_16aa3601
+  App_0d04bfeb --> DocsView_37d8072c
+  main_1_24354b9b --> FireflyLanding_fc73711c
+  FireflyLanding_fc73711c --> FireflyHero_6e604372
+  DocsView_37d8072c --> indexer_70fa78e5
+  DocsView_37d8072c --> DocsOverviewPanel_161198dc
+  DashboardView_16aa3601 --> DashboardEmptyState_2c6487fe
+  DashboardView_16aa3601 --> DashboardErrorState_eb2effe9
+  DashboardView_16aa3601 --> DashboardHeader_a24e8484
+  DashboardView_16aa3601 --> DashboardLoadingState_dca2319d
+  DashboardView_16aa3601 --> MetricsGrid_4b46425d
+  DashboardView_16aa3601 --> TopFilesTable_aaff44a1
+  BranchViewLayout_2f34f6b8 --> BranchNarrativePanel_c0952487
+  BranchViewLayout_2f34f6b8 --> BranchHeader_d067325d
+  BranchViewLayout_2f34f6b8 --> BranchSummaryBar_843c8e56
+  BranchViewLayout_2f34f6b8 --> Breadcrumb_2bd873d6
+  BranchViewLayout_2f34f6b8 --> CaptureActivityStrip_ca040f21
+  BranchViewLayout_2f34f6b8 --> DecisionArchaeologyPanel_bd32c4aa
+  BranchViewLayout_2f34f6b8 --> FilesChanged_eb0b117d
+  BranchViewLayout_2f34f6b8 --> ImportErrorBanner_d00028a3
+  BranchViewLayout_2f34f6b8 --> IngestToast_ef341876
+  BranchViewLayout_2f34f6b8 --> IntentList_2ae18a16
+  BranchViewLayout_2f34f6b8 --> NarrativeGovernancePanel_18468a63
+  BranchViewLayout_2f34f6b8 --> NeedsAttentionList_62f25e04
+  BranchViewLayout_2f34f6b8 --> RightPanelTabs_29002826
+  BranchViewLayout_2f34f6b8 --> Skeleton_ea5f6bdc
+  BranchViewLayout_2f34f6b8 --> Timeline_9dcff98e
+  BranchViewLayout_2f34f6b8 --> branchView_constants_91490435
+  BranchView_16f1e1f8 --> FileSelectionContext_d451fba0
+  BranchView_16f1e1f8 --> BranchViewLayout_2f34f6b8
+  BranchView_16f1e1f8 --> useBranchViewController_d4c2a4b8
+  TimelineNode_8b6735fa --> BadgePill_b0287413
+  Timeline_9dcff98e --> useTimelineNavigation_806cd7e6
+  Timeline_9dcff98e --> BadgePill_b0287413
+  Timeline_9dcff98e --> FireflySignal_b76b6c4c
+  Timeline_9dcff98e --> TimelineNavButtons_cf793ac5
+  Timeline_9dcff98e --> TimelineNode_8b6735fa
+  TestResultsPanel_e82e112c --> useRepoFileExistence_7e258dc3
+  TelemetrySettingsPanel_092f60ae --> HelpPopover_954f9250
+  TelemetrySettingsPanel_092f60ae --> Toggle_3d03a1de
+  StepsSummaryCard_9d9d3d07 --> activity_0651863b
+  SourceLensView_034e671f --> SourceLensEmptyStates_0d01a55e
+  SourceLensView_034e671f --> SourceLensLineTable_35653c59
+  SourceLensView_034e671f --> SourceLensStats_a046f588
+  SourceLensView_034e671f --> useSourceLensData_c1b2d5d3
+  SourceLensView_034e671f --> story_anchors_api_279f63a1
+  SourceLensStats_a046f588 --> attribution_api_b53df9d9
+  SourceLensLineTable_35653c59 --> attribution_api_b53df9d9
+  SourceLensLineTable_35653c59 --> AuthorBadge_9ac9f202
+  SessionImportPanel_44d8f995 --> Checkbox_d103a138
+  SessionExcerpts_30b0b8dc --> useRepoFileExistence_7e258dc3
+  SessionExcerpts_30b0b8dc --> sessionExcerpts_utils_07a2d1bb
+  RightPanelTabs_29002826 --> DiffDock_195b6999
+  RightPanelTabs_29002826 --> RightPanelTabBar_431349ca
+  RightPanelTabs_29002826 --> RightPanelTabPanels_82d72294
+  RepoEmptyState_40528d79 --> nearbyGridDemo_82adb7f2
+  RepoEmptyState_40528d79 --> RepositoryPlaceholderCard_2ded572d
+  IngestStatusStrip_11dfe0c2 --> Checkbox_d103a138
+  GitHubConnectorPanel_f94f3952 --> Toggle_3d03a1de
+  FilesChanged_eb0b117d --> FileSelectionContext_d451fba0
+  DocsOverviewPanel_161198dc --> MermaidDiagram_5d578741
+  DocsOverviewPanel_161198dc --> RepositoryPlaceholderCard_2ded572d
+  CaptureActivityStrip_ca040f21 --> Toggle_3d03a1de
+  BadgePill_b0287413 --> AiContributionBadge_a0737f87
+  AuthorBadge_9ac9f202 --> attribution_api_b53df9d9
+  AttributionSettingsPanel_7cbc28fe --> HelpPopover_954f9250
+  AttributionSettingsPanel_7cbc28fe --> Toggle_3d03a1de
+  AtlasSearchPanel_3daa12fa --> useAtlasSearch_7d18f6f2
+  AgentTraceSummary_3b3c264c --> attribution_api_b53df9d9
+  useSessionImport_test_cd169d3d --> useSessionImport_69292424
+  useSessionImport_test_cd169d3d --> narrativeFs_b94b096d
+  useSessionImport_test_cd169d3d --> hash_d04b98f4
+  useSessionImport_test_cd169d3d --> redact_18f1255e
+  useSessionImport_test_cd169d3d --> sessionLinking_8e056ceb
+  useSessionImport_test_cd169d3d --> sessionBadges_4a38460b
+  useSessionImport_test_cd169d3d --> agentTrace_bc847946
+  useSessionImport_test_cd169d3d --> story_anchors_api_279f63a1
+  DashboardView_test_bc2935bd --> DashboardView_16aa3601
+  BranchView_test_1_123b1973 --> BranchView_16f1e1f8
+  SessionExcerptsParts_f3184ff0 --> Dialog_69b51517
+  SessionExcerptsParts_f3184ff0 --> sessionExcerpts_utils_07a2d1bb
+  RightPanelTabPanels_82d72294 --> AgentTraceSummary_3b3c264c
+  RightPanelTabPanels_82d72294 --> AtlasSearchPanel_3daa12fa
+  RightPanelTabPanels_82d72294 --> AttributionSettingsPanel_7cbc28fe
+  RightPanelTabPanels_82d72294 --> AutoIngestSetupPanel_4e463af3
+  RightPanelTabPanels_82d72294 --> GitHubConnectorPanel_f94f3952
+  RightPanelTabPanels_82d72294 --> SessionExcerpts_30b0b8dc
+  RightPanelTabPanels_82d72294 --> SourceLensView_034e671f
+  RightPanelTabPanels_82d72294 --> StepsSummaryCard_9d9d3d07
+  RightPanelTabPanels_82d72294 --> StoryAnchorsPanel_dd7a121f
+  RightPanelTabPanels_82d72294 --> TelemetrySettingsPanel_092f60ae
+  RightPanelTabPanels_82d72294 --> TestResultsPanel_e82e112c
+  RightPanelTabPanels_82d72294 --> TraceTranscriptPanel_d443bb3b
+  RightPanelTabPanels_82d72294 --> AppearanceCard_05dda86e
+  RightPanelTabBar_431349ca --> types_1_4ecdf56e
+  DiffDock_195b6999 --> DiffViewer_7e36d3d0
+  AppearanceCard_05dda86e --> Toggle_3d03a1de
+  AutoIngestSetupSections_6d07e0ab --> HelpPopover_954f9250
+  AutoIngestSetupSections_6d07e0ab --> Toggle_3d03a1de
+  MetricsGrid_4b46425d --> attribution_api_b53df9d9
+  MetricsGrid_4b46425d --> MetricCard_0f9b6c6e
+  DashboardHeader_a24e8484 --> timeRangeUtils_e17b2759
+  DashboardEmptyState_2c6487fe --> RepositoryPlaceholderCard_2ded572d
+  TelemetrySettingsPanel_test_50d8c8a4 --> TelemetrySettingsPanel_092f60ae
+  StoryAnchorsPanel_test_e6427ced --> StoryAnchorsPanel_dd7a121f
+  SessionImportPanel_test_2f6412b2 --> SessionImportPanel_44d8f995
+  RightPanelTabs_test_bf4d2cd2 --> RightPanelTabs_29002826
+  FireflySignal_test_3aabe6b2 --> FireflySignal_b76b6c4c
+  DocsOverviewPanel_test_41f82ab6 --> DocsOverviewPanel_161198dc
+  style main_0d6e4079 fill:#4f46e5,color:#fff
+  style App_0d04bfeb fill:#4f46e5,color:#fff

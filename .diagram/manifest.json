@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-02-28T13:40:38.540Z",
+  "rootPath": "/Users/jamiecraik/dev/firefly-narrative",
+  "diagramDir": ".diagram",
+  "diagrams": [
+    {
+      "type": "architecture",
+      "file": "architecture.mmd",
+      "outputPath": ".diagram/architecture.mmd",
+      "lines": 528,
+      "bytes": 25945,
+      "isPlaceholder": false
+    },
+    {
+      "type": "sequence",
+      "file": "sequence.mmd",
+      "outputPath": ".diagram/sequence.mmd",
+      "lines": 2,
+      "bytes": 58,
+      "isPlaceholder": true
+    },
+    {
+      "type": "dependency",
+      "file": "dependency.mmd",
+      "outputPath": ".diagram/dependency.mmd",
+      "lines": 525,
+      "bytes": 31730,
+      "isPlaceholder": false
+    },
+    {
+      "type": "class",
+      "file": "class.mmd",
+      "outputPath": ".diagram/class.mmd",
+      "lines": 66,
+      "bytes": 1657,
+      "isPlaceholder": false
+    },
+    {
+      "type": "flow",
+      "file": "flow.mmd",
+      "outputPath": ".diagram/flow.mmd",
+      "lines": 20,
+      "bytes": 924,
+      "isPlaceholder": false
+    },
+    {
+      "type": "database",
+      "file": "database.mmd",
+      "outputPath": ".diagram/database.mmd",
+      "lines": 283,
+      "bytes": 14528,
+      "isPlaceholder": false
+    },
+    {
+      "type": "user",
+      "file": "user.mmd",
+      "outputPath": ".diagram/user.mmd",
+      "lines": 358,
+      "bytes": 16520,
+      "isPlaceholder": false
+    },
+    {
+      "type": "events",
+      "file": "events.mmd",
+      "outputPath": ".diagram/events.mmd",
+      "lines": 71,
+      "bytes": 3311,
+      "isPlaceholder": false
+    },
+    {
+      "type": "auth",
+      "file": "auth.mmd",
+      "outputPath": ".diagram/auth.mmd",
+      "lines": 111,
+      "bytes": 5122,
+      "isPlaceholder": false
+    },
+    {
+      "type": "security",
+      "file": "security.mmd",
+      "outputPath": ".diagram/security.mmd",
+      "lines": 123,
+      "bytes": 5858,
+      "isPlaceholder": false
+    }
+  ]
+}
