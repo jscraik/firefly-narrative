@@ -19,8 +19,8 @@ importers:
   .:
     dependencies:
       '@brainwav/coding-harness':
-        specifier: ^0.3.10
-        version: 0.3.10(@types/node@25.1.0)
+        specifier: ^0.5.3
+        version: 0.5.3(@types/node@25.1.0)
       '@design-studio/runtime':
         specifier: file:vendor/design-studio/design-studio-runtime-2.0.0.tgz
         version: file:vendor/design-studio/design-studio-runtime-2.0.0.tgz(react@19.2.4)
@@ -351,8 +351,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@brainwav/coding-harness@0.3.10':
-    resolution: {integrity: sha512-NXB2ojlV1BBsIWb84LQpTp7fIkqvFCyB+SYLeJcyw0l/5dDWngPS78zCx7qAHneqtaBp3o/zoiagdCx5zzqYdg==}
+  '@brainwav/coding-harness@0.5.3':
+    resolution: {integrity: sha512-JqHVJELDoGi5lIisuD93VTB8cRLACQfkLSvoEq0il29V2Db0WcUx/RR93ftum+NllgZD85F2nCDN6gYry+HJaw==}
     engines: {node: '>=24.0.0'}
     hasBin: true
 
@@ -5182,7 +5182,7 @@ snapshots:
   '@biomejs/cli-win32-x64@2.3.13':
     optional: true
 
-  '@brainwav/coding-harness@0.3.10(@types/node@25.1.0)':
+  '@brainwav/coding-harness@0.5.3(@types/node@25.1.0)':
     dependencies:
       '@inquirer/prompts': 8.3.0(@types/node@25.1.0)
       better-sqlite3: 12.6.2
