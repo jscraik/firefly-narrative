@@ -120,20 +120,23 @@ function applyCalibrationToHighlights(
 ): NarrativeHighlight[] {
   if (!calibration || calibration.sampleCount <= 0) return highlights;
 
+  // Scale factor: 0.8 to 1.2 based on rankingBias (-0.15 to 0.15)
+  // rankingBias amplifies (positive) or dampens (negative) per-highlight adjustments
+  const biasScale = 1 + calibration.rankingBias;
+
   return [...highlights]
     .map((highlight) => {
       const adjustment = calibration.highlightAdjustments[highlight.id] ?? 0;
-      const rankingBiasBonus = calibration.rankingBias * 0.2;
-      const rankingScore = highlight.confidence + adjustment + rankingBiasBonus;
+      // Apply bias scale to per-highlight adjustment to affect sort order
+      const scaledAdjustment = adjustment * biasScale;
+      const rankingScore = confidence(highlight.confidence + scaledAdjustment);
 
       return {
         ...highlight,
-        confidence: confidence(highlight.confidence + adjustment),
-        _rankingScore: rankingScore,
+        confidence: rankingScore,
       };
     })
-    .sort((a, b) => b._rankingScore - a._rankingScore)
-    .map(({ _rankingScore: _unused, ...highlight }) => highlight);
+    .sort((a, b) => b.confidence - a.confidence);
 }
 
 function applyCalibrationToOverallConfidence(

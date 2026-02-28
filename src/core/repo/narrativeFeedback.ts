@@ -437,12 +437,6 @@ export async function submitNarrativeFeedback(
   if (input.action.feedbackType === 'branch_missing_decision' && input.action.targetKind !== 'branch') {
     throw new Error('Branch feedback must target kind "branch".');
   }
-  if (
-    TARGET_ID_REQUIRED.has(input.action.feedbackType) &&
-    input.action.targetKind !== 'highlight'
-  ) {
-    throw new Error('Highlight feedback must target kind "highlight".');
-  }
 
   const verifiedActorRole = resolveVerifiedActorRole(input.action.actorRole);
   const verifiedAction: NarrativeFeedbackAction = {

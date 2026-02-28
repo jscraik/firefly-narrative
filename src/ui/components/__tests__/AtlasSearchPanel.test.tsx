@@ -206,7 +206,10 @@ describe('AtlasSearchPanel', () => {
       expect(screen.getByText('Rebuild index')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Rebuild index'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Rebuild index'));
+      await Promise.resolve();
+    });
 
     await waitFor(() => {
       expect(mockAtlasDoctorRebuildDerived).toHaveBeenCalledWith(1);
@@ -231,5 +234,28 @@ describe('AtlasSearchPanel', () => {
 
     expect(screen.queryByText(/Rebuild complete:/)).not.toBeInTheDocument();
     expect(mockRefreshSelectedSession).not.toHaveBeenCalled();
+  });
+
+  it('resets rebuild state when switching repos', async () => {
+    const { rerender } = render(<AtlasSearchPanel repoId={1} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Rebuild index')).toBeInTheDocument();
+    });
+
+    const button = screen.getByText('Rebuild index');
+    await act(async () => {
+      fireEvent.click(button);
+      await Promise.resolve();
+    });
+
+    mockRefreshSelectedSession.mockClear();
+    await act(async () => {
+      rerender(<AtlasSearchPanel repoId={2} />);
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText(/Rebuild complete:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Rebuild error/)).not.toBeInTheDocument();
   });
 });

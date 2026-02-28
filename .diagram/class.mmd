@@ -1,0 +1,66 @@
+classDiagram
+  class shell_ce635c4e {
+    +src/core/repo/shell.ts
+  }
+  class main_0d6e4079 {
+    +src/main.tsx
+  }
+  class App_0d04bfeb {
+    +src/App.tsx
+  }
+  class main_1_24354b9b {
+    +landing/main.tsx
+  }
+  class FireflyLanding_fc73711c {
+    +landing/FireflyLanding.tsx
+  }
+  class FireflyHero_6e604372 {
+    +landing/FireflyHero.tsx
+  }
+  class DocsView_37d8072c {
+    +src/ui/views/DocsView.tsx
+  }
+  class DashboardView_16aa3601 {
+    +src/ui/views/DashboardView.tsx
+  }
+  class BranchViewLayout_2f34f6b8 {
+    +src/ui/views/BranchViewLayout.tsx
+  }
+  class BranchView_16f1e1f8 {
+    +src/ui/views/BranchView.tsx
+  }
+  class UpdatePrompt_8bfa5fb8 {
+    +src/ui/components/UpdatePrompt.tsx
+  }
+  class TraceTranscriptPanel_d443bb3b {
+    +src/ui/components/TraceTranscriptPanel.tsx
+  }
+  class TopNav_8615cc91 {
+    +src/ui/components/TopNav.tsx
+  }
+  class Toggle_3d03a1de {
+    +src/ui/components/Toggle.tsx
+  }
+  class TimelineNode_8b6735fa {
+    +src/ui/components/TimelineNode.tsx
+  }
+  class TimelineNavButtons_cf793ac5 {
+    +src/ui/components/TimelineNavButtons.tsx
+  }
+  class Timeline_9dcff98e {
+    +src/ui/components/Timeline.tsx
+  }
+  class TestResultsPanel_e82e112c {
+    +src/ui/components/TestResultsPanel.tsx
+  }
+  class TelemetrySettingsPanel_092f60ae {
+    +src/ui/components/TelemetrySettingsPanel.tsx
+  }
+  class StoryAnchorsPanel_dd7a121f {
+    +src/ui/components/StoryAnchorsPanel.tsx
+  }
+  main_0d6e4079 --> App_0d04bfeb
+  main_1_24354b9b --> FireflyLanding_fc73711c
+  FireflyLanding_fc73711c --> FireflyHero_6e604372
+  BranchView_16f1e1f8 --> BranchViewLayout_2f34f6b8
+  TelemetrySettingsPanel_092f60ae --> Toggle_3d03a1de

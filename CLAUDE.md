@@ -12,3 +12,7 @@
 ## Agent-facing quick workflow
 - Run root app setup from `AGENTS.md` and `docs/agents/development.md` (for `pnpm` commands and Rust prerequisites).
 - For landing-page screenshot flows, follow `docs/agents/frontend-website-rules.md` instead of duplicating commands here.
+
+## Command preflight helper
+- Source `scripts/codex-preflight.sh` and run `preflight_repo` before command-heavy, destructive, or path-sensitive work.
+- Validate required bins and target paths first so mistakes are prevented before edits.

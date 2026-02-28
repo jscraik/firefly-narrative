@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -207,7 +207,7 @@ test.describe('Firefly Visual System v1', () => {
     // which destroys the page execution context mid-measurement.
     const artifactRoot = process.env.FIREFLY_PERF_ARTIFACT_DIR
       ? path.resolve(process.env.FIREFLY_PERF_ARTIFACT_DIR)
-      : await mkdtemp(path.join(os.tmpdir(), 'firefly-narrative-verification-'));
+      : path.join(os.tmpdir(), 'firefly-narrative', 'verification');
     const outputPath = path.join(artifactRoot, `firefly-perf-${dateStamp}.json`);
     const docsArtifactPath = process.env.FIREFLY_PERF_WRITE_DOCS_ARTIFACT === '1'
       ? path.join(process.cwd(), 'docs', 'assets', 'verification', `firefly-perf-${dateStamp}.json`)

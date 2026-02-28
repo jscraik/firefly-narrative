@@ -1,0 +1,123 @@
+flowchart TD
+  Untrusted["Untrusted input"]
+  useTestImport_136ded43["useTestImport"]
+  Untrusted --> useTestImport_136ded43
+  useSessionImport_69292424["useSessionImport"]
+  Untrusted --> useSessionImport_69292424
+  useKeyboardShortcuts_c0879d98["useKeyboardShortcuts"]
+  Untrusted --> useKeyboardShortcuts_c0879d98
+  sessionUtils_d704722d["sessionUtils"]
+  Untrusted --> sessionUtils_d704722d
+  useTestImport_test_da639ade["useTestImport.test"]
+  Untrusted --> useTestImport_test_da639ade
+  toolSanitizer_93dad926["toolSanitizer"]
+  Untrusted --> toolSanitizer_93dad926
+  redact_18f1255e["redact"]
+  Untrusted --> redact_18f1255e
+  hash_d04b98f4["hash"]
+  Untrusted --> hash_d04b98f4
+  ingestConfig_c7e6037b["ingestConfig"]
+  Untrusted --> ingestConfig_c7e6037b
+  traceIngest_a4da94ac["traceIngest"]
+  Untrusted --> traceIngest_a4da94ac
+  narrativeFeedback_16021c8c["narrativeFeedback"]
+  Untrusted --> narrativeFeedback_16021c8c
+  githubContext_f8e56c92["githubContext"]
+  Untrusted --> githubContext_f8e56c92
+  agentTrace_bc847946["agentTrace"]
+  Untrusted --> agentTrace_bc847946
+  narrativeFeedback_test_f057f0d1["narrativeFeedback.test"]
+  Untrusted --> narrativeFeedback_test_f057f0d1
+  DashboardView_16aa3601["DashboardView"]
+  Untrusted --> DashboardView_16aa3601
+  useSessionImport_test_cd169d3d["useSessionImport.test"]
+  Untrusted --> useSessionImport_test_cd169d3d
+  useAtlasSearch_7d18f6f2["useAtlasSearch"]
+  Untrusted --> useAtlasSearch_7d18f6f2
+  story_anchors_api_279f63a1["story-anchors-api"]
+  Untrusted --> story_anchors_api_279f63a1
+  attribution_api_b53df9d9["attribution-api"]
+  Untrusted --> attribution_api_b53df9d9
+  atlas_api_0fe43c81["atlas-api"]
+  Untrusted --> atlas_api_0fe43c81
+  calibration_run_script_85d7a923["calibration-run-script"]
+  Untrusted --> calibration_run_script_85d7a923
+  useAutoIngest_test_c64ef81e["useAutoIngest.test"]
+  Untrusted --> useAutoIngest_test_c64ef81e
+  sessionLinking_8e056ceb["sessionLinking"]
+  Untrusted --> sessionLinking_8e056ceb
+  agentSessionTools_413c0d20["agentSessionTools"]
+  Untrusted --> agentSessionTools_413c0d20
+  sessionExcerpts_utils_07a2d1bb["sessionExcerpts.utils"]
+  Untrusted --> sessionExcerpts_utils_07a2d1bb
+  codexAppServerContractParity_test_dfc03ace["codexAppServerContractParity.test"]
+  Untrusted --> codexAppServerContractParity_test_dfc03ace
+  SessionExcerpts_30b0b8dc["SessionExcerpts"]
+  Untrusted --> SessionExcerpts_30b0b8dc
+  AtlasSearchPanel_3daa12fa["AtlasSearchPanel"]
+  Untrusted --> AtlasSearchPanel_3daa12fa
+  SessionExcerptsParts_f3184ff0["SessionExcerptsParts"]
+  Untrusted --> SessionExcerptsParts_f3184ff0
+  SessionImportPanel_test_2f6412b2["SessionImportPanel.test"]
+  Untrusted --> SessionImportPanel_test_2f6412b2
+  vite_integration_config_033b7d32["vite.integration.config"]
+  Untrusted --> vite_integration_config_033b7d32
+  vite_config_c473fba0["vite.config"]
+  Untrusted --> vite_config_c473fba0
+  harness_integration_test_065db339["harness.integration.test"]
+  Untrusted --> harness_integration_test_065db339
+  githubContext_test_9f6470f8["githubContext.test"]
+  Untrusted --> githubContext_test_9f6470f8
+  App_0d04bfeb["App"]
+  Untrusted --> App_0d04bfeb
+  UpdatePrompt_8bfa5fb8["UpdatePrompt"]
+  Untrusted --> UpdatePrompt_8bfa5fb8
+  useTestImport_136ded43 --> basename_2910774c
+  useTestImport_136ded43 --> narrativeFs_b94b096d
+  useTestImport_136ded43 --> hash_d04b98f4
+  useTestImport_136ded43 --> isoStampForFile_4bc02af0
+  useTestImport_136ded43 --> junit_018bb207
+  useTestImport_136ded43 --> testRuns_ebc7ce74
+  useSessionImport_69292424 --> basename_2910774c
+  useSessionImport_69292424 --> sessionUtils_d704722d
+  useSessionImport_69292424 --> agentTrace_bc847946
+  useSessionImport_69292424 --> sessionLinking_8e056ceb
+  useSessionImport_69292424 --> sessionBadges_4a38460b
+  useSessionImport_69292424 --> kimiAdapter_baf31ed8
+  useSessionImport_69292424 --> hash_d04b98f4
+  useSessionImport_69292424 --> redact_18f1255e
+  useSessionImport_69292424 --> toolSanitizer_93dad926
+  useSessionImport_69292424 --> isoStampForFile_4bc02af0
+  useSessionImport_69292424 --> narrativeFs_b94b096d
+  useSessionImport_69292424 --> story_anchors_api_279f63a1
+  sessionUtils_d704722d --> toolSanitizer_93dad926
+  useTestImport_test_da639ade --> useTestImport_136ded43
+  traceIngest_a4da94ac --> redact_18f1255e
+  traceIngest_a4da94ac --> narrativeFs_b94b096d
+  githubContext_f8e56c92 --> redact_18f1255e
+  githubContext_f8e56c92 --> narrativeFs_b94b096d
+  agentTrace_bc847946 --> redact_18f1255e
+  agentTrace_bc847946 --> narrativeFs_b94b096d
+  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
+  useSessionImport_test_cd169d3d --> useSessionImport_69292424
+  useSessionImport_test_cd169d3d --> narrativeFs_b94b096d
+  useSessionImport_test_cd169d3d --> hash_d04b98f4
+  useSessionImport_test_cd169d3d --> redact_18f1255e
+  useSessionImport_test_cd169d3d --> sessionLinking_8e056ceb
+  useSessionImport_test_cd169d3d --> sessionBadges_4a38460b
+  useSessionImport_test_cd169d3d --> agentTrace_bc847946
+  useSessionImport_test_cd169d3d --> story_anchors_api_279f63a1
+  useAtlasSearch_7d18f6f2 --> atlas_api_0fe43c81
+  SessionExcerpts_30b0b8dc --> sessionExcerpts_utils_07a2d1bb
+  AtlasSearchPanel_3daa12fa --> useAtlasSearch_7d18f6f2
+  SessionExcerptsParts_f3184ff0 --> sessionExcerpts_utils_07a2d1bb
+  githubContext_test_9f6470f8 --> githubContext_f8e56c92
+  App_0d04bfeb --> useSessionImport_69292424
+  App_0d04bfeb --> UpdatePrompt_8bfa5fb8
+  App_0d04bfeb --> DashboardView_16aa3601
+  useBranchViewController_d4c2a4b8 --> githubContext_f8e56c92
+  useBranchViewController_d4c2a4b8 --> narrativeFeedback_16021c8c
+  useBranchViewController_d4c2a4b8 --> testRuns_ebc7ce74
+  useBranchViewController_d4c2a4b8 --> useTestImport_136ded43
+  sessionBadges_4a38460b --> sessionLinking_8e056ceb
+  classDef securityNode fill:#dc2626,color:#fff

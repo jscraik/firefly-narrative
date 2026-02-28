@@ -27,13 +27,13 @@ status: approved
   - `cargo test --manifest-path src-tauri/Cargo.toml --no-run` ✅
 
 ## Persistence Hardening Verification
-- DB hardening PRAGMAs are applied at connection open in `/Users/jamiecraik/dev/firefly-narrative/src/core/repo/db.ts`:
+- DB hardening PRAGMAs are applied at connection open in `src/core/repo/db.ts`:
   - `foreign_keys = ON`
   - `journal_mode = WAL`
   - `synchronous = NORMAL`
   - `busy_timeout = 5000`
   - `trusted_schema = OFF`
-- Immutable audit stream added via `narrative_calibration_audit_events` table and append-only insert path in `/Users/jamiecraik/dev/firefly-narrative/src/core/repo/narrativeFeedback.ts`.
+- Immutable audit stream added via `narrative_calibration_audit_events` table and append-only insert path in `src/core/repo/narrativeFeedback.ts`.
 - Validation run:
   - `pnpm exec vitest run src/core/repo/__tests__/narrativeFeedback.test.ts` ✅
 
@@ -105,7 +105,7 @@ Result:
 - `SEARCH narrative_calibration_audit_events USING INDEX idx_narrative_calibration_audit_repo_created (repo_id=?)`
 
 ## Write-Path Contention Controls
-- Retry contract: max 2 retries with exponential backoff + bounded jitter in `/Users/jamiecraik/dev/firefly-narrative/src/core/repo/narrativeFeedback.ts`.
+- Retry contract: max 2 retries with exponential backoff + bounded jitter in `src/core/repo/narrativeFeedback.ts`.
 - Idempotency policy now includes `detailLevel` in key derivation to avoid semantic collisions.
 - Duplicate submissions no longer force profile recomputation; path reuses stored profile when available.
 - Validation run:

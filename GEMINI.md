@@ -22,3 +22,7 @@
 ## Instruction sync note
 - Keep `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` aligned on scope, commands, and linked instruction paths.
 - If conflicts appear, prefer repo `AGENTS.md` as canonical and route detailed resolution notes via `docs/agents/instruction-governance.md`.
+
+## Command preflight helper
+- Source `scripts/codex-preflight.sh` and run `preflight_repo` before command-heavy, destructive, or path-sensitive work.
+- Validate required bins and target paths first so mistakes are prevented before edits.

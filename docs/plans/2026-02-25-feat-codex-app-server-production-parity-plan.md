@@ -3,7 +3,7 @@ title: feat: Codex App Server production parity hardening
 type: feat
 status: active
 date: 2026-02-25
-origin: /Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md
+origin: ../brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md
 ---
 
 # feat: Codex App Server production parity hardening
@@ -70,7 +70,7 @@ origin: /Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-25-code
 - **Risks / Metrics** — define explicit SLOs, rollback thresholds, and observability targets for default-on release.
 
 ## Overview
-Deliver production-standard Codex app-server integration in Firefly Narrative by making the Rust backend the sole protocol authority for lifecycle, handshake, auth, stream events, and approvals. This plan supersedes remaining runtime gaps after earlier hardening and carries forward the latest brainstorm decisions directly (see brainstorm: `docs/brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md`).
+Deliver production-standard Codex app-server integration in Firefly Narrative by making the Rust backend the sole protocol authority for lifecycle, handshake, auth, stream events, and approvals. This plan supersedes remaining runtime gaps after earlier hardening and carries forward the latest brainstorm decisions directly (see brainstorm: `../brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md`).
 
 ### Research Insights
 **Best Practices:**
@@ -88,7 +88,7 @@ Deliver production-standard Codex app-server integration in Firefly Narrative by
 Found brainstorm from **2026-02-25**: `codex-app-server-production-remediation`.
 
 Carried-forward decisions (with review clarifications):
-- Choose **Protocol-Native Runtime** over bridge/staged alternatives (see brainstorm: `docs/brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md`).
+- Choose **Protocol-Native Runtime** over bridge/staged alternatives (see brainstorm: `../brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md`).
 - Keep backend as protocol source of truth; frontend is observer/controller only (see brainstorm).
 - Keep scope focused on app-server parity and trust-boundary correctness, not broad OTEL redesign (see brainstorm).
 - Keep **default-on as end-state**, but ship through staged canary promotion with automatic halt/rollback gates.
@@ -158,11 +158,11 @@ Implement a protocol-native app-server runtime layer in `src-tauri/src/codex_app
 
 ## Technical approach
 ### Architecture
-- **Runtime owner:** `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs`
-- **Command registration:** `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/lib.rs`
-- **Frontend typed command bridge:** `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts`
-- **Orchestration hook:** `/Users/jamiecraik/dev/firefly-narrative/src/hooks/useAutoIngest.ts`
-- **Packaging/config:** `/Users/jamiecraik/dev/firefly-narrative/src-tauri/tauri.conf.json`, `/Users/jamiecraik/dev/firefly-narrative/src-tauri/bin/*`
+- **Runtime owner:** `src-tauri/src/codex_app_server.rs`
+- **Command registration:** `src-tauri/src/lib.rs`
+- **Frontend typed command bridge:** `src/core/tauri/ingestConfig.ts`
+- **Orchestration hook:** `src/hooks/useAutoIngest.ts`
+- **Packaging/config:** `src-tauri/tauri.conf.json`, `src-tauri/bin/*`
 
 ### Research Insights
 **Best Practices:**
@@ -498,7 +498,7 @@ Interfaces requiring update parity:
 - [x] Privileged backend events are target-scoped; no broad global broadcast for auth/approval internals.
 
 ### Quality gates
-- [x] `cargo test --manifest-path /Users/jamiecraik/dev/firefly-narrative/src-tauri/Cargo.toml codex_app_server`
+- [x] `cargo test --manifest-path src-tauri/Cargo.toml codex_app_server`
 - [x] `pnpm test`
 - [x] Harness integration suite passes for all scenarios in this plan.
 - [x] Contract parity gate passes for Rust↔TS command/event shapes.
@@ -592,7 +592,7 @@ Interfaces requiring update parity:
 - 1 QA/reliability owner (harness, soak, rollout gate verification)
 
 ## Documentation plan
-- Update: `/Users/jamiecraik/dev/firefly-narrative/docs/agents/hybrid-capture-rollout-runbook.md`
+- Update: `docs/agents/hybrid-capture-rollout-runbook.md`
   - add automatic rollback trigger matrix and recovery sequence checks.
 - Add: `docs/solutions/...` follow-up documenting parity completion evidence and rollout metrics.
 - Update AGENTS-linked docs only if public command contract materially changes.
@@ -603,18 +603,18 @@ Interfaces requiring update parity:
 
 ## Sources and references
 ### Origin
-- **Brainstorm document:** [/Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md](/Users/jamiecraik/dev/firefly-narrative/docs/brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md)
+- **Brainstorm document:** [../brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md](../brainstorms/2026-02-25-codex-app-server-production-remediation-brainstorm.md)
 
 ### Internal references
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs:577-579`
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs:703-800`
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs:1668-1709`
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs:1717-1722`
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/codex_app_server.rs:1840-1897`
-- `/Users/jamiecraik/dev/firefly-narrative/src-tauri/src/lib.rs:301-310`
-- `/Users/jamiecraik/dev/firefly-narrative/src/core/tauri/ingestConfig.ts:241-285`
-- `/Users/jamiecraik/dev/firefly-narrative/src/hooks/useAutoIngest.ts:550-561`
-- `/Users/jamiecraik/dev/firefly-narrative/docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`
+- `src-tauri/src/codex_app_server.rs:577-579`
+- `src-tauri/src/codex_app_server.rs:703-800`
+- `src-tauri/src/codex_app_server.rs:1668-1709`
+- `src-tauri/src/codex_app_server.rs:1717-1722`
+- `src-tauri/src/codex_app_server.rs:1840-1897`
+- `src-tauri/src/lib.rs:301-310`
+- `src/core/tauri/ingestConfig.ts:241-285`
+- `src/hooks/useAutoIngest.ts:550-561`
+- `docs/solutions/integration-issues/codex-app-server-claude-otel-stream-reliability-auth-migration-hardening.md`
 
 ### External references
 - Codex app-server docs (canonical): <https://developers.openai.com/codex/app-server/>

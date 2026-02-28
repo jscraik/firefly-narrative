@@ -1,0 +1,27 @@
+flowchart TB
+  subgraph Frontend["Frontend (React + Tauri)"]
+    UI["src/ui/"]
+    Hooks["src/hooks/"]
+    Core["src/core/"]
+  end
+
+  subgraph Backend["Backend (Tauri/Rust)"]
+    Commands["src-tauri/src/commands.rs"]
+    CodexServer["src-tauri/src/codex_app_server.rs"]
+    OTLPReceiver["src-tauri/src/otlp_receiver.rs"]
+    SecretStore["src-tauri/src/secret_store.rs"]
+    DB["SQLite via tauri-plugin-sql"]
+  end
+
+  subgraph External["External"]
+    CodexCLI["Codex CLI (sidecar)"]
+    OTEL["OTEL Collector"]
+  end
+
+  UI --> Hooks
+  Hooks --> Core
+  Core --> Commands
+  Commands --> CodexServer
+  Commands --> DB
+  CodexServer --> CodexCLI
+  OTLPReceiver --> OTEL

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { BranchNarrative, StakeholderProjections } from '../../../core/types';
+import type { BranchNarrative, NarrativeRecallLaneItem, StakeholderProjections } from '../../../core/types';
 import { BranchNarrativePanel } from '../BranchNarrativePanel';
 
 const narrative: BranchNarrative = {
@@ -34,6 +34,25 @@ const narrative: BranchNarrative = {
     },
   ],
 };
+
+const recallLaneItems: NarrativeRecallLaneItem[] = [
+  {
+    id: 'r1',
+    title: 'Fix critical validation path',
+    whyThisMatters: 'Largest signal from latest commit.',
+    confidence: 0.88,
+    confidenceTier: 'high',
+    evidenceLinks: [
+      {
+        id: 'commit:abc123',
+        kind: 'commit',
+        label: 'Commit abc123',
+        commitSha: 'abc123',
+      },
+    ],
+    source: 'highlight',
+  },
+];
 
 const projections: StakeholderProjections = {
   executive: {
@@ -69,6 +88,7 @@ describe('BranchNarrativePanel', () => {
         audience="manager"
         detailLevel="summary"
         feedbackActorRole="developer"
+        recallLaneItems={recallLaneItems}
         onAudienceChange={vi.fn()}
         onFeedbackActorRoleChange={vi.fn()}
         onDetailLevelChange={onDetailLevelChange}
@@ -79,6 +99,9 @@ describe('BranchNarrativePanel', () => {
     );
 
     expect(screen.getByText('Summary text')).toBeInTheDocument();
+    expect(screen.getByText('Recall lane')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Evidence' })).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Evidence' }));
     expect(onDetailLevelChange).toHaveBeenCalledWith('evidence');
   });
@@ -103,6 +126,75 @@ describe('BranchNarrativePanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Commit abc123/i }));
     expect(onOpenEvidence).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens recall lane evidence with lane telemetry context', () => {
+    const onOpenEvidence = vi.fn();
+    render(
+      <BranchNarrativePanel
+        narrative={narrative}
+        projections={projections}
+        audience="manager"
+        detailLevel="summary"
+        feedbackActorRole="developer"
+        recallLaneItems={recallLaneItems}
+        onAudienceChange={vi.fn()}
+        onFeedbackActorRoleChange={vi.fn()}
+        onDetailLevelChange={vi.fn()}
+        onSubmitFeedback={vi.fn()}
+        onOpenEvidence={onOpenEvidence}
+        onOpenRawDiff={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open evidence' }));
+    expect(onOpenEvidence).toHaveBeenCalledWith(
+      recallLaneItems[0].evidenceLinks[0],
+      expect.objectContaining({
+        source: 'recall_lane',
+        recallLaneItemId: 'r1',
+        recallLaneConfidenceBand: 'high',
+      })
+    );
+  });
+
+  it('falls back to raw diff from recall lane when no evidence link exists', () => {
+    const onOpenRawDiff = vi.fn();
+    render(
+      <BranchNarrativePanel
+        narrative={narrative}
+        projections={projections}
+        audience="manager"
+        detailLevel="summary"
+        feedbackActorRole="developer"
+        recallLaneItems={[
+          {
+            id: 'r-no-evidence',
+            title: 'Inspect fallback state',
+            whyThisMatters: 'No direct evidence available.',
+            confidence: 0.2,
+            confidenceTier: 'low',
+            evidenceLinks: [],
+            source: 'fallback',
+          },
+        ]}
+        onAudienceChange={vi.fn()}
+        onFeedbackActorRoleChange={vi.fn()}
+        onDetailLevelChange={vi.fn()}
+        onSubmitFeedback={vi.fn()}
+        onOpenEvidence={vi.fn()}
+        onOpenRawDiff={onOpenRawDiff}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open raw diff' }));
+    expect(onOpenRawDiff).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: 'recall_lane',
+        recallLaneItemId: 'r-no-evidence',
+        recallLaneConfidenceBand: 'low',
+      }),
+    );
   });
 
   it('submits highlight and branch feedback actions', () => {
@@ -132,6 +224,15 @@ describe('BranchNarrativePanel', () => {
       })
     );
 
+    fireEvent.click(screen.getByRole('button', { name: 'Wrong' }));
+    expect(onSubmitFeedback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorRole: 'reviewer',
+        feedbackType: 'highlight_wrong',
+        targetKind: 'highlight',
+      })
+    );
+
     fireEvent.click(screen.getByRole('button', { name: 'Missing decision' }));
     expect(onSubmitFeedback).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -140,5 +241,29 @@ describe('BranchNarrativePanel', () => {
         targetKind: 'branch',
       })
     );
+  });
+
+  it('forces raw-diff fallback while kill switch is active', () => {
+    render(
+      <BranchNarrativePanel
+        narrative={narrative}
+        projections={projections}
+        audience="manager"
+        detailLevel="summary"
+        feedbackActorRole="developer"
+        killSwitchActive={true}
+        killSwitchReason="failed narrative synthesis"
+        onAudienceChange={vi.fn()}
+        onFeedbackActorRoleChange={vi.fn()}
+        onDetailLevelChange={vi.fn()}
+        onSubmitFeedback={vi.fn()}
+        onOpenEvidence={vi.fn()}
+        onOpenRawDiff={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Kill switch active. Narrative layers are read-only until quality recovers.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open raw diff context' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Open evidence/i })).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import { listen } from '@tauri-apps/api/event';
+import { open as openExternal } from '@tauri-apps/plugin-shell';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BranchViewModel } from '../core/types';
 import { refreshSessionBadges } from '../core/repo/sessionBadges';
@@ -58,6 +59,39 @@ export type IngestToast = {
   id: string;
   message: string;
 };
+
+const AUTH_URL_HINT_PREFIX = 'Complete login in browser:';
+
+function extractAuthUrlFromStatus(status: CodexAppServerStatus | null | undefined): string | null {
+  const hint = status?.lastError?.trim();
+  if (!hint || !hint.startsWith(AUTH_URL_HINT_PREFIX)) return null;
+  const url = hint.slice(AUTH_URL_HINT_PREFIX.length).trim();
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    const hostAllowed =
+      host === 'openai.com' ||
+      host === 'chatgpt.com' ||
+      host === 'auth.openai.com' ||
+      host === 'chat.openai.com' ||
+      host.endsWith('.openai.com') ||
+      host.endsWith('.chatgpt.com');
+    if (parsed.protocol !== 'https:' || !hostAllowed) return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+async function openExternalAuthUrl(url: string): Promise<boolean> {
+  try {
+    await openExternal(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function useAutoIngest(params: {
   repoRoot: string;
@@ -556,8 +590,21 @@ export function useAutoIngest(params: {
       await codexAppServerInitialize();
       await codexAppServerInitialized();
       await codexAppServerLoginStart();
+      const latestStatus = await getCodexAppServerStatus();
       if (!isMountedRef.current) return;
-      showToast('Codex App Server login started (check browser flow)');
+      setCodexAppServerStatus(latestStatus);
+      const authUrl = extractAuthUrlFromStatus(latestStatus);
+      if (authUrl) {
+        const opened = await openExternalAuthUrl(authUrl);
+        showToast(
+          opened
+            ? 'Opened Codex App Server login in your browser'
+            : 'Unable to open browser automatically; copy the URL from status to continue.'
+        );
+      } else {
+        showToast('Codex App Server login started (check browser flow)');
+      }
+      if (!isMountedRef.current) return;
       await refreshReliability();
     } catch (e) {
       recordIssue(

@@ -75,4 +75,52 @@ fn codex_app_server_schema_contract_matches_runtime_and_bridge_surfaces() {
             "ts bridge missing auth mode value: {mode}"
         );
     }
+
+    for method in &contract.required_request_methods {
+        assert!(
+            runtime_source.contains(&format!("\"{method}\"")),
+            "runtime missing required request method contract string: {method}"
+        );
+    }
+
+    for method in &contract.allowed_notification_methods {
+        assert!(
+            runtime_source.contains(&format!("\"{method}\"")),
+            "runtime is missing allowed notification method contract string: {method}"
+        );
+    }
+
+    assert!(
+        runtime_source.contains("if method.is_some() && (has_result || has_error)"),
+        "runtime missing mixed envelope validation branch"
+    );
+    assert!(
+        runtime_source.contains("if let (Some(method), Some(request_id)) = (method, id.as_ref())"),
+        "runtime missing server-request envelope classifier for method+id"
+    );
+    assert!(
+        runtime_source.contains("let Some(id) = id.as_ref().and_then(parse_rpc_response_id) else"),
+        "runtime missing response-id parser for correlated replies"
+    );
+    assert!(
+        runtime_source.contains("JSONRPC_METHOD_NOT_FOUND"),
+        "runtime missing method-not-found response path for unknown sidecar requests"
+    );
+    assert!(
+        runtime_source.contains("approval request must include requestId/request_id or envelope id"),
+        "runtime missing approval request id fallback validation message"
+    );
+    assert!(
+        runtime_source.contains("account/login/completed.loginId must be string"),
+        "runtime missing account/login/completed loginId validation"
+    );
+    assert!(
+        runtime_source.contains("rpc_request_id"),
+        "runtime missing protocol correlation field for approval requests"
+    );
+
+    assert!(
+        ts_bridge_source.contains("rpcRequestId?: string | number | null;"),
+        "ts bridge missing protocol correlation field for approval requests"
+    );
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { open as openExternal } from '@tauri-apps/plugin-shell';
 import type {
   CaptureReliabilityStatus,
   CollectorMigrationStatus,
@@ -47,6 +48,31 @@ export function CaptureModeCard(props: {
 }) {
   const { captureMode, captureReliability, authBusy, onRefreshReliability, onAuthorize, onLogout } = props;
   const appServerStatus = captureReliability?.appServer;
+  const authUrl = (() => {
+    const hint = appServerStatus?.lastError?.trim();
+    if (!hint || !hint.startsWith('Complete login in browser:')) return null;
+    const value = hint.slice('Complete login in browser:'.length).trim();
+    if (!value) return null;
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol !== 'https:') return null;
+      return parsed.toString();
+    } catch {
+      return null;
+    }
+  })();
+  const isAuthorized = appServerStatus?.authState === 'authenticated';
+  const isAuthFlowInProgress = appServerStatus?.authState === 'authenticating';
+  const hasAuthUrl = Boolean(authUrl);
+  const primaryAuthLabel = isAuthorized ? 'Authorized' : isAuthFlowInProgress ? 'Authorizing…' : 'Login for live test';
+  const handleLoginInBrowser = async () => {
+    if (!authUrl) return;
+    try {
+      await openExternal(authUrl);
+    } catch {
+      // Intentionally no-op: caller will still show the URL in status.
+    }
+  };
 
   return (
     <div className="rounded-lg border border-border-subtle bg-bg-secondary p-3">
@@ -78,15 +104,50 @@ export function CaptureModeCard(props: {
             <span className="font-mono">{appServerStatus.authState}</span> · initialized:{' '}
             <span className="font-mono">{appServerStatus.initialized ? 'yes' : 'no'}</span>
           </div>
+          {appServerStatus.authState === 'authenticated' ? (
+            <div className="mt-1 text-[11px] text-accent-green">Authorization status: logged in and authorized.</div>
+          ) : appServerStatus.lastError ? (
+            <div className="mt-1 text-[11px] text-text-tertiary">
+              {appServerStatus.lastError}
+            </div>
+          ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
-              disabled={authBusy}
-              onClick={() => void onAuthorize?.()}
-            >
-              {authBusy ? 'Authorizing…' : 'Authorize for live test'}
-            </button>
+            {isAuthorized ? (
+              <button
+                type="button"
+                className="inline-flex items-center rounded-full border border-accent-green-light bg-accent-green-bg px-2 py-1 text-[11px] font-semibold text-accent-green"
+                disabled
+                onClick={() => void onAuthorize?.()}
+              >
+                {primaryAuthLabel}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
+                disabled={authBusy}
+                onClick={() => void onAuthorize?.()}
+              >
+                {primaryAuthLabel}
+              </button>
+            )}
+            {hasAuthUrl ? (
+              <button
+                type="button"
+                className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
+                disabled={authBusy}
+                onClick={() => {
+                  void handleLoginInBrowser();
+                }}
+              >
+                Login
+              </button>
+            ) : null}
+            {isAuthorized ? (
+              <span className="inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold border border-accent-green-light bg-accent-green-bg text-accent-green">
+                Logged in
+              </span>
+            ) : null}
             <button
               type="button"
               className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50"

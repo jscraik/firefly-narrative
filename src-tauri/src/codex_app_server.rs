@@ -33,6 +33,7 @@ const APP_SERVER_SCHEMA_SUPPORTED: &[&str] = &["v1"];
 const APP_SERVER_SCHEMA_DEPRECATED: &[&str] = &[];
 const RPC_REQUEST_TIMEOUT_MS: u64 = 30_000;
 const MAX_PENDING_RPC_REQUESTS: usize = 256;
+const MAX_PENDING_APPROVAL_WAITERS: usize = 128;
 const MAX_SIDECAR_JSONL_BYTES: usize = 256 * 1024;
 const MAX_SIDECAR_JSON_DEPTH: usize = 32;
 const MAX_SIDECAR_STDERR_LINES: usize = 256;
@@ -68,6 +69,9 @@ const METHOD_ACCOUNT_LOGIN_START: &str = "account/login/start";
 const METHOD_ACCOUNT_CHATGPT_TOKENS_REFRESH: &str = "account/chatgptAuthTokens/refresh";
 const METHOD_THREAD_READ: &str = "thread/read";
 const METHOD_APPROVAL_SUBMIT: &str = "approval/submit";
+const JSONRPC_METHOD_NOT_FOUND: i64 = -32601;
+const JSONRPC_INVALID_PARAMS: i64 = -32602;
+const JSONRPC_OVERLOADED: i64 = -32001;
 const ALLOWED_SIDECAR_NOTIFICATION_METHODS: &[&str] = &[
     "account/updated",
     "account/login/completed",
@@ -354,6 +358,8 @@ pub enum LiveSessionEventPayload {
         options: Vec<String>,
         timeout_ms: u64,
         #[serde(default, skip_serializing_if = "Option::is_none")]
+        rpc_request_id: Option<serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         decision_token: Option<String>,
     },
     #[serde(rename_all = "camelCase")]
@@ -389,6 +395,7 @@ struct PendingApproval {
     timeout_ms: u64,
     decision_token: String,
     approval_window_id: u64,
+    rpc_request_id: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -445,13 +452,13 @@ struct CodexAppServerRuntime {
     restart_total: HashMap<String, u64>,
     event_sequence_id: u64,
     next_rpc_id: i64,
-    pending_rpcs: HashMap<i64, PendingRpcRequest>,
+    pending_rpcs: HashMap<String, PendingRpcRequest>,
     sidecar_stderr_ring: VecDeque<String>,
     sidecar_stderr_dropped: u64,
     last_stream_event_at_epoch_ms: Option<i64>,
     approval_window_id: u64,
-    thread_read_results: HashMap<i64, serde_json::Value>,
-    thread_read_errors: HashMap<i64, String>,
+    thread_read_results: HashMap<String, serde_json::Value>,
+    thread_read_errors: HashMap<String, String>,
 }
 
 impl Default for CodexAppServerRuntime {
@@ -826,10 +833,10 @@ fn compute_manifest_signature(payload_hash: &str, signer: &str) -> String {
 }
 
 fn verify_sidecar_manifest_for_path(sidecar_path: &Path) -> Result<(), String> {
-    let Some(bin_dir) = sidecar_path.parent() else {
-        return Err("Sidecar path has no parent directory".to_string());
-    };
-    let manifest_path = bin_dir.join(SIDECAR_MANIFEST_FILE);
+    let manifest_path = locate_sidecar_manifest_path(sidecar_path).ok_or_else(|| {
+        "Failed to locate codex-app-server manifest in supported bundle/runtime locations".to_string()
+    })?;
+
     let raw_manifest = std::fs::read_to_string(&manifest_path).map_err(|error| {
         format!(
             "Failed to read sidecar manifest at {}: {error}",
@@ -894,10 +901,20 @@ fn verify_sidecar_manifest_for_path(sidecar_path: &Path) -> Result<(), String> {
         .iter()
         .find(|artifact| artifact.target == SIDECAR_TARGET_TRIPLE && artifact.file == file_name)
         .or_else(|| {
-            manifest
-                .artifacts
-                .iter()
-                .find(|artifact| artifact.file == file_name)
+            if SIDECAR_TARGET_TRIPLE == "unsupported-target" {
+                manifest
+                    .artifacts
+                    .iter()
+                    .find(|artifact| artifact.file == file_name)
+                    .or_else(|| {
+                        manifest
+                            .artifacts
+                            .iter()
+                            .find(|artifact| artifact.target == "generic" && artifact.file == file_name)
+                    })
+            } else {
+                None
+            }
         })
         .ok_or_else(|| {
             format!(
@@ -942,6 +959,30 @@ fn verify_sidecar_manifest_for_path(sidecar_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn locate_sidecar_manifest_path(sidecar_path: &Path) -> Option<PathBuf> {
+    let Some(sidecar_dir) = sidecar_path.parent() else {
+        return None;
+    };
+
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    for ancestor in sidecar_dir.ancestors() {
+        candidates.push(ancestor.join(SIDECAR_MANIFEST_FILE));
+        candidates.push(ancestor.join("bin").join(SIDECAR_MANIFEST_FILE));
+        candidates.push(ancestor.join("Resources").join("bin").join(SIDECAR_MANIFEST_FILE));
+        candidates.push(
+            ancestor
+                .join("..")
+                .join("Resources")
+                .join("bin")
+                .join(SIDECAR_MANIFEST_FILE),
+        );
+    }
+
+    candidates
+        .into_iter()
+        .find(|candidate| candidate.is_file())
+}
+
 fn detect_sidecar_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
     if let Ok(override_path) = std::env::var(SIDECAR_OVERRIDE_ENV) {
         if sidecar_is_production_mode() {
@@ -971,20 +1012,60 @@ fn detect_sidecar_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
 
     let mut candidates: Vec<PathBuf> = Vec::new();
 
+    // Build target-suffixed binary name for non-Apple-Silicon hosts
+    let target_suffix = format!("-{}", SIDECAR_TARGET_TRIPLE);
+
     if let Ok(resource_dir) = app_handle.path().resource_dir() {
+        // Unsuffixed candidates (for Apple Silicon where codex-app-server is the primary artifact)
+        candidates.push(resource_dir.join("codex-app-server"));
+        candidates.push(resource_dir.join("codex-app-server.exe"));
         candidates.push(resource_dir.join("bin/codex-app-server"));
         candidates.push(resource_dir.join("bin/codex-app-server.exe"));
+
+        // Target-suffixed candidates (for x86_64 and Linux hosts)
+        candidates.push(resource_dir.join(format!("codex-app-server{}", target_suffix)));
+        candidates.push(resource_dir.join(format!("codex-app-server{}.exe", target_suffix)));
+        candidates.push(resource_dir.join(format!("bin/codex-app-server{}", target_suffix)));
+        candidates.push(resource_dir.join(format!("bin/codex-app-server{}.exe", target_suffix)));
+
+        if let Some(app_dir) = resource_dir.parent() {
+            candidates.push(app_dir.join("codex-app-server"));
+            candidates.push(app_dir.join("codex-app-server.exe"));
+            candidates.push(app_dir.join("MacOS").join("codex-app-server"));
+            candidates.push(app_dir.join("MacOS").join("codex-app-server.exe"));
+
+            // Target-suffixed for app_dir variants
+            candidates.push(app_dir.join(format!("codex-app-server{}", target_suffix)));
+            candidates.push(app_dir.join(format!("codex-app-server{}.exe", target_suffix)));
+            candidates.push(app_dir.join("MacOS").join(format!("codex-app-server{}", target_suffix)));
+            candidates.push(app_dir.join("MacOS").join(format!("codex-app-server{}.exe", target_suffix)));
+        }
+    }
+
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(bin_dir) = current_exe.parent() {
+            candidates.push(bin_dir.join("codex-app-server"));
+            candidates.push(bin_dir.join("codex-app-server.exe"));
+            // Target-suffixed for current_exe variants
+            candidates.push(bin_dir.join(format!("codex-app-server{}", target_suffix)));
+            candidates.push(bin_dir.join(format!("codex-app-server{}.exe", target_suffix)));
+        }
     }
 
     if let Ok(cwd) = std::env::current_dir() {
         candidates.push(cwd.join("src-tauri/bin/codex-app-server"));
         candidates.push(cwd.join("src-tauri/bin/codex-app-server.exe"));
         candidates.push(cwd.join("bin/codex-app-server"));
+        // Target-suffixed for cwd variants
+        candidates.push(cwd.join(format!("src-tauri/bin/codex-app-server{}", target_suffix)));
+        candidates.push(cwd.join(format!("src-tauri/bin/codex-app-server{}.exe", target_suffix)));
+        candidates.push(cwd.join(format!("bin/codex-app-server{}", target_suffix)));
     }
 
     let mut trust_errors = Vec::new();
 
-    for candidate in candidates {
+    for candidate in candidates.iter() {
+        let candidate = candidate.clone();
         if !candidate.exists() || !is_executable_candidate(&candidate) {
             continue;
         }
@@ -1003,7 +1084,17 @@ fn detect_sidecar_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
         ));
     }
 
-    Err("Codex App Server sidecar binary not found (expected bin/codex-app-server)".to_string())
+    let mut checked_candidates: Vec<String> = candidates
+        .iter()
+        .map(|candidate| candidate.display().to_string())
+        .collect();
+    if checked_candidates.is_empty() {
+        checked_candidates.push("<none>".to_string());
+    }
+    Err(format!(
+        "Codex App Server sidecar binary not found in known bundle/runtime locations: checked {}",
+        checked_candidates.join(", ")
+    ))
 }
 
 fn is_executable_candidate(path: &Path) -> bool {
@@ -1257,6 +1348,68 @@ fn send_sidecar_message(
     Ok(())
 }
 
+fn is_valid_jsonrpc_id(value: &serde_json::Value) -> bool {
+    matches!(
+        value,
+        serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Null
+    )
+}
+
+fn parse_rpc_response_id(value: &serde_json::Value) -> Option<String> {
+    jsonrpc_id_to_string(value)
+}
+
+fn jsonrpc_id_to_string(value: &serde_json::Value) -> Option<String> {
+    match value {
+        serde_json::Value::String(raw) => Some(raw.clone()),
+        serde_json::Value::Number(number) => Some(number.to_string()),
+        serde_json::Value::Null => Some("null".to_string()),
+        _ => None,
+    }
+}
+
+fn parse_approval_request_id(value: &serde_json::Value) -> Option<String> {
+    match value {
+        serde_json::Value::String(raw) => {
+            let trimmed = raw.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        }
+        _ => jsonrpc_id_to_string(value),
+    }
+}
+
+fn send_jsonrpc_result_response(
+    runtime: &mut CodexAppServerRuntime,
+    id: &serde_json::Value,
+    result: serde_json::Value,
+) -> Result<(), String> {
+    let message = serde_json::json!({
+        "id": id,
+        "result": result
+    });
+    send_sidecar_message(runtime, &message)
+}
+
+fn send_jsonrpc_error_response(
+    runtime: &mut CodexAppServerRuntime,
+    id: &serde_json::Value,
+    code: i64,
+    message: &str,
+) -> Result<(), String> {
+    let payload = serde_json::json!({
+        "id": id,
+        "error": {
+            "code": code,
+            "message": message
+        }
+    });
+    send_sidecar_message(runtime, &payload)
+}
+
 fn pending_rpc_kind_label(kind: PendingRpcKind) -> &'static str {
     match kind {
         PendingRpcKind::Initialize => METHOD_INITIALIZE,
@@ -1277,10 +1430,10 @@ fn cancel_pending_rpcs(runtime: &mut CodexAppServerRuntime, reason: &str) -> usi
     if runtime.pending_rpcs.is_empty() {
         return 0;
     }
-    let cancelled_requests: Vec<(i64, PendingRpcKind)> = runtime
+    let cancelled_requests: Vec<(String, PendingRpcKind)> = runtime
         .pending_rpcs
         .iter()
-        .map(|(id, request)| (*id, request.kind))
+        .map(|(id, request)| (id.clone(), request.kind))
         .collect();
     let cancelled = cancelled_requests.len();
     for (id, kind) in cancelled_requests {
@@ -1341,6 +1494,7 @@ fn bind_approval_request_token(payload: LiveSessionEventPayload) -> LiveSessionE
             command,
             options,
             timeout_ms,
+            rpc_request_id,
             decision_token,
         } => LiveSessionEventPayload::ApprovalRequest {
             request_id,
@@ -1349,6 +1503,7 @@ fn bind_approval_request_token(payload: LiveSessionEventPayload) -> LiveSessionE
             command,
             options,
             timeout_ms,
+            rpc_request_id,
             decision_token: Some(decision_token.unwrap_or_else(generate_approval_decision_token)),
         },
         _ => payload,
@@ -1357,7 +1512,7 @@ fn bind_approval_request_token(payload: LiveSessionEventPayload) -> LiveSessionE
 
 fn apply_pending_rpc_success(
     runtime: &mut CodexAppServerRuntime,
-    id: i64,
+    id: &str,
     request: PendingRpcRequest,
     result: &serde_json::Value,
 ) {
@@ -1394,8 +1549,10 @@ fn apply_pending_rpc_success(
             runtime.status.last_error = None;
         }
         PendingRpcKind::ThreadRead => {
-            runtime.thread_read_errors.remove(&id);
-            runtime.thread_read_results.insert(id, result.clone());
+            runtime.thread_read_errors.remove(id);
+            runtime
+                .thread_read_results
+                .insert(id.to_string(), result.clone());
             runtime.status.last_error = None;
         }
     }
@@ -1403,7 +1560,7 @@ fn apply_pending_rpc_success(
 
 fn apply_pending_rpc_error(
     runtime: &mut CodexAppServerRuntime,
-    id: i64,
+    id: &str,
     request: PendingRpcRequest,
     error: &serde_json::Value,
 ) {
@@ -1429,9 +1586,9 @@ fn apply_pending_rpc_error(
         runtime.stream_session_state = StreamSessionState::Failed;
     }
     if matches!(request.kind, PendingRpcKind::ThreadRead) {
-        runtime.thread_read_results.remove(&id);
+        runtime.thread_read_results.remove(id);
         runtime.thread_read_errors.insert(
-            id,
+            id.to_string(),
             format!(
                 "thread/read request failed: {}",
                 format_redacted_json(error)
@@ -1464,8 +1621,9 @@ fn send_sidecar_request(
         "params": params,
     });
     send_sidecar_message(runtime, &message)?;
+    let request_id = id.to_string();
     runtime.pending_rpcs.insert(
-        id,
+        request_id,
         PendingRpcRequest {
             kind,
             sent_at_epoch_ms: now_epoch_ms(),
@@ -1476,13 +1634,13 @@ fn send_sidecar_request(
 }
 
 fn expire_pending_rpcs(runtime: &mut CodexAppServerRuntime, now_ms: i64) -> usize {
-    let mut expired: Vec<(i64, PendingRpcKind)> = Vec::new();
+    let mut expired: Vec<(String, PendingRpcKind)> = Vec::new();
     for (id, request) in &runtime.pending_rpcs {
         let expires_at = request
             .sent_at_epoch_ms
             .saturating_add(request.timeout_ms as i64);
         if now_ms >= expires_at {
-            expired.push((*id, request.kind));
+            expired.push((id.clone(), request.kind));
         }
     }
 
@@ -1495,7 +1653,7 @@ fn expire_pending_rpcs(runtime: &mut CodexAppServerRuntime, now_ms: i64) -> usiz
             runtime.thread_read_results.remove(id);
             runtime
                 .thread_read_errors
-                .insert(*id, "thread/read request timed out".to_string());
+                .insert(id.clone(), "thread/read request timed out".to_string());
         }
     }
 
@@ -1582,6 +1740,7 @@ fn wait_for_thread_read_response(
     request_id: i64,
     timeout: Duration,
 ) -> Result<serde_json::Value, String> {
+    let request_id = request_id.to_string();
     let started = Instant::now();
     loop {
         {
@@ -1654,6 +1813,7 @@ fn build_sidecar_live_delta(method: &str, message: &serde_json::Value) -> LiveSe
 fn build_sidecar_approval_request(
     method: &str,
     message: &serde_json::Value,
+    rpc_request_id: Option<serde_json::Value>,
 ) -> LiveSessionEventPayload {
     let params = message
         .get("params")
@@ -1662,9 +1822,8 @@ fn build_sidecar_approval_request(
     let request_id = params
         .get("requestId")
         .or_else(|| params.get("request_id"))
-        .or_else(|| message.get("id"))
-        .and_then(serde_json::Value::as_str)
-        .map(ToOwned::to_owned)
+        .and_then(parse_approval_request_id)
+        .or_else(|| rpc_request_id.as_ref().and_then(parse_approval_request_id))
         .unwrap_or_else(|| format!("approval_{}", now_epoch_ms()));
     let thread_id = params
         .get("threadId")
@@ -1709,6 +1868,7 @@ fn build_sidecar_approval_request(
         command,
         options,
         timeout_ms,
+        rpc_request_id,
         decision_token: None,
     }
 }
@@ -1788,13 +1948,18 @@ fn validate_sidecar_notification_payload(
             }
         }
         "account/login/completed" => {
-            reject_unknown_fields(params_object, &["success", "error"])?;
+            reject_unknown_fields(params_object, &["success", "error", "loginId"])?;
             if params_object
                 .get("success")
                 .and_then(serde_json::Value::as_bool)
                 .is_none()
             {
                 return Err("account/login/completed.success must be boolean".to_string());
+            }
+            if let Some(login_id) = params_object.get("loginId") {
+                if !login_id.is_string() {
+                    return Err("account/login/completed.loginId must be string".to_string());
+                }
             }
             if let Some(error) = params_object.get("error") {
                 if !error.is_string() && !error.is_null() {
@@ -1807,7 +1972,20 @@ fn validate_sidecar_notification_payload(
             require_any_string_field(params_object, &["turnId", "turn_id"], "turnId")?;
         }
         "item/commandExecution/requestApproval" | "item/fileChange/requestApproval" => {
-            require_any_string_field(params_object, &["requestId", "request_id"], "requestId")?;
+            let has_request_id = params_object
+                .get("requestId")
+                .or_else(|| params_object.get("request_id"))
+                .and_then(parse_approval_request_id)
+                .is_some()
+                || message
+                    .get("id")
+                    .and_then(parse_approval_request_id)
+                    .is_some();
+            if !has_request_id {
+                return Err(
+                    "approval request must include requestId/request_id or envelope id".to_string(),
+                );
+            }
             require_any_string_field(params_object, &["threadId", "thread_id"], "threadId")?;
             require_any_string_field(params_object, &["turnId", "turn_id"], "turnId")?;
             require_any_string_field(params_object, &["command"], "command")?;
@@ -1941,7 +2119,141 @@ fn process_sidecar_message(
     state: &Arc<Mutex<CodexAppServerRuntime>>,
     message: serde_json::Value,
 ) {
-    if let Some(method) = message.get("method").and_then(serde_json::Value::as_str) {
+    let method = message.get("method").and_then(serde_json::Value::as_str);
+    let id = message.get("id").cloned();
+    let has_result = message.get("result").is_some();
+    let has_error = message.get("error").is_some();
+
+    if method.is_some() && (has_result || has_error) {
+        let mut runtime = match state.lock() {
+            Ok(guard) => guard,
+            Err(_) => return,
+        };
+        if runtime.process_state != ProcessState::CrashLoop {
+            runtime.process_state = ProcessState::Degraded;
+        }
+        runtime.status.last_error = Some("Rejected mixed sidecar envelope".to_string());
+        let parser_error = LiveSessionEventPayload::ParserValidationError {
+            kind: "protocol_violation".to_string(),
+            raw_preview: "mixed-envelope".to_string(),
+            reason: "Envelope contained method and response fields".to_string(),
+            occurred_at_iso: now_iso(),
+        };
+        handle_live_event_internal(&mut runtime, &parser_error);
+        emit_live_session_event(app_handle, &parser_error);
+        sync_status(&mut runtime);
+        emit_status(app_handle, &runtime.status);
+        return;
+    }
+
+    if let (Some(method), Some(request_id)) = (method, id.as_ref()) {
+        let mut runtime = match state.lock() {
+            Ok(guard) => guard,
+            Err(_) => return,
+        };
+
+        if !is_valid_jsonrpc_id(request_id) {
+            if runtime.process_state != ProcessState::CrashLoop {
+                runtime.process_state = ProcessState::Degraded;
+            }
+            runtime.status.last_error = Some(format!(
+                "Rejected sidecar request with invalid id for method: {method}"
+            ));
+            let parser_error = LiveSessionEventPayload::ParserValidationError {
+                kind: "protocol_violation".to_string(),
+                raw_preview: method.to_string(),
+                reason: "Server request id must be string, number, or null".to_string(),
+                occurred_at_iso: now_iso(),
+            };
+            handle_live_event_internal(&mut runtime, &parser_error);
+            emit_live_session_event(app_handle, &parser_error);
+            sync_status(&mut runtime);
+            emit_status(app_handle, &runtime.status);
+            return;
+        }
+
+        match method {
+            "item/commandExecution/requestApproval" | "item/fileChange/requestApproval" => {
+                if runtime.approval_waiters.len() >= MAX_PENDING_APPROVAL_WAITERS {
+                    for timed_out in expire_pending_approvals(&mut runtime, now_epoch_ms()) {
+                        emit_live_session_event(app_handle, &timed_out);
+                    }
+                    if runtime.approval_waiters.len() < MAX_PENDING_APPROVAL_WAITERS {
+                        sync_status(&mut runtime);
+                        emit_status(app_handle, &runtime.status);
+                    }
+                }
+
+                if runtime.approval_waiters.len() >= MAX_PENDING_APPROVAL_WAITERS {
+                    increment_labeled_counter(&mut runtime.parse_error_total, "approval_overload");
+                    if runtime.process_state != ProcessState::CrashLoop {
+                        runtime.process_state = ProcessState::Degraded;
+                    }
+                    runtime.status.last_error = Some(format!(
+                        "Rejected approval request ({method}) because approval queue is full (limit: {MAX_PENDING_APPROVAL_WAITERS})"
+                    ));
+                    let _ = send_jsonrpc_error_response(
+                        &mut runtime,
+                        request_id,
+                        JSONRPC_OVERLOADED,
+                        "approval queue overloaded; retry later",
+                    );
+                    sync_status(&mut runtime);
+                    emit_status(app_handle, &runtime.status);
+                    return;
+                }
+
+                if let Err(reason) = validate_sidecar_notification_payload(method, &message) {
+                    if runtime.process_state != ProcessState::CrashLoop {
+                        runtime.process_state = ProcessState::Degraded;
+                    }
+                    runtime.status.last_error = Some(format!(
+                        "Rejected sidecar request ({method}) due to schema validation error: {reason}"
+                    ));
+                    let parser_error = LiveSessionEventPayload::ParserValidationError {
+                        kind: "schema_mismatch".to_string(),
+                        raw_preview: method.to_string(),
+                        reason: reason.clone(),
+                        occurred_at_iso: now_iso(),
+                    };
+                    handle_live_event_internal(&mut runtime, &parser_error);
+                    emit_live_session_event(app_handle, &parser_error);
+                    let _ = send_jsonrpc_error_response(
+                        &mut runtime,
+                        request_id,
+                        JSONRPC_INVALID_PARAMS,
+                        "invalid request params",
+                    );
+                    sync_status(&mut runtime);
+                    emit_status(app_handle, &runtime.status);
+                    return;
+                }
+
+                let event = bind_approval_request_token(build_sidecar_approval_request(
+                    method,
+                    &message,
+                    Some(request_id.clone()),
+                ));
+                let _ = handle_live_event_internal(&mut runtime, &event);
+                emit_live_session_event(app_handle, &event);
+            }
+            _ => {
+                increment_labeled_counter(&mut runtime.parse_error_total, "unknown_server_request");
+                let _ = send_jsonrpc_error_response(
+                    &mut runtime,
+                    request_id,
+                    JSONRPC_METHOD_NOT_FOUND,
+                    &format!("Unsupported sidecar request method: {method}"),
+                );
+            }
+        }
+
+        sync_status(&mut runtime);
+        emit_status(app_handle, &runtime.status);
+        return;
+    }
+
+    if let Some(method) = method {
         let mut runtime = match state.lock() {
             Ok(guard) => guard,
             Err(_) => return,
@@ -2014,8 +2326,9 @@ fn process_sidecar_message(
                 emit_live_session_event(app_handle, &event);
             }
             "item/commandExecution/requestApproval" | "item/fileChange/requestApproval" => {
-                let event =
-                    bind_approval_request_token(build_sidecar_approval_request(method, &message));
+                let event = bind_approval_request_token(build_sidecar_approval_request(
+                    method, &message, None,
+                ));
                 let _ = handle_live_event_internal(&mut runtime, &event);
                 emit_live_session_event(app_handle, &event);
             }
@@ -2043,7 +2356,38 @@ fn process_sidecar_message(
         return;
     }
 
-    let Some(id) = message.get("id").and_then(serde_json::Value::as_i64) else {
+    if id.is_none() || (!has_result && !has_error) {
+        let mut runtime = match state.lock() {
+            Ok(guard) => guard,
+            Err(_) => return,
+        };
+        if runtime.process_state != ProcessState::CrashLoop {
+            runtime.process_state = ProcessState::Degraded;
+        }
+        runtime.status.last_error = Some("Rejected malformed sidecar envelope".to_string());
+        let parser_error = LiveSessionEventPayload::ParserValidationError {
+            kind: "protocol_violation".to_string(),
+            raw_preview: "invalid-envelope".to_string(),
+            reason: "Envelope did not match request/notification/response shapes".to_string(),
+            occurred_at_iso: now_iso(),
+        };
+        handle_live_event_internal(&mut runtime, &parser_error);
+        emit_live_session_event(app_handle, &parser_error);
+        sync_status(&mut runtime);
+        emit_status(app_handle, &runtime.status);
+        return;
+    }
+
+    let Some(id) = id.as_ref().and_then(parse_rpc_response_id) else {
+        let mut runtime = match state.lock() {
+            Ok(guard) => guard,
+            Err(_) => return,
+        };
+        increment_labeled_counter(&mut runtime.parse_error_total, "rpc_invalid_id");
+        runtime.status.last_error =
+            Some("Ignored sidecar response with unsupported id type".to_string());
+        sync_status(&mut runtime);
+        emit_status(app_handle, &runtime.status);
         return;
     };
 
@@ -2063,7 +2407,7 @@ fn process_sidecar_message(
     };
 
     if let Some(err) = message.get("error") {
-        apply_pending_rpc_error(&mut runtime, id, request, err);
+        apply_pending_rpc_error(&mut runtime, &id, request, err);
         sync_status(&mut runtime);
         emit_status(app_handle, &runtime.status);
         return;
@@ -2094,7 +2438,7 @@ fn process_sidecar_message(
         return;
     }
 
-    apply_pending_rpc_success(&mut runtime, id, request, &result);
+    apply_pending_rpc_success(&mut runtime, &id, request, &result);
     sync_status(&mut runtime);
     emit_status(app_handle, &runtime.status);
 }
@@ -2547,14 +2891,15 @@ async fn cleanup_live_sessions_with_policy(
     ttl_hours: i64,
     max_rows: i64,
 ) -> Result<LiveSessionsCleanupResult, String> {
-    let cutoff = format!("-{ttl_hours} hours");
+    let ttl_seconds = ttl_hours.saturating_mul(3600);
 
-    let ttl_result =
-        sqlx::query("DELETE FROM live_sessions WHERE last_activity_at < datetime('now', ?)")
-            .bind(cutoff)
-            .execute(pool)
-            .await
-            .map_err(|e| format!("failed to cleanup live_sessions by ttl: {e}"))?;
+    let ttl_result = sqlx::query(
+        "DELETE FROM live_sessions WHERE unixepoch(last_activity_at) < (unixepoch('now') - ?)",
+    )
+    .bind(ttl_seconds)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("failed to cleanup live_sessions by ttl: {e}"))?;
 
     let cap_result = sqlx::query(
         r#"
@@ -2888,12 +3233,33 @@ fn handle_live_event_internal(
             request_id,
             thread_id,
             timeout_ms,
+            rpc_request_id,
             decision_token,
             ..
         } => {
             let Some(decision_token) = decision_token.clone() else {
                 return None;
             };
+            if runtime.approval_waiters.len() >= MAX_PENDING_APPROVAL_WAITERS {
+                if let Some((oldest_request_id, _)) = runtime
+                    .approval_waiters
+                    .iter()
+                    .min_by_key(|(_, pending)| pending.created_at_epoch_ms)
+                    .map(|(id, pending)| (id.clone(), pending.created_at_epoch_ms))
+                {
+                    runtime.approval_waiters.remove(&oldest_request_id);
+                    increment_labeled_counter(
+                        &mut runtime.parse_error_total,
+                        "approval_waiter_overflow",
+                    );
+                    if runtime.process_state != ProcessState::CrashLoop {
+                        runtime.process_state = ProcessState::Degraded;
+                    }
+                    runtime.status.last_error = Some(format!(
+                        "Approval waiter overflow: evicted oldest request {oldest_request_id}"
+                    ));
+                }
+            }
             runtime.approval_waiters.insert(
                 request_id.clone(),
                 PendingApproval {
@@ -2902,6 +3268,7 @@ fn handle_live_event_internal(
                     timeout_ms: *timeout_ms,
                     decision_token,
                     approval_window_id: runtime.approval_window_id,
+                    rpc_request_id: rpc_request_id.clone(),
                 },
             );
             None
@@ -3529,6 +3896,9 @@ pub fn codex_app_server_submit_approval(
         }
     };
 
+    let response_request_id = request_id.clone();
+    let response_thread_id = pending.thread_id.clone();
+    let response_reason = reason.clone();
     let payload = LiveSessionEventPayload::ApprovalResult {
         request_id,
         thread_id: pending.thread_id,
@@ -3537,6 +3907,28 @@ pub fn codex_app_server_submit_approval(
         decided_by: Some("user".to_string()),
         reason,
     };
+
+    if let Some(rpc_request_id) = pending.rpc_request_id.as_ref() {
+        let response_result = serde_json::json!({
+            "requestId": response_request_id,
+            "threadId": response_thread_id,
+            "approved": approved,
+            "decision": if approved { "approved" } else { "denied" },
+            "reason": response_reason
+        });
+        if let Err(error) =
+            send_jsonrpc_result_response(&mut runtime, rpc_request_id, response_result)
+        {
+            increment_labeled_counter(
+                &mut runtime.parse_error_total,
+                "approval_response_write_failed",
+            );
+            runtime.status.last_error = Some(format!(
+                "Failed to write approval response to sidecar: {error}"
+            ));
+            return Err("failed to submit approval response to sidecar".to_string());
+        }
+    }
 
     handle_live_event_internal(&mut runtime, &payload);
     emit_live_session_event(&app_handle, &payload);
@@ -3678,26 +4070,26 @@ mod tests {
         apply_reconnect_validation_failure, apply_restart_reentry_state,
         apply_sidecar_stdout_read_error, assert_initialized_handshake,
         assert_thread_snapshot_access, auth_mode_to_login_start_type, bind_approval_request_token,
-        cancel_pending_rpcs, cleanup_live_sessions_with_policy, command_not_exposed_error,
-        event_identity_key, expire_pending_approvals, expire_pending_rpcs, format_redacted_json,
-        handle_live_event_internal, handle_sidecar_exit, harden_sidecar_command,
-        has_pending_initialize_request, is_allowed_sidecar_notification_method, next_rpc_id,
-        normalize_auth_mode, now_epoch_ms, now_iso, parse_event_from_legacy_input,
-        parse_live_payload, parser_validation_error, redact_sensitive_stderr_line,
-        register_start_failure, remember_approval_decision, remember_dedupe_source,
-        remember_sidecar_stderr_line, schema_version_policy, send_sidecar_request, source_priority,
-        terminate_child_with_timeout, validate_and_redact_auth_url,
-        validate_approval_submission_context, validate_reconnect_payload,
-        validate_sidecar_jsonl_frame, validate_sidecar_notification_payload,
-        validate_sidecar_rpc_result, version_at_least, wait_for_initialize_ack,
-        wait_for_thread_read_response, AuthState, CodexAppServerRuntime, CodexAppServerStatus,
-        CodexStreamEventInput, HandshakeState, LiveSessionEventPayload, PendingApproval,
-        PendingRpcKind, PendingRpcRequest, SchemaVersionPolicy,
+        build_sidecar_approval_request, cancel_pending_rpcs, cleanup_live_sessions_with_policy,
+        command_not_exposed_error, event_identity_key, expire_pending_approvals,
+        expire_pending_rpcs, format_redacted_json, handle_live_event_internal, handle_sidecar_exit,
+        harden_sidecar_command, has_pending_initialize_request,
+        is_allowed_sidecar_notification_method, next_rpc_id, normalize_auth_mode, now_epoch_ms,
+        now_iso, parse_event_from_legacy_input, parse_live_payload, parse_rpc_response_id,
+        parser_validation_error, redact_sensitive_stderr_line, register_start_failure,
+        remember_approval_decision, remember_dedupe_source, remember_sidecar_stderr_line,
+        schema_version_policy, send_sidecar_request, source_priority, terminate_child_with_timeout,
+        validate_and_redact_auth_url, validate_approval_submission_context,
+        validate_reconnect_payload, validate_sidecar_jsonl_frame,
+        validate_sidecar_notification_payload, validate_sidecar_rpc_result, version_at_least,
+        wait_for_initialize_ack, wait_for_thread_read_response, AuthState, CodexAppServerRuntime,
+        CodexAppServerStatus, CodexStreamEventInput, HandshakeState, LiveSessionEventPayload,
+        PendingApproval, PendingRpcKind, PendingRpcRequest, SchemaVersionPolicy,
         ALLOWED_SIDECAR_NOTIFICATION_METHODS, APPROVAL_TOKEN_BYTES, APP_SERVER_PROTOCOL_TARGET,
-        BLOCKED_SIDECAR_ENV_OVERRIDES, MAX_DEDUPE_SOURCES, MAX_PENDING_RPC_REQUESTS,
-        MAX_SIDECAR_JSONL_BYTES, MAX_SIDECAR_STDERR_LINES, RECONNECT_REASON_SCHEMA_MISMATCH,
-        RECONNECT_REASON_SESSION_INVALID, RECONNECT_REASON_TOKEN_INVALID,
-        REQUIRED_APP_SERVER_METHODS, RESTART_BUDGET,
+        BLOCKED_SIDECAR_ENV_OVERRIDES, MAX_DEDUPE_SOURCES, MAX_PENDING_APPROVAL_WAITERS,
+        MAX_PENDING_RPC_REQUESTS, MAX_SIDECAR_JSONL_BYTES, MAX_SIDECAR_STDERR_LINES,
+        RECONNECT_REASON_SCHEMA_MISMATCH, RECONNECT_REASON_SESSION_INVALID,
+        RECONNECT_REASON_TOKEN_INVALID, REQUIRED_APP_SERVER_METHODS, RESTART_BUDGET,
     };
     use sqlx::sqlite::SqlitePoolOptions;
     use std::path::Path;
@@ -3767,7 +4159,7 @@ mod tests {
             ..CodexAppServerRuntime::default()
         };
         runtime.pending_rpcs.insert(
-            1,
+            1.to_string(),
             PendingRpcRequest {
                 kind: PendingRpcKind::Initialize,
                 sent_at_epoch_ms: now_epoch_ms(),
@@ -3836,14 +4228,15 @@ mod tests {
                 timeout_ms: 30_000,
                 decision_token: "token_1".to_string(),
                 approval_window_id: runtime.approval_window_id,
+                rpc_request_id: None,
             },
         );
         runtime
             .thread_read_results
-            .insert(100, serde_json::json!({ "threadId": "th_1" }));
+            .insert("100".to_string(), serde_json::json!({ "threadId": "th_1" }));
         runtime
             .thread_read_errors
-            .insert(101, "thread/read failed".to_string());
+            .insert("101".to_string(), "thread/read failed".to_string());
 
         apply_restart_reentry_state(&mut runtime);
 
@@ -4071,6 +4464,7 @@ mod tests {
             command: "rm -rf /".to_string(),
             options: vec!["approve".to_string(), "deny".to_string()],
             timeout_ms: 5_000,
+            rpc_request_id: None,
             decision_token: Some("token_req_1".to_string()),
         };
 
@@ -4104,6 +4498,7 @@ mod tests {
             command: "write_file".to_string(),
             options: vec!["allow".to_string(), "deny".to_string()],
             timeout_ms: 1,
+            rpc_request_id: None,
             decision_token: Some("token_timeout".to_string()),
         };
         handle_live_event_internal(&mut runtime, &request);
@@ -4124,6 +4519,56 @@ mod tests {
             Some(1)
         );
         assert!(runtime.approval_decisions.contains_key("req_timeout"));
+    }
+
+    #[test]
+    fn approval_waiters_are_bounded_with_overflow_telemetry() {
+        let mut runtime = CodexAppServerRuntime::default();
+        runtime.approval_waiters.insert(
+            "oldest".to_string(),
+            PendingApproval {
+                thread_id: "th_old".to_string(),
+                created_at_epoch_ms: 1,
+                timeout_ms: 30_000,
+                decision_token: "tok_old".to_string(),
+                approval_window_id: runtime.approval_window_id,
+                rpc_request_id: None,
+            },
+        );
+        for idx in 0..(MAX_PENDING_APPROVAL_WAITERS - 1) {
+            runtime.approval_waiters.insert(
+                format!("req_{idx}"),
+                PendingApproval {
+                    thread_id: "th".to_string(),
+                    created_at_epoch_ms: (idx + 2) as i64,
+                    timeout_ms: 30_000,
+                    decision_token: format!("tok_{idx}"),
+                    approval_window_id: runtime.approval_window_id,
+                    rpc_request_id: None,
+                },
+            );
+        }
+        let request = LiveSessionEventPayload::ApprovalRequest {
+            request_id: "incoming".to_string(),
+            thread_id: "th_new".to_string(),
+            turn_id: "tu_new".to_string(),
+            command: "cmd".to_string(),
+            options: vec!["approve".to_string()],
+            timeout_ms: 30_000,
+            rpc_request_id: Some(serde_json::json!(99)),
+            decision_token: Some("tok_new".to_string()),
+        };
+        handle_live_event_internal(&mut runtime, &request);
+        assert_eq!(runtime.approval_waiters.len(), MAX_PENDING_APPROVAL_WAITERS);
+        assert!(!runtime.approval_waiters.contains_key("oldest"));
+        assert!(runtime.approval_waiters.contains_key("incoming"));
+        assert_eq!(
+            runtime
+                .parse_error_total
+                .get("approval_waiter_overflow")
+                .copied(),
+            Some(1)
+        );
     }
 
     #[test]
@@ -4206,7 +4651,7 @@ mod tests {
             ..CodexAppServerRuntime::default()
         };
         runtime.pending_rpcs.insert(
-            1,
+            1.to_string(),
             PendingRpcRequest {
                 kind: PendingRpcKind::Initialize,
                 sent_at_epoch_ms: now_epoch_ms(),
@@ -4235,7 +4680,7 @@ mod tests {
             ..CodexAppServerRuntime::default()
         };
         runtime.pending_rpcs.insert(
-            11,
+            11.to_string(),
             PendingRpcRequest {
                 kind: PendingRpcKind::ThreadRead,
                 sent_at_epoch_ms: now_epoch_ms(),
@@ -4244,7 +4689,7 @@ mod tests {
         );
         runtime
             .thread_read_results
-            .insert(11, serde_json::json!({ "threadId": "th_1" }));
+            .insert("11".to_string(), serde_json::json!({ "threadId": "th_1" }));
         let state = std::sync::Arc::new(std::sync::Mutex::new(runtime));
         let value = wait_for_thread_read_response(&state, 11, Duration::from_millis(100))
             .expect("thread/read result should be returned");
@@ -4258,7 +4703,7 @@ mod tests {
             ..CodexAppServerRuntime::default()
         };
         runtime_err.pending_rpcs.insert(
-            12,
+            12.to_string(),
             PendingRpcRequest {
                 kind: PendingRpcKind::ThreadRead,
                 sent_at_epoch_ms: now_epoch_ms(),
@@ -4267,7 +4712,7 @@ mod tests {
         );
         runtime_err
             .thread_read_errors
-            .insert(12, "thread/read request failed".to_string());
+            .insert("12".to_string(), "thread/read request failed".to_string());
         let state_err = std::sync::Arc::new(std::sync::Mutex::new(runtime_err));
         let err = wait_for_thread_read_response(&state_err, 12, Duration::from_millis(100))
             .expect_err("thread/read error should be surfaced");
@@ -4291,7 +4736,7 @@ mod tests {
     fn cancel_pending_rpcs_clears_inflight_requests() {
         let mut runtime = CodexAppServerRuntime::default();
         runtime.pending_rpcs.insert(
-            1,
+            1.to_string(),
             PendingRpcRequest {
                 kind: PendingRpcKind::Initialize,
                 sent_at_epoch_ms: 1,
@@ -4299,7 +4744,7 @@ mod tests {
             },
         );
         runtime.pending_rpcs.insert(
-            2,
+            2.to_string(),
             PendingRpcRequest {
                 kind: PendingRpcKind::AccountRead,
                 sent_at_epoch_ms: 1,
@@ -4321,7 +4766,7 @@ mod tests {
         let mut runtime = CodexAppServerRuntime::default();
         runtime.handshake_state = HandshakeState::InitializeSent;
         runtime.pending_rpcs.insert(
-            42,
+            42.to_string(),
             PendingRpcRequest {
                 kind: PendingRpcKind::Initialize,
                 sent_at_epoch_ms: 0,
@@ -4348,7 +4793,7 @@ mod tests {
 
         apply_pending_rpc_success(
             &mut runtime,
-            1,
+            "1",
             PendingRpcRequest {
                 kind: PendingRpcKind::Initialize,
                 sent_at_epoch_ms: now_epoch_ms(),
@@ -4360,7 +4805,7 @@ mod tests {
 
         apply_pending_rpc_success(
             &mut runtime,
-            2,
+            "2",
             PendingRpcRequest {
                 kind: PendingRpcKind::AccountRead,
                 sent_at_epoch_ms: now_epoch_ms(),
@@ -4374,7 +4819,7 @@ mod tests {
         runtime.process_state = super::ProcessState::Running;
         apply_pending_rpc_error(
             &mut runtime,
-            99,
+            "99",
             PendingRpcRequest {
                 kind: PendingRpcKind::AccountLoginStart,
                 sent_at_epoch_ms: now_epoch_ms(),
@@ -4403,7 +4848,7 @@ mod tests {
 
         apply_pending_rpc_success(
             &mut runtime,
-            3,
+            "3",
             PendingRpcRequest {
                 kind: PendingRpcKind::AccountChatgptTokensRefresh,
                 sent_at_epoch_ms: now_epoch_ms(),
@@ -4416,7 +4861,7 @@ mod tests {
 
         apply_pending_rpc_success(
             &mut runtime,
-            4,
+            "4",
             PendingRpcRequest {
                 kind: PendingRpcKind::ThreadRead,
                 sent_at_epoch_ms: now_epoch_ms(),
@@ -4424,7 +4869,7 @@ mod tests {
             },
             &serde_json::json!({ "threadId": "thread_1", "items": [] }),
         );
-        assert!(runtime.thread_read_results.contains_key(&4));
+        assert!(runtime.thread_read_results.contains_key("4"));
     }
 
     #[test]
@@ -4464,6 +4909,22 @@ mod tests {
         )
         .expect_err("missing success should fail");
         assert!(err.contains("success must be boolean"));
+
+        let empty_request_id_message = serde_json::json!({
+            "method": "item/commandExecution/requestApproval",
+            "params": {
+                "requestId": "",
+                "threadId": "th_1",
+                "turnId": "tu_1",
+                "command": "echo hi"
+            }
+        });
+        let err = validate_sidecar_notification_payload(
+            "item/commandExecution/requestApproval",
+            &empty_request_id_message,
+        )
+        .expect_err("empty request id should fail without envelope id");
+        assert!(err.contains("approval request must include requestId/request_id or envelope id"));
     }
 
     #[test]
@@ -4525,6 +4986,7 @@ mod tests {
             command: "write_file".to_string(),
             options: vec!["approve".to_string(), "deny".to_string()],
             timeout_ms: 10_000,
+            rpc_request_id: None,
             decision_token: None,
         };
 
@@ -4533,6 +4995,82 @@ mod tests {
             panic!("expected approval request payload");
         };
         assert!(decision_token.as_deref().unwrap_or_default().len() >= APPROVAL_TOKEN_BYTES);
+    }
+
+    #[test]
+    fn build_sidecar_approval_request_uses_envelope_id_when_request_id_missing() {
+        let message = serde_json::json!({
+            "method": "item/commandExecution/requestApproval",
+            "params": {
+                "threadId": "th_1",
+                "turnId": "tu_1",
+                "command": "echo hi"
+            }
+        });
+        let payload = build_sidecar_approval_request(
+            "item/commandExecution/requestApproval",
+            &message,
+            Some(serde_json::json!(42)),
+        );
+        let LiveSessionEventPayload::ApprovalRequest {
+            request_id,
+            rpc_request_id,
+            ..
+        } = payload
+        else {
+            panic!("expected approval request");
+        };
+        assert_eq!(request_id, "42");
+        assert_eq!(rpc_request_id, Some(serde_json::json!(42)));
+    }
+
+    #[test]
+    fn build_sidecar_approval_request_falls_back_to_envelope_id_when_request_id_is_empty() {
+        let message = serde_json::json!({
+            "method": "item/fileChange/requestApproval",
+            "id": 42,
+            "params": {
+                "requestId": "",
+                "threadId": "th_1",
+                "turnId": "tu_1",
+                "command": "echo hi"
+            }
+        });
+        let payload = build_sidecar_approval_request(
+            "item/fileChange/requestApproval",
+            &message,
+            Some(serde_json::json!(42)),
+        );
+        let LiveSessionEventPayload::ApprovalRequest {
+            request_id,
+            rpc_request_id,
+            ..
+        } = payload
+        else {
+            panic!("expected approval request");
+        };
+        assert_eq!(request_id, "42");
+        assert_eq!(rpc_request_id, Some(serde_json::json!(42)));
+    }
+
+    #[test]
+    fn parse_rpc_response_id_supports_integer_string_and_null_ids() {
+        assert_eq!(
+            parse_rpc_response_id(&serde_json::json!(7)),
+            Some("7".to_string())
+        );
+        assert_eq!(
+            parse_rpc_response_id(&serde_json::json!("8")),
+            Some("8".to_string())
+        );
+        assert_eq!(
+            parse_rpc_response_id(&serde_json::json!("not-a-number")),
+            Some("not-a-number".to_string())
+        );
+        assert_eq!(
+            parse_rpc_response_id(&serde_json::json!(null)),
+            Some("null".to_string())
+        );
     }
 
     #[test]
@@ -4547,6 +5085,7 @@ mod tests {
                 timeout_ms: 5_000,
                 decision_token: "token_ctx".to_string(),
                 approval_window_id: 777,
+                rpc_request_id: None,
             },
         );
 
@@ -4625,7 +5164,7 @@ mod tests {
         let mut runtime = CodexAppServerRuntime::default();
         for id in 1..=(MAX_PENDING_RPC_REQUESTS as i64) {
             runtime.pending_rpcs.insert(
-                id,
+                id.to_string(),
                 PendingRpcRequest {
                     kind: PendingRpcKind::AccountRead,
                     sent_at_epoch_ms: now_epoch_ms(),

@@ -3,12 +3,12 @@ title: "feat: Firefly Visual System v1 (commit-graph semantic signal)"
 type: feat
 date: 2026-02-17
 status: canonical
-brainstorm: "/Users/jamiecraik/dev/narrative/docs/brainstorms/2026-02-17-firefly-visual-system-brainstorm.md"
+brainstorm: "docs/brainstorms/2026-02-17-firefly-visual-system-brainstorm.md"
 deepened: 2026-02-17
 supersedes:
-  - /Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-17-feat-firefly-signal-system-plan.md
-  - /Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-17-feat-firefly-signal-system-plan-deepened.md
-  - /Users/jamiecraik/dev/firefly-narrative/docs/plans/2026-02-17-feat-firefly-signal-system-plan-revised.md
+  - docs/plans/2026-02-17-feat-firefly-signal-system-plan.md
+  - docs/plans/2026-02-17-feat-firefly-signal-system-plan-deepened.md
+  - docs/plans/2026-02-17-feat-firefly-signal-system-plan-revised.md
 ---
 
 # Firefly Visual System v1 Plan
@@ -110,7 +110,7 @@ Without this semantic layer, Firefly remains mostly decorative instead of trustw
 ## Found Brainstorm Context
 
 Found relevant brainstorm from **2026-02-17** and used as source context:
-- `/Users/jamiecraik/dev/narrative/docs/brainstorms/2026-02-17-firefly-visual-system-brainstorm.md`
+- `docs/brainstorms/2026-02-17-firefly-visual-system-brainstorm.md`
 
 Locked decisions imported:
 1. Product-first source of truth.
@@ -124,15 +124,15 @@ Locked decisions imported:
 ### Current implementation check (as of 2026-02-17)
 
 - Firefly state model is currently only `idle|active`:
-  - `/Users/jamiecraik/dev/narrative/src/ui/components/FireflySignal.tsx:8-10`
+  - `src/ui/components/FireflySignal.tsx:8-10`
 - Hook pulse is timer-based (`500ms` reset), which can race future semantic states:
-  - `/Users/jamiecraik/dev/narrative/src/hooks/useFirefly.ts:73-80`
+  - `src/hooks/useFirefly.ts:73-80`
 - Timeline anchoring is implemented and stable (node-ref + container-relative position):
-  - `/Users/jamiecraik/dev/narrative/src/ui/components/Timeline.tsx:34-53`
+  - `src/ui/components/Timeline.tsx:34-53`
 - BranchView currently passes Firefly props through but does not yet emit semantic transitions from loader/finding lifecycle:
-  - `/Users/jamiecraik/dev/narrative/src/ui/views/BranchView.tsx:449-456`
+  - `src/ui/views/BranchView.tsx:449-456`
 - Toggle persistence via Tauri Store is already implemented:
-  - `/Users/jamiecraik/dev/narrative/src/core/tauri/settings.ts:28-54`
+  - `src/core/tauri/settings.ts:28-54`
 
 ### Local patterns and review synthesis
 
@@ -145,9 +145,9 @@ Locked decisions imported:
 
 - No `docs/solutions/` directory exists in this repo (no direct compound learnings to import).
 - Nearest applicable internal docs:
-  - `/Users/jamiecraik/dev/narrative/docs/plans/2026-02-17-feat-firefly-signal-system-plan-deepened.md`
-  - `/Users/jamiecraik/dev/narrative/docs/notes/plans/PLANS.txt:52-101`
-  - `/Users/jamiecraik/dev/narrative/docs/agents/tauri.md:1-37`
+  - `docs/plans/2026-02-17-feat-firefly-signal-system-plan-deepened.md`
+  - `docs/notes/plans/PLANS.txt:52-101`
+  - `docs/agents/tauri.md:1-37`
 
 ## Research Decision (External Docs)
 
@@ -166,7 +166,7 @@ Extend Firefly from `idle|active` pulse behavior to a deterministic semantic sta
 Approach:
 
 1. Keep current Timeline anchoring and settings persistence architecture.
-2. Make `/Users/jamiecraik/dev/narrative/src/hooks/useFirefly.ts` the **single owner** of semantic state; `BranchView` provides inputs and `Timeline` renders only.
+2. Make `src/hooks/useFirefly.ts` the **single owner** of semantic state; `BranchView` provides inputs and `Timeline` renders only.
 3. Replace timer-dominant flow with a derived priority selector: `Insight > Analyzing > Tracking > Idle`.
 4. Lock `Insight` to a concrete source: `model.traceSummaries?.byCommit[selectedCommitSha]` transitioning from `undefined` to a summary where `(aiLines + humanLines + mixedLines + unknownLines) > 0`.
 5. Dedupe `Insight` emissions with `insightKey = ${selectedCommitSha}:${commitSha}:${aiLines}:${humanLines}:${mixedLines}:${unknownLines}:${sortedModelIds}:${sortedToolNames}`.
@@ -233,10 +233,10 @@ Anti-flap rules:
 
 ### 1) State orchestration and race prevention
 
-- Keep semantic transition logic in `/Users/jamiecraik/dev/narrative/src/hooks/useFirefly.ts` as the only state owner.
-- Keep `/Users/jamiecraik/dev/narrative/src/ui/components/Timeline.tsx` focused on position/paint only.
-- Keep `/Users/jamiecraik/dev/narrative/src/ui/views/BranchView.tsx` as input adapter (selection, loader, trace summary inputs).
-- Keep `/Users/jamiecraik/dev/narrative/src/App.tsx` pass-through only (no transition logic).
+- Keep semantic transition logic in `src/hooks/useFirefly.ts` as the only state owner.
+- Keep `src/ui/components/Timeline.tsx` focused on position/paint only.
+- Keep `src/ui/views/BranchView.tsx` as input adapter (selection, loader, trace summary inputs).
+- Keep `src/App.tsx` pass-through only (no transition logic).
 - Guard asynchronous lifecycle transitions by selection identity + sequence token.
 - Apply one deterministic priority selector (`Insight > Analyzing > Tracking > Idle`) to reduce branching complexity.
 - Callback/data path contract:
@@ -285,7 +285,7 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 ### 4) Error visibility (no silent failures)
 
 - Loader failures tied to semantic transitions must route to existing user-visible surface:
-  - `/Users/jamiecraik/dev/narrative/src/ui/views/BranchView.tsx` `actionError` + `ImportErrorBanner`
+  - `src/ui/views/BranchView.tsx` `actionError` + `ImportErrorBanner`
 - Firefly toggle persistence failures must route through the same `setActionError` path and appear in `ImportErrorBanner` (single canonical surface), plus structured console log (`[firefly.toggle.persist_failed]`).
 - Ownership path for toggle failure:
   - `useFirefly.toggle()` reports persistence errors to App-level error handler.
@@ -296,7 +296,7 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 ### 5) Persistence contract
 
 - Continue using Tauri Store lazy singleton pattern:
-  - `/Users/jamiecraik/dev/narrative/src/core/tauri/settings.ts:7-14`
+  - `src/core/tauri/settings.ts:7-14`
 - Keep explicit `save()` after setting toggle to ensure durable preference updates.
 - Toggle-off behavior contract:
   - disabling Firefly immediately suppresses rendering and new state emissions
@@ -305,14 +305,14 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 ### 6) Performance verification protocol (P1)
 
 - Run a scripted 10s timeline-scroll scenario on fixture:
-  - `/Users/jamiecraik/dev/narrative/e2e/fixtures/firefly-large-timeline.json`
+  - `e2e/fixtures/firefly-large-timeline.json`
 - Required verification commands:
   - `pnpm test`
   - `pnpm test:e2e -- e2e/firefly-visual-system-v1.spec.ts`
 - Perf capture command (reproducible):
   - `pnpm test:e2e -- e2e/firefly-visual-system-v1.spec.ts --grep "@firefly-perf"`
 - Persist perf evidence to:
-  - `/Users/jamiecraik/dev/narrative/docs/assets/verification/firefly-perf-YYYY-MM-DD.json`
+  - `docs/assets/verification/firefly-perf-YYYY-MM-DD.json`
 - Perf artifact metadata (required):
   - OS + version
   - browser/runtime mode (headed/headless)
@@ -350,11 +350,11 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 
 ### Validation Gate (must-pass)
 
-- [x] `/Users/jamiecraik/dev/narrative/src/ui/components/__tests__/FireflySignal.test.tsx`
+- [x] `src/ui/components/__tests__/FireflySignal.test.tsx`
   - verifies state-specific classes/data attributes and reduced-motion behavior.
-- [x] `/Users/jamiecraik/dev/narrative/src/hooks/__tests__/useFirefly.test.ts`
+- [x] `src/hooks/__tests__/useFirefly.test.ts`
   - verifies formal transition matrix, precedence ordering, stale-event guards, insight dedupe key, and persistence failure handling.
-- [x] `/Users/jamiecraik/dev/narrative/e2e/firefly-visual-system-v1.spec.ts`
+- [x] `e2e/firefly-visual-system-v1.spec.ts`
   - verifies selection flow, loader-driven analyzing, selected-node-only insight trigger source, and toggle persistence.
   - includes UI assertion that toggle persistence failures are surfaced via `ImportErrorBanner`.
 - [x] Deferred-promise race harness in hook tests
@@ -365,7 +365,7 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 - [x] Perf capture command executed:
   - `pnpm test:e2e -- e2e/firefly-visual-system-v1.spec.ts --grep "@firefly-perf"`
 - [x] Performance verification artifact (scripted scroll run)
-  - records average FPS, p95 frame time, layout-shift check results, and required run metadata at `/Users/jamiecraik/dev/narrative/docs/assets/verification/firefly-perf-YYYY-MM-DD.json`.
+  - records average FPS, p95 frame time, layout-shift check results, and required run metadata at `docs/assets/verification/firefly-perf-YYYY-MM-DD.json`.
 
 ## Implementation Plan
 
@@ -379,8 +379,8 @@ if (insightKey !== lastInsightKey) setState({ type: 'insight', insightKey });
 `depends_on: []`
 
 Files:
-- `/Users/jamiecraik/dev/narrative/src/hooks/useFirefly.ts`
-- `/Users/jamiecraik/dev/narrative/src/ui/components/FireflySignal.tsx`
+- `src/hooks/useFirefly.ts`
+- `src/ui/components/FireflySignal.tsx`
 
 Deliverables:
 - semantic state union for v1 states
@@ -393,9 +393,9 @@ Deliverables:
 `depends_on: [T1]`
 
 Files:
-- `/Users/jamiecraik/dev/narrative/src/ui/views/BranchView.tsx`
-- `/Users/jamiecraik/dev/narrative/src/ui/components/Timeline.tsx`
-- `/Users/jamiecraik/dev/narrative/src/App.tsx` (pass-through only, if prop shape updates are required)
+- `src/ui/views/BranchView.tsx`
+- `src/ui/components/Timeline.tsx`
+- `src/App.tsx` (pass-through only, if prop shape updates are required)
 
 Deliverables:
 - selected-node and loader inputs wired into `useFirefly` (input adapter only)
@@ -410,8 +410,8 @@ Deliverables:
 `depends_on: [T2]`
 
 Files:
-- `/Users/jamiecraik/dev/narrative/src/ui/views/BranchView.tsx`
-- `/Users/jamiecraik/dev/narrative/src/core/types.ts` (if additional typed summary payload is needed)
+- `src/ui/views/BranchView.tsx`
+- `src/core/types.ts` (if additional typed summary payload is needed)
 
 Deliverables:
 - explicit source lock: `traceSummaries.byCommit[selectedCommitSha]`
@@ -424,10 +424,10 @@ Deliverables:
 `depends_on: [T2, T3]`
 
 Files:
-- `/Users/jamiecraik/dev/narrative/src/styles/firefly.css`
-- `/Users/jamiecraik/dev/narrative/src/ui/components/Timeline.tsx`
-- `/Users/jamiecraik/dev/narrative/src/ui/views/BranchView.tsx`
-- `/Users/jamiecraik/dev/narrative/src/core/tauri/settings.ts`
+- `src/styles/firefly.css`
+- `src/ui/components/Timeline.tsx`
+- `src/ui/views/BranchView.tsx`
+- `src/core/tauri/settings.ts`
 
 Deliverables:
 - reduced-motion transition behavior validated
@@ -439,18 +439,18 @@ Deliverables:
 `depends_on: [T4]`
 
 Files:
-- `/Users/jamiecraik/dev/narrative/src/ui/components/__tests__/FireflySignal.test.tsx`
-- `/Users/jamiecraik/dev/narrative/src/hooks/__tests__/useFirefly.test.ts`
-- `/Users/jamiecraik/dev/narrative/e2e/firefly-visual-system-v1.spec.ts`
-- `/Users/jamiecraik/dev/narrative/e2e/fixtures/firefly-large-timeline.json`
-- `/Users/jamiecraik/dev/narrative/docs/assets/verification/` (artifact location for perf gate output)
+- `src/ui/components/__tests__/FireflySignal.test.tsx`
+- `src/hooks/__tests__/useFirefly.test.ts`
+- `e2e/firefly-visual-system-v1.spec.ts`
+- `e2e/fixtures/firefly-large-timeline.json`
+- `docs/assets/verification/` (artifact location for perf gate output)
 
 Deliverables:
 - full state transition coverage
 - stale-event and out-of-order completion regression coverage
 - reduced-motion and persistence regression coverage
 - command gate execution evidence (`pnpm test`, `pnpm test:e2e -- e2e/firefly-visual-system-v1.spec.ts`)
-- scripted perf gate output (avg FPS, p95 frame time, layout-shift outcome) at `/Users/jamiecraik/dev/narrative/docs/assets/verification/firefly-perf-YYYY-MM-DD.json`
+- scripted perf gate output (avg FPS, p95 frame time, layout-shift outcome) at `docs/assets/verification/firefly-perf-YYYY-MM-DD.json`
 - perf artifact includes required run metadata fields
 
 ## SpecFlow Analysis (Gaps Closed)
@@ -509,14 +509,14 @@ Deliverables:
 
 ### Brainstorm + internal references
 
-- `/Users/jamiecraik/dev/narrative/docs/brainstorms/2026-02-17-firefly-visual-system-brainstorm.md`
-- `/Users/jamiecraik/dev/narrative/src/hooks/useFirefly.ts`
-- `/Users/jamiecraik/dev/narrative/src/ui/views/BranchView.tsx`
-- `/Users/jamiecraik/dev/narrative/src/ui/components/Timeline.tsx`
-- `/Users/jamiecraik/dev/narrative/src/ui/components/FireflySignal.tsx`
-- `/Users/jamiecraik/dev/narrative/src/styles/firefly.css`
-- `/Users/jamiecraik/dev/narrative/src/core/tauri/settings.ts`
-- `/Users/jamiecraik/dev/narrative/src/ui/components/RightPanelTabs.tsx`
+- `docs/brainstorms/2026-02-17-firefly-visual-system-brainstorm.md`
+- `src/hooks/useFirefly.ts`
+- `src/ui/views/BranchView.tsx`
+- `src/ui/components/Timeline.tsx`
+- `src/ui/components/FireflySignal.tsx`
+- `src/styles/firefly.css`
+- `src/core/tauri/settings.ts`
+- `src/ui/components/RightPanelTabs.tsx`
 
 ### External standards/docs used for deepening
 

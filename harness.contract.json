@@ -1,0 +1,178 @@
+{
+  "version": "1.2.0",
+  "riskTierRules": {
+    "src/core/security/**": "high",
+    "src/core/tauri/**": "high",
+    "src-tauri/src/secret_store.rs": "high",
+    "src-tauri/src/otlp_receiver.rs": "high",
+    "src-tauri/src/codex_app_server.rs": "high",
+    "src-tauri/src/ingest_config.rs": "high",
+    "src/core/repo/**": "medium",
+    "src/core/narrative/**": "medium",
+    "src/core/telemetry/**": "medium",
+    "src/hooks/**": "medium",
+    "src-tauri/src/**/*.rs": "medium",
+    "src/ui/**": "low",
+    "**/*.test.ts": "low",
+    "**/*.test.tsx": "low",
+    "src/styles/**": "low"
+  },
+  "mergePolicy": {
+    "high": [
+      "review-gate",
+      "evidence-verify"
+    ],
+    "medium": [
+      "review-gate"
+    ],
+    "low": []
+  },
+  "blastRadiusRules": [
+    {
+      "pattern": "src/**/*.{tsx,ts,js}",
+      "checks": [
+        "typecheck",
+        "test",
+        "lint"
+      ],
+      "description": "TypeScript/React changes require typecheck, tests, and lint"
+    },
+    {
+      "pattern": "src-tauri/src/**/*.rs",
+      "checks": [
+        "cargo-clippy",
+        "cargo-test"
+      ],
+      "description": "Rust backend changes require clippy and tests"
+    },
+    {
+      "pattern": "docs/**/*.md",
+      "checks": [
+        "docs-lint"
+      ],
+      "description": "Documentation changes require markdown linting"
+    },
+    {
+      "pattern": "harness.contract.json",
+      "checks": [
+        "policy-gate"
+      ],
+      "description": "Contract changes impact policy enforcement"
+    }
+  ],
+  "docsDriftRules": {},
+  "reviewPolicy": {
+    "timeoutSeconds": 600,
+    "timeoutAction": "fail"
+  },
+  "evidencePolicy": {
+    "requiredFor": [],
+    "allowedTypes": [
+      "png",
+      "jpeg"
+    ],
+    "maxFileSizeBytes": 1048576
+  },
+  "diffBudget": {
+    "maxFiles": 10,
+    "maxNetLOC": 400,
+    "overrideLabel": "diff-budget-override"
+  },
+  "uiLoopPolicy": {
+    "fastCommand": "pnpm test",
+    "verifyCommand": "pnpm test:e2e",
+    "exploreCommand": "pnpm test:e2e:ui",
+    "sloTargets": {
+      "fastLoopSeconds": 60,
+      "verifyLoopSeconds": 180
+    }
+  },
+  "runtimePolicy": {
+    "nodeVersion": "20.x"
+  },
+  "memoryPolicy": {
+    "enabled": true,
+    "provider": "local",
+    "sessionIdTemplate": "repo:<name>:task:<id>",
+    "domain": "default",
+    "requiredTags": [
+      "repo",
+      "area",
+      "type"
+    ],
+    "maxObservationsPerStep": 3,
+    "allowedLevels": [
+      "observation",
+      "learning",
+      "pattern"
+    ],
+    "requireStartRead": true,
+    "requireCloseoutSummary": true,
+    "forbiddenContentPatterns": [
+      "token",
+      "api[_-]?key",
+      "secret",
+      "password",
+      "credential"
+    ]
+  },
+  "memoryMaintenancePolicy": {
+    "validateSchedule": "weekly",
+    "reflectSchedule": "weekly",
+    "questionSlaDays": 7,
+    "duplicateThreshold": 0.8
+  },
+  "memoryEvalPolicy": {
+    "trialsPerTask": 3,
+    "requiredMetrics": [
+      "pass^k",
+      "tool_errors",
+      "duplicate_rate"
+    ],
+    "passPowKThreshold": 0.8
+  },
+  "observabilityPolicy": {
+    "provider": "logs",
+    "collectorEndpoint": "http://localhost:4318"
+  },
+  "packageManagerPolicy": {
+    "allowedManagers": [
+      "pnpm",
+      "npm",
+      "yarn"
+    ],
+    "requiredManager": null
+  },
+  "remediationPolicy": {
+    "providerDefaults": {
+      "codeql": {
+        "autoApplyMaxTier": "medium",
+        "dryRunOnlyByDefault": true
+      },
+      "codex": {
+        "autoApplyMaxTier": "medium",
+        "dryRunOnlyByDefault": true
+      }
+    },
+    "canonicalRerunWorkflow": "greptile-rerun.yml",
+    "marker": "<!-- harness-remediation-rerun -->",
+    "timeoutMinutes": 20,
+    "retryLimit": 3,
+    "requireEvidence": true
+  },
+  "gapCasePolicy": {
+    "requiredEvidenceStatuses": [
+      "passed",
+      "approved"
+    ],
+    "requiredCloseReasons": [
+      "fix",
+      "workaround",
+      "waived"
+    ],
+    "defaultDueDays": 7,
+    "caseIdPrefix": "gap-",
+    "caseStore": ".harness/gap-cases.json",
+    "allowEvidencelessResolve": false
+  }
+}

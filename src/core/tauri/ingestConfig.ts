@@ -131,6 +131,17 @@ export type CodexStreamIngestResult = {
 
 export type LiveSessionEventPayload =
   | {
+      type: 'ApprovalRequest';
+      requestId: string;
+      threadId: string;
+      turnId: string;
+      command: string;
+      options: string[];
+      timeoutMs: number;
+      rpcRequestId?: string | number | null;
+      decisionToken?: string;
+    }
+  | {
       type: 'SessionDelta';
       threadId: string;
       turnId: string;
@@ -140,16 +151,6 @@ export type LiveSessionEventPayload =
       sequenceId: number;
       receivedAtIso: string;
       payload: unknown;
-    }
-  | {
-      type: 'ApprovalRequest';
-      requestId: string;
-      threadId: string;
-      turnId: string;
-      command: string;
-      options: string[];
-      timeoutMs: number;
-      decisionToken?: string;
     }
   | {
       type: 'ApprovalResult';

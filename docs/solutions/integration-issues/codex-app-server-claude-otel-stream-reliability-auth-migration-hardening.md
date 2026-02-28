@@ -21,11 +21,11 @@ related_commits:
   - 048f33b
   - 9062444
 related_paths:
-  - /Users/jamiecraik/dev/narrative/src-tauri/src/codex_app_server.rs
-  - /Users/jamiecraik/dev/narrative/src-tauri/src/ingest_config.rs
-  - /Users/jamiecraik/dev/narrative/src/core/tauri/ingestConfig.ts
-  - /Users/jamiecraik/dev/narrative/docs/plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md
-  - /Users/jamiecraik/dev/narrative/docs/agents/hybrid-capture-rollout-runbook.md
+  - src-tauri/src/codex_app_server.rs
+  - src-tauri/src/ingest_config.rs
+  - src/core/tauri/ingestConfig.ts
+  - ../../plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md
+  - ../../agents/hybrid-capture-rollout-runbook.md
 ---
 
 # Codex App Server + Claude OTEL hybrid reliability hardening
@@ -93,8 +93,8 @@ Hybrid capture (Codex sidecar stream + OTEL baseline) was not consistently reach
 
 ## Verification
 Executed during remediation:
-- `cargo test --manifest-path /Users/jamiecraik/dev/narrative/src-tauri/Cargo.toml codex_app_server`
-- `cargo test --manifest-path /Users/jamiecraik/dev/narrative/src-tauri/Cargo.toml ingest_config`
+- `cargo test --manifest-path src-tauri/Cargo.toml codex_app_server`
+- `cargo test --manifest-path src-tauri/Cargo.toml ingest_config`
 - `pnpm test:integration`
 
 Key assertions now covered:
@@ -116,7 +116,7 @@ Key assertions now covered:
   5. verify `HYBRID_ACTIVE`.
 
 ## Related documentation
-- [/Users/jamiecraik/dev/narrative/docs/plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md](/Users/jamiecraik/dev/narrative/docs/plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md)
-- [/Users/jamiecraik/dev/narrative/docs/agents/hybrid-capture-rollout-runbook.md](/Users/jamiecraik/dev/narrative/docs/agents/hybrid-capture-rollout-runbook.md)
-- [/Users/jamiecraik/dev/narrative/docs/brainstorms/2026-02-19-hybrid-capture-reliability-brainstorm.md](/Users/jamiecraik/dev/narrative/docs/brainstorms/2026-02-19-hybrid-capture-reliability-brainstorm.md)
-- [/Users/jamiecraik/dev/narrative/docs/brainstorms/2026-02-17-codex-app-server-integration-brainstorm.md](/Users/jamiecraik/dev/narrative/docs/brainstorms/2026-02-17-codex-app-server-integration-brainstorm.md)
+- [../../plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md](../../plans/2026-02-19-feat-hybrid-codex-claude-capture-reliability-plan.md)
+- [../../agents/hybrid-capture-rollout-runbook.md](../../agents/hybrid-capture-rollout-runbook.md)
+- [../../brainstorms/2026-02-19-hybrid-capture-reliability-brainstorm.md](../../brainstorms/2026-02-19-hybrid-capture-reliability-brainstorm.md)
+- [../../brainstorms/2026-02-17-codex-app-server-integration-brainstorm.md](../../brainstorms/2026-02-17-codex-app-server-integration-brainstorm.md)

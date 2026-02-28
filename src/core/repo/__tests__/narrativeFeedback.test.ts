@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockGetDb = vi.hoisted(() => vi.fn());
 
@@ -33,10 +33,6 @@ describe('narrativeFeedback', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('creates stable idempotency keys for the same minute bucket', async () => {
@@ -171,6 +167,7 @@ describe('narrativeFeedback', () => {
       })
     ).rejects.toThrow('Narrative feedback requires a branchName.');
   });
+
   it('submits feedback and returns a recomputed calibration profile', async () => {
     const db = createMockDb(true);
     mockGetDb.mockResolvedValue(db);
@@ -333,6 +330,7 @@ describe('narrativeFeedback', () => {
     const expectedWindowStart = '2026-01-25T12:00:00.000Z';
     expect(db.select).toHaveBeenCalledWith(expect.stringContaining('COUNT(*) AS total_count'), [1, expectedWindowStart]);
     expect(db.select).toHaveBeenCalledWith(expect.stringContaining('GROUP BY target_id'), [1, expectedWindowStart]);
+    vi.useRealTimers();
   });
 
   it('uses stored profile window when loading calibration profile', async () => {
@@ -409,6 +407,7 @@ describe('narrativeFeedback', () => {
 
     await vi.runAllTimersAsync();
     const result = await submitPromise;
+    vi.useRealTimers();
 
     expect(result.inserted).toBe(true);
     expect(insertAttempts).toBe(3);
