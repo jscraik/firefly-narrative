@@ -61,6 +61,7 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
+          mkdir -p .harness
           FILES=$(git diff --name-only "origin/$BASE_REF"...HEAD | tr '\n' ',' | sed 's/,$//')
           echo "files=$FILES" >> $GITHUB_OUTPUT
           echo "$FILES" > .harness/changed-files.txt
