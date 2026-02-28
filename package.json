@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check": "pnpm lint && pnpm docs:lint && pnpm typecheck && pnpm test && pnpm audit",
     "lint:tokens": "node scripts/lint-tokens.mjs",
     "lint:component-size": "node scripts/lint-component-size.mjs",
     "lint": "pnpm lint:tokens && pnpm lint:component-size && biome check src src-tauri/src",
@@ -109,8 +110,11 @@
     "overrides": {
       "@design-studio/runtime": "file:vendor/design-studio/design-studio-runtime-2.0.0.tgz",
       "@design-studio/tokens": "file:vendor/design-studio/design-studio-tokens-2.0.0.tgz",
+      "basic-ftp": "^5.2.0",
+      "hono": "^4.12.2",
+      "minimatch": "^10.2.3",
+      "rollup": "^4.59.0",
       "lodash": "^4.17.23",
-      "minimatch": "^10.2.1",
       "tmp": "^0.2.4"
     }
   }
