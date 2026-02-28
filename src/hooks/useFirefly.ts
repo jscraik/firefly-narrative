@@ -193,16 +193,11 @@ export function useFirefly(options: UseFireflyOptions): UseFireflyReturn {
   }, [options.selectedNodeId]);
 
   // Load persisted settings on mount.
+  // Uses localStorage fallback when not in Tauri (e.g., browser/Playwright).
   useEffect(() => {
     let cancelled = false;
 
     async function loadSettings() {
-      // In browser dev mode, skip backend call
-      if (import.meta.env.DEV) {
-        setLoading(false);
-        return;
-      }
-
       try {
         const settings = await getFireflySettings();
         if (!cancelled) {
@@ -251,9 +246,8 @@ export function useFirefly(options: UseFireflyOptions): UseFireflyReturn {
     }
 
     try {
-      if (!import.meta.env.DEV || import.meta.env.MODE === 'test') {
-        await setFireflyEnabled(targetEnabled);
-      }
+      // Uses localStorage fallback when not in Tauri (e.g., browser/Playwright)
+      await setFireflyEnabled(targetEnabled);
     } catch (error) {
       const message = getErrorMessage(error);
       console.error('[firefly.toggle.persist_failed]', error);
