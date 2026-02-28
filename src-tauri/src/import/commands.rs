@@ -904,6 +904,7 @@ async fn store_session_with_meta(
     Ok(session_id)
 }
 
+#[allow(dead_code)]
 pub(crate) async fn store_codex_app_server_completed_session(
     db: &sqlx::SqlitePool,
     repo_id: i64,

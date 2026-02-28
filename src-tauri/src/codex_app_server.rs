@@ -25,11 +25,17 @@ const RESTART_COOLDOWN_MS: u64 = 500;
 const SHUTDOWN_GRACE_MS: u64 = 1_500;
 const DEFAULT_LIVE_SESSIONS_TTL_HOURS: i64 = 72;
 const DEFAULT_LIVE_SESSIONS_MAX_ROWS: i64 = 10_000;
+// Reconnect validation reasons (used by validate_reconnect_payload when codex_app_server_receive_live_event is wired)
+#[allow(dead_code)]
 const RECONNECT_REASON_SCHEMA_MISMATCH: &str = "schema_version_mismatch";
+#[allow(dead_code)]
 const RECONNECT_REASON_SESSION_INVALID: &str = "session_invalid";
+#[allow(dead_code)]
 const RECONNECT_REASON_TOKEN_INVALID: &str = "token_invalid";
 const APP_SERVER_PROTOCOL_TARGET: &str = "v2";
+#[allow(dead_code)]
 const APP_SERVER_SCHEMA_SUPPORTED: &[&str] = &["v1"];
+#[allow(dead_code)]
 const APP_SERVER_SCHEMA_DEPRECATED: &[&str] = &[];
 const RPC_REQUEST_TIMEOUT_MS: u64 = 30_000;
 const MAX_PENDING_RPC_REQUESTS: usize = 256;
@@ -83,6 +89,7 @@ const ALLOWED_SIDECAR_NOTIFICATION_METHODS: &[&str] = &[
     "turn/started",
     "turn/completed",
 ];
+#[allow(dead_code)]
 const REQUIRED_APP_SERVER_METHODS: &[&str] = &[
     METHOD_INITIALIZE,
     METHOD_INITIALIZED,
@@ -138,6 +145,7 @@ struct SidecarBinaryManifest {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 enum SchemaVersionPolicy {
     Supported,
     Deprecated,
@@ -272,6 +280,7 @@ pub struct CodexStreamEventInput {
     pub item_id: String,
     pub event_type: String,
     pub source: String, // otel | app_server_stream
+    #[allow(dead_code)]
     pub payload: Option<serde_json::Value>,
 }
 
@@ -2719,6 +2728,7 @@ fn parse_i64_env(key: &str, default_value: i64) -> i64 {
         .unwrap_or(default_value)
 }
 
+#[allow(dead_code)]
 fn extract_repo_id(payload: &serde_json::Value) -> Option<i64> {
     payload
         .get("repoId")
@@ -2727,6 +2737,7 @@ fn extract_repo_id(payload: &serde_json::Value) -> Option<i64> {
         .filter(|value| *value > 0)
 }
 
+#[allow(dead_code)]
 fn schema_version_policy(schema_version: &str) -> SchemaVersionPolicy {
     if APP_SERVER_SCHEMA_SUPPORTED.contains(&schema_version) {
         return SchemaVersionPolicy::Supported;
@@ -2737,6 +2748,7 @@ fn schema_version_policy(schema_version: &str) -> SchemaVersionPolicy {
     SchemaVersionPolicy::Rejected
 }
 
+#[allow(dead_code)]
 fn validate_reconnect_payload(payload: &LiveSessionEventPayload) -> Result<(), &'static str> {
     let LiveSessionEventPayload::SessionDelta { payload, .. } = payload else {
         return Ok(());
@@ -2778,6 +2790,7 @@ fn validate_reconnect_payload(payload: &LiveSessionEventPayload) -> Result<(), &
     Ok(())
 }
 
+#[allow(dead_code)]
 fn apply_reconnect_validation_failure(runtime: &mut CodexAppServerRuntime, reason: &'static str) {
     runtime.status.stream_healthy = false;
     runtime.stream_session_state = StreamSessionState::Failed;
@@ -2823,6 +2836,7 @@ fn live_sessions_max_rows() -> i64 {
     )
 }
 
+#[allow(dead_code)]
 async fn upsert_live_session(
     pool: &SqlitePool,
     payload: &LiveSessionEventPayload,
@@ -2940,6 +2954,7 @@ fn cleanup_live_sessions_blocking(
     .map(Some)
 }
 
+#[allow(dead_code)]
 fn persist_live_event_blocking(
     app_handle: &AppHandle,
     payload: &LiveSessionEventPayload,
@@ -2995,6 +3010,7 @@ fn persist_live_event_blocking(
     })
 }
 
+#[allow(dead_code)]
 fn parse_event_from_legacy_input(event: CodexStreamEventInput) -> LiveSessionEventPayload {
     LiveSessionEventPayload::SessionDelta {
         thread_id: event.thread_id,
@@ -3008,6 +3024,7 @@ fn parse_event_from_legacy_input(event: CodexStreamEventInput) -> LiveSessionEve
     }
 }
 
+#[allow(dead_code)]
 fn parser_validation_error(
     kind: &str,
     raw: &serde_json::Value,
@@ -3025,6 +3042,7 @@ fn parser_validation_error(
     }
 }
 
+#[allow(dead_code)]
 fn parse_live_payload(
     raw: serde_json::Value,
 ) -> Result<LiveSessionEventPayload, LiveSessionEventPayload> {
@@ -3349,6 +3367,7 @@ fn validate_approval_submission_context(
     Ok(pending)
 }
 
+#[allow(dead_code)]
 fn command_not_exposed_error(command: &str) -> String {
     format!("command-not-exposed: {command} is internal-only; use sidecar event bridge")
 }
@@ -3784,6 +3803,7 @@ pub fn codex_app_server_request_thread_snapshot(
 }
 
 #[command(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub fn codex_app_server_receive_live_event(
     app_handle: AppHandle,
     state: State<'_, CodexAppServerState>,
@@ -4045,6 +4065,7 @@ pub fn get_capture_reliability_status(
 /// TODO(2026-02-24): migration-safe deprecation path — keep command shape for one release,
 /// but reject renderer mutation attempts. Remove in next release after bridge rollout verification.
 #[command(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub fn codex_app_server_set_stream_health(
     _healthy: bool,
     _reason: Option<String>,
@@ -4057,6 +4078,7 @@ pub fn codex_app_server_set_stream_health(
 /// TODO(2026-02-24): migration-safe deprecation path — keep command shape for one release,
 /// but reject renderer mutation attempts. Remove in next release after bridge rollout verification.
 #[command(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub fn ingest_codex_stream_event(
     _event: CodexStreamEventInput,
 ) -> Result<CodexStreamIngestResult, String> {
