@@ -8,7 +8,9 @@ export function normalizeHttpUrl(url: string | undefined): string | undefined {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return undefined;
     }
-    return parsed.toString();
+    // Strip trailing slash to avoid double-slash when paths are appended
+    const normalized = parsed.toString();
+    return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
   } catch {
     return undefined;
   }
