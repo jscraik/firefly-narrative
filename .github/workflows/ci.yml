@@ -90,14 +90,14 @@ jobs:
           jq -e '.dashboards_live == true and .alerts_routed_owner != null and (.sli_definitions | length) >= 6' artifacts/release/codex-app-server/telemetry-readiness.json
 
       - name: Upload codex rollout artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: codex-rollout-artifacts
           path: artifacts/release/codex-app-server/
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
