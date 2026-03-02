@@ -28,8 +28,11 @@ mkdir -p "$DIAGRAM_DIR" "$CONTEXT_DIR"
 
 # Check for diagram CLI
 if ! command -v diagram &>/dev/null; then
-  echo "[FAIL] diagram CLI not found. Install with: mise install @brainwav/diagram"
-  exit 1
+  echo "[SKIP] diagram CLI not found. Install with: mise install @brainwav/diagram"
+  echo "[INFO] Generating Mermaid diagrams from templates only..."
+  SKIP_DIAGRAM_CLI="true"
+else
+  SKIP_DIAGRAM_CLI="false"
 fi
 
 if [[ "$DRY_RUN" == "true" ]]; then
@@ -41,11 +44,15 @@ fi
 # Generate all diagram types
 echo ""
 echo "Generating architecture diagrams..."
-diagram all "$REPO_ROOT" \
-  --output-dir "$DIAGRAM_DIR" \
-  --patterns "**/*.ts,**/*.tsx,**/*.rs" \
-  --exclude "node_modules/**,.git/**,dist/**,target/**,vendor/**" \
-  --max-files 200
+if [[ "$SKIP_DIAGRAM_CLI" == "false" ]]; then
+  diagram all "$REPO_ROOT" \
+    --output-dir "$DIAGRAM_DIR" \
+    --patterns "**/*.ts,**/*.tsx,**/*.rs" \
+    --exclude "node_modules/**,.git/**,dist/**,target/**,vendor/**" \
+    --max-files 200
+else
+  echo "[SKIP] Skipping diagram CLI generation (CLI not available)"
+fi
 
 # Convert any SVG outputs to Mermaid format if needed
 # The diagram CLI outputs SVG; we also create .mmd versions for AI context
