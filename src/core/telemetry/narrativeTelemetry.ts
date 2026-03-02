@@ -11,6 +11,62 @@ export type NarrativeTelemetryEventName =
   | 'kill_switch_triggered'
   | 'ui.quality.render_decision';
 
+// ============================================================================
+// Ask-Why Telemetry Events
+// ============================================================================
+
+import type {
+  AskWhyConfidenceBand,
+  AskWhyCitationType,
+  AskWhyFallbackReasonCode,
+} from '../types';
+
+export type AskWhyTelemetryEventName =
+  | 'ask_why_submitted'
+  | 'ask_why_answer_viewed'
+  | 'ask_why_evidence_opened'
+  | 'ask_why_fallback_used'
+  | 'ask_why_error';
+
+// Re-export types for convenience
+export type { AskWhyConfidenceBand, AskWhyCitationType, AskWhyFallbackReasonCode };
+
+export type AskWhyTelemetryPayload = {
+  queryId: string;
+  branchId?: string;
+  questionHash?: string;
+  confidence?: AskWhyConfidenceBand;
+  citationCount?: number;
+  citationType?: AskWhyCitationType;
+  citationId?: string;
+  fallbackUsed?: boolean;
+  reasonCode?: AskWhyFallbackReasonCode;
+  errorType?: string;
+};
+
+// Combined telemetry event names for dispatch
+export type NarrativeTelemetryEventNameAll =
+  | NarrativeTelemetryEventName
+  | AskWhyTelemetryEventName;
+
+// Telemetry event structure
+type NarrativeTelemetryEventDetail = {
+  schemaVersion: NarrativeTelemetrySchemaVersion;
+  event: NarrativeTelemetryEventNameAll;
+  payload: NarrativeTelemetryPayload | AskWhyTelemetryPayload;
+  atISO: string;
+};
+
+declare global {
+  interface WindowEventMap {
+    'narrative:telemetry': CustomEvent<NarrativeTelemetryEventDetail>;
+  }
+}
+
+// ============================================================================
+// Narrative Telemetry Types
+// ============================================================================
+
 type NarrativeEvidenceSource = 'demo' | 'git' | 'recall_lane';
 
 export type NarrativeHeaderKind = 'hidden' | 'shell' | 'full';
@@ -64,10 +120,18 @@ export type NarrativeRenderDecisionInput = {
   budgetMs: number;
 };
 
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
 function sanitizeMs(value: number): number {
   if (!Number.isFinite(value) || value < 0) return 0;
   return Math.round(value * 1000) / 1000;
 }
+
+// ============================================================================
+// Narrative Telemetry Functions
+// ============================================================================
 
 export function trackNarrativeEvent(
   event: NarrativeTelemetryEventName,
@@ -102,5 +166,96 @@ export function trackQualityRenderDecision(input: NarrativeRenderDecisionInput) 
     durationMs,
     budgetMs,
     overBudget: durationMs > budgetMs,
+  });
+}
+
+// ============================================================================
+// Ask-Why Telemetry Tracking Functions
+// ============================================================================
+
+function trackAskWhyEvent(
+  event: AskWhyTelemetryEventName,
+  payload: AskWhyTelemetryPayload
+) {
+  if (typeof window === 'undefined') return;
+
+  window.dispatchEvent(
+    new CustomEvent('narrative:telemetry', {
+      detail: {
+        schemaVersion: 'v1' as NarrativeTelemetrySchemaVersion,
+        event,
+        payload,
+        atISO: new Date().toISOString(),
+      },
+    })
+  );
+}
+
+export type TrackAskWhySubmittedInput = {
+  queryId: string;
+  branchId: string;
+  questionHash: string;
+};
+
+export function trackAskWhySubmitted(input: TrackAskWhySubmittedInput) {
+  trackAskWhyEvent('ask_why_submitted', {
+    queryId: input.queryId,
+    branchId: input.branchId,
+    questionHash: input.questionHash,
+  });
+}
+
+export type TrackAskWhyAnswerViewedInput = {
+  queryId: string;
+  confidence: AskWhyConfidenceBand;
+  citationCount: number;
+  fallbackUsed: boolean;
+};
+
+export function trackAskWhyAnswerViewed(input: TrackAskWhyAnswerViewedInput) {
+  trackAskWhyEvent('ask_why_answer_viewed', {
+    queryId: input.queryId,
+    confidence: input.confidence,
+    citationCount: input.citationCount,
+    fallbackUsed: input.fallbackUsed,
+  });
+}
+
+export type TrackAskWhyEvidenceOpenedInput = {
+  queryId: string;
+  citationType: AskWhyCitationType;
+  citationId: string;
+};
+
+export function trackAskWhyEvidenceOpened(input: TrackAskWhyEvidenceOpenedInput) {
+  trackAskWhyEvent('ask_why_evidence_opened', {
+    queryId: input.queryId,
+    citationType: input.citationType,
+    citationId: input.citationId,
+  });
+}
+
+export type TrackAskWhyFallbackUsedInput = {
+  queryId: string;
+  reasonCode: AskWhyFallbackReasonCode;
+};
+
+export function trackAskWhyFallbackUsed(input: TrackAskWhyFallbackUsedInput) {
+  trackAskWhyEvent('ask_why_fallback_used', {
+    queryId: input.queryId,
+    reasonCode: input.reasonCode,
+    fallbackUsed: true,
+  });
+}
+
+export type TrackAskWhyErrorInput = {
+  queryId: string;
+  errorType: string;
+};
+
+export function trackAskWhyError(input: TrackAskWhyErrorInput) {
+  trackAskWhyEvent('ask_why_error', {
+    queryId: input.queryId,
+    errorType: input.errorType,
   });
 }
