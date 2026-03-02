@@ -100,7 +100,7 @@ flowchart TD
 #### Phase 1: Foundation (scope + contracts)
 - Define ask-why domain types in `src/core/types.ts` (question input, answer payload, citation model, confidence band).
 - Add question/answer orchestration module (for example `src/core/narrative/causalRecall.ts`) using existing narrative + Atlas adapters.
-- Define telemetry event extensions in `src/core/telemetry/narrativeTelemetry.ts` for ask-why viewed/submitted/resolved/fallback, including a deterministic `queryId` for dedupe.
+- Define telemetry event extensions in `src/core/telemetry/narrativeTelemetry.ts` for `ask_why_submitted`, `ask_why_answer_viewed`, `ask_why_evidence_opened`, `ask_why_fallback_used`, `ask_why_error`, including a deterministic `queryId` for dedupe.
 - Deliverable: compile-safe type contracts and deterministic ordering/citation rules.
 
 #### Phase 2: Core implementation (UI + orchestration)
@@ -238,8 +238,8 @@ time_to_understanding = ts_understanding_action - ts_branch_view_open
 ```
 
 Where `ts_understanding_action` is the earlier of:
-1. `answer_viewed` telemetry event timestamp (user scrolled answer into viewport for ≥2s), OR
-2. `evidence_opened` telemetry event timestamp (user clicked a citation from the answer card)
+1. `ask_why_answer_viewed` telemetry event timestamp (user scrolled answer into viewport for ≥2s), OR
+2. `ask_why_evidence_opened` telemetry event timestamp (user clicked a citation from the answer card)
 
 **Required Telemetry Events:**
 
