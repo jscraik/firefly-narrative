@@ -2,25 +2,12 @@ import type { ComponentProps } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFileSelection } from '../../../core/context/FileSelectionContext';
 import { testRuns } from '../../../core/demo/nearbyGridDemo';
-import { buildRecallLane } from '../../../core/narrative/recallLane';
-import { composeBranchNarrative } from '../../../core/narrative/composeBranchNarrative';
-import { buildDecisionArchaeology } from '../../../core/narrative/decisionArchaeology';
-import { evaluateNarrativeRollout } from '../../../core/narrative/rolloutGovernance';
-import { buildStakeholderProjections } from '../../../core/narrative/stakeholderProjections';
-import { loadGitHubContext } from '../../../core/repo/githubContext';
-import { getNarrativeCalibrationProfile, submitNarrativeFeedback } from '../../../core/repo/narrativeFeedback';
 import { getLatestTestRunForCommit } from '../../../core/repo/testRuns';
-import { trackNarrativeEvent, trackQualityRenderDecision } from '../../../core/telemetry/narrativeTelemetry';
+import { trackNarrativeEvent } from '../../../core/telemetry/narrativeTelemetry';
 import type {
-  GitHubContextState,
-  NarrativeCalibrationProfile,
   NarrativeDetailLevel,
   NarrativeEvidenceLink,
-  NarrativeFeedbackAction,
-  NarrativeFeedbackActorRole,
   NarrativeConfidenceTier,
-  NarrativeObservabilityMetrics,
-  StakeholderAudience,
   TestRun,
 } from '../../../core/types';
 import { useFirefly } from '../../../hooks/useFirefly';
@@ -33,9 +20,14 @@ import {
 import type { RightPanelTabs } from '../../components/RightPanelTabs';
 import type { FireflyTrackingSettlePayload, Timeline } from '../../components/Timeline';
 import type { BranchViewLayout } from '../BranchViewLayout';
-import { TIMING, createNarrativeViewInstanceId } from '../branchView.constants';
+import { TIMING } from '../branchView.constants';
 import { shouldRouteEvidenceToRawDiff } from '../branchViewEvidence';
 import type { BranchViewProps } from '../branchView.types';
+import { useBranchAskWhyState } from './useBranchAskWhyState';
+import { useBranchCommitPulse } from './useBranchCommitPulse';
+import { useBranchFeedbackHandler } from './useBranchFeedbackHandler';
+import { useBranchNarrativeState } from './useBranchNarrativeState';
+import { useBranchTelemetry } from './useBranchTelemetry';
 import { useBranchSelectionData } from './useBranchSelectionData';
 
 export function useBranchViewController(props: BranchViewProps): ComponentProps<typeof BranchViewLayout> {
@@ -114,33 +106,17 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const pulsedCommits = useRef<Set<string>>(new Set());
-  const [pulseCommitId, setPulseCommitId] = useState<string | null>(null);
   const [trackingSettledNodeId, setTrackingSettledNodeId] = useState<string | null>(null);
-  const [detailLevel, setDetailLevel] = useState<NarrativeDetailLevel>('summary');
-  const [feedbackActorRole, setFeedbackActorRole] = useState<NarrativeFeedbackActorRole>('developer');
-  const [narrativeCalibration, setNarrativeCalibration] = useState<NarrativeCalibrationProfile | null>(null);
-  const [audience, setAudience] = useState<StakeholderAudience>('manager');
-  const [githubContext, setGithubContext] = useState<GitHubContextState>({
-    status: githubConnectorEnabled ? 'loading' : 'disabled',
-    entries: [],
-  });
-  const [observability, setObservability] = useState<NarrativeObservabilityMetrics>({
-    layerSwitchedCount: 0,
-    evidenceOpenedCount: 0,
-    fallbackUsedCount: 0,
-    killSwitchTriggeredCount: 0,
-  });
 
-  const rolloutTelemetryKeyRef = useRef<string | null>(null);
-  const killSwitchReasonRef = useRef<string | null>(null);
-  const headerDecisionTelemetryKeyRef = useRef<string | null>(null);
   const headerDerivationDurationMsRef = useRef(0);
-  const narrativeViewedKeyRef = useRef<string | null>(null);
   const narrativeViewInstanceIdRef = useRef<string | null>(null);
   const isMountedRef = useRef(true);
   const activeBranchScopeRef = useRef<string | null>(null);
   const feedbackContextRef = useRef<string>('');
+
+  const calibrationEnabled = (import.meta.env.VITE_NARRATIVE_CALIBRATION_V1 ?? 'true') !== 'false';
+  const branchScopeKey = `${model.meta?.repoPath ?? ''}:${model.meta?.branchName ?? ''}`;
+  activeBranchScopeRef.current = branchScopeKey;
 
   const requestIdentityKey = useMemo(
     () =>
@@ -157,15 +133,66 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     [requestIdentityKey, selectedFile, selectedNodeId]
   );
 
-  const feedbackContextKey = `${model.meta?.repoId ?? 'none'}:${model.meta?.branchName ?? 'unknown'}`;
+  useEffect(() => () => {
+    isMountedRef.current = false;
+  }, []);
 
+  // Narrative state extracted to dedicated hook
+  const {
+    detailLevel,
+    audience,
+    feedbackActorRole,
+    githubContext,
+    observability,
+    narrative,
+    recallLaneItems,
+    projections,
+    archaeologyEntries,
+    rolloutReport,
+    effectiveDetailLevel,
+    killSwitchActive,
+    criticalRule,
+    setDetailLevel,
+    setAudience,
+    setFeedbackActorRole,
+    setNarrativeCalibration,
+    bumpObservability,
+  } = useBranchNarrativeState({
+    model,
+    calibrationEnabled,
+    githubConnectorEnabled,
+    branchScopeKey,
+  });
+
+  const repoId = model.meta?.repoId ?? null;
+  const feedbackContextKey = `${repoId ?? 'none'}:${model.meta?.branchName ?? 'unknown'}`;
+
+  // Update feedback context ref for stale-guard checks
   useEffect(() => {
     feedbackContextRef.current = feedbackContextKey;
   }, [feedbackContextKey]);
 
-  useEffect(() => () => {
-    isMountedRef.current = false;
-  }, []);
+  // Feedback handlers extracted to dedicated hook
+  const {
+    handleSubmitFeedback,
+    handleFeedbackRoleChange,
+    handleAudienceChange,
+  } = useBranchFeedbackHandler({
+    repoId,
+    branchName: model.meta?.branchName,
+    narrativeConfidence: narrative.confidence,
+    effectiveDetailLevel,
+    calibrationEnabled,
+    feedbackActorRole,
+    audience,
+    narrativeViewInstanceIdRef,
+    isMountedRef,
+    feedbackContextRef,
+    setActionError,
+    setNarrativeCalibration,
+    setFeedbackActorRole,
+    setAudience,
+  });
 
   const headerViewModel = useMemo(() => {
     const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -191,67 +218,6 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     if (headerViewModel.kind === 'shell') return headerViewModel.state;
     return 'ready';
   }, [headerViewModel]);
-
-  useEffect(() => {
-    const telemetryKey = `${requestIdentityKey}:${headerViewModel.kind}:${headerReasonCode}`;
-    const previousKey = headerDecisionTelemetryKeyRef.current;
-    if (previousKey === telemetryKey) return;
-
-    const transition = previousKey ? 'state_change' : 'initial';
-    headerDecisionTelemetryKeyRef.current = telemetryKey;
-
-    trackQualityRenderDecision({
-      branch: model.meta?.branchName,
-      source: model.source,
-      headerKind: headerViewModel.kind,
-      repoStatus: 'ready',
-      transition,
-      reasonCode: headerReasonCode,
-      durationMs: headerDerivationDurationMsRef.current,
-      budgetMs: 1,
-    });
-  }, [headerReasonCode, headerViewModel.kind, model.meta?.branchName, model.source, requestIdentityKey]);
-
-  const calibrationEnabled = (import.meta.env.VITE_NARRATIVE_CALIBRATION_V1 ?? 'true') !== 'false';
-
-  const narrative = useMemo(
-    () => composeBranchNarrative(model, { calibration: calibrationEnabled ? narrativeCalibration : null }),
-    [model, narrativeCalibration]
-  );
-  const recallLaneItems = useMemo(() => {
-    return buildRecallLane(narrative, {
-      maxItems: 3,
-      confidenceFloor: 0,
-    });
-  }, [narrative]);
-  const projections = useMemo(
-    () =>
-      buildStakeholderProjections({
-        narrative,
-        model,
-        githubEntry: githubContext.entries[0],
-      }),
-    [githubContext.entries, model, narrative]
-  );
-  const archaeologyEntries = useMemo(
-    () => buildDecisionArchaeology({ narrative, githubEntry: githubContext.entries[0] }),
-    [githubContext.entries, narrative]
-  );
-  const rolloutReport = useMemo(
-    () =>
-      evaluateNarrativeRollout({
-        narrative,
-        projections,
-        githubContextState: githubContext,
-        observability,
-      }),
-    [githubContext, narrative, observability, projections]
-  );
-  const criticalRule = rolloutReport.rules.find((rule) => rule.triggered && rule.severity === 'critical');
-  const killSwitchActive = rolloutReport.status === 'rollback';
-  const effectiveDetailLevel: NarrativeDetailLevel = killSwitchActive ? 'diff' : detailLevel;
-  const branchScopeKey = `${model.meta?.repoPath ?? ''}:${model.meta?.branchName ?? ''}`;
-  activeBranchScopeRef.current = branchScopeKey;
 
   const selectedNode = useMemo(
     () => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
@@ -313,33 +279,6 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
   const testRunRequestVersionRef = useRef(0);
 
   const repoRoot = model.meta?.repoPath ?? '';
-  const repoId = model.meta?.repoId ?? null;
-
-  useEffect(() => {
-    if (!calibrationEnabled || !repoId) {
-      setNarrativeCalibration(null);
-      return;
-    }
-
-    let cancelled = false;
-    const calibrationContextAtLoad = feedbackContextKey;
-    setNarrativeCalibration(null);
-    getNarrativeCalibrationProfile(repoId)
-      .then((profile) => {
-        if (cancelled) return;
-        if (feedbackContextRef.current !== calibrationContextAtLoad) return;
-        setNarrativeCalibration(profile);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        if (feedbackContextRef.current !== calibrationContextAtLoad) return;
-        setNarrativeCalibration(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [feedbackContextKey, repoId]);
 
   const refreshRepoTestRun = useCallback(async () => {
     const requestVersion = testRunRequestVersionRef.current + 1;
@@ -382,148 +321,29 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     });
   }, [defaultSelectedId, model.timeline]);
 
-  useEffect(() => {
-    const root = model.meta?.repoPath;
-    if (!root) {
-      setGithubContext({ status: 'empty', entries: [] });
-      return;
-    }
-    if (!githubConnectorEnabled) {
-      setGithubContext({ status: 'disabled', entries: [] });
-      return;
-    }
+  // Commit pulse animation extracted to dedicated hook
+  const { pulseCommitId } = useBranchCommitPulse({
+    timeline: model.timeline,
+    branchScopeKey,
+  });
 
-    let cancelled = false;
-    setGithubContext((prev) => ({ ...prev, status: 'loading', error: undefined }));
-    loadGitHubContext(root)
-      .then((state) => {
-        if (cancelled) return;
-        setGithubContext(state);
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        const message = error instanceof Error ? error.message : String(error);
-        setGithubContext({
-          status: 'error',
-          entries: [],
-          error: message,
-        });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [githubConnectorEnabled, model.meta?.repoPath]);
-
-  useEffect(() => {
-    void branchScopeKey;
-    setFeedbackActorRole('developer');
-    setObservability({
-      layerSwitchedCount: 0,
-      evidenceOpenedCount: 0,
-      fallbackUsedCount: 0,
-      killSwitchTriggeredCount: 0,
-    });
-  }, [branchScopeKey]);
-
-  useEffect(() => {
-    void branchScopeKey;
-    pulsedCommits.current.clear();
-    setPulseCommitId(null);
-  }, [branchScopeKey]);
-
-  useEffect(() => {
-    if (!repoId) return;
-    const key = `${repoId}:${model.meta?.branchName ?? 'unknown'}`;
-    if (narrativeViewedKeyRef.current === key) return;
-    narrativeViewedKeyRef.current = key;
-    const viewInstanceId = createNarrativeViewInstanceId(repoId, model.meta?.branchName);
-    narrativeViewInstanceIdRef.current = viewInstanceId;
-
-    trackNarrativeEvent('narrative_viewed', {
-      branch: model.meta?.branchName,
-      detailLevel: effectiveDetailLevel,
-      confidence: narrative.confidence,
-      viewInstanceId,
-    });
-  }, [effectiveDetailLevel, model.meta?.branchName, narrative.confidence, repoId]);
-
-  const bumpObservability = useCallback((kind: keyof Omit<NarrativeObservabilityMetrics, 'lastEventAtISO'>) => {
-    setObservability((prev) => ({
-      ...prev,
-      [kind]: prev[kind] + 1,
-      lastEventAtISO: new Date().toISOString(),
-    }));
-  }, []);
-
-  useEffect(() => {
-    const key = `${model.meta?.branchName ?? 'unknown'}:${rolloutReport.status}:${rolloutReport.averageScore}`;
-    if (rolloutTelemetryKeyRef.current === key) return;
-    rolloutTelemetryKeyRef.current = key;
-
-    trackNarrativeEvent('rollout_scored', {
-      branch: model.meta?.branchName,
-      confidence: narrative.confidence,
-      rolloutStatus: rolloutReport.status,
-      score: rolloutReport.averageScore,
-    });
-  }, [model.meta?.branchName, narrative.confidence, rolloutReport.averageScore, rolloutReport.status]);
-
-  useEffect(() => {
-    if (!killSwitchActive) {
-      killSwitchReasonRef.current = null;
-      return;
-    }
-
-    const reason = criticalRule?.id ?? 'rollback_guard';
-    if (killSwitchReasonRef.current === reason) return;
-    killSwitchReasonRef.current = reason;
-    bumpObservability('killSwitchTriggeredCount');
-
-    trackNarrativeEvent('kill_switch_triggered', {
-      branch: model.meta?.branchName,
-      confidence: narrative.confidence,
-      rolloutStatus: rolloutReport.status,
-      reason,
-    });
-  }, [
-    bumpObservability,
-    criticalRule?.id,
+  // Telemetry effects extracted to dedicated hook
+  useBranchTelemetry({
+    requestIdentityKey,
+    branchName: model.meta?.branchName,
+    source: model.source,
+    headerViewModel,
+    headerReasonCode,
+    headerDerivationDurationMs: headerDerivationDurationMsRef.current,
+    repoId,
+    effectiveDetailLevel,
+    narrative,
+    rolloutReport,
     killSwitchActive,
-    model.meta?.branchName,
-    narrative.confidence,
-    rolloutReport.status,
-  ]);
-
-  useEffect(() => {
-    const linkedCommitIds = model.timeline
-      .filter((node) => node.badges?.some((badge) => badge.type === 'session'))
-      .map((node) => node.id);
-    const unpulsedCommitIds = linkedCommitIds.filter((id) => !pulsedCommits.current.has(id));
-
-    if (unpulsedCommitIds.length === 0) return;
-
-    const timers: Array<ReturnType<typeof setTimeout>> = [];
-    const pulseGapMs = 1800;
-    const pulseDurationMs = 1600;
-
-    unpulsedCommitIds.forEach((id, index) => {
-      const startDelayMs = index * pulseGapMs;
-      const startPulseTimer = setTimeout(() => {
-        pulsedCommits.current.add(id);
-        setPulseCommitId(id);
-
-        const clearPulseTimer = setTimeout(() => {
-          setPulseCommitId((current) => (current === id ? null : current));
-        }, pulseDurationMs);
-        timers.push(clearPulseTimer);
-      }, startDelayMs);
-      timers.push(startPulseTimer);
-    });
-
-    return () => {
-      timers.forEach(clearTimeout);
-    };
-  }, [model.timeline]);
+    criticalRule,
+    bumpObservability,
+    narrativeViewInstanceIdRef,
+  });
 
   const handleFileClickFromSession = useCallback((path: string) => {
     const fileExists = files.some((file) => file.path === path);
@@ -554,7 +374,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
       detailLevel: level,
       confidence: narrative.confidence,
     });
-  }, [bumpObservability, detailLevel, killSwitchActive, model.meta?.branchName, narrative.confidence]);
+  }, [bumpObservability, detailLevel, killSwitchActive, model.meta?.branchName, narrative.confidence, setDetailLevel]);
 
   const handleOpenRawDiff = useCallback((laneContext?: {
     source?: 'recall_lane';
@@ -588,6 +408,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     selectFile,
     selectedFile,
     branchScopeKey,
+    setDetailLevel,
   ]);
 
   const handleOpenEvidence = useCallback(
@@ -637,59 +458,6 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     ]
   );
 
-  const handleAudienceChange = useCallback((nextAudience: StakeholderAudience) => {
-    if (nextAudience === audience) return;
-    setAudience(nextAudience);
-    trackNarrativeEvent('audience_switched', {
-      branch: model.meta?.branchName,
-      detailLevel: effectiveDetailLevel,
-      audience: nextAudience,
-      confidence: narrative.confidence,
-    });
-  }, [audience, effectiveDetailLevel, model.meta?.branchName, narrative.confidence]);
-
-  const handleFeedbackRoleChange = useCallback((role: NarrativeFeedbackActorRole) => {
-    if (role === feedbackActorRole) return;
-    setFeedbackActorRole(role);
-  }, [feedbackActorRole]);
-
-  const handleSubmitFeedback = useCallback(async (feedback: NarrativeFeedbackAction) => {
-    if (!repoId) return;
-    const branchName = model.meta?.branchName;
-    if (!branchName) {
-      setActionError('Unable to save narrative feedback: missing branch context.');
-      return;
-    }
-    const feedbackContextAtSubmit = feedbackContextRef.current;
-    try {
-      const result = await submitNarrativeFeedback({
-        repoId,
-        branchName,
-        action: feedback,
-      });
-      if (!isMountedRef.current) return;
-      if (feedbackContextRef.current !== feedbackContextAtSubmit) return;
-      if (calibrationEnabled) {
-        setNarrativeCalibration(result.profile);
-      }
-      if (!result.inserted) return;
-      trackNarrativeEvent('feedback_submitted', {
-        branch: model.meta?.branchName,
-        detailLevel: feedback.detailLevel,
-        confidence: narrative.confidence,
-        feedbackType: feedback.feedbackType,
-        feedbackTargetKind: feedback.targetKind,
-        feedbackActorRole: result.verifiedActorRole,
-        viewInstanceId: narrativeViewInstanceIdRef.current ?? undefined,
-      });
-    } catch (error) {
-      if (!isMountedRef.current) return;
-      if (feedbackContextRef.current !== feedbackContextAtSubmit) return;
-      const message = error instanceof Error ? error.message : String(error);
-      setActionError(`Unable to save narrative feedback: ${message}`);
-    }
-  }, [model.meta?.branchName, narrative.confidence, repoId, setActionError]);
-
   const handleExportAgentTrace = useCallback(() => {
     if (!selectedNodeId) return;
     onExportAgentTrace(selectedNodeId, files);
@@ -705,6 +473,17 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     if (payload.selectedNodeId !== selectedNodeId) return;
     setTrackingSettledNodeId(payload.selectedNodeId);
   }, [selectedNodeId]);
+
+  // Ask-Why state extracted to dedicated hook
+  const { askWhyState, handleSubmitAskWhy, handleOpenAskWhyCitation } = useBranchAskWhyState({
+    branchScopeKey,
+    branchName: model.meta?.branchName,
+    repoId: model.meta?.repoId ?? null,
+    narrative,
+    isMountedRef,
+    activeBranchScopeRef,
+    handleOpenEvidence,
+  });
 
   const { importJUnitForCommit } = useTestImport({
     repoRoot,
@@ -825,12 +604,15 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
       killSwitchActive,
       killSwitchReason: criticalRule?.rationale,
       recallLaneItems,
+      askWhyState,
       onAudienceChange: handleAudienceChange,
       onFeedbackActorRoleChange: handleFeedbackRoleChange,
       onDetailLevelChange: handleDetailLevelChange,
       onSubmitFeedback: handleSubmitFeedback,
       onOpenEvidence: handleOpenEvidence,
       onOpenRawDiff: handleOpenRawDiff,
+      onSubmitAskWhy: handleSubmitAskWhy,
+      onOpenAskWhyCitation: handleOpenAskWhyCitation,
     },
     governanceProps: { report: rolloutReport, observability },
     archaeologyProps: { entries: archaeologyEntries, onOpenEvidence: handleOpenEvidence },

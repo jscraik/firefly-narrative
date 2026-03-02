@@ -1,4 +1,6 @@
 import type {
+  AskWhyCitation,
+  AskWhyState,
   BranchNarrative,
   NarrativeConfidenceTier,
   NarrativeEvidenceLink,
@@ -10,6 +12,7 @@ import type {
   StakeholderProjection,
   StakeholderProjections,
 } from '../../core/types';
+import { AskWhyAnswerCard } from './AskWhyAnswerCard';
 
 type RecallLaneEvidenceContext = {
   source?: 'recall_lane';
@@ -28,12 +31,15 @@ type BranchNarrativePanelProps = {
   killSwitchActive?: boolean;
   killSwitchReason?: string;
   recallLaneItems?: NarrativeRecallLaneItem[];
+  askWhyState: AskWhyState;
   onAudienceChange: (audience: StakeholderAudience) => void;
   onFeedbackActorRoleChange: (role: NarrativeFeedbackActorRole) => void;
   onDetailLevelChange: (level: NarrativeDetailLevel) => void;
   onSubmitFeedback: (feedback: NarrativeFeedbackAction) => void;
   onOpenEvidence: OpenEvidenceHandler;
   onOpenRawDiff: (laneContext?: RecallLaneEvidenceContext) => void;
+  onSubmitAskWhy: (question: string) => void;
+  onOpenAskWhyCitation: (citation: AskWhyCitation) => void;
 };
 
 function DetailButton(props: {
@@ -95,6 +101,9 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
     onSubmitFeedback,
     onOpenEvidence,
     onOpenRawDiff,
+    askWhyState,
+    onSubmitAskWhy,
+    onOpenAskWhyCitation,
   } = props;
   const projection = projections[audience] ?? projectionFallback(audience, narrative);
   const effectiveDetailLevel: NarrativeDetailLevel = killSwitchActive ? 'diff' : detailLevel;
@@ -198,6 +207,14 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
               </ol>
             )}
           </div>
+
+          <AskWhyAnswerCard
+            state={askWhyState}
+            onSubmit={onSubmitAskWhy}
+            onOpenCitation={onOpenAskWhyCitation}
+            onOpenRawDiff={onOpenRawDiff}
+            disabled={killSwitchActive}
+          />
 
           <div className="flex items-center gap-1">
             {(['executive', 'manager', 'engineer'] as const).map((option) => (
