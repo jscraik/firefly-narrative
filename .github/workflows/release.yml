@@ -30,7 +30,7 @@ jobs:
         run: python3 scripts/generate-icons-pil.py
 
       - name: Upload icons artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tauri-icons
           path: src-tauri/icons
@@ -222,7 +222,7 @@ jobs:
           jq -e '.dashboards_live == true and .alerts_routed_owner != null and (.sli_definitions | length) >= 6' artifacts/release/codex-app-server/telemetry-readiness.json
 
       - name: Upload release gate artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: codex-release-gate-artifacts
