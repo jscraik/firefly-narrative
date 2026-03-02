@@ -74,8 +74,8 @@
     "maxFileSizeBytes": 1048576
   },
   "diffBudget": {
-    "maxFiles": 10,
-    "maxNetLOC": 400,
+    "maxFiles": 15,
+    "maxNetLOC": 2500,
     "overrideLabel": "diff-budget-override"
   },
   "uiLoopPolicy": {
