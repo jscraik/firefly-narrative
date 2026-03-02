@@ -1,4 +1,6 @@
 import type {
+  AskWhyCitation,
+  AskWhyState,
   BranchNarrative,
   NarrativeConfidenceTier,
   NarrativeEvidenceLink,
@@ -10,6 +12,7 @@ import type {
   StakeholderProjection,
   StakeholderProjections,
 } from '../../core/types';
+import { AskWhyAnswerCard } from './AskWhyAnswerCard';
 
 type RecallLaneEvidenceContext = {
   source?: 'recall_lane';
@@ -28,12 +31,15 @@ type BranchNarrativePanelProps = {
   killSwitchActive?: boolean;
   killSwitchReason?: string;
   recallLaneItems?: NarrativeRecallLaneItem[];
+  askWhyState: AskWhyState;
   onAudienceChange: (audience: StakeholderAudience) => void;
   onFeedbackActorRoleChange: (role: NarrativeFeedbackActorRole) => void;
   onDetailLevelChange: (level: NarrativeDetailLevel) => void;
   onSubmitFeedback: (feedback: NarrativeFeedbackAction) => void;
   onOpenEvidence: OpenEvidenceHandler;
   onOpenRawDiff: (laneContext?: RecallLaneEvidenceContext) => void;
+  onSubmitAskWhy: (question: string) => void;
+  onOpenAskWhyCitation: (citation: AskWhyCitation) => void;
 };
 
 function DetailButton(props: {

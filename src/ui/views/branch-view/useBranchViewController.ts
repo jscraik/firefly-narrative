@@ -10,8 +10,19 @@ import { buildStakeholderProjections } from '../../../core/narrative/stakeholder
 import { loadGitHubContext } from '../../../core/repo/githubContext';
 import { getNarrativeCalibrationProfile, submitNarrativeFeedback } from '../../../core/repo/narrativeFeedback';
 import { getLatestTestRunForCommit } from '../../../core/repo/testRuns';
-import { trackNarrativeEvent, trackQualityRenderDecision } from '../../../core/telemetry/narrativeTelemetry';
+import { composeAskWhyAnswer } from '../../../core/narrative/causalRecall';
+import {
+  trackAskWhyAnswerViewed,
+  trackAskWhyError,
+  trackAskWhyEvidenceOpened,
+  trackAskWhyFallbackUsed,
+  trackAskWhySubmitted,
+  trackNarrativeEvent,
+  trackQualityRenderDecision,
+} from '../../../core/telemetry/narrativeTelemetry';
 import type {
+  AskWhyCitation,
+  AskWhyState,
   GitHubContextState,
   NarrativeCalibrationProfile,
   NarrativeDetailLevel,
@@ -131,8 +142,10 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     fallbackUsedCount: 0,
     killSwitchTriggeredCount: 0,
   });
+  const [askWhyState, setAskWhyState] = useState<AskWhyState>({ kind: 'idle' });
 
   const rolloutTelemetryKeyRef = useRef<string | null>(null);
+  const askWhyRequestVersionRef = useRef(0);
   const killSwitchReasonRef = useRef<string | null>(null);
   const headerDecisionTelemetryKeyRef = useRef<string | null>(null);
   const headerDerivationDurationMsRef = useRef(0);
@@ -705,6 +718,98 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     if (payload.selectedNodeId !== selectedNodeId) return;
     setTrackingSettledNodeId(payload.selectedNodeId);
   }, [selectedNodeId]);
+
+  // Ask-Why handlers with stale-guard protection
+  const handleSubmitAskWhy = useCallback(async (question: string) => {
+    if (!question.trim()) return;
+
+    const requestVersion = ++askWhyRequestVersionRef.current;
+    const branchScopeAtRequest = branchScopeKey;
+
+    setAskWhyState({ kind: 'loading', queryId: `pending-${requestVersion}` });
+
+    const input = {
+      question,
+      branchId: model.meta?.branchName ?? 'unknown',
+      repoId: model.meta?.repoId,
+    };
+
+    try {
+      const result = await composeAskWhyAnswer(input, narrative);
+
+      // Stale-guard: drop response if branch changed or newer request in flight
+      if (!isMountedRef.current) return;
+      if (activeBranchScopeRef.current !== branchScopeAtRequest) return;
+      if (askWhyRequestVersionRef.current !== requestVersion) return;
+
+      if (result.kind === 'error') {
+        setAskWhyState({ kind: 'error', queryId: result.queryId, errorType: result.errorType, message: result.message });
+        trackAskWhyError({ queryId: result.queryId, errorType: result.errorType });
+        return;
+      }
+
+      setAskWhyState({ kind: 'ready', answer: result.answer });
+
+      trackAskWhySubmitted({
+        queryId: result.answer.queryId,
+        branchId: input.branchId,
+        questionHash: result.answer.questionHash,
+      });
+      trackAskWhyAnswerViewed({
+        queryId: result.answer.queryId,
+        confidence: result.answer.confidenceBand,
+        citationCount: result.answer.citations.length,
+        fallbackUsed: result.answer.fallbackUsed,
+      });
+      if (result.answer.fallbackUsed && result.answer.fallbackReasonCode) {
+        trackAskWhyFallbackUsed({
+          queryId: result.answer.queryId,
+          reasonCode: result.answer.fallbackReasonCode,
+        });
+      }
+    } catch (error) {
+      if (!isMountedRef.current) return;
+      if (activeBranchScopeRef.current !== branchScopeAtRequest) return;
+      if (askWhyRequestVersionRef.current !== requestVersion) return;
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setAskWhyState({
+        kind: 'error',
+        queryId: `error-${requestVersion}`,
+        errorType: 'internal',
+        message: errorMessage,
+      });
+    }
+  }, [branchScopeKey, model.meta?.branchName, model.meta?.repoId, narrative]);
+
+  const handleOpenAskWhyCitation = useCallback((citation: AskWhyCitation) => {
+    if (activeBranchScopeRef.current !== branchScopeKey) return;
+
+    const link: NarrativeEvidenceLink = {
+      id: citation.id,
+      kind: citation.type,
+      label: citation.label,
+      commitSha: citation.commitSha,
+      filePath: citation.filePath,
+      sessionId: citation.sessionId,
+    };
+
+    if (askWhyState.kind === 'ready') {
+      trackAskWhyEvidenceOpened({
+        queryId: askWhyState.answer.queryId,
+        citationType: citation.type,
+        citationId: citation.id,
+      });
+    }
+
+    handleOpenEvidence(link);
+  }, [askWhyState, branchScopeKey, handleOpenEvidence]);
+
+  // Reset ask-why state on branch change
+  useEffect(() => {
+    setAskWhyState({ kind: 'idle' });
+    askWhyRequestVersionRef.current++;
+  }, [branchScopeKey]);
 
   const { importJUnitForCommit } = useTestImport({
     repoRoot,
