@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.16.0](https://github.com/jscraik/firefly-narrative/compare/firefly-narrative-v0.15.0...firefly-narrative-v0.16.0) (2026-03-02)
+
+
+### Features
+
+* add ask-why answer card UI (Phase 2) ([#51](https://github.com/jscraik/firefly-narrative/issues/51)) ([a13e019](https://github.com/jscraik/firefly-narrative/commit/a13e0192b062e6832a31df391077e837d11c7131))
+* causal recall copilot phase 1 foundation ([#50](https://github.com/jscraik/firefly-narrative/issues/50)) ([71370c1](https://github.com/jscraik/firefly-narrative/commit/71370c1ad0e2e99388ffb865295df6e4173e99ed))
+
+
+### Bug Fixes
+
+* prevent scroll reset when session badges unchanged ([fe5a812](https://github.com/jscraik/firefly-narrative/commit/fe5a812b0c00d760f5a5fb960dffdf6b833b7c82))
+* skip OAuth login when Codex sidecar already authenticated ([0911902](https://github.com/jscraik/firefly-narrative/commit/09119021ba5ca2f135c88c36e93b776dedc21d82))
+* strip trailing slash from normalized URLs ([1b80758](https://github.com/jscraik/firefly-narrative/commit/1b80758ffeac9578814980dffce8749666d738e0))
+
 ## [0.15.0](https://github.com/jscraik/firefly-narrative/compare/firefly-narrative-v0.14.0...firefly-narrative-v0.15.0) (2026-02-28)
 
 
