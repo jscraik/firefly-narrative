@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { BranchNarrative, NarrativeRecallLaneItem, StakeholderProjections } from '../../../core/types';
+import type { AskWhyState, BranchNarrative, NarrativeRecallLaneItem, StakeholderProjections } from '../../../core/types';
 import { BranchNarrativePanel } from '../BranchNarrativePanel';
 
 const narrative: BranchNarrative = {
@@ -95,6 +95,9 @@ describe('BranchNarrativePanel', () => {
         onSubmitFeedback={vi.fn()}
         onOpenEvidence={vi.fn()}
         onOpenRawDiff={vi.fn()}
+        askWhyState={{ kind: 'idle' }}
+        onSubmitAskWhy={vi.fn()}
+        onOpenAskWhyCitation={vi.fn()}
       />
     );
 
@@ -121,6 +124,9 @@ describe('BranchNarrativePanel', () => {
         onSubmitFeedback={vi.fn()}
         onOpenEvidence={onOpenEvidence}
         onOpenRawDiff={vi.fn()}
+        askWhyState={{ kind: 'idle' }}
+        onSubmitAskWhy={vi.fn()}
+        onOpenAskWhyCitation={vi.fn()}
       />
     );
 
@@ -144,6 +150,9 @@ describe('BranchNarrativePanel', () => {
         onSubmitFeedback={vi.fn()}
         onOpenEvidence={onOpenEvidence}
         onOpenRawDiff={vi.fn()}
+        askWhyState={{ kind: 'idle' }}
+        onSubmitAskWhy={vi.fn()}
+        onOpenAskWhyCitation={vi.fn()}
       />
     );
 
@@ -184,6 +193,9 @@ describe('BranchNarrativePanel', () => {
         onSubmitFeedback={vi.fn()}
         onOpenEvidence={vi.fn()}
         onOpenRawDiff={onOpenRawDiff}
+        askWhyState={{ kind: 'idle' }}
+        onSubmitAskWhy={vi.fn()}
+        onOpenAskWhyCitation={vi.fn()}
       />
     );
 
@@ -212,6 +224,9 @@ describe('BranchNarrativePanel', () => {
         onSubmitFeedback={onSubmitFeedback}
         onOpenEvidence={vi.fn()}
         onOpenRawDiff={vi.fn()}
+        askWhyState={{ kind: 'idle' }}
+        onSubmitAskWhy={vi.fn()}
+        onOpenAskWhyCitation={vi.fn()}
       />
     );
 
@@ -259,6 +274,9 @@ describe('BranchNarrativePanel', () => {
         onSubmitFeedback={vi.fn()}
         onOpenEvidence={vi.fn()}
         onOpenRawDiff={vi.fn()}
+        askWhyState={{ kind: 'idle' }}
+        onSubmitAskWhy={vi.fn()}
+        onOpenAskWhyCitation={vi.fn()}
       />
     );
 
