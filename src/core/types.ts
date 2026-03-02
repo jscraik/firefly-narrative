@@ -582,3 +582,64 @@ export interface TrendColor {
   icon: 'trending_up' | 'trending_down' | 'minus';
   ariaLabel: string;
 }
+
+// ============================================================================
+// Causal Recall Copilot Types (Phase 1)
+// ============================================================================
+
+export type AskWhyConfidenceBand = 'high' | 'medium' | 'low';
+
+export type AskWhyFallbackReasonCode =
+  | 'no_evidence'
+  | 'conflicting_signals'
+  | 'atlas_unavailable'
+  | 'low_confidence_override';
+
+export type AskWhyCitationType = 'commit' | 'session' | 'file' | 'diff';
+
+export type AskWhyCitation = {
+  id: string;
+  type: AskWhyCitationType;
+  label: string;
+  commitSha?: string;
+  filePath?: string;
+  sessionId?: string;
+};
+
+export type AskWhySentenceCitationMapEntry = {
+  sentenceIndex: number;
+  citationIds: string[];
+  uncertain?: boolean;
+};
+
+export type AskWhyQuestionInput = {
+  question: string;
+  branchId: string;
+  repoId?: number;
+};
+
+export type AskWhyAnswerPayload = {
+  queryId: string;
+  questionHash: string;
+  answerParagraph: string;
+  confidenceBand: AskWhyConfidenceBand;
+  confidence: number;
+  citations: AskWhyCitation[];
+  sentenceCitationMap: AskWhySentenceCitationMapEntry[];
+  fallbackUsed: boolean;
+  fallbackReasonCode?: AskWhyFallbackReasonCode;
+  generatedAtISO: string;
+};
+
+export type AskWhyState =
+  | { kind: 'idle' }
+  | { kind: 'loading'; queryId: string }
+  | { kind: 'ready'; answer: AskWhyAnswerPayload }
+  | { kind: 'error'; queryId: string; errorType: string; message?: string };
+
+export type AskWhyTelemetryEventName =
+  | 'ask_why_submitted'
+  | 'ask_why_answer_viewed'
+  | 'ask_why_evidence_opened'
+  | 'ask_why_fallback_used'
+  | 'ask_why_error';
