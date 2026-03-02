@@ -87,10 +87,18 @@ jobs:
           bash scripts/harness-cli.sh diff-budget --contract harness.contract.json --base "origin/$BASE_REF" --head "$HEAD_SHA"
           bash scripts/harness-cli.sh evidence-verify --contract harness.contract.json --changed "$FILES_CSV"
 
-          # Check for JS/TS files and run silent-error check
-          if echo "$FILES_CSV" | grep -qE '\.(ts|tsx|js|jsx)'; then
-            JS_FILES=$(echo "$FILES_CSV" | tr ',' '\n' | grep -E '\.(ts|tsx|js|jsx)$' | tr '\n' ',')
-            bash scripts/harness-cli.sh silent-error --files "$JS_FILES"
+          # Check for JS/TS files and run silent-error check (grep may return 1 when no matches)
+          JS_TS_FOUND=false
+          if echo "$FILES_CSV" | grep -qE '\.(ts|tsx|js|jsx)' 2>/dev/null; then
+            JS_TS_FOUND=true
+          fi
+          if [ "$JS_TS_FOUND" = true ]; then
+            JS_FILES=$(echo "$FILES_CSV" | tr ',' '\n' | grep -E '\.(ts|tsx|js|jsx)$' | tr '\n' ',' || true)
+            if [[ -n "$JS_FILES" && "$JS_FILES" != "," ]]; then
+              bash scripts/harness-cli.sh silent-error --files "$JS_FILES"
+            else
+              echo "No JS/TS files changed; skipping silent-error gate."
+            fi
           else
             echo "No JS/TS files changed; skipping silent-error gate."
           fi
