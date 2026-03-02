@@ -31,10 +31,10 @@ export async function hashQuestion(question: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 8);
 }
 
-// Query ID with minute bucket for telemetry dedupe
+// Query ID with repo scope and minute bucket for telemetry dedupe
 export function generateQueryId(input: AskWhyQuestionInput): string {
   const minuteBucket = Math.floor(Date.now() / 60000);
-  return simpleHash(`${input.branchId}:${input.question}:${minuteBucket}`);
+  return simpleHash(`${input.repoId}:${input.branchId}:${input.question}:${minuteBucket}`);
 }
 
 export function classifyConfidenceBand(confidence: number): AskWhyConfidenceBand {
@@ -80,6 +80,11 @@ export async function composeAskWhyAnswer(
   narrative: BranchNarrative
 ): Promise<ComposeAskWhyResult> {
   const queryId = generateQueryId(input);
+
+  if (!input.question?.trim()) {
+    return { kind: 'error', queryId, errorType: 'invalid_input', message: 'Question cannot be blank.' };
+  }
+
   const questionHash = await hashQuestion(input.question);
 
   if (!narrative.summary?.trim()) {
