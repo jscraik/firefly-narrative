@@ -1,4 +1,4 @@
-# Harness Development Makefile
+# Firefly Narrative development Makefile
 # Run `make help` to see available commands
 
 .PHONY: \
@@ -21,10 +21,10 @@ help: ## Show this help message
 install: ## Install dependencies
 	pnpm install
 
-setup: install hooks ## Full setup: install deps and configure git hooks
+setup: install hooks env-check ## Full setup: install deps, configure git hooks, validate environment
 
 hooks: ## Setup git hooks
-	pnpm exec simple-git-hooks
+	node scripts/setup-git-hooks.js
 
 # === Development ===
 
@@ -63,7 +63,8 @@ test-deep: ## Run deep test suite (unit + integration + a11y)
 test-artifacts: ## Run tests with stable artifact outputs
 	pnpm test:artifacts
 
-check: lint docs-lint typecheck test ## Run standard CI checks
+check: ## Run standard CI checks
+	pnpm check
 
 # === Security ===
 
@@ -86,17 +87,20 @@ reset: clean ## Full reset: clean and reinstall
 
 # === CI ===
 
-ci: check audit ## Run CI checks (check + audit)
+ci: check test-deep ## Run CI checks (strict parity)
 
 # === Diagrams ===
 
-diagrams: ## Generate architecture diagrams
+diagrams: ## Refresh canonical diagrams and sync AI compatibility mirror
 	bash scripts/refresh-diagram-context.sh --force
+	mkdir -p AI/diagrams AI/context
+	cp -f .diagram/*.mmd AI/diagrams/ 2>/dev/null || true
+	cp -f .diagram/context/diagram-context.md AI/context/diagram-context.md
 
 # === Environment ===
 
 env-check: ## Validate local development environment
-	@bash scripts/check-environment.sh
+	@bash scripts/check-environment.sh --contract harness.contract.json
 
 harness-preflight: ## Run harness contract preflight gate
 	pnpm exec harness preflight-gate --contract harness.contract.json

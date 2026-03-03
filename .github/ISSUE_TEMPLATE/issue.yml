@@ -46,7 +46,7 @@ body:
         - Mode: [web-only (`pnpm dev`) or tauri (`pnpm tauri dev`)]
         - Commit/branch: [e.g. main @ abc1234]
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: logs

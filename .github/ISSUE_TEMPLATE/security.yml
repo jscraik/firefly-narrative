@@ -38,7 +38,7 @@ body:
       label: Proof of Concept
       description: If applicable, provide a safe proof of concept (without exposing secrets)
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: mitigation
@@ -46,4 +46,4 @@ body:
       label: Suggested Mitigation
       description: If you have suggestions for how to fix this issue, please describe them
     validations:
-      required: false
+      required: true
