@@ -1,0 +1,58 @@
+# Prek configuration for firefly-narrative (enforced local gates)
+# Install prek: mise install cargo:prek || cargo install prek
+# Activate hooks: prek install
+
+[default_install_hook_types]
+pre_commit = true
+pre_push = true
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "environment"
+name = "Environment"
+entry = "bash scripts/check-environment.sh --contract harness.contract.json"
+language = "system"
+pass_filenames = false
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "lint"
+name = "Lint"
+entry = "pnpm lint"
+language = "system"
+pass_filenames = false
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "docs-lint"
+name = "Docs Lint"
+entry = "pnpm docs:lint"
+language = "system"
+pass_filenames = false
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "typecheck"
+name = "Typecheck"
+entry = "pnpm typecheck"
+language = "system"
+pass_filenames = false
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "check"
+name = "Check"
+entry = "pnpm check"
+language = "system"
+pass_filenames = false
+stages = ["pre-push"]
+
+[[repos.hooks]]
+id = "test-deep"
+name = "Deep Tests"
+entry = "pnpm test:deep"
+language = "system"
+pass_filenames = false
+stages = ["pre-push"]

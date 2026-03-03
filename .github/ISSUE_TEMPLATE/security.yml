@@ -1,0 +1,49 @@
+name: Security Vulnerability
+description: Report a potential security vulnerability in Firefly Narrative
+labels: [security]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **IMPORTANT**: Do not publish exploit details publicly.
+        For sensitive reports, follow the process in `SECURITY.md`.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Security Issue Description
+      description: A clear description of the security vulnerability
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected
+    attributes:
+      label: Affected Versions
+      description: Which versions/commits are affected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential Impact
+      description: What is the potential impact of this vulnerability?
+    validations:
+      required: true
+
+  - type: textarea
+    id: poc
+    attributes:
+      label: Proof of Concept
+      description: If applicable, provide a safe proof of concept (without exposing secrets)
+    validations:
+      required: false
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Suggested Mitigation
+      description: If you have suggestions for how to fix this issue, please describe them
+    validations:
+      required: false

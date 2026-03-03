@@ -1,6 +1,10 @@
 {
   "strictness": 2,
-  "commentTypes": ["issues", "suggestions", "architecture"],
+  "commentTypes": [
+    "issues",
+    "suggestions",
+    "architecture"
+  ],
   "fileChangeLimit": 15,
   "ignorePatterns": [
     "**/*.test.ts",
@@ -9,5 +13,9 @@
     "**/dist/**",
     "**/coverage/**",
     "**/*.snap"
-  ]
+  ],
+  "version": "1.0",
+  "confidence": {
+    "minMergeScore": 4
+  }
 }

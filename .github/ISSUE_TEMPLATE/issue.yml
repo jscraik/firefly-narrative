@@ -1,0 +1,57 @@
+name: Bug Report
+description: Report a bug in the Firefly Narrative app, CLI, or docs/tooling flow
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the bug
+      placeholder: "What happened in Firefly Narrative? What did you expect instead?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this behavior?
+      placeholder: |
+        1. Run 'pnpm install'
+        2. Run 'pnpm dev' (or 'pnpm tauri dev' for desktop mode)
+        3. Open [screen/path]
+        4. Observe the error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please complete the following information
+      value: |
+        - OS: [e.g. macOS 15]
+        - Node version: [e.g. 24.x+]
+        - PNPM version: [e.g. 10.x]
+        - Rust toolchain: [e.g. 1.87.0]
+        - Tauri CLI version: [e.g. `pnpm exec tauri --version`]
+        - Mode: [web-only (`pnpm dev`) or tauri (`pnpm tauri dev`)]
+        - Commit/branch: [e.g. main @ abc1234]
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/Screenshots
+      description: Add any relevant logs, stack traces, terminal output, or screenshots
+    validations:
+      required: false

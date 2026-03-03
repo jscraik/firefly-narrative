@@ -1,0 +1,6 @@
+# Firefly Narrative issue template configuration
+blank_issues_enabled: false
+contact_links:
+  - name: Firefly Narrative README
+    url: https://github.com/jscraik/firefly-narrative/blob/main/README.md
+    about: Review setup, development, and troubleshooting guidance before filing.

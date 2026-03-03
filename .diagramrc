@@ -1,0 +1,15 @@
+{
+	"ignore": [
+		"node_modules",
+		"dist",
+		"coverage",
+		"artifacts",
+		".git",
+		".harness",
+		".diagram",
+		".memory-metrics.json",
+		"AI/diagrams",
+		"src-tauri/target",
+		"vendor"
+	]
+}

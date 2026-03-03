@@ -1,0 +1,9 @@
+{
+  "harnessVersion": "0.5.7",
+  "files": [
+    {
+      "path": "scripts/check-environment.sh",
+      "action": "created"
+    }
+  ]
+}
