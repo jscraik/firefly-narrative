@@ -1,0 +1,62 @@
+{
+  "harnessVersion": "0.6.0",
+  "files": [
+    {
+      "path": "memory.json",
+      "action": "created"
+    },
+    {
+      "path": "scripts/validate-commit-msg.js",
+      "action": "created"
+    },
+    {
+      "path": "scripts/setup-git-hooks.js",
+      "action": "created"
+    },
+    {
+      "path": "AI/diagrams/.gitkeep",
+      "action": "created"
+    },
+    {
+      "path": "AI/context/diagram-context.md",
+      "action": "created"
+    },
+    {
+      "path": ".diagramrc",
+      "action": "created"
+    },
+    {
+      "path": "prek.toml",
+      "action": "created"
+    },
+    {
+      "path": "scripts/check-environment.sh",
+      "action": "created"
+    },
+    {
+      "path": ".codex/environments/environment.toml",
+      "action": "modified",
+      "backupHash": "cd49adffccd28c2b"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/issue.yml",
+      "action": "created"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature.yml",
+      "action": "created"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/security.yml",
+      "action": "created"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "action": "created"
+    },
+    {
+      "path": "Makefile",
+      "action": "created"
+    }
+  ]
+}
