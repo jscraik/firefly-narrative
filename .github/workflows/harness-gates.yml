@@ -45,9 +45,24 @@ jobs:
       - name: Install ralph CLI
         run: |
           set -euo pipefail
-          uv tool install "ralph-gold==1.0.0"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          "$HOME/.local/bin/ralph" --version
+          mkdir -p artifacts/policy
+          if uv tool install "ralph-gold==1.0.0"; then
+            echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+            "$HOME/.local/bin/ralph" --version
+            exit 0
+          fi
+
+          if uv tool install "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"; then
+            cat > artifacts/policy/ralph-fallback-warning.json <<JSON
+          {"warning":"ralph_runtime_fallback","reason":"pypi_package_unavailable","fallback":"uv_git","package":"ralph-gold==1.0.0","gitSpec":"git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed","timestamp":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+          JSON
+            echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+            "$HOME/.local/bin/ralph" --version
+            exit 0
+          fi
+
+          echo "Unable to install pinned ralph runtime via uv."
+          exit 1
 
       - name: Authorization gate
         run: |
