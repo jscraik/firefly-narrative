@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { composeAskWhyAnswer, fingerprintQuestion, generateQueryId } from '../../../core/narrative/causalRecall';
+import { composeAskWhyAnswer, generateQueryId, hashQuestion } from '../../../core/narrative/causalRecall';
 import {
   trackAskWhyAnswerViewed,
   trackAskWhyError,
@@ -75,7 +75,7 @@ export function useBranchAskWhyState(
       repoId: repoId ?? undefined,
     };
     const queryId = generateQueryId(askWhyInput);
-    const questionHash = fingerprintQuestion(question);
+    const questionHash = await hashQuestion(question);
     const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
     askWhyStartedAtByVersionRef.current.set(requestVersion, startedAt);
 
