@@ -159,6 +159,7 @@ export function useBranchAskWhyState(
         return;
       }
 
+      console.error('[narrative] ask-why composition failed', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       setAskWhyState({
         kind: 'error',
