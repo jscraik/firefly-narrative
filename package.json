@@ -113,7 +113,7 @@
     "vitest": "^4.0.18"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint && pnpm docs:lint && pnpm typecheck",
+    "pre-commit": "pnpm lint && bash scripts/docs-lint-staged.sh && pnpm typecheck",
     "commit-msg": "node scripts/validate-commit-msg.js $1",
     "pre-push": "pnpm lint && pnpm docs:lint && pnpm typecheck && pnpm audit && pnpm test:deep"
   },
