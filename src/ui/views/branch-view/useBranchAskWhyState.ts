@@ -90,19 +90,16 @@ export function useBranchAskWhyState(
       funnelSessionId: `${branchScope}:${queryId}`,
     });
 
+    const isStaleResponse = () =>
+      !isMountedRef.current ||
+      activeBranchScopeRef.current !== branchScopeAtRequest ||
+      askWhyRequestVersionRef.current !== requestVersion;
+
     try {
       const result = await composeAskWhyAnswer(askWhyInput, narrative, { queryId, questionHash });
 
       // Stale-guard: drop response if branch changed or newer request in flight
-      if (!isMountedRef.current) {
-        trackAskWhyError({ queryId, attemptId, errorType: 'stale_ignored', branchScope, eventOutcome: 'stale_ignored' });
-        return;
-      }
-      if (activeBranchScopeRef.current !== branchScopeAtRequest) {
-        trackAskWhyError({ queryId, attemptId, errorType: 'stale_ignored', branchScope, eventOutcome: 'stale_ignored' });
-        return;
-      }
-      if (askWhyRequestVersionRef.current !== requestVersion) {
+      if (isStaleResponse()) {
         trackAskWhyError({ queryId, attemptId, errorType: 'stale_ignored', branchScope, eventOutcome: 'stale_ignored' });
         return;
       }
@@ -146,16 +143,7 @@ export function useBranchAskWhyState(
         });
       }
     } catch (error) {
-      console.error('[narrative] ask-why composition failed', error);
-      if (!isMountedRef.current) {
-        trackAskWhyError({ queryId, attemptId, errorType: 'stale_ignored', branchScope, eventOutcome: 'stale_ignored' });
-        return;
-      }
-      if (activeBranchScopeRef.current !== branchScopeAtRequest) {
-        trackAskWhyError({ queryId, attemptId, errorType: 'stale_ignored', branchScope, eventOutcome: 'stale_ignored' });
-        return;
-      }
-      if (askWhyRequestVersionRef.current !== requestVersion) {
+      if (isStaleResponse()) {
         trackAskWhyError({ queryId, attemptId, errorType: 'stale_ignored', branchScope, eventOutcome: 'stale_ignored' });
         return;
       }
