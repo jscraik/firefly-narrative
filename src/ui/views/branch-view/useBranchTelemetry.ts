@@ -18,6 +18,7 @@ import type {
 import { createNarrativeViewInstanceId } from '../branchView.constants';
 
 export type UseBranchTelemetryInput = {
+  firstWinAttemptId: string;
   requestIdentityKey: string;
   branchName: string | undefined;
   branchScope: string;
@@ -53,6 +54,7 @@ function deriveRepoStatus(): NarrativeRepoStatus {
 
 export function useBranchTelemetry(input: UseBranchTelemetryInput): void {
   const {
+    firstWinAttemptId,
     requestIdentityKey,
     branchName,
     branchScope,
@@ -109,6 +111,7 @@ export function useBranchTelemetry(input: UseBranchTelemetryInput): void {
     narrativeViewInstanceIdRef.current = viewInstanceId;
 
     trackNarrativeEvent('narrative_viewed', {
+      attemptId: firstWinAttemptId,
       branch: branchName,
       branchScope,
       detailLevel: effectiveDetailLevel,
@@ -123,6 +126,7 @@ export function useBranchTelemetry(input: UseBranchTelemetryInput): void {
     branchName,
     branchScope,
     effectiveDetailLevel,
+    firstWinAttemptId,
     narrative.confidence,
     narrativeViewInstanceIdRef,
     repoId,
@@ -138,6 +142,7 @@ export function useBranchTelemetry(input: UseBranchTelemetryInput): void {
     whatReadyKeyRef.current = key;
 
     trackNarrativeEvent('what_ready', {
+      attemptId: firstWinAttemptId,
       branch: branchName,
       branchScope,
       detailLevel: effectiveDetailLevel,
@@ -152,6 +157,7 @@ export function useBranchTelemetry(input: UseBranchTelemetryInput): void {
     branchName,
     branchScope,
     effectiveDetailLevel,
+    firstWinAttemptId,
     narrative.confidence,
     narrativeViewInstanceIdRef,
     repoId,

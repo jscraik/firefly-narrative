@@ -2,6 +2,7 @@ export type NarrativeTelemetrySchemaVersion = 'v1';
 
 export type NarrativeTelemetryEventName =
   | 'what_ready'
+  | 'first_win_completed'
   | 'narrative_viewed'
   | 'layer_switched'
   | 'audience_switched'
@@ -34,6 +35,7 @@ export type { AskWhyConfidenceBand, AskWhyCitationType, AskWhyFallbackReasonCode
 
 export type AskWhyTelemetryPayload = {
   queryId: string;
+  attemptId?: string;
   branchId?: string;
   branchScope?: string;
   questionHash?: string;
@@ -91,6 +93,7 @@ export type HeaderQualityReasonCode =
 
 export type NarrativeTelemetryPayload = {
   schemaVersion?: NarrativeTelemetrySchemaVersion;
+  attemptId?: string;
   branch?: string;
   viewInstanceId?: string;
   source?: NarrativeEvidenceSource;
@@ -167,6 +170,17 @@ const VALID_FUNNEL_STEPS: ReadonlySet<NarrativeFunnelStep> = new Set([
   'evidence_requested',
   'evidence_ready',
 ]);
+const FIRST_WIN_FLOW_EVENTS: ReadonlySet<NarrativeTelemetryEventNameAll> = new Set([
+  'what_ready',
+  'first_win_completed',
+  'evidence_opened',
+  'fallback_used',
+  'ask_why_submitted',
+  'ask_why_answer_viewed',
+  'ask_why_evidence_opened',
+  'ask_why_fallback_used',
+  'ask_why_error',
+]);
 const recentTelemetrySignatures = new Map<string, number>();
 
 type NarrativeTelemetryRuntimeConfig = {
@@ -211,12 +225,13 @@ function buildTelemetrySignature(
 ): string | null {
   const eventOutcome = payload.eventOutcome;
   if (!eventOutcome || !TERMINAL_OUTCOMES.has(eventOutcome)) return null;
+  const attemptId = payload.attemptId ?? '';
   const isAskWhyPayload = 'queryId' in payload;
   const queryId = isAskWhyPayload ? payload.queryId : '';
   const itemId = isAskWhyPayload ? (payload.citationId ?? '') : (payload.itemId ?? '');
   const branchScope = payload.branchScope ?? '';
   const funnelStep = payload.funnelStep ?? '';
-  return `${event}|${eventOutcome}|${branchScope}|${queryId}|${itemId}|${funnelStep}`;
+  return `${event}|${eventOutcome}|${attemptId}|${branchScope}|${queryId}|${itemId}|${funnelStep}`;
 }
 
 function shouldDropDuplicateTerminalEvent(signature: string, nowMs: number): boolean {
@@ -227,6 +242,7 @@ function shouldDropDuplicateTerminalEvent(signature: string, nowMs: number): boo
 }
 
 function validatePayload(
+  event: NarrativeTelemetryEventNameAll,
   payload: NarrativeTelemetryPayload | AskWhyTelemetryPayload
 ): payload is NarrativeTelemetryPayload | AskWhyTelemetryPayload {
   if (payload.eventOutcome && !VALID_EVENT_OUTCOMES.has(payload.eventOutcome)) {
@@ -237,6 +253,15 @@ function validatePayload(
   }
   if (payload.branchScope && isAbsolutePath(payload.branchScope)) {
     return false;
+  }
+  if (FIRST_WIN_FLOW_EVENTS.has(event)) {
+    if (!payload.attemptId || payload.attemptId.trim().length === 0) {
+      return false;
+    }
+  }
+  if (event === 'first_win_completed') {
+    if (payload.funnelStep !== 'evidence_ready') return false;
+    if (!payload.eventOutcome || !TERMINAL_OUTCOMES.has(payload.eventOutcome)) return false;
   }
   return true;
 }
@@ -249,7 +274,7 @@ function dispatchNarrativeTelemetry(
   if (!runtimeConfig.consentGranted) return;
 
   const sanitizedPayload = sanitizePayloadValue(payload) as NarrativeTelemetryPayload | AskWhyTelemetryPayload;
-  if (!validatePayload(sanitizedPayload)) return;
+  if (!validatePayload(event, sanitizedPayload)) return;
 
   const signature = buildTelemetrySignature(event, sanitizedPayload);
   if (signature && shouldDropDuplicateTerminalEvent(signature, Date.now())) {
@@ -331,6 +356,7 @@ function trackAskWhyEvent(
 
 export type TrackAskWhySubmittedInput = {
   queryId: string;
+  attemptId: string;
   branchId: string;
   questionHash: string;
   branchScope?: string;
@@ -340,6 +366,7 @@ export type TrackAskWhySubmittedInput = {
 export function trackAskWhySubmitted(input: TrackAskWhySubmittedInput) {
   trackAskWhyEvent('ask_why_submitted', {
     queryId: input.queryId,
+    attemptId: input.attemptId,
     branchId: input.branchId,
     branchScope: input.branchScope,
     questionHash: input.questionHash,
@@ -351,6 +378,7 @@ export function trackAskWhySubmitted(input: TrackAskWhySubmittedInput) {
 
 export type TrackAskWhyAnswerViewedInput = {
   queryId: string;
+  attemptId: string;
   confidence: AskWhyConfidenceBand;
   citationCount: number;
   fallbackUsed: boolean;
@@ -362,6 +390,7 @@ export type TrackAskWhyAnswerViewedInput = {
 export function trackAskWhyAnswerViewed(input: TrackAskWhyAnswerViewedInput) {
   trackAskWhyEvent('ask_why_answer_viewed', {
     queryId: input.queryId,
+    attemptId: input.attemptId,
     branchScope: input.branchScope,
     confidence: input.confidence,
     citationCount: input.citationCount,
@@ -375,6 +404,7 @@ export function trackAskWhyAnswerViewed(input: TrackAskWhyAnswerViewedInput) {
 
 export type TrackAskWhyEvidenceOpenedInput = {
   queryId: string;
+  attemptId: string;
   citationType: AskWhyCitationType;
   citationId: string;
   branchScope?: string;
@@ -384,6 +414,7 @@ export type TrackAskWhyEvidenceOpenedInput = {
 export function trackAskWhyEvidenceOpened(input: TrackAskWhyEvidenceOpenedInput) {
   trackAskWhyEvent('ask_why_evidence_opened', {
     queryId: input.queryId,
+    attemptId: input.attemptId,
     branchScope: input.branchScope,
     citationType: input.citationType,
     citationId: input.citationId,
@@ -395,6 +426,7 @@ export function trackAskWhyEvidenceOpened(input: TrackAskWhyEvidenceOpenedInput)
 
 export type TrackAskWhyFallbackUsedInput = {
   queryId: string;
+  attemptId: string;
   reasonCode: AskWhyFallbackReasonCode;
   branchScope?: string;
   funnelSessionId?: string;
@@ -403,6 +435,7 @@ export type TrackAskWhyFallbackUsedInput = {
 export function trackAskWhyFallbackUsed(input: TrackAskWhyFallbackUsedInput) {
   trackAskWhyEvent('ask_why_fallback_used', {
     queryId: input.queryId,
+    attemptId: input.attemptId,
     branchScope: input.branchScope,
     reasonCode: input.reasonCode,
     fallbackUsed: true,
@@ -414,6 +447,7 @@ export function trackAskWhyFallbackUsed(input: TrackAskWhyFallbackUsedInput) {
 
 export type TrackAskWhyErrorInput = {
   queryId: string;
+  attemptId: string;
   errorType: string;
   branchScope?: string;
   funnelSessionId?: string;
@@ -423,6 +457,7 @@ export type TrackAskWhyErrorInput = {
 export function trackAskWhyError(input: TrackAskWhyErrorInput) {
   trackAskWhyEvent('ask_why_error', {
     queryId: input.queryId,
+    attemptId: input.attemptId,
     branchScope: input.branchScope,
     errorType: input.errorType,
     funnelSessionId: input.funnelSessionId,

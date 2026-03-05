@@ -117,6 +117,10 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
   const isMountedRef = useRef(true);
   const activeBranchScopeRef = useRef<string | null>(null);
   const feedbackContextRef = useRef<string>('');
+  const firstWinAttemptSequenceRef = useRef(0);
+  const firstWinAttemptContextRef = useRef<string>('');
+  const firstWinAttemptIdRef = useRef<string>('attempt:0');
+  const completedAttemptIdsRef = useRef<Set<string>>(new Set());
 
   const calibrationEnabled = (import.meta.env.VITE_NARRATIVE_CALIBRATION_V1 ?? 'true') !== 'false';
   const branchScopeKey = `${model.meta?.repoPath ?? ''}:${model.meta?.branchName ?? ''}`;
@@ -140,6 +144,18 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     () => `${requestIdentityKey}|node:${selectedNodeId ?? 'none'}|file:${selectedFile ?? 'none'}`,
     [requestIdentityKey, selectedFile, selectedNodeId]
   );
+  const firstWinAttemptId = useMemo(() => {
+    const contextKey = `${telemetryBranchScope}:${selectedNodeId ?? 'none'}`;
+    if (firstWinAttemptContextRef.current !== contextKey) {
+      firstWinAttemptContextRef.current = contextKey;
+      firstWinAttemptSequenceRef.current += 1;
+      firstWinAttemptIdRef.current = `${contextKey}:n${firstWinAttemptSequenceRef.current}`;
+      if (completedAttemptIdsRef.current.size > 128) {
+        completedAttemptIdsRef.current.clear();
+      }
+    }
+    return firstWinAttemptIdRef.current;
+  }, [selectedNodeId, telemetryBranchScope]);
 
   useEffect(() => () => {
     isMountedRef.current = false;
@@ -344,6 +360,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
 
   // Telemetry effects extracted to dedicated hook
   useBranchTelemetry({
+    firstWinAttemptId,
     requestIdentityKey,
     branchName: model.meta?.branchName,
     branchScope: telemetryBranchScope,
@@ -362,6 +379,31 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     bumpObservability,
     narrativeViewInstanceIdRef,
   });
+  const emitFirstWinCompleted = useCallback((eventOutcome: 'success' | 'fallback' | 'failed' | 'stale_ignored', itemId?: string) => {
+    const attemptId = firstWinAttemptId;
+    if (completedAttemptIdsRef.current.has(attemptId)) {
+      return;
+    }
+    completedAttemptIdsRef.current.add(attemptId);
+    trackNarrativeEvent('first_win_completed', {
+      attemptId,
+      branch: model.meta?.branchName,
+      branchScope: telemetryBranchScope,
+      detailLevel: effectiveDetailLevel,
+      confidence: narrative.confidence,
+      viewInstanceId: narrativeViewInstanceIdRef.current ?? undefined,
+      itemId,
+      funnelStep: 'evidence_ready',
+      eventOutcome,
+      funnelSessionId: `${attemptId}:complete`,
+    });
+  }, [
+    effectiveDetailLevel,
+    firstWinAttemptId,
+    model.meta?.branchName,
+    narrative.confidence,
+    telemetryBranchScope,
+  ]);
 
   const handleFileClickFromSession = useCallback((path: string) => {
     const fileExists = files.some((file) => file.path === path);
@@ -419,6 +461,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     }
     bumpObservability('fallbackUsedCount');
     trackNarrativeEvent('fallback_used', {
+      attemptId: firstWinAttemptId,
       branch: model.meta?.branchName,
       branchScope: telemetryBranchScope,
       detailLevel: 'diff',
@@ -428,13 +471,16 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
       recallLaneConfidenceBand: laneContext?.recallLaneConfidenceBand,
       viewInstanceId: narrativeViewInstanceIdRef.current ?? undefined,
       itemId: laneContext?.recallLaneItemId ?? selectedNodeId ?? undefined,
-      funnelStep: 'evidence_requested',
+      funnelStep: 'evidence_ready',
       eventOutcome: 'fallback',
       funnelSessionId: `${telemetryBranchScope}:${selectedNodeId ?? 'none'}:${selectedFile ?? 'no-file'}`,
     });
+    emitFirstWinCompleted('fallback', laneContext?.recallLaneItemId ?? selectedNodeId ?? undefined);
   }, [
     bumpObservability,
+    emitFirstWinCompleted,
     files,
+    firstWinAttemptId,
     model.meta?.branchName,
     model.source,
     narrative.confidence,
@@ -472,6 +518,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
       }
       bumpObservability('evidenceOpenedCount');
       trackNarrativeEvent('evidence_opened', {
+        attemptId: firstWinAttemptId,
         branch: model.meta?.branchName,
         detailLevel: effectiveDetailLevel,
         evidenceKind: link.kind,
@@ -482,15 +529,20 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
         viewInstanceId: narrativeViewInstanceIdRef.current ?? undefined,
         branchScope: telemetryBranchScope,
         itemId: link.id,
-        funnelStep: 'evidence_requested',
+        funnelStep: 'evidence_ready',
         eventOutcome: routedToRawDiff ? 'fallback' : 'success',
         funnelSessionId: `${telemetryBranchScope}:${link.id}:${selectedNodeId ?? 'none'}`,
       });
+      if (!routedToRawDiff) {
+        emitFirstWinCompleted('success', link.id);
+      }
     },
     [
       bumpObservability,
       branchScopeKey,
       effectiveDetailLevel,
+      emitFirstWinCompleted,
+      firstWinAttemptId,
       handleOpenRawDiff,
       model.meta?.branchName,
       model.source,
@@ -519,6 +571,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
 
   // Ask-Why state extracted to dedicated hook
   const { askWhyState, handleSubmitAskWhy, handleOpenAskWhyCitation } = useBranchAskWhyState({
+    attemptId: firstWinAttemptId,
     branchScopeKey,
     branchScope: telemetryBranchScope,
     branchName: model.meta?.branchName,

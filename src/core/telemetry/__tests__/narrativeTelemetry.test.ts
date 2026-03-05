@@ -11,6 +11,7 @@ describe('narrativeTelemetry', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
 
     trackNarrativeEvent('fallback_used', {
+      attemptId: 'r1:b1:n1',
       branch: 'feature/header',
       detailLevel: 'diff',
     });
@@ -30,6 +31,7 @@ describe('narrativeTelemetry', () => {
     setNarrativeTelemetryRuntimeConfig({ consentGranted: false });
 
     trackNarrativeEvent('fallback_used', {
+      attemptId: 'r1:b1:n2',
       branch: 'feature/header',
       detailLevel: 'diff',
     });
@@ -83,6 +85,7 @@ describe('narrativeTelemetry', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
 
     trackNarrativeEvent('evidence_opened', {
+      attemptId: 'r1:b2:n1',
       branch: 'feature/recall-lane',
       detailLevel: 'summary',
       source: 'recall_lane',
@@ -105,12 +108,14 @@ describe('narrativeTelemetry', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
 
     trackNarrativeEvent('evidence_opened', {
+      attemptId: 'r1:b123:n3',
       itemId: 'commit:abc',
       branchScope: 'r1:b123',
       eventOutcome: 'success',
       funnelStep: 'evidence_requested',
     });
     trackNarrativeEvent('evidence_opened', {
+      attemptId: 'r1:b123:n3',
       itemId: 'commit:abc',
       branchScope: 'r1:b123',
       eventOutcome: 'success',
@@ -138,6 +143,50 @@ describe('narrativeTelemetry', () => {
     expect(event.detail.payload.feedbackTargetKind).toBe('highlight');
     expect(event.detail.payload.feedbackActorRole).toBe('reviewer');
 
+    dispatchSpy.mockRestore();
+  });
+
+  it('drops first-win flow events that omit attemptId', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+    trackNarrativeEvent('evidence_opened', {
+      branchScope: 'r1:b333',
+      itemId: 'commit:def',
+      eventOutcome: 'success',
+      funnelStep: 'evidence_ready',
+    });
+
+    expect(dispatchSpy).toHaveBeenCalledTimes(0);
+    dispatchSpy.mockRestore();
+  });
+
+  it('dispatches first_win_completed only with valid completion payload', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+    trackNarrativeEvent('first_win_completed', {
+      attemptId: 'r1:b9:n7',
+      branchScope: 'r1:b9',
+      itemId: 'commit:abc',
+      eventOutcome: 'success',
+      funnelStep: 'evidence_ready',
+    });
+
+    expect(dispatchSpy).toHaveBeenCalledTimes(1);
+    dispatchSpy.mockRestore();
+  });
+
+  it('drops invalid first_win_completed payloads', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+    trackNarrativeEvent('first_win_completed', {
+      attemptId: 'r1:b9:n8',
+      branchScope: 'r1:b9',
+      itemId: 'commit:abc',
+      eventOutcome: 'success',
+      funnelStep: 'evidence_requested',
+    });
+
+    expect(dispatchSpy).toHaveBeenCalledTimes(0);
     dispatchSpy.mockRestore();
   });
 

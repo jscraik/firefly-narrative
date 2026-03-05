@@ -661,7 +661,37 @@ describe("BranchView transition and integration coverage", () => {
         source: "recall_lane",
         recallLaneItemId: "recall:abc",
         recallLaneConfidenceBand: "high",
+        attemptId: expect.any(String),
       });
+    });
+  });
+
+  it("emits first_win_completed once for a fallback completion path", async () => {
+    const props = buildProps();
+    render(<BranchView {...props} />);
+
+    await waitFor(() => {
+      expect(capturedOpenRawDiffHandler).toBeInstanceOf(Function);
+    });
+
+    const beforeCompleted = mockTrackNarrativeEvent.mock.calls.filter(
+      ([eventName]) => eventName === "first_win_completed",
+    ).length;
+
+    act(() => {
+      capturedOpenRawDiffHandler?.();
+      capturedOpenRawDiffHandler?.();
+    });
+
+    await waitFor(() => {
+      const completionEvents = mockTrackNarrativeEvent.mock.calls.filter(
+        ([eventName]) => eventName === "first_win_completed",
+      );
+      expect(completionEvents.length).toBe(beforeCompleted + 1);
+      const completionPayload = completionEvents.at(-1)?.[1] as Record<string, unknown> | undefined;
+      expect(completionPayload?.attemptId).toEqual(expect.any(String));
+      expect(completionPayload?.eventOutcome).toBe("fallback");
+      expect(completionPayload?.funnelStep).toBe("evidence_ready");
     });
   });
 
@@ -926,6 +956,7 @@ describe("BranchView transition and integration coverage", () => {
     expect(initialPayload.eventOutcome).toBe("success");
     expect(initialPayload.funnelStep).toBe("what_ready");
     expect(initialPayload.branchScope).toBe("scope:feature/race-tests");
+    expect(initialPayload.attemptId).toEqual(expect.any(String));
 
     fireEvent.click(screen.getByRole("button", { name: "Commit B" }));
 
