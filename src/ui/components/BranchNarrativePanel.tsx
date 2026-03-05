@@ -326,7 +326,14 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
 
           {narrative.state === 'needs_attention' && narrative.fallbackReason && (
             <div className="rounded-lg border border-accent-amber-light bg-accent-amber-bg px-3 py-2 text-xs text-accent-amber">
-              {narrative.fallbackReason}
+              <p>{narrative.fallbackReason}</p>
+              <button
+                type="button"
+                onClick={() => onOpenRawDiff()}
+                className="mt-2 rounded-md border border-accent-amber-light bg-bg-primary px-2 py-1 text-[11px] text-accent-amber transition-colors hover:border-border-light hover:bg-bg-secondary"
+              >
+                Open raw diff now
+              </button>
             </div>
           )}
         </div>
