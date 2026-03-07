@@ -9,6 +9,10 @@ Narrative is a Tauri desktop app that layers AI session narratives onto git hist
 2. IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning for any React, Tauri, Apps-SDK-ui, Tailwind, Vite, Storybook + Chat Widget tasks.
 3. Add a Table of Contents for docs.
 
+## Architecture-first bootstrap
+- Before planning edits, read `.diagram/manifest.json` and the primary architecture map (`.diagram/architecture.mmd`).
+- If `.diagram/manifest.json` is missing or stale, regenerate with `diagram analyze` (fallback: `npx --yes @brainwav/diagram analyze`) before routing work.
+
 ## Instruction discovery order
 1. Global: `/Users/jamiecraik/.codex/AGENTS.md`
 2. Repo root: `AGENTS.md`
@@ -90,4 +94,8 @@ Narrative is a Tauri desktop app that layers AI session narratives onto git hist
 
 ## Repository preflight helper
 - Use `scripts/codex-preflight.sh` before multi-step, destructive, or path-sensitive workflows.
-- Source it with `source scripts/codex-preflight.sh` and run `preflight_repo` (or `preflight_js`, `preflight_py`, `preflight_rust`) as a guard before changing repo state.
+- Invoke with bash internals from zsh shells:
+  - `bash -lc 'source scripts/codex-preflight.sh && preflight_repo'`
+  - `bash -lc 'source scripts/codex-preflight.sh && preflight_js'`
+  - `bash -lc 'source scripts/codex-preflight.sh && preflight_py'`
+  - `bash -lc 'source scripts/codex-preflight.sh && preflight_rust'`
