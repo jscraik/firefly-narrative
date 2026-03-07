@@ -106,6 +106,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
     killSwitchReason,
     recallLaneItems = [],
     askWhyState,
+    onDetailLevelChange,
     // Phase 4: Trust-state props
     trustState = 'none',
     activeThreadId = null,
@@ -113,10 +114,8 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
     codexAppServerStatus = null,
     onRetryHydrate,
     onClearStaleState,
-    // Existing handlers
     onAudienceChange,
     onFeedbackActorRoleChange,
-    onDetailLevelChange,
     onSubmitFeedback,
     onOpenEvidence,
     onOpenRawDiff,
@@ -127,14 +126,16 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
   const effectiveDetailLevel: NarrativeDetailLevel = killSwitchActive ? 'diff' : detailLevel;
 
   // Phase 4: Derive approval actionability from trust state
+  // Phase 4: Derive approval actionability from trust state
   // 'none' is included for backwards compatibility when trust system is not active
-  const approvalsActionable = trustState === 'none' || trustState === 'live_trusted' || trustState === 'replaying';
-  const approvalsDisabledReason =
+  const _approvalsActionable = trustState === 'none' || trustState === 'live_trusted' || trustState === 'replaying';
+  const _approvalsDisabledReason =
     trustState === 'hydrating'
       ? 'Hydrating baseline'
       : trustState === 'trust_paused'
         ? 'Trust paused - resolve issues first'
         : null;
+  
 
   const handleRecallLaneOpen = (item: NarrativeRecallLaneItem) => {
     if (killSwitchActive) {
@@ -304,9 +305,8 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
                   detailLevel,
                 })
               }
-              disabled={killSwitchActive || !approvalsActionable}
-              title={approvalsDisabledReason ?? undefined}
-              className="rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1 text-xs text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={killSwitchActive}
+              className="rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1 text-xs text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
             >
               Missing decision
             </button>
@@ -332,8 +332,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
                 <div className="mt-2 flex items-center gap-1">
                   <button
                     type="button"
-                    disabled={killSwitchActive || !approvalsActionable}
-                    title={approvalsDisabledReason ?? undefined}
+                    disabled={killSwitchActive}
                     onClick={() =>
                       onSubmitFeedback({
                         actorRole: feedbackActorRole,
@@ -343,14 +342,13 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
                         detailLevel,
                       })
                     }
-                    className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
                   >
                     This is key
                   </button>
                   <button
                     type="button"
-                    disabled={killSwitchActive || !approvalsActionable}
-                    title={approvalsDisabledReason ?? undefined}
+                    disabled={killSwitchActive}
                     onClick={() =>
                       onSubmitFeedback({
                         actorRole: feedbackActorRole,
@@ -360,7 +358,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
                         detailLevel,
                       })
                     }
-                    className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
                   >
                     Wrong
                   </button>
