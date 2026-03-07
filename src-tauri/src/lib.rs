@@ -225,6 +225,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             sql: include_str!("../migrations/017_approval_ledger.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 18,
+            description: "add_trust_recovery_pause_reason",
+            sql: include_str!("../migrations/018_trust_recovery_pause_reason.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

@@ -12,7 +12,9 @@ import type {
   StakeholderProjection,
   StakeholderProjections,
 } from '../../core/types';
+import type { CaptureReliabilityStatus, CodexAppServerStatus } from '../../core/tauri/ingestConfig';
 import { AskWhyAnswerCard } from './AskWhyAnswerCard';
+import { TrustStateIndicator, type TrustState } from './TrustStateIndicator';
 
 type RecallLaneEvidenceContext = {
   source?: 'recall_lane';
@@ -32,6 +34,14 @@ type BranchNarrativePanelProps = {
   killSwitchReason?: string;
   recallLaneItems?: NarrativeRecallLaneItem[];
   askWhyState: AskWhyState;
+  // Phase 4: Trust-state UX
+  trustState?: TrustState;
+  activeThreadId?: string | null;
+  captureReliabilityStatus?: CaptureReliabilityStatus | null;
+  codexAppServerStatus?: CodexAppServerStatus | null;
+  onRetryHydrate?: () => void;
+  onClearStaleState?: () => void;
+  // Existing handlers
   onAudienceChange: (audience: StakeholderAudience) => void;
   onFeedbackActorRoleChange: (role: NarrativeFeedbackActorRole) => void;
   onDetailLevelChange: (level: NarrativeDetailLevel) => void;
@@ -95,18 +105,37 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
     killSwitchActive = false,
     killSwitchReason,
     recallLaneItems = [],
+    askWhyState,
+    // Phase 4: Trust-state props
+    trustState = 'none',
+    activeThreadId = null,
+    captureReliabilityStatus = null,
+    codexAppServerStatus = null,
+    onRetryHydrate,
+    onClearStaleState,
+    // Existing handlers
     onAudienceChange,
     onFeedbackActorRoleChange,
     onDetailLevelChange,
     onSubmitFeedback,
     onOpenEvidence,
     onOpenRawDiff,
-    askWhyState,
     onSubmitAskWhy,
     onOpenAskWhyCitation,
   } = props;
   const projection = projections[audience] ?? projectionFallback(audience, narrative);
   const effectiveDetailLevel: NarrativeDetailLevel = killSwitchActive ? 'diff' : detailLevel;
+
+  // Phase 4: Derive approval actionability from trust state
+  const approvalsActionable = trustState === 'live_trusted' || trustState === 'replaying';
+  const approvalsDisabledReason =
+    trustState === 'none'
+      ? 'No thread selected'
+      : trustState === 'hydrating'
+        ? 'Hydrating baseline'
+        : trustState === 'trust_paused'
+          ? 'Trust paused - resolve issues first'
+          : null;
 
   const handleRecallLaneOpen = (item: NarrativeRecallLaneItem) => {
     if (killSwitchActive) {

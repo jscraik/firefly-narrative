@@ -474,7 +474,7 @@ mod tests {
         .await
         .expect("checkpoint migration applies");
         sqlx::query(include_str!(
-            "../migrations/017_trust_recovery_pause_reason.sql"
+            "../migrations/018_trust_recovery_pause_reason.sql"
         ))
         .execute(&pool)
         .await

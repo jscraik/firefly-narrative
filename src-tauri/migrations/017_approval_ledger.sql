@@ -8,6 +8,13 @@
 
 PRAGMA foreign_keys = ON;
 
+-- Schema versions table (created first for version marker support)
+CREATE TABLE IF NOT EXISTS trust_schema_versions (
+    component TEXT PRIMARY KEY NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- The approval_decisions table stores durable records of approval decisions
 -- thread_id identifies which thread for the approval request
 -- request_id: unique identifier for the approval request (from ApprovalRequest.event.payload.requestId)
