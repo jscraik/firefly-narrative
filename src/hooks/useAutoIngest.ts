@@ -149,9 +149,8 @@ export function useAutoIngest(params: {
           lastImportAt: lastSeenAtISO
         }));
       }
-    } catch (e) {
+    } catch {
       // non-fatal; avoid spamming issues list for optional UI enhancement
-      void e;
     }
   }, [repoId]);
 
@@ -312,8 +311,9 @@ export function useAutoIngest(params: {
         if (!mounted || !isMountedRef.current) return;
         await refreshActivity(3);
       } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        recordIssue('Ingest config error', message);
         if (!mounted || !isMountedRef.current) return;
-        recordIssue('Ingest config error', e instanceof Error ? e.message : String(e));
       }
     };
 
