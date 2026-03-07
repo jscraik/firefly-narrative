@@ -661,27 +661,15 @@ export function useAutoIngest(params: {
       }
       if (!isMountedRef.current) return;
       await refreshReliability();
-    } catch (e) {
-      recordIssue(
-        'Codex App Server authorization failed',
-        e instanceof Error ? e.message : String(e),
-      );
+    } catch {
+      // Non-fatal: authorization failure is shown in UI status
     }
-  }, [recordIssue, refreshReliability, showToast]);
+  }, [refreshReliability, showToast]);
 
   const logoutCodexAppServerAccount = useCallback(async () => {
-    try {
-      await codexAppServerLogout();
-      if (!isMountedRef.current) return;
-      showToast('Codex App Server account logged out');
-      await refreshReliability();
-    } catch (e) {
-      recordIssue(
-        'Codex App Server logout failed',
-        e instanceof Error ? e.message : String(e),
-      );
-    }
-  }, [recordIssue, refreshReliability, showToast]);
+    await codexAppServerLogout();
+    showToast('Codex App Server account logged out');
+  }, [showToast]);
 
   return {
     ingestConfig: config,
