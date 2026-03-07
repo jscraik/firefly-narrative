@@ -37,6 +37,7 @@
     "tauri:verify-rollout-artifacts": "node scripts/verify-codex-rollout-artifacts.mjs --artifacts-dir artifacts/release/codex-app-server",
     "tauri:generate-release-artifacts": "node scripts/generate-codex-release-artifacts.mjs --output-dir artifacts/release/codex-app-server --owner \"Jamie Craik\"",
     "tauri:verify-release-artifacts": "node scripts/verify-codex-release-artifacts.mjs --artifacts-dir artifacts/release/codex-app-server",
+    "tauri:verify-trust-rollout-gates": "node scripts/verify-trust-rollout-gates.mjs --artifacts-dir artifacts/release/codex-app-server --rollout-dir artifacts/rollout --planning-dir artifacts/planning --runbook-path docs/agents/hybrid-capture-rollout-runbook.md --owner \"Jamie Craik\"",
     "tauri:build": "tauri build --bundles app --no-sign",
     "tauri:build:full": "tauri build",
     "docs:lint": "pnpm docs:lint:vale && pnpm docs:lint:markdown",
@@ -57,7 +58,7 @@
     "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e"
   },
   "dependencies": {
-    "@brainwav/coding-harness": "^0.6.0",
+    "@brainwav/coding-harness": "^0.7.1",
     "@design-studio/runtime": "file:vendor/design-studio/design-studio-runtime-2.0.0.tgz",
     "@design-studio/tokens": "file:vendor/design-studio/design-studio-tokens-2.0.0.tgz",
     "@design-studio/ui": "file:vendor/design-studio/design-studio-ui-0.0.1.tgz",
