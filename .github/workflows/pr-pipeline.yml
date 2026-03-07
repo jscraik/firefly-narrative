@@ -122,7 +122,7 @@ jobs:
           if [[ -z "$CHANGED_FILES" ]]; then
             CHANGED_FILES="$(git ls-files | paste -sd, -)"
           fi
-          npx tsx src/cli.ts preflight-gate \
+          node node_modules/@brainwav/coding-harness/dist/cli.js preflight-gate \
             --contract harness.contract.json \
             --max-tier medium \
             --files "${CHANGED_FILES}" \
@@ -218,7 +218,7 @@ jobs:
           fi
       - name: Run advisory drift gate
         run: |
-          npx tsx src/cli.ts drift-gate \
+          node node_modules/@brainwav/coding-harness/dist/cli.js drift-gate \
             --mode advisory \
             --json \
             --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
@@ -291,7 +291,7 @@ jobs:
       - name: Run health drift gate
         if: steps.baseline-seed.outputs.seeded == 'true'
         run: |
-          npx tsx src/cli.ts drift-gate \
+          node node_modules/@brainwav/coding-harness/dist/cli.js drift-gate \
             --mode health \
             --json \
             --out artifacts/consistency-gate/health.json
