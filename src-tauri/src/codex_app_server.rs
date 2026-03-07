@@ -3897,16 +3897,39 @@ pub fn codex_app_server_account_chatgpt_auth_tokens_refresh(
 
 #[command(rename_all = "camelCase")]
 pub fn codex_app_server_account_logout(
+    app_handle: AppHandle,
     state: State<'_, CodexAppServerState>,
 ) -> Result<CodexAccountStatus, String> {
     let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
     runtime.auth_state = AuthState::LoggedOut;
+    runtime.handshake_state = HandshakeState::NotStarted;
     runtime.status.stream_healthy = false;
+    runtime.status.last_error = Some("Logged out".to_string());
     runtime.stream_session_state = StreamSessionState::Failed;
-    sync_status(&mut runtime);
+
+    // Reset reliability metrics on logout to ensure fresh state on next login
+    runtime.stream_events_accepted = 0;
+    runtime.stream_events_duplicates = 0;
+    runtime.stream_events_dropped = 0;
+    runtime.stream_events_replaced = 0;
+    runtime.last_stream_event_at_epoch_ms = None;
+
+    // Clear pending RPCs and approvals
+    let _ = cancel_pending_rpcs(&mut runtime, "logged_out");
+    runtime.approval_waiters.clear();
+    runtime.approval_decisions.clear();
+    runtime.approval_decision_order.clear();
+
+    // Capture mode before emitting status
     let mode = runtime.status.auth_mode.clone();
+    sync_status(&mut runtime);
+    drop(runtime);
+
+    // Emit reliability status refresh after logout
+    let _ = get_capture_reliability_status(app_handle, state);
+
     Ok(CodexAccountStatus {
-        auth_state: runtime.status.auth_state.clone(),
+        auth_state: AuthState::LoggedOut.as_status().to_string(),
         auth_mode: mode.clone(),
         interactive_login_required: mode != "apikey",
         supported_modes: supported_auth_modes(),
