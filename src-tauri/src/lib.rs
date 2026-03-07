@@ -13,6 +13,7 @@ mod link_commands;
 mod linking;
 mod models;
 mod otlp_receiver;
+mod recovery_checkpoint;
 mod rules;
 mod secret_store;
 mod session_hash;
@@ -211,6 +212,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             sql: include_str!("../migrations/015_live_sessions.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 16,
+            description: "add_trust_recovery_checkpoints",
+            sql: include_str!("../migrations/016_trust_recovery_checkpoints.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -302,6 +309,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             codex_app_server::codex_app_server_account_logout,
             codex_app_server::codex_app_server_set_stream_kill_switch,
             codex_app_server::codex_app_server_request_thread_snapshot,
+            codex_app_server::codex_app_server_load_thread_recovery_checkpoint,
             codex_app_server::codex_app_server_submit_approval,
             codex_app_server::get_codex_stream_dedupe_log,
             codex_app_server::get_capture_reliability_status,
