@@ -8,16 +8,14 @@ flowchart TD
   Untrusted --> useKeyboardShortcuts_c0879d98
   sessionUtils_d704722d["sessionUtils"]
   Untrusted --> sessionUtils_d704722d
-  useTestImport_test_da639ade["useTestImport.test"]
-  Untrusted --> useTestImport_test_da639ade
+  ingestConfig_c7e6037b["ingestConfig"]
+  Untrusted --> ingestConfig_c7e6037b
   toolSanitizer_93dad926["toolSanitizer"]
   Untrusted --> toolSanitizer_93dad926
   redact_18f1255e["redact"]
   Untrusted --> redact_18f1255e
   hash_d04b98f4["hash"]
   Untrusted --> hash_d04b98f4
-  ingestConfig_c7e6037b["ingestConfig"]
-  Untrusted --> ingestConfig_c7e6037b
   traceIngest_a4da94ac["traceIngest"]
   Untrusted --> traceIngest_a4da94ac
   narrativeFeedback_16021c8c["narrativeFeedback"]
@@ -26,52 +24,30 @@ flowchart TD
   Untrusted --> githubContext_f8e56c92
   agentTrace_bc847946["agentTrace"]
   Untrusted --> agentTrace_bc847946
-  narrativeFeedback_test_f057f0d1["narrativeFeedback.test"]
-  Untrusted --> narrativeFeedback_test_f057f0d1
-  DashboardView_16aa3601["DashboardView"]
-  Untrusted --> DashboardView_16aa3601
-  useSessionImport_test_cd169d3d["useSessionImport.test"]
-  Untrusted --> useSessionImport_test_cd169d3d
-  useAtlasSearch_7d18f6f2["useAtlasSearch"]
-  Untrusted --> useAtlasSearch_7d18f6f2
+  useTestImport_test_da639ade["useTestImport.test"]
+  Untrusted --> useTestImport_test_da639ade
   story_anchors_api_279f63a1["story-anchors-api"]
   Untrusted --> story_anchors_api_279f63a1
   attribution_api_b53df9d9["attribution-api"]
   Untrusted --> attribution_api_b53df9d9
   atlas_api_0fe43c81["atlas-api"]
   Untrusted --> atlas_api_0fe43c81
+  useAtlasSearch_7d18f6f2["useAtlasSearch"]
+  Untrusted --> useAtlasSearch_7d18f6f2
   calibration_run_script_85d7a923["calibration-run-script"]
   Untrusted --> calibration_run_script_85d7a923
-  useAutoIngest_test_c64ef81e["useAutoIngest.test"]
-  Untrusted --> useAutoIngest_test_c64ef81e
   sessionLinking_8e056ceb["sessionLinking"]
   Untrusted --> sessionLinking_8e056ceb
   agentSessionTools_413c0d20["agentSessionTools"]
   Untrusted --> agentSessionTools_413c0d20
-  sessionExcerpts_utils_07a2d1bb["sessionExcerpts.utils"]
-  Untrusted --> sessionExcerpts_utils_07a2d1bb
-  codexAppServerContractParity_test_dfc03ace["codexAppServerContractParity.test"]
-  Untrusted --> codexAppServerContractParity_test_dfc03ace
-  SessionExcerpts_30b0b8dc["SessionExcerpts"]
-  Untrusted --> SessionExcerpts_30b0b8dc
-  AtlasSearchPanel_3daa12fa["AtlasSearchPanel"]
-  Untrusted --> AtlasSearchPanel_3daa12fa
-  SessionExcerptsParts_f3184ff0["SessionExcerptsParts"]
-  Untrusted --> SessionExcerptsParts_f3184ff0
-  SessionImportPanel_test_2f6412b2["SessionImportPanel.test"]
-  Untrusted --> SessionImportPanel_test_2f6412b2
+  useAutoIngest_test_c64ef81e["useAutoIngest.test"]
+  Untrusted --> useAutoIngest_test_c64ef81e
   vite_integration_config_033b7d32["vite.integration.config"]
   Untrusted --> vite_integration_config_033b7d32
   vite_config_c473fba0["vite.config"]
   Untrusted --> vite_config_c473fba0
   harness_integration_test_065db339["harness.integration.test"]
   Untrusted --> harness_integration_test_065db339
-  githubContext_test_9f6470f8["githubContext.test"]
-  Untrusted --> githubContext_test_9f6470f8
-  App_0d04bfeb["App"]
-  Untrusted --> App_0d04bfeb
-  UpdatePrompt_8bfa5fb8["UpdatePrompt"]
-  Untrusted --> UpdatePrompt_8bfa5fb8
   useTestImport_136ded43 --> basename_2910774c
   useTestImport_136ded43 --> narrativeFs_b94b096d
   useTestImport_136ded43 --> hash_d04b98f4
@@ -91,33 +67,38 @@ flowchart TD
   useSessionImport_69292424 --> narrativeFs_b94b096d
   useSessionImport_69292424 --> story_anchors_api_279f63a1
   sessionUtils_d704722d --> toolSanitizer_93dad926
-  useTestImport_test_da639ade --> useTestImport_136ded43
+  traceIngest_a4da94ac --> db_7bdc25d1
   traceIngest_a4da94ac --> redact_18f1255e
   traceIngest_a4da94ac --> narrativeFs_b94b096d
+  traceIngest_a4da94ac --> traceParser_f261b9c1
+  traceIngest_a4da94ac --> otelAdapter_570cff77
+  narrativeFeedback_16021c8c --> db_7bdc25d1
   githubContext_f8e56c92 --> redact_18f1255e
   githubContext_f8e56c92 --> narrativeFs_b94b096d
   agentTrace_bc847946 --> redact_18f1255e
+  agentTrace_bc847946 --> db_7bdc25d1
   agentTrace_bc847946 --> narrativeFs_b94b096d
-  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
-  useSessionImport_test_cd169d3d --> useSessionImport_69292424
-  useSessionImport_test_cd169d3d --> narrativeFs_b94b096d
-  useSessionImport_test_cd169d3d --> hash_d04b98f4
-  useSessionImport_test_cd169d3d --> redact_18f1255e
-  useSessionImport_test_cd169d3d --> sessionLinking_8e056ceb
-  useSessionImport_test_cd169d3d --> sessionBadges_4a38460b
-  useSessionImport_test_cd169d3d --> agentTrace_bc847946
-  useSessionImport_test_cd169d3d --> story_anchors_api_279f63a1
+  agentTrace_bc847946 --> otelAdapter_570cff77
+  agentTrace_bc847946 --> gitDiff_a3685ce7
+  useTestImport_test_da639ade --> useTestImport_136ded43
   useAtlasSearch_7d18f6f2 --> atlas_api_0fe43c81
-  SessionExcerpts_30b0b8dc --> sessionExcerpts_utils_07a2d1bb
-  AtlasSearchPanel_3daa12fa --> useAtlasSearch_7d18f6f2
-  SessionExcerptsParts_f3184ff0 --> sessionExcerpts_utils_07a2d1bb
-  githubContext_test_9f6470f8 --> githubContext_f8e56c92
-  App_0d04bfeb --> useSessionImport_69292424
-  App_0d04bfeb --> UpdatePrompt_8bfa5fb8
-  App_0d04bfeb --> DashboardView_16aa3601
-  useBranchViewController_d4c2a4b8 --> githubContext_f8e56c92
-  useBranchViewController_d4c2a4b8 --> narrativeFeedback_16021c8c
+  testRuns_ebc7ce74 --> db_7bdc25d1
   useBranchViewController_d4c2a4b8 --> testRuns_ebc7ce74
   useBranchViewController_d4c2a4b8 --> useTestImport_136ded43
+  useBranchViewController_d4c2a4b8 --> useBranchNarrativeState_421f0b1f
   sessionBadges_4a38460b --> sessionLinking_8e056ceb
+  useKeyboardShortcuts_test_b00dfaeb --> useKeyboardShortcuts_c0879d98
+  otelAdapter_570cff77 --> gitDiff_a3685ce7
+  traceScan_d94d6b75 --> narrativeFs_b94b096d
+  traceScan_d94d6b75 --> traceParser_f261b9c1
+  traceScan_d94d6b75 --> traceIngest_a4da94ac
+  useBranchNarrativeState_421f0b1f --> githubContext_f8e56c92
+  useBranchNarrativeState_421f0b1f --> narrativeFeedback_16021c8c
+  useCommitData_29c16895 --> agentTrace_bc847946
+  useCommitData_29c16895 --> indexer_70fa78e5
+  indexer_70fa78e5 --> db_7bdc25d1
+  indexer_70fa78e5 --> agentTrace_bc847946
+  indexer_70fa78e5 --> attribution_api_b53df9d9
+  indexer_70fa78e5 --> story_anchors_api_279f63a1
+  indexer_70fa78e5 --> testRuns_ebc7ce74
   classDef securityNode fill:#dc2626,color:#fff
