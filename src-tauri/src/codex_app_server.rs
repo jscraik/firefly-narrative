@@ -31,14 +31,16 @@ const RESTART_COOLDOWN_MS: u64 = 500;
 const SHUTDOWN_GRACE_MS: u64 = 1_500;
 const DEFAULT_LIVE_SESSIONS_TTL_HOURS: i64 = 72;
 const DEFAULT_LIVE_SESSIONS_MAX_ROWS: i64 = 10_000;
-// Reconnect validation reasons (used by validate_reconnect_payload when codex_app_server_receive_live_event is wired)
+const APP_SERVER_PROTOCOL_TARGET: &str = "v2";
+
+// Reserved for future reconnect validation (see P2-039 agent trust state recovery)
+// These will be used when codex_app_server_receive_live_event is wired for live reconnection.
 #[allow(dead_code)]
 const RECONNECT_REASON_SCHEMA_MISMATCH: &str = "schema_version_mismatch";
 #[allow(dead_code)]
 const RECONNECT_REASON_SESSION_INVALID: &str = "session_invalid";
 #[allow(dead_code)]
 const RECONNECT_REASON_TOKEN_INVALID: &str = "token_invalid";
-const APP_SERVER_PROTOCOL_TARGET: &str = "v2";
 #[allow(dead_code)]
 const APP_SERVER_SCHEMA_SUPPORTED: &[&str] = &["v1"];
 #[allow(dead_code)]
@@ -95,6 +97,7 @@ const ALLOWED_SIDECAR_NOTIFICATION_METHODS: &[&str] = &[
     "turn/started",
     "turn/completed",
 ];
+// Reserved for capability negotiation when connecting to app server (P2-039)
 #[allow(dead_code)]
 const REQUIRED_APP_SERVER_METHODS: &[&str] = &[
     METHOD_INITIALIZE,
@@ -150,6 +153,7 @@ struct SidecarBinaryManifest {
     artifacts: Vec<SidecarArtifactManifest>,
 }
 
+/// Schema version classification for reconnect validation (reserved, P2-039)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
 enum SchemaVersionPolicy {
@@ -2914,6 +2918,7 @@ fn extract_repo_id(payload: &serde_json::Value) -> Option<i64> {
         .filter(|value| *value > 0)
 }
 
+/// Classifies schema version for reconnect validation (reserved, P2-039)
 #[allow(dead_code)]
 fn schema_version_policy(schema_version: &str) -> SchemaVersionPolicy {
     if APP_SERVER_SCHEMA_SUPPORTED.contains(&schema_version) {
@@ -2925,6 +2930,7 @@ fn schema_version_policy(schema_version: &str) -> SchemaVersionPolicy {
     SchemaVersionPolicy::Rejected
 }
 
+/// Validates reconnect payload schema version (reserved, P2-039)
 #[allow(dead_code)]
 fn validate_reconnect_payload(payload: &LiveSessionEventPayload) -> Result<(), &'static str> {
     let LiveSessionEventPayload::SessionDelta { payload, .. } = payload else {

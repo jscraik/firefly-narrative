@@ -132,6 +132,26 @@ export function useAutoIngest(params: {
   // useDeferredValue allows React to stabilize the thread ID before triggering checkpoint load.
   const deferredActiveThreadId = useDeferredValue(activeThreadId);
 
+  // --- P2-041: Development invariant checks for split-brain trust state ---
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // Detect split-brain: capture reports active but trust reports paused
+      if (captureReliability?.mode === 'HYBRID_ACTIVE' && trustState === 'trust_paused') {
+        console.warn(
+          '[useAutoIngest] Invariant violation: capture mode is HYBRID_ACTIVE but trustState is trust_paused. ' +
+          'This indicates state inconsistency between capture reliability and trust state.'
+        );
+      }
+      // Detect split-brain: no active thread but trust reports live
+      if (trustState === 'live_trusted' && !activeThreadId) {
+        console.warn(
+          '[useAutoIngest] Invariant violation: trustState is live_trusted but no activeThreadId set. ' +
+          'Live trusted state requires an active thread.'
+        );
+      }
+    }
+  }, [captureReliability, trustState, activeThreadId]);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {

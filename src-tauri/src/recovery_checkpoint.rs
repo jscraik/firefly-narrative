@@ -347,10 +347,18 @@ fn checkpoint_storage_key(checkpoint: &RecoveryCheckpoint) -> Result<String, Str
     normalize_thread_id(thread_id)
 }
 
+const MAX_THREAD_ID_LENGTH: usize = 256;
+
 fn normalize_thread_id(thread_id: &str) -> Result<String, String> {
     let normalized = thread_id.trim();
     if normalized.is_empty() {
         return Err("trust recovery checkpoint requires non-empty thread_id".to_string());
+    }
+    if normalized.len() > MAX_THREAD_ID_LENGTH {
+        return Err(format!(
+            "thread_id exceeds maximum length of {} bytes",
+            MAX_THREAD_ID_LENGTH
+        ));
     }
     Ok(normalized.to_string())
 }
@@ -722,5 +730,23 @@ mod tests {
         assert_eq!(checkpoint.last_applied_event_seq, None);
         assert_eq!(checkpoint.replay_cursor, None);
         assert!(checkpoint.inflight_effect_ids.is_empty());
+    }
+
+    #[test]
+    fn thread_id_exceeding_max_length_is_rejected() {
+        let long_id = "x".repeat(300);
+        let checkpoint = new_recovery_checkpoint(&long_id, "2026-03-07T03:20:00.000Z");
+        let rt = runtime();
+        rt.block_on(async {
+            let pool = checkpoint_pool().await;
+            let result = upsert_recovery_checkpoint(&pool, &checkpoint).await;
+            assert!(result.is_err(), "expected error for thread_id exceeding max length");
+            let err = result.unwrap_err();
+            assert!(
+                err.contains("exceeds maximum length"),
+                "error should mention max length: {}",
+                err
+            );
+        });
     }
 }

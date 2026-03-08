@@ -52,6 +52,7 @@ pub struct PendingApproval {
 
 // Error types
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)] // CorruptionError, PermissionDenied reserved for future enforcement
 pub enum ApprovalLedgerError {
     FingerprintError(String),
     SerializationError(String),
@@ -65,7 +66,9 @@ pub enum ApprovalLedgerError {
         request_id: String,
         expired_at: String,
     },
+    /// Reserved for integrity check failures during recovery
     CorruptionError(String),
+    /// Reserved for privileged operation authorization
     PermissionDenied {
         operation: String,
         required_permission: String,
