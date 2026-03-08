@@ -103,6 +103,10 @@ jobs:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: '[ -n "$NPM_TOKEN" ] && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc || true'
       - name: Install dependencies
         run: pnpm install
       - name: Run fast preflight policy gate
@@ -118,7 +122,7 @@ jobs:
           if [[ -z "$CHANGED_FILES" ]]; then
             CHANGED_FILES="$(git ls-files | paste -sd, -)"
           fi
-          pnpm exec tsx src/cli.ts preflight-gate \
+          node node_modules/@brainwav/coding-harness/dist/cli.js preflight-gate \
             --contract harness.contract.json \
             --max-tier medium \
             --files "${CHANGED_FILES}" \
@@ -195,6 +199,10 @@ jobs:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: '[ -n "$NPM_TOKEN" ] && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc || true'
       - name: Install dependencies
         run: pnpm install
       - name: Prepare baseline seed fallback
@@ -210,7 +218,7 @@ jobs:
           fi
       - name: Run advisory drift gate
         run: |
-          pnpm exec tsx src/cli.ts drift-gate \
+          node node_modules/@brainwav/coding-harness/dist/cli.js drift-gate \
             --mode advisory \
             --json \
             --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
@@ -265,6 +273,10 @@ jobs:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: '[ -n "$NPM_TOKEN" ] && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc || true'
       - name: Install dependencies
         run: pnpm install
       - name: Detect baseline seed
@@ -279,7 +291,7 @@ jobs:
       - name: Run health drift gate
         if: steps.baseline-seed.outputs.seeded == 'true'
         run: |
-          pnpm exec tsx src/cli.ts drift-gate \
+          node node_modules/@brainwav/coding-harness/dist/cli.js drift-gate \
             --mode health \
             --json \
             --out artifacts/consistency-gate/health.json
@@ -329,6 +341,10 @@ jobs:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: '[ -n "$NPM_TOKEN" ] && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc || true'
       - name: Install dependencies
         run: pnpm install
       - name: Run lint
@@ -345,6 +361,10 @@ jobs:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: '[ -n "$NPM_TOKEN" ] && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc || true'
       - name: Install dependencies
         run: pnpm install
       - name: Run typecheck
@@ -361,6 +381,10 @@ jobs:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: '[ -n "$NPM_TOKEN" ] && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc || true'
       - name: Install dependencies
         run: pnpm install
       - name: Run tests
@@ -377,6 +401,10 @@ jobs:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: '[ -n "$NPM_TOKEN" ] && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc || true'
       - name: Install dependencies
         run: pnpm install
       - name: Run audit
@@ -393,6 +421,10 @@ jobs:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: '[ -n "$NPM_TOKEN" ] && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc || true'
       - name: Install dependencies
         run: pnpm install
       - name: Run full check

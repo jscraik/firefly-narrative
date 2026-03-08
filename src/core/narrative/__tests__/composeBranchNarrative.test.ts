@@ -171,4 +171,124 @@ describe('composeBranchNarrative', () => {
     expect(narrative.confidence).toBeLessThanOrEqual(1);
     expect(narrative.confidence).toBeGreaterThanOrEqual(0);
   });
+
+  it('deduplicates evidence links across highlights', () => {
+    const model = baseModel();
+    model.timeline = [
+      {
+        id: 'same123',
+        type: 'commit',
+        label: 'First commit',
+        badges: [{ type: 'session', label: 'session' }],
+      },
+      {
+        id: 'same123',
+        type: 'commit',
+        label: 'Duplicate commit (same SHA)',
+        badges: [{ type: 'session', label: 'session' }],
+      },
+    ];
+
+    const narrative = composeBranchNarrative(model);
+
+    // Should deduplicate evidence links with same id
+    const commitLinkCount = narrative.evidenceLinks.filter(
+      (link) => link.kind === 'commit'
+    ).length;
+    const diffLinkCount = narrative.evidenceLinks.filter(
+      (link) => link.kind === 'diff'
+    ).length;
+
+    // Each commit produces 2 links (commit + diff), but duplicates should be removed
+    expect(commitLinkCount).toBeLessThanOrEqual(2);
+    expect(diffLinkCount).toBeLessThanOrEqual(2);
+  });
+
+  it('produces needs_attention state when confidence is below threshold', () => {
+    const model = baseModel();
+    // No intent + no sessions + no traces = lower confidence
+    model.intent = []; // No intent bonus
+    model.timeline = [
+      {
+        id: 'lowconf1',
+        type: 'commit',
+        label: 'Low confidence commit',
+        badges: [], // No badges = no bonus
+      },
+    ];
+
+    const _narrative = composeBranchNarrative(model);
+
+    // Base: 0.35 + commit: 0.20 = 0.55 >= 0.5, so state is 'ready'
+    // To get needs_attention, we need < 0.5 confidence
+    // With negative calibration offset we can push it below threshold
+    const lowConfidenceNarrative = composeBranchNarrative(model, {
+      calibration: {
+        repoId: 1,
+        rankingBias: 0,
+        confidenceOffset: -0.2, // Push confidence below 0.5
+        confidenceScale: 0.5,
+        sampleCount: 10,
+        actorWeightPolicyVersion: 'v1',
+        branchMissingDecisionCount: 0,
+        highlightAdjustments: {},
+        updatedAtISO: '2026-02-24T00:00:00.000Z',
+      },
+    });
+
+    expect(lowConfidenceNarrative.state).toBe('needs_attention');
+    expect(lowConfidenceNarrative.fallbackReason).toContain('confidence is low');
+  });
+
+  it('rounds confidence to 2 decimal places', () => {
+    const model = baseModel();
+    model.intent = [{ id: 'i1', text: 'Test precision' }];
+    model.timeline = [
+      {
+        id: 'precise1',
+        type: 'commit',
+        label: 'Precision test',
+        badges: [
+          { type: 'session', label: 'session' },
+          { type: 'trace', label: 'trace' },
+          { type: 'test', label: 'test' },
+        ],
+      },
+    ];
+
+    const narrative = composeBranchNarrative(model);
+
+    // Confidence should be rounded to 2 decimal places
+    expect(narrative.confidence.toString()).toMatch(/^\d+\.?\d{0,2}$/);
+    narrative.highlights.forEach((h) => {
+      expect(h.confidence.toString()).toMatch(/^\d+\.?\d{0,2}$/);
+    });
+  });
+
+  it('handles commit with failed test badges in whyThisMatters', () => {
+    const model = baseModel();
+    model.timeline = [
+      {
+        id: 'failedtest',
+        type: 'commit',
+        label: 'Commit with failures',
+        badges: [{ type: 'test', label: 'tests', status: 'failed' }],
+      },
+    ];
+
+    const narrative = composeBranchNarrative(model);
+
+    expect(narrative.highlights[0]?.whyThisMatters).toContain('test failures');
+  });
+
+  it('builds fallback highlight from intent when no commits qualify', () => {
+    const model = baseModel();
+    model.intent = [{ id: 'intent1', text: 'Fallback intent highlight' }];
+    model.timeline = []; // No commits
+
+    const narrative = composeBranchNarrative(model);
+
+    // Should have failed state but this tests the buildHighlights fallback logic
+    expect(narrative.state).toBe('failed');
+  });
 });

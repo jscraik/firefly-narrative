@@ -12,7 +12,9 @@ import type {
   StakeholderProjection,
   StakeholderProjections,
 } from '../../core/types';
+import type { CaptureReliabilityStatus, CodexAppServerStatus } from '../../core/tauri/ingestConfig';
 import { AskWhyAnswerCard } from './AskWhyAnswerCard';
+import { TrustStateIndicator, type TrustState } from './TrustStateIndicator';
 
 type RecallLaneEvidenceContext = {
   source?: 'recall_lane';
@@ -32,6 +34,14 @@ type BranchNarrativePanelProps = {
   killSwitchReason?: string;
   recallLaneItems?: NarrativeRecallLaneItem[];
   askWhyState: AskWhyState;
+  // Phase 4: Trust-state UX
+  trustState?: TrustState;
+  activeThreadId?: string | null;
+  captureReliabilityStatus?: CaptureReliabilityStatus | null;
+  codexAppServerStatus?: CodexAppServerStatus | null;
+  onRetryHydrate?: () => void;
+  onClearStaleState?: () => void;
+  // Existing handlers
   onAudienceChange: (audience: StakeholderAudience) => void;
   onFeedbackActorRoleChange: (role: NarrativeFeedbackActorRole) => void;
   onDetailLevelChange: (level: NarrativeDetailLevel) => void;
@@ -95,18 +105,37 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
     killSwitchActive = false,
     killSwitchReason,
     recallLaneItems = [],
+    askWhyState,
+    onDetailLevelChange,
+    // Phase 4: Trust-state props
+    trustState = 'none',
+    activeThreadId = null,
+    captureReliabilityStatus = null,
+    codexAppServerStatus = null,
+    onRetryHydrate,
+    onClearStaleState,
     onAudienceChange,
     onFeedbackActorRoleChange,
-    onDetailLevelChange,
     onSubmitFeedback,
     onOpenEvidence,
     onOpenRawDiff,
-    askWhyState,
     onSubmitAskWhy,
     onOpenAskWhyCitation,
   } = props;
   const projection = projections[audience] ?? projectionFallback(audience, narrative);
   const effectiveDetailLevel: NarrativeDetailLevel = killSwitchActive ? 'diff' : detailLevel;
+
+  // Phase 4: Derive approval actionability from trust state
+  // Phase 4: Derive approval actionability from trust state
+  // 'none' is included for backwards compatibility when trust system is not active
+  const _approvalsActionable = trustState === 'none' || trustState === 'live_trusted' || trustState === 'replaying';
+  const _approvalsDisabledReason =
+    trustState === 'hydrating'
+      ? 'Hydrating baseline'
+      : trustState === 'trust_paused'
+        ? 'Trust paused - resolve issues first'
+        : null;
+  
 
   const handleRecallLaneOpen = (item: NarrativeRecallLaneItem) => {
     if (killSwitchActive) {
@@ -162,6 +191,20 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
           <DetailButton level="diff" current={effectiveDetailLevel} label="Raw Diff" onClick={onDetailLevelChange} />
         </div>
       </div>
+
+      {/* Phase 4: Render TrustStateIndicator when trust is not 'none' */}
+      {trustState !== 'none' && (
+        <div className="mt-3">
+          <TrustStateIndicator
+            trustState={trustState}
+            activeThreadId={activeThreadId ?? null}
+            captureReliabilityStatus={captureReliabilityStatus}
+            codexAppServerStatus={codexAppServerStatus}
+            onRetryHydrate={onRetryHydrate}
+            onClearStaleState={onClearStaleState}
+          />
+        </div>
+      )}
 
       {killSwitchActive && (
         <div className="mt-3 rounded-lg border border-accent-red-light bg-accent-red-bg px-3 py-2 text-xs text-accent-red">
