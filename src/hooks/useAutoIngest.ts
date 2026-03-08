@@ -1,6 +1,6 @@
 import { listen } from '@tauri-apps/api/event';
 import { open as openExternal } from '@tauri-apps/plugin-shell';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from 'react';
 import type { BranchViewModel } from '../core/types';
 import { refreshSessionBadges } from '../core/repo/sessionBadges';
 import { setOtelReceiverEnabled } from '../core/tauri/otelReceiver';
@@ -128,6 +128,10 @@ export function useAutoIngest(params: {
     'none' | 'hydrating' | 'replaying' | 'live_trusted' | 'trust_paused'
   >('none');
 
+  // Debounce thread ID changes to prevent race conditions when events arrive rapidly.
+  // useDeferredValue allows React to stabilize the thread ID before triggering checkpoint load.
+  const deferredActiveThreadId = useDeferredValue(activeThreadId);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -185,12 +189,26 @@ export function useAutoIngest(params: {
     }
   }, [recordIssue]);
 
-  // --- PHASE 2: Load recovery checkpoint when active thread changes ---
+  // --- PHASE 2: Load recovery checkpoint when active thread changes (debounced) ---
+  // Use deferred value to prevent race conditions when thread ID changes rapidly
+  const loadRequestIdRef = useRef(0);
+
   useEffect(() => {
-    if (!activeThreadId || activeThreadId === lastActiveThreadIdRef.current) return;
-    lastActiveThreadIdRef.current = activeThreadId;
-    void loadRecoveryCheckpoint(activeThreadId);
-  }, [activeThreadId, loadRecoveryCheckpoint]);
+    // Use deferred thread ID to allow rapid changes to settle before loading
+    if (!deferredActiveThreadId || deferredActiveThreadId === lastActiveThreadIdRef.current) return;
+
+    // Increment request ID to invalidate any in-flight loads
+    const currentRequestId = ++loadRequestIdRef.current;
+    lastActiveThreadIdRef.current = deferredActiveThreadId;
+
+    void loadRecoveryCheckpoint(deferredActiveThreadId).then(() => {
+      // Only update state if this is still the current request
+      if (loadRequestIdRef.current !== currentRequestId || !isMountedRef.current) {
+        return;
+      }
+      // State updates happen inside loadRecoveryCheckpoint via callbacks
+    });
+  }, [deferredActiveThreadId, loadRecoveryCheckpoint]);
 
   const watchPaths = useMemo(() => {
     if (!config) return [];

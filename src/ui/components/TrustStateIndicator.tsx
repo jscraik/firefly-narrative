@@ -172,8 +172,8 @@ export function TrustStateIndicator(props: TrustStateIndicatorProps) {
             Blocking Reasons
           </div>
           <ul className="list-disc space-y-0.5 pl-3 text-[11px] text-text-tertiary">
-            {blockingReasons.slice(0, 3).map((reason) => (
-              <li key={reason}>{reason}</li>
+            {blockingReasons.slice(0, 3).map((reason, index) => (
+              <li key={`br-${index}-${reason.slice(0, 20)}`}>{reason}</li>
             ))}
           </ul>
         </div>
