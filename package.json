@@ -1,7 +1,7 @@
 {
   "name": "firefly-narrative",
   "private": true,
-  "version": "0.17.1",
+  "version": "0.18.0",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -130,9 +130,9 @@
       "@design-studio/tokens": "file:vendor/design-studio/design-studio-tokens-2.0.0.tgz",
       "basic-ftp": "^5.2.0",
       "@hono/node-server": "1.19.11",
-    "hono": "4.12.5",
-    "express-rate-limit": "^8.2.2",
-    "minimatch": "^10.2.3",
+      "hono": "4.12.5",
+      "express-rate-limit": "^8.2.2",
+      "minimatch": "^10.2.3",
       "rollup": "^4.59.0",
       "lodash": "^4.17.23",
       "tmp": "^0.2.4"
