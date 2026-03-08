@@ -4,6 +4,12 @@ flowchart TD
   agentation_baseline_spec_7c288669["agentation-baseline.spec"]
   UserRequest --> agentation_baseline_spec_7c288669
   agentation_baseline_spec_7c288669 --> agentation_baseline_spec_7c288669_result["result"]
+  story_anchors_api_279f63a1["story-anchors-api"]
+  UserRequest --> story_anchors_api_279f63a1
+  story_anchors_api_279f63a1 --> story_anchors_api_279f63a1_result["result"]
+  atlas_api_0fe43c81["atlas-api"]
+  UserRequest --> atlas_api_0fe43c81
+  atlas_api_0fe43c81 --> atlas_api_0fe43c81_result["result"]
   useUpdater_db2b740b["useUpdater"]
   UserRequest --> useUpdater_db2b740b
   useUpdater_db2b740b --> useUpdater_db2b740b_write["write/update"]
@@ -45,12 +51,6 @@ flowchart TD
   useAutoIngest_56f90d17 --> useAutoIngest_56f90d17_result["result"]
   useAutoIngest_56f90d17 --> sessionBadges_4a38460b
   useAutoIngest_56f90d17 --> otelReceiver_bd752dec
-  story_anchors_api_279f63a1["story-anchors-api"]
-  UserRequest --> story_anchors_api_279f63a1
-  story_anchors_api_279f63a1 --> story_anchors_api_279f63a1_result["result"]
-  atlas_api_0fe43c81["atlas-api"]
-  UserRequest --> atlas_api_0fe43c81
-  atlas_api_0fe43c81 --> atlas_api_0fe43c81_result["result"]
   generate_dataset_d06adda7["generate-dataset"]
   UserRequest --> generate_dataset_d06adda7
   generate_dataset_d06adda7 --> generate_dataset_d06adda7_result["result"]
@@ -60,37 +60,12 @@ flowchart TD
   branchHeaderMapper_4dd9295b["branchHeaderMapper"]
   UserRequest --> branchHeaderMapper_4dd9295b
   branchHeaderMapper_4dd9295b --> branchHeaderMapper_4dd9295b_result["result"]
-  useTraceCollector_test_1261d5ea["useTraceCollector.test"]
-  UserRequest --> useTraceCollector_test_1261d5ea
-  useTraceCollector_test_1261d5ea --> useTraceCollector_test_1261d5ea_result["result"]
-  useTraceCollector_test_1261d5ea --> useTraceCollector_e3f811c3
-  useTestImport_test_da639ade["useTestImport.test"]
-  UserRequest --> useTestImport_test_da639ade
-  useTestImport_test_da639ade --> useTestImport_test_da639ade_result["result"]
-  useTestImport_test_da639ade --> useTestImport_136ded43
-  useRepoLoader_test_c0765b39["useRepoLoader.test"]
-  UserRequest --> useRepoLoader_test_c0765b39
-  useRepoLoader_test_c0765b39 --> useRepoLoader_test_c0765b39_result["result"]
-  useRepoLoader_test_c0765b39 --> useRepoLoader_df6f8864
-  useRepoFileExistence_test_ae1ae469["useRepoFileExistence.test"]
-  UserRequest --> useRepoFileExistence_test_ae1ae469
-  useRepoFileExistence_test_ae1ae469 --> useRepoFileExistence_test_ae1ae469_result["result"]
-  useAutoIngest_test_c64ef81e["useAutoIngest.test"]
-  UserRequest --> useAutoIngest_test_c64ef81e
-  useAutoIngest_test_c64ef81e --> useAutoIngest_test_c64ef81e_result["result"]
-  useAutoIngest_test_c64ef81e --> useAutoIngest_56f90d17
   otelReceiver_bd752dec["otelReceiver"]
   UserRequest --> otelReceiver_bd752dec
   otelReceiver_bd752dec --> otelReceiver_bd752dec_result["result"]
   ingestConfig_c7e6037b["ingestConfig"]
   UserRequest --> ingestConfig_c7e6037b
   ingestConfig_c7e6037b --> ingestConfig_c7e6037b_result["result"]
-  nearbyGridDemo_82adb7f2["nearbyGridDemo"]
-  UserRequest --> nearbyGridDemo_82adb7f2
-  nearbyGridDemo_82adb7f2 --> nearbyGridDemo_82adb7f2_result["result"]
-  composeBranchNarrative_2a286eb3["composeBranchNarrative"]
-  UserRequest --> composeBranchNarrative_2a286eb3
-  composeBranchNarrative_2a286eb3 --> composeBranchNarrative_2a286eb3_result["result"]
   traceTypes_f94d53f8["traceTypes"]
   UserRequest --> traceTypes_f94d53f8
   traceTypes_f94d53f8 --> traceTypes_f94d53f8_result["result"]
@@ -182,102 +157,46 @@ flowchart TD
   agentSessionTools_413c0d20["agentSessionTools"]
   UserRequest --> agentSessionTools_413c0d20
   agentSessionTools_413c0d20 --> agentSessionTools_413c0d20_result["result"]
+  composeBranchNarrative_2a286eb3["composeBranchNarrative"]
+  UserRequest --> composeBranchNarrative_2a286eb3
+  composeBranchNarrative_2a286eb3 --> composeBranchNarrative_2a286eb3_result["result"]
+  nearbyGridDemo_82adb7f2["nearbyGridDemo"]
+  UserRequest --> nearbyGridDemo_82adb7f2
+  nearbyGridDemo_82adb7f2 --> nearbyGridDemo_82adb7f2_result["result"]
+  useTraceCollector_test_1261d5ea["useTraceCollector.test"]
+  UserRequest --> useTraceCollector_test_1261d5ea
+  useTraceCollector_test_1261d5ea --> useTraceCollector_test_1261d5ea_result["result"]
+  useTraceCollector_test_1261d5ea --> useTraceCollector_e3f811c3
+  useTestImport_test_da639ade["useTestImport.test"]
+  UserRequest --> useTestImport_test_da639ade
+  useTestImport_test_da639ade --> useTestImport_test_da639ade_result["result"]
+  useTestImport_test_da639ade --> useTestImport_136ded43
+  useRepoLoader_test_c0765b39["useRepoLoader.test"]
+  UserRequest --> useRepoLoader_test_c0765b39
+  useRepoLoader_test_c0765b39 --> useRepoLoader_test_c0765b39_result["result"]
+  useRepoLoader_test_c0765b39 --> useRepoLoader_df6f8864
+  useRepoFileExistence_test_ae1ae469["useRepoFileExistence.test"]
+  UserRequest --> useRepoFileExistence_test_ae1ae469
+  useRepoFileExistence_test_ae1ae469 --> useRepoFileExistence_test_ae1ae469_result["result"]
+  useAutoIngest_test_c64ef81e["useAutoIngest.test"]
+  UserRequest --> useAutoIngest_test_c64ef81e
+  useAutoIngest_test_c64ef81e --> useAutoIngest_test_c64ef81e_result["result"]
+  useAutoIngest_test_c64ef81e --> useAutoIngest_56f90d17
+  docsAutoLoad_test_e6636ba5["docsAutoLoad.test"]
+  UserRequest --> docsAutoLoad_test_e6636ba5
+  docsAutoLoad_test_e6636ba5 --> docsAutoLoad_test_e6636ba5_result["result"]
   useBranchViewController_d4c2a4b8["useBranchViewController"]
   UserRequest --> useBranchViewController_d4c2a4b8
   useBranchViewController_d4c2a4b8 --> useBranchViewController_d4c2a4b8_result["result"]
   useBranchViewController_d4c2a4b8 --> nearbyGridDemo_82adb7f2
-  useBranchViewController_d4c2a4b8 --> composeBranchNarrative_2a286eb3
-  useBranchViewController_d4c2a4b8 --> githubContext_f8e56c92
-  useBranchViewController_d4c2a4b8 --> narrativeFeedback_16021c8c
   useBranchViewController_d4c2a4b8 --> testRuns_ebc7ce74
   useBranchViewController_d4c2a4b8 --> useTestImport_136ded43
-  docsAutoLoad_test_e6636ba5["docsAutoLoad.test"]
-  UserRequest --> docsAutoLoad_test_e6636ba5
-  docsAutoLoad_test_e6636ba5 --> docsAutoLoad_test_e6636ba5_result["result"]
-  branchHeaderMapper_test_8c33a8eb["branchHeaderMapper.test"]
-  UserRequest --> branchHeaderMapper_test_8c33a8eb
-  branchHeaderMapper_test_8c33a8eb --> branchHeaderMapper_test_8c33a8eb_result["result"]
-  composeBranchNarrative_test_2f222be5["composeBranchNarrative.test"]
-  UserRequest --> composeBranchNarrative_test_2f222be5
-  composeBranchNarrative_test_2f222be5 --> composeBranchNarrative_test_2f222be5_result["result"]
-  sessionBadges_test_fee13cc0["sessionBadges.test"]
-  UserRequest --> sessionBadges_test_fee13cc0
-  sessionBadges_test_fee13cc0 --> sessionBadges_test_fee13cc0_result["result"]
-  sessionBadges_test_fee13cc0 --> sessionBadges_4a38460b
-  otelAdapter_test_23268a07["otelAdapter.test"]
-  UserRequest --> otelAdapter_test_23268a07
-  otelAdapter_test_23268a07 --> otelAdapter_test_23268a07_result["result"]
-  otelAdapter_test_23268a07 --> otelAdapter_570cff77
-  otelAdapter_test_23268a07 --> git_9a881b9b
-  narrativeFeedback_test_f057f0d1["narrativeFeedback.test"]
-  UserRequest --> narrativeFeedback_test_f057f0d1
-  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_test_f057f0d1_result["result"]
-  narrativeFeedback_test_f057f0d1 --> narrativeFeedback_16021c8c
-  junit_test_d62cfa25["junit.test"]
-  UserRequest --> junit_test_d62cfa25
-  junit_test_d62cfa25 --> junit_test_d62cfa25_result["result"]
-  junit_test_d62cfa25 --> junit_018bb207
-  indexer_test_d492f0aa["indexer.test"]
-  UserRequest --> indexer_test_d492f0aa
-  indexer_test_d492f0aa --> indexer_test_d492f0aa_result["result"]
-  indexer_test_d492f0aa --> indexer_70fa78e5
-  indexer_test_d492f0aa --> sessions_1225ae6c
-  indexer_test_d492f0aa --> agentTrace_bc847946
-  indexer_test_d492f0aa --> traceConfig_7e9b1320
-  indexer_test_d492f0aa --> testRuns_ebc7ce74
-  githubContext_test_9f6470f8["githubContext.test"]
-  UserRequest --> githubContext_test_9f6470f8
-  githubContext_test_9f6470f8 --> githubContext_test_9f6470f8_result["result"]
-  githubContext_test_9f6470f8 --> githubContext_f8e56c92
-  gitNotes_test_cb7d89bf["gitNotes.test"]
-  UserRequest --> gitNotes_test_cb7d89bf
-  gitNotes_test_cb7d89bf --> gitNotes_test_cb7d89bf_result["result"]
-  gitNotes_test_cb7d89bf --> git_9a881b9b
-  agentTraceNormalization_test_f7097cf9["agentTraceNormalization.test"]
-  UserRequest --> agentTraceNormalization_test_f7097cf9
-  agentTraceNormalization_test_f7097cf9 --> agentTraceNormalization_test_f7097cf9_result["result"]
-  agentTraceNormalization_test_f7097cf9 --> agentTrace_bc847946
-  App_0d04bfeb["App"]
-  UserRequest --> App_0d04bfeb
-  App_0d04bfeb --> App_0d04bfeb_result["result"]
-  App_0d04bfeb --> otelReceiver_bd752dec
-  App_0d04bfeb --> useAutoIngest_56f90d17
-  App_0d04bfeb --> useCommitData_29c16895
-  App_0d04bfeb --> useRepoLoader_df6f8864
-  App_0d04bfeb --> useSessionImport_69292424
-  App_0d04bfeb --> useTraceCollector_e3f811c3
-  App_0d04bfeb --> useUpdater_db2b740b
-  App_0d04bfeb --> RepoEmptyState_40528d79
-  App_0d04bfeb --> DashboardView_16aa3601
-  App_0d04bfeb --> DocsView_37d8072c
-  DocsView_37d8072c["DocsView"]
-  UserRequest --> DocsView_37d8072c
-  DocsView_37d8072c --> DocsView_37d8072c_result["result"]
-  DocsView_37d8072c --> indexer_70fa78e5
-  DashboardView_16aa3601["DashboardView"]
-  UserRequest --> DashboardView_16aa3601
-  DashboardView_16aa3601 --> DashboardView_16aa3601_result["result"]
-  RepoEmptyState_40528d79["RepoEmptyState"]
-  UserRequest --> RepoEmptyState_40528d79
-  RepoEmptyState_40528d79 --> RepoEmptyState_40528d79_result["result"]
-  RepoEmptyState_40528d79 --> nearbyGridDemo_82adb7f2
-  useSessionImport_test_cd169d3d["useSessionImport.test"]
-  UserRequest --> useSessionImport_test_cd169d3d
-  useSessionImport_test_cd169d3d --> useSessionImport_test_cd169d3d_result["result"]
-  useSessionImport_test_cd169d3d --> useSessionImport_69292424
-  useSessionImport_test_cd169d3d --> sessionLinking_8e056ceb
-  useSessionImport_test_cd169d3d --> sessionBadges_4a38460b
-  useSessionImport_test_cd169d3d --> agentTrace_bc847946
-  useSessionImport_test_cd169d3d --> story_anchors_api_279f63a1
-  DashboardView_test_bc2935bd["DashboardView.test"]
-  UserRequest --> DashboardView_test_bc2935bd
-  DashboardView_test_bc2935bd --> DashboardView_test_bc2935bd_result["result"]
-  DashboardView_test_bc2935bd --> DashboardView_16aa3601
-  BranchView_test_1_123b1973["BranchView.test"]
-  UserRequest --> BranchView_test_1_123b1973
-  BranchView_test_1_123b1973 --> BranchView_test_1_123b1973_result["result"]
-  StoryAnchorsPanel_test_e6427ced["StoryAnchorsPanel.test"]
-  UserRequest --> StoryAnchorsPanel_test_e6427ced
-  StoryAnchorsPanel_test_e6427ced --> StoryAnchorsPanel_test_e6427ced_result["result"]
+  useBranchViewController_d4c2a4b8 --> useBranchNarrativeState_421f0b1f
+  useBranchNarrativeState_421f0b1f["useBranchNarrativeState"]
+  UserRequest --> useBranchNarrativeState_421f0b1f
+  useBranchNarrativeState_421f0b1f --> useBranchNarrativeState_421f0b1f_result["result"]
+  useBranchNarrativeState_421f0b1f --> composeBranchNarrative_2a286eb3
+  useBranchNarrativeState_421f0b1f --> githubContext_f8e56c92
+  useBranchNarrativeState_421f0b1f --> narrativeFeedback_16021c8c
   classDef dbNode fill:#0ea5e9,color:#fff
   classDef decisionNode fill:#0284c7,color:#fff

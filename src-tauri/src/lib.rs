@@ -13,6 +13,8 @@ mod link_commands;
 mod linking;
 mod models;
 mod otlp_receiver;
+mod recovery_checkpoint;
+pub mod approval_ledger;
 mod rules;
 mod secret_store;
 mod session_hash;
@@ -211,6 +213,24 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             sql: include_str!("../migrations/015_live_sessions.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 16,
+            description: "add_trust_recovery_checkpoints",
+            sql: include_str!("../migrations/016_trust_recovery_checkpoints.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 17,
+            description: "add_approval_ledger",
+            sql: include_str!("../migrations/017_approval_ledger.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 18,
+            description: "add_trust_recovery_pause_reason",
+            sql: include_str!("../migrations/018_trust_recovery_pause_reason.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -302,6 +322,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             codex_app_server::codex_app_server_account_logout,
             codex_app_server::codex_app_server_set_stream_kill_switch,
             codex_app_server::codex_app_server_request_thread_snapshot,
+            codex_app_server::codex_app_server_load_thread_recovery_checkpoint,
             codex_app_server::codex_app_server_submit_approval,
             codex_app_server::get_codex_stream_dedupe_log,
             codex_app_server::get_capture_reliability_status,
@@ -350,9 +371,13 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let pool = tauri::async_runtime::block_on(async {
                 // Create database if it doesn't exist, then connect
                 // WAL mode enables better concurrency for reads/writes
+                use std::time::Duration;
+
                 let options = SqliteConnectOptions::new()
                     .filename(&path)
                     .journal_mode(SqliteJournalMode::Wal)
+                    .synchronous(sqlx::sqlite::SqliteSynchronous::Full)
+                    .busy_timeout(Duration::from_secs(5))
                     .create_if_missing(true);
 
                 let pool = SqlitePool::connect_with(options)
@@ -361,6 +386,11 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         eprintln!("Narrative: Database connection failed: {}", e);
                         format!("Failed to connect to database: {}. Please check file permissions and disk space.", e)
                     })?;
+
+                // Enable foreign key constraints for this connection
+                if let Err(e) = sqlx::query("PRAGMA foreign_keys = ON").execute(&pool).await {
+                    eprintln!("Narrative: Failed to enable foreign keys: {}", e);
+                }
 
                 if let Err(e) = ensure_session_links_schema(&pool).await {
                     eprintln!("Narrative: Failed to ensure session_links schema: {}", e);

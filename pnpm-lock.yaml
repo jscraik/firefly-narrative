@@ -10,6 +10,7 @@ overrides:
   basic-ftp: ^5.2.0
   '@hono/node-server': 1.19.11
   hono: 4.12.5
+  express-rate-limit: ^8.2.2
   minimatch: ^10.2.3
   rollup: ^4.59.0
   lodash: ^4.17.23
@@ -20,8 +21,8 @@ importers:
   .:
     dependencies:
       '@brainwav/coding-harness':
-        specifier: ^0.6.0
-        version: 0.6.0(@octokit/core@7.0.6)(@types/node@25.1.0)
+        specifier: ^0.7.1
+        version: 0.7.1(@octokit/core@7.0.6)(@types/node@25.1.0)
       '@design-studio/runtime':
         specifier: file:vendor/design-studio/design-studio-runtime-2.0.0.tgz
         version: file:vendor/design-studio/design-studio-runtime-2.0.0.tgz(react@19.2.4)
@@ -355,8 +356,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@brainwav/coding-harness@0.6.0':
-    resolution: {integrity: sha512-z/rdRwhk1wgZfXqnEfyE8onZm09b7cH8/pwmeYBVlkjhwCDcDtSjBKfhSNE3tL8LreIFSuH6w9R7Q6W9J2AEFQ==}
+  '@brainwav/coding-harness@0.7.1':
+    resolution: {integrity: sha512-UyHKJyFdygvIskMkfNTJXoBVtO1Ed8ROEtU1RTX4Hsvja+imrpmqzs+3fGwvKG5x3VPUMVDosR2b7JHuBH06NQ==}
     engines: {node: '>=24.0.0'}
     hasBin: true
 
@@ -3057,8 +3058,8 @@ packages:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
     engines: {node: '>=12.0.0'}
 
-  express-rate-limit@8.2.1:
-    resolution: {integrity: sha512-PCZEIEIxqwhzw4KF0n7QF4QqruVTcF73O5kFKUnGOyjbCCgizBBiFaYpd/fnBLUMPw/BWw9OsiN7GgrNYr7j6g==}
+  express-rate-limit@8.3.0:
+    resolution: {integrity: sha512-KJzBawY6fB9FiZGdE/0aftepZ91YlaGIrV8vgblRM3J8X+dHx/aiowJWwkx6LIGyuqGiANsjSwwrbb8mifOJ4Q==}
     engines: {node: '>= 16'}
     peerDependencies:
       express: '>= 4.11'
@@ -3397,10 +3398,6 @@ packages:
 
   intl-messageformat@10.7.18:
     resolution: {integrity: sha512-m3Ofv/X/tV8Y3tHXLohcuVuhWKo7BBq62cqY15etqmLxg2DZ34AGGgQDeR+SCta2+zICb1NX83af0GJmbQ1++g==}
-
-  ip-address@10.0.1:
-    resolution: {integrity: sha512-NWv9YLW4PoW2B7xtzaS3NCot75m6nK7Icdv0o3lfMceJVRfSoQwqD4wEH5rLwoKJwUiZ/rfpiVBhnaF0FK4HoA==}
-    engines: {node: '>= 12'}
 
   ip-address@10.1.0:
     resolution: {integrity: sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q==}
@@ -5302,7 +5299,7 @@ snapshots:
   '@biomejs/cli-win32-x64@2.3.13':
     optional: true
 
-  '@brainwav/coding-harness@0.6.0(@octokit/core@7.0.6)(@types/node@25.1.0)':
+  '@brainwav/coding-harness@0.7.1(@octokit/core@7.0.6)(@types/node@25.1.0)':
     dependencies:
       '@inquirer/prompts': 8.3.0(@types/node@25.1.0)
       '@octokit/plugin-retry': 7.2.1(@octokit/core@7.0.6)
@@ -5753,7 +5750,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.0.6
       express: 5.2.1
-      express-rate-limit: 8.2.1(express@5.2.1)
+      express-rate-limit: 8.3.0(express@5.2.1)
       hono: 4.12.5
       jose: 6.1.3
       json-schema-typed: 8.0.2
@@ -7982,10 +7979,10 @@ snapshots:
 
   expect-type@1.3.0: {}
 
-  express-rate-limit@8.2.1(express@5.2.1):
+  express-rate-limit@8.3.0(express@5.2.1):
     dependencies:
       express: 5.2.1
-      ip-address: 10.0.1
+      ip-address: 10.1.0
 
   express@4.22.1:
     dependencies:
@@ -8451,8 +8448,6 @@ snapshots:
       '@formatjs/fast-memoize': 2.2.7
       '@formatjs/icu-messageformat-parser': 2.11.4
       tslib: 2.8.1
-
-  ip-address@10.0.1: {}
 
   ip-address@10.1.0: {}
 

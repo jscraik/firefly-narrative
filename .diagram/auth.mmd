@@ -2,6 +2,12 @@ flowchart TD
   Request["Authentication request"]
   Boundary{"Auth Boundary"}
   Request --> Boundary
+  story_anchors_api_279f63a1["story-anchors-api"]
+  Boundary --> story_anchors_api_279f63a1
+  attribution_api_b53df9d9["attribution-api"]
+  Boundary --> attribution_api_b53df9d9
+  atlas_api_0fe43c81["atlas-api"]
+  Boundary --> atlas_api_0fe43c81
   useTestImport_136ded43["useTestImport"]
   Boundary --> useTestImport_136ded43
   useSessionImport_69292424["useSessionImport"]
@@ -10,26 +16,16 @@ flowchart TD
   Boundary --> useAtlasSearch_7d18f6f2
   sessionUtils_d704722d["sessionUtils"]
   Boundary --> sessionUtils_d704722d
-  story_anchors_api_279f63a1["story-anchors-api"]
-  Boundary --> story_anchors_api_279f63a1
-  attribution_api_b53df9d9["attribution-api"]
-  Boundary --> attribution_api_b53df9d9
-  atlas_api_0fe43c81["atlas-api"]
-  Boundary --> atlas_api_0fe43c81
   calibration_run_script_85d7a923["calibration-run-script"]
   Boundary --> calibration_run_script_85d7a923
-  useTestImport_test_da639ade["useTestImport.test"]
-  Boundary --> useTestImport_test_da639ade
-  useAutoIngest_test_c64ef81e["useAutoIngest.test"]
-  Boundary --> useAutoIngest_test_c64ef81e
+  ingestConfig_c7e6037b["ingestConfig"]
+  Boundary --> ingestConfig_c7e6037b
   toolSanitizer_93dad926["toolSanitizer"]
   Boundary --> toolSanitizer_93dad926
   redact_18f1255e["redact"]
   Boundary --> redact_18f1255e
   hash_d04b98f4["hash"]
   Boundary --> hash_d04b98f4
-  ingestConfig_c7e6037b["ingestConfig"]
-  Boundary --> ingestConfig_c7e6037b
   traceIngest_a4da94ac["traceIngest"]
   Boundary --> traceIngest_a4da94ac
   sessionLinking_8e056ceb["sessionLinking"]
@@ -40,20 +36,10 @@ flowchart TD
   Boundary --> agentTrace_bc847946
   agentSessionTools_413c0d20["agentSessionTools"]
   Boundary --> agentSessionTools_413c0d20
-  sessionExcerpts_utils_07a2d1bb["sessionExcerpts.utils"]
-  Boundary --> sessionExcerpts_utils_07a2d1bb
-  codexAppServerContractParity_test_dfc03ace["codexAppServerContractParity.test"]
-  Boundary --> codexAppServerContractParity_test_dfc03ace
-  SessionExcerpts_30b0b8dc["SessionExcerpts"]
-  Boundary --> SessionExcerpts_30b0b8dc
-  AtlasSearchPanel_3daa12fa["AtlasSearchPanel"]
-  Boundary --> AtlasSearchPanel_3daa12fa
-  useSessionImport_test_cd169d3d["useSessionImport.test"]
-  Boundary --> useSessionImport_test_cd169d3d
-  SessionExcerptsParts_f3184ff0["SessionExcerptsParts"]
-  Boundary --> SessionExcerptsParts_f3184ff0
-  SessionImportPanel_test_2f6412b2["SessionImportPanel.test"]
-  Boundary --> SessionImportPanel_test_2f6412b2
+  useTestImport_test_da639ade["useTestImport.test"]
+  Boundary --> useTestImport_test_da639ade
+  useAutoIngest_test_c64ef81e["useAutoIngest.test"]
+  Boundary --> useAutoIngest_test_c64ef81e
   useTestImport_136ded43 --> basename_2910774c
   useTestImport_136ded43 --> narrativeFs_b94b096d
   useTestImport_136ded43 --> hash_d04b98f4
@@ -74,38 +60,26 @@ flowchart TD
   useSessionImport_69292424 --> story_anchors_api_279f63a1
   useAtlasSearch_7d18f6f2 --> atlas_api_0fe43c81
   sessionUtils_d704722d --> toolSanitizer_93dad926
-  useTestImport_test_da639ade --> useTestImport_136ded43
   traceIngest_a4da94ac --> redact_18f1255e
   traceIngest_a4da94ac --> narrativeFs_b94b096d
   githubContext_f8e56c92 --> redact_18f1255e
   githubContext_f8e56c92 --> narrativeFs_b94b096d
   agentTrace_bc847946 --> redact_18f1255e
   agentTrace_bc847946 --> narrativeFs_b94b096d
-  SessionExcerpts_30b0b8dc --> sessionExcerpts_utils_07a2d1bb
-  AtlasSearchPanel_3daa12fa --> useAtlasSearch_7d18f6f2
-  useSessionImport_test_cd169d3d --> useSessionImport_69292424
-  useSessionImport_test_cd169d3d --> narrativeFs_b94b096d
-  useSessionImport_test_cd169d3d --> hash_d04b98f4
-  useSessionImport_test_cd169d3d --> redact_18f1255e
-  useSessionImport_test_cd169d3d --> sessionLinking_8e056ceb
-  useSessionImport_test_cd169d3d --> sessionBadges_4a38460b
-  useSessionImport_test_cd169d3d --> agentTrace_bc847946
-  useSessionImport_test_cd169d3d --> story_anchors_api_279f63a1
-  SessionExcerptsParts_f3184ff0 --> sessionExcerpts_utils_07a2d1bb
-  useBranchViewController_d4c2a4b8 --> githubContext_f8e56c92
+  useTestImport_test_da639ade --> useTestImport_136ded43
+  indexer_70fa78e5 --> agentTrace_bc847946
+  indexer_70fa78e5 --> attribution_api_b53df9d9
+  indexer_70fa78e5 --> story_anchors_api_279f63a1
+  indexer_70fa78e5 --> testRuns_ebc7ce74
   useBranchViewController_d4c2a4b8 --> testRuns_ebc7ce74
   useBranchViewController_d4c2a4b8 --> useTestImport_136ded43
   sessionBadges_4a38460b --> sessionLinking_8e056ceb
-  App_0d04bfeb --> useSessionImport_69292424
-  react_27597608[("react")]
-  _tauri_apps_plugin_dialog_672cd360[("@tauri-apps/plugin-dialog")]
   _tauri_apps_api_641aee82[("@tauri-apps/api")]
   zod_4f63cf5c[("zod")]
+  react_27597608[("react")]
+  _tauri_apps_plugin_dialog_672cd360[("@tauri-apps/plugin-dialog")]
   fs_dce7cce0[("fs")]
   path_a0af9f86[("path")]
   _testing_library_react_b35eda33[("@testing-library/react")]
   vitest_a9127f3d[("vitest")]
-  node_fs_df6b52af[("node:fs")]
-  node_path_0e7d56ab[("node:path")]
-  lucide_react_cedfe168[("lucide-react")]
   classDef authNode fill:#7c3aed,color:#fff

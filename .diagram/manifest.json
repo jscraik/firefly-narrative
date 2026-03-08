@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-02-28T15:00:35.284Z",
-  "rootPath": "/Users/jamiecraik/dev/firefly-narrative",
+  "generatedAt": "2026-03-07T01:22:48.651Z",
+  "rootPath": "/Users/jamiecraik/dev/trace-narrative",
   "diagramDir": ".diagram",
   "diagrams": [
     {
       "type": "architecture",
       "file": "architecture.mmd",
       "outputPath": ".diagram/architecture.mmd",
-      "lines": 525,
-      "bytes": 25804,
+      "lines": 249,
+      "bytes": 11368,
       "isPlaceholder": false
     },
     {
@@ -23,16 +23,16 @@
       "type": "dependency",
       "file": "dependency.mmd",
       "outputPath": ".diagram/dependency.mmd",
-      "lines": 525,
-      "bytes": 31751,
+      "lines": 226,
+      "bytes": 13720,
       "isPlaceholder": false
     },
     {
       "type": "class",
       "file": "class.mmd",
       "outputPath": ".diagram/class.mmd",
-      "lines": 66,
-      "bytes": 1657,
+      "lines": 4,
+      "bytes": 69,
       "isPlaceholder": false
     },
     {
@@ -40,47 +40,47 @@
       "file": "flow.mmd",
       "outputPath": ".diagram/flow.mmd",
       "lines": 20,
-      "bytes": 906,
+      "bytes": 924,
       "isPlaceholder": false
     },
     {
       "type": "database",
       "file": "database.mmd",
       "outputPath": ".diagram/database.mmd",
-      "lines": 283,
-      "bytes": 14528,
+      "lines": 202,
+      "bytes": 10189,
       "isPlaceholder": false
     },
     {
       "type": "user",
       "file": "user.mmd",
       "outputPath": ".diagram/user.mmd",
-      "lines": 357,
-      "bytes": 16482,
+      "lines": 99,
+      "bytes": 4452,
       "isPlaceholder": false
     },
     {
       "type": "events",
       "file": "events.mmd",
       "outputPath": ".diagram/events.mmd",
-      "lines": 71,
-      "bytes": 3311,
+      "lines": 10,
+      "bytes": 396,
       "isPlaceholder": false
     },
     {
       "type": "auth",
       "file": "auth.mmd",
       "outputPath": ".diagram/auth.mmd",
-      "lines": 111,
-      "bytes": 5122,
+      "lines": 85,
+      "bytes": 3701,
       "isPlaceholder": false
     },
     {
       "type": "security",
       "file": "security.mmd",
       "outputPath": ".diagram/security.mmd",
-      "lines": 123,
-      "bytes": 5858,
+      "lines": 104,
+      "bytes": 4782,
       "isPlaceholder": false
     }
   ]

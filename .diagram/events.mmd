@@ -1,71 +1,10 @@
 flowchart TD
   subgraph Channels["Event channels / queues"]
+    narrativeTelemetry_70dfa1c5{{"narrativeTelemetry"}}
     useFirefly_test_2c284fc9{{"useFirefly.test"}}
-    App_0d04bfeb{{"App"}}
-    Timeline_9dcff98e{{"Timeline"}}
-    DashboardHeader_a24e8484{{"DashboardHeader"}}
     settings_cde0fb0d["settings"]
-    emptyBranchModel_b002cef5["emptyBranchModel"]
-    otelReceiver_bd752dec["otelReceiver"]
-    url_28e5ebab["url"]
-    useAutoIngest_56f90d17["useAutoIngest"]
-    useCommitData_29c16895["useCommitData"]
-    useRepoLoader_df6f8864["useRepoLoader"]
-    useSessionImport_69292424["useSessionImport"]
-    useTraceCollector_e3f811c3["useTraceCollector"]
-    useUpdater_db2b740b["useUpdater"]
-    RepoEmptyState_40528d79["RepoEmptyState"]
-    TopNav_8615cc91["TopNav"]
-    UpdatePrompt_8bfa5fb8["UpdatePrompt"]
-    BranchView_16f1e1f8["BranchView"]
-    DashboardView_16aa3601["DashboardView"]
-    DocsView_37d8072c["DocsView"]
-    main_0d6e4079["main"]
-    useTimelineNavigation_806cd7e6["useTimelineNavigation"]
-    BadgePill_b0287413["BadgePill"]
-    FireflySignal_b76b6c4c["FireflySignal"]
-    TimelineNavButtons_cf793ac5["TimelineNavButtons"]
-    TimelineNode_8b6735fa["TimelineNode"]
-    BranchViewLayout_2f34f6b8["BranchViewLayout"]
-    timeRangeUtils_e17b2759["timeRangeUtils"]
     useFirefly_4b28bfda["useFirefly"]
-    sessionBadges_4a38460b["sessionBadges"]
-    activity_0651863b["activity"]
-    useAutoIngest_test_c64ef81e["useAutoIngest.test"]
   end
   useFirefly_test_2c284fc9 -->|emit| settings_cde0fb0d
-  App_0d04bfeb -->|emit| emptyBranchModel_b002cef5
-  App_0d04bfeb -->|emit| otelReceiver_bd752dec
-  App_0d04bfeb -->|emit| url_28e5ebab
-  App_0d04bfeb -->|emit| useAutoIngest_56f90d17
-  App_0d04bfeb -->|emit| useCommitData_29c16895
-  App_0d04bfeb -->|emit| useRepoLoader_df6f8864
-  App_0d04bfeb -->|emit| useSessionImport_69292424
-  App_0d04bfeb -->|emit| useTraceCollector_e3f811c3
-  App_0d04bfeb -->|emit| useUpdater_db2b740b
-  App_0d04bfeb -->|emit| RepoEmptyState_40528d79
-  App_0d04bfeb -->|emit| TopNav_8615cc91
-  App_0d04bfeb -->|emit| UpdatePrompt_8bfa5fb8
-  App_0d04bfeb -->|emit| BranchView_16f1e1f8
-  App_0d04bfeb -->|emit| DashboardView_16aa3601
-  App_0d04bfeb -->|emit| DocsView_37d8072c
-  Timeline_9dcff98e -->|emit| useTimelineNavigation_806cd7e6
-  Timeline_9dcff98e -->|emit| BadgePill_b0287413
-  Timeline_9dcff98e -->|emit| FireflySignal_b76b6c4c
-  Timeline_9dcff98e -->|emit| TimelineNavButtons_cf793ac5
-  Timeline_9dcff98e -->|emit| TimelineNode_8b6735fa
-  DashboardHeader_a24e8484 -->|emit| timeRangeUtils_e17b2759
-  useAutoIngest_56f90d17 -->|consume| sessionBadges_4a38460b
-  useAutoIngest_56f90d17 -->|consume| otelReceiver_bd752dec
-  useAutoIngest_56f90d17 -->|consume| activity_0651863b
-  useRepoLoader_df6f8864 -->|consume| otelReceiver_bd752dec
-  useSessionImport_69292424 -->|consume| sessionBadges_4a38460b
-  useTraceCollector_e3f811c3 -->|consume| otelReceiver_bd752dec
-  BranchView_16f1e1f8 -->|consume| BranchViewLayout_2f34f6b8
-  DashboardView_16aa3601 -->|consume| DashboardHeader_a24e8484
-  main_0d6e4079 -->|consume| App_0d04bfeb
-  TimelineNode_8b6735fa -->|consume| BadgePill_b0287413
-  BranchViewLayout_2f34f6b8 -->|consume| Timeline_9dcff98e
   useFirefly_4b28bfda -->|consume| settings_cde0fb0d
-  useAutoIngest_test_c64ef81e -->|consume| useAutoIngest_56f90d17
   classDef eventNode fill:#db2777,color:#fff

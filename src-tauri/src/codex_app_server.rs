@@ -1,3 +1,9 @@
+use crate::recovery_checkpoint::{
+    begin_fresh_retry, checkpoint_from_thread_snapshot_result, extract_optional_string,
+    load_recovery_checkpoint, new_recovery_checkpoint, requires_fresh_retry,
+    upsert_recovery_checkpoint, RecoveryCheckpoint, TRUST_PAUSE_REASON_HYDRATE_FAILED,
+    TRUST_PAUSE_REASON_SNAPSHOT_TIMEOUT, TRUST_PAUSE_REASON_THREAD_MISMATCH,
+};
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -25,14 +31,16 @@ const RESTART_COOLDOWN_MS: u64 = 500;
 const SHUTDOWN_GRACE_MS: u64 = 1_500;
 const DEFAULT_LIVE_SESSIONS_TTL_HOURS: i64 = 72;
 const DEFAULT_LIVE_SESSIONS_MAX_ROWS: i64 = 10_000;
-// Reconnect validation reasons (used by validate_reconnect_payload when codex_app_server_receive_live_event is wired)
+const APP_SERVER_PROTOCOL_TARGET: &str = "v2";
+
+// Reserved for future reconnect validation (see P2-039 agent trust state recovery)
+// These will be used when codex_app_server_receive_live_event is wired for live reconnection.
 #[allow(dead_code)]
 const RECONNECT_REASON_SCHEMA_MISMATCH: &str = "schema_version_mismatch";
 #[allow(dead_code)]
 const RECONNECT_REASON_SESSION_INVALID: &str = "session_invalid";
 #[allow(dead_code)]
 const RECONNECT_REASON_TOKEN_INVALID: &str = "token_invalid";
-const APP_SERVER_PROTOCOL_TARGET: &str = "v2";
 #[allow(dead_code)]
 const APP_SERVER_SCHEMA_SUPPORTED: &[&str] = &["v1"];
 #[allow(dead_code)]
@@ -89,6 +97,7 @@ const ALLOWED_SIDECAR_NOTIFICATION_METHODS: &[&str] = &[
     "turn/started",
     "turn/completed",
 ];
+// Reserved for capability negotiation when connecting to app server (P2-039)
 #[allow(dead_code)]
 const REQUIRED_APP_SERVER_METHODS: &[&str] = &[
     METHOD_INITIALIZE,
@@ -144,6 +153,7 @@ struct SidecarBinaryManifest {
     artifacts: Vec<SidecarArtifactManifest>,
 }
 
+/// Schema version classification for reconnect validation (reserved, P2-039)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
 enum SchemaVersionPolicy {
@@ -269,6 +279,27 @@ pub struct CodexAccountStatus {
     pub auth_mode: String,
     pub interactive_login_required: bool,
     pub supported_modes: Vec<String>,
+}
+
+/// Recovery checkpoint status for a thread, used at startup/restart to determine
+/// trust state before hydrating. Call this after handshake completes to check
+/// whether a prior session left recoverable state or requires fresh retry.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodexThreadRecoveryCheckpointStatus {
+    /// The thread ID queried
+    pub thread_id: String,
+    /// Whether a durable checkpoint exists for this thread
+    pub checkpoint_exists: bool,
+    /// Whether the checkpoint requires fresh retry (incompatible, corrupted, or prior failure)
+    pub requires_fresh_retry: bool,
+    /// Trust state recommendation: "none" | "hydrating" | "replaying" | "live_trusted" | "trust_paused"
+    /// At startup, this will be "none" (no checkpoint) or "trust_paused" (checkpoint requires fresh retry)
+    pub trust_state_recommendation: String,
+    /// The checkpoint details if one exists
+    pub checkpoint: Option<RecoveryCheckpoint>,
+    /// Reason code if requires_fresh_retry is true
+    pub fresh_retry_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -843,7 +874,8 @@ fn compute_manifest_signature(payload_hash: &str, signer: &str) -> String {
 
 fn verify_sidecar_manifest_for_path(sidecar_path: &Path) -> Result<(), String> {
     let manifest_path = locate_sidecar_manifest_path(sidecar_path).ok_or_else(|| {
-        "Failed to locate codex-app-server manifest in supported bundle/runtime locations".to_string()
+        "Failed to locate codex-app-server manifest in supported bundle/runtime locations"
+            .to_string()
     })?;
 
     let raw_manifest = std::fs::read_to_string(&manifest_path).map_err(|error| {
@@ -977,7 +1009,12 @@ fn locate_sidecar_manifest_path(sidecar_path: &Path) -> Option<PathBuf> {
     for ancestor in sidecar_dir.ancestors() {
         candidates.push(ancestor.join(SIDECAR_MANIFEST_FILE));
         candidates.push(ancestor.join("bin").join(SIDECAR_MANIFEST_FILE));
-        candidates.push(ancestor.join("Resources").join("bin").join(SIDECAR_MANIFEST_FILE));
+        candidates.push(
+            ancestor
+                .join("Resources")
+                .join("bin")
+                .join(SIDECAR_MANIFEST_FILE),
+        );
         candidates.push(
             ancestor
                 .join("..")
@@ -987,9 +1024,7 @@ fn locate_sidecar_manifest_path(sidecar_path: &Path) -> Option<PathBuf> {
         );
     }
 
-    candidates
-        .into_iter()
-        .find(|candidate| candidate.is_file())
+    candidates.into_iter().find(|candidate| candidate.is_file())
 }
 
 fn detect_sidecar_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
@@ -1046,8 +1081,16 @@ fn detect_sidecar_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
             // Target-suffixed for app_dir variants
             candidates.push(app_dir.join(format!("codex-app-server{}", target_suffix)));
             candidates.push(app_dir.join(format!("codex-app-server{}.exe", target_suffix)));
-            candidates.push(app_dir.join("MacOS").join(format!("codex-app-server{}", target_suffix)));
-            candidates.push(app_dir.join("MacOS").join(format!("codex-app-server{}.exe", target_suffix)));
+            candidates.push(
+                app_dir
+                    .join("MacOS")
+                    .join(format!("codex-app-server{}", target_suffix)),
+            );
+            candidates.push(
+                app_dir
+                    .join("MacOS")
+                    .join(format!("codex-app-server{}.exe", target_suffix)),
+            );
         }
     }
 
@@ -1067,7 +1110,10 @@ fn detect_sidecar_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
         candidates.push(cwd.join("bin/codex-app-server"));
         // Target-suffixed for cwd variants
         candidates.push(cwd.join(format!("src-tauri/bin/codex-app-server{}", target_suffix)));
-        candidates.push(cwd.join(format!("src-tauri/bin/codex-app-server{}.exe", target_suffix)));
+        candidates.push(cwd.join(format!(
+            "src-tauri/bin/codex-app-server{}.exe",
+            target_suffix
+        )));
         candidates.push(cwd.join(format!("bin/codex-app-server{}", target_suffix)));
     }
 
@@ -1455,6 +1501,27 @@ fn cancel_pending_rpcs(runtime: &mut CodexAppServerRuntime, reason: &str) -> usi
     runtime.pending_rpcs.clear();
     increment_labeled_counter(&mut runtime.parse_error_total, reason);
     cancelled
+}
+
+/// Cancel a single pending RPC by request ID.
+/// Returns true if the RPC was found and cancelled, false otherwise.
+fn cancel_pending_rpc_by_id(
+    runtime: &mut CodexAppServerRuntime,
+    request_id: i64,
+    reason: &str,
+) -> bool {
+    let id = request_id.to_string();
+    if let Some(request) = runtime.pending_rpcs.remove(&id) {
+        if matches!(request.kind, PendingRpcKind::ThreadRead) {
+            runtime
+                .thread_read_errors
+                .insert(id, "thread/read request cancelled".to_string());
+        }
+        increment_labeled_counter(&mut runtime.parse_error_total, reason);
+        true
+    } else {
+        false
+    }
 }
 
 fn remember_approval_decision(
@@ -2720,6 +2787,120 @@ fn with_db_pool(app_handle: &AppHandle) -> Option<Arc<SqlitePool>> {
         .map(|state| state.0.clone())
 }
 
+fn thread_read_effect_id(request_id: i64) -> String {
+    format!("rpc:thread-read:{request_id}")
+}
+
+fn checkpoint_retry_reason_for_thread_read_error(error: &str) -> &'static str {
+    let normalized = error.to_lowercase();
+    if normalized.contains("timed out") {
+        TRUST_PAUSE_REASON_SNAPSHOT_TIMEOUT
+    } else if normalized.contains("cancelled") || normalized.contains("context mismatch") {
+        TRUST_PAUSE_REASON_THREAD_MISMATCH
+    } else {
+        TRUST_PAUSE_REASON_HYDRATE_FAILED
+    }
+}
+
+fn load_recovery_checkpoint_blocking(
+    app_handle: &AppHandle,
+    thread_id: &str,
+) -> Result<Option<RecoveryCheckpoint>, String> {
+    let Some(pool) = with_db_pool(app_handle) else {
+        return Ok(None);
+    };
+
+    tauri::async_runtime::block_on(load_recovery_checkpoint(&pool, thread_id))
+}
+
+fn upsert_recovery_checkpoint_blocking(
+    app_handle: &AppHandle,
+    checkpoint: &RecoveryCheckpoint,
+) -> Result<(), String> {
+    let Some(pool) = with_db_pool(app_handle) else {
+        return Ok(());
+    };
+
+    tauri::async_runtime::block_on(upsert_recovery_checkpoint(&pool, checkpoint))
+}
+
+fn prepare_thread_snapshot_checkpoint_blocking(
+    app_handle: &AppHandle,
+    thread_id: &str,
+) -> Result<RecoveryCheckpoint, String> {
+    let Some(pool) = with_db_pool(app_handle) else {
+        // Fallback to non-persistent checkpoint if DB unavailable
+        let checkpoint_written_at_iso = now_iso();
+        return Ok(new_recovery_checkpoint(thread_id, &checkpoint_written_at_iso));
+    };
+
+    let checkpoint_written_at_iso = now_iso();
+    tauri::async_runtime::block_on(
+        crate::recovery_checkpoint::prepare_recovery_checkpoint_atomic(
+            &pool,
+            thread_id,
+            &checkpoint_written_at_iso,
+        ),
+    )
+}
+
+fn persist_inflight_thread_snapshot_checkpoint_blocking(
+    app_handle: &AppHandle,
+    thread_id: &str,
+    request_id: i64,
+) -> Result<RecoveryCheckpoint, String> {
+    let existing = load_recovery_checkpoint_blocking(app_handle, thread_id)?
+        .unwrap_or_else(|| new_recovery_checkpoint(thread_id, &now_iso()));
+    let checkpoint = RecoveryCheckpoint {
+        thread_id: Some(thread_id.to_string()),
+        inflight_effect_ids: vec![thread_read_effect_id(request_id)],
+        checkpoint_written_at_iso: now_iso(),
+        ..existing
+    };
+    upsert_recovery_checkpoint_blocking(app_handle, &checkpoint)?;
+    Ok(checkpoint)
+}
+
+fn persist_thread_snapshot_success_checkpoint_blocking(
+    app_handle: &AppHandle,
+    requested_thread_id: &str,
+    result: &serde_json::Value,
+) -> Result<RecoveryCheckpoint, String> {
+    // SECURITY: Validate response thread_id matches requested thread_id
+    // to prevent stale responses from overwriting the wrong checkpoint
+    let response_thread_id = extract_optional_string(result, &["threadId", "thread_id"]);
+    if let Some(ref response_tid) = response_thread_id {
+        if response_tid != requested_thread_id {
+            return Err(format!(
+                "stale thread snapshot response: expected thread_id={requested_thread_id}, got thread_id={response_tid}"
+            ));
+        }
+    }
+
+    let checkpoint =
+        checkpoint_from_thread_snapshot_result(requested_thread_id, result, &now_iso(), Vec::new());
+    upsert_recovery_checkpoint_blocking(app_handle, &checkpoint)?;
+    Ok(checkpoint)
+}
+
+fn persist_thread_snapshot_failure_checkpoint_blocking(
+    app_handle: &AppHandle,
+    thread_id: &str,
+    error: &str,
+) -> Result<RecoveryCheckpoint, String> {
+    let existing = load_recovery_checkpoint_blocking(app_handle, thread_id)?
+        .unwrap_or_else(|| new_recovery_checkpoint(thread_id, &now_iso()));
+    let reason = checkpoint_retry_reason_for_thread_read_error(error);
+    let checkpoint = begin_fresh_retry(&existing, &now_iso(), Some(reason));
+
+    if !crate::recovery_checkpoint::requires_fresh_retry(&existing, Some(reason)) {
+        return Ok(existing);
+    }
+
+    upsert_recovery_checkpoint_blocking(app_handle, &checkpoint)?;
+    Ok(checkpoint)
+}
+
 fn parse_i64_env(key: &str, default_value: i64) -> i64 {
     std::env::var(key)
         .ok()
@@ -2737,6 +2918,7 @@ fn extract_repo_id(payload: &serde_json::Value) -> Option<i64> {
         .filter(|value| *value > 0)
 }
 
+/// Classifies schema version for reconnect validation (reserved, P2-039)
 #[allow(dead_code)]
 fn schema_version_policy(schema_version: &str) -> SchemaVersionPolicy {
     if APP_SERVER_SCHEMA_SUPPORTED.contains(&schema_version) {
@@ -2748,6 +2930,7 @@ fn schema_version_policy(schema_version: &str) -> SchemaVersionPolicy {
     SchemaVersionPolicy::Rejected
 }
 
+/// Validates reconnect payload schema version (reserved, P2-039)
 #[allow(dead_code)]
 fn validate_reconnect_payload(payload: &LiveSessionEventPayload) -> Result<(), &'static str> {
     let LiveSessionEventPayload::SessionDelta { payload, .. } = payload else {
@@ -3741,16 +3924,39 @@ pub fn codex_app_server_account_chatgpt_auth_tokens_refresh(
 
 #[command(rename_all = "camelCase")]
 pub fn codex_app_server_account_logout(
+    app_handle: AppHandle,
     state: State<'_, CodexAppServerState>,
 ) -> Result<CodexAccountStatus, String> {
     let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
     runtime.auth_state = AuthState::LoggedOut;
+    runtime.handshake_state = HandshakeState::NotStarted;
     runtime.status.stream_healthy = false;
+    runtime.status.last_error = Some("Logged out".to_string());
     runtime.stream_session_state = StreamSessionState::Failed;
-    sync_status(&mut runtime);
+
+    // Reset reliability metrics on logout to ensure fresh state on next login
+    runtime.stream_events_accepted = 0;
+    runtime.stream_events_duplicates = 0;
+    runtime.stream_events_dropped = 0;
+    runtime.stream_events_replaced = 0;
+    runtime.last_stream_event_at_epoch_ms = None;
+
+    // Clear pending RPCs and approvals
+    let _ = cancel_pending_rpcs(&mut runtime, "logged_out");
+    runtime.approval_waiters.clear();
+    runtime.approval_decisions.clear();
+    runtime.approval_decision_order.clear();
+
+    // Capture mode before emitting status
     let mode = runtime.status.auth_mode.clone();
+    sync_status(&mut runtime);
+    drop(runtime);
+
+    // Emit reliability status refresh after logout
+    let _ = get_capture_reliability_status(app_handle, state);
+
     Ok(CodexAccountStatus {
-        auth_state: runtime.status.auth_state.clone(),
+        auth_state: AuthState::LoggedOut.as_status().to_string(),
         auth_mode: mode.clone(),
         interactive_login_required: mode != "apikey",
         supported_modes: supported_auth_modes(),
@@ -3776,6 +3982,7 @@ pub fn codex_app_server_set_stream_kill_switch(
 
 #[command(rename_all = "camelCase")]
 pub fn codex_app_server_request_thread_snapshot(
+    app_handle: AppHandle,
     state: State<'_, CodexAppServerState>,
     thread_id: String,
 ) -> Result<serde_json::Value, String> {
@@ -3784,6 +3991,7 @@ pub fn codex_app_server_request_thread_snapshot(
         return Err("threadId is required".to_string());
     }
 
+    // Validate access BEFORE preparing checkpoint to avoid writing state for denied requests
     let request_id = {
         let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
         assert_thread_snapshot_access(&runtime)?;
@@ -3795,11 +4003,156 @@ pub fn codex_app_server_request_thread_snapshot(
         )?
     };
 
-    wait_for_thread_read_response(
+    // Only prepare checkpoint after access is validated
+    if let Err(err) = prepare_thread_snapshot_checkpoint_blocking(&app_handle, &request_thread_id) {
+        // Cancel the queued RPC to prevent orphaned pending requests on DB write failure
+        let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
+        cancel_pending_rpc_by_id(&mut runtime, request_id, "checkpoint_prepare_failed");
+        return Err(format!("failed to prepare trust recovery checkpoint: {err}"));
+    }
+    if let Err(err) = persist_inflight_thread_snapshot_checkpoint_blocking(
+        &app_handle,
+        &request_thread_id,
+        request_id,
+    ) {
+        // Cancel the queued RPC to prevent orphaned pending requests on DB write failure
+        let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
+        cancel_pending_rpc_by_id(&mut runtime, request_id, "checkpoint_persist_failed");
+        return Err(format!("failed to persist inflight trust recovery checkpoint: {err}"));
+    }
+
+    let response = wait_for_thread_read_response(
         &state.inner,
         request_id,
         Duration::from_millis(RPC_REQUEST_TIMEOUT_MS),
-    )
+    );
+
+    match &response {
+        Ok(result) => {
+            persist_thread_snapshot_success_checkpoint_blocking(
+                &app_handle,
+                &request_thread_id,
+                result,
+            )
+            .map_err(|err| format!("failed to persist trust recovery checkpoint: {err}"))?;
+        }
+        Err(error) => {
+            persist_thread_snapshot_failure_checkpoint_blocking(
+                &app_handle,
+                &request_thread_id,
+                error,
+            )
+            .map_err(|err| {
+                format!("failed to persist fresh-retry trust recovery checkpoint: {err}")
+            })?;
+        }
+    }
+
+    response
+}
+
+/// Load the recovery checkpoint for a thread at startup/restart to determine
+/// trust state before hydrating. Call this after handshake completes.
+///
+/// This is the startup recovery path - it reads durable checkpoint state
+/// to influence trust promotion decisions before any live hydrate request.
+#[command(rename_all = "camelCase")]
+pub fn codex_app_server_load_thread_recovery_checkpoint(
+    app_handle: AppHandle,
+    state: State<'_, CodexAppServerState>,
+    thread_id: String,
+) -> Result<CodexThreadRecoveryCheckpointStatus, String> {
+    let request_thread_id = thread_id.trim().to_string();
+    if request_thread_id.is_empty() {
+        return Err("threadId is required".to_string());
+    }
+
+    // Verify handshake is complete before allowing recovery checkpoint access
+    {
+        let runtime = state.inner.lock().map_err(|e| e.to_string())?;
+        if runtime.handshake_state != HandshakeState::Initialized {
+            return Err(
+                "Handshake not complete; cannot load recovery checkpoint before initialization"
+                    .to_string(),
+            );
+        }
+    }
+
+    // Load existing checkpoint from durable storage
+    let existing = load_recovery_checkpoint_blocking(&app_handle, &request_thread_id)?;
+
+    match existing {
+        None => {
+            // No checkpoint exists - fresh start, no prior state to recover
+            Ok(CodexThreadRecoveryCheckpointStatus {
+                thread_id: request_thread_id,
+                checkpoint_exists: false,
+                requires_fresh_retry: false,
+                trust_state_recommendation: "none".to_string(),
+                checkpoint: None,
+                fresh_retry_reason: None,
+            })
+        }
+        Some(checkpoint) => {
+            // Check if checkpoint is compatible or requires fresh retry
+            let needs_fresh_retry = requires_fresh_retry(&checkpoint, None);
+
+            if needs_fresh_retry {
+                // Checkpoint exists but is incompatible/corrupted - recommend trust_paused
+                // The frontend should offer recovery affordances (retry-hydrate, checkpoint-reset)
+                let reason = determine_fresh_retry_reason(&checkpoint);
+                Ok(CodexThreadRecoveryCheckpointStatus {
+                    thread_id: request_thread_id,
+                    checkpoint_exists: true,
+                    requires_fresh_retry: true,
+                    trust_state_recommendation: "trust_paused".to_string(),
+                    checkpoint: Some(checkpoint),
+                    fresh_retry_reason: Some(reason),
+                })
+            } else {
+                // Checkpoint exists and is compatible - can resume from this state
+                // The frontend can proceed with trust promotion after hydrate
+                Ok(CodexThreadRecoveryCheckpointStatus {
+                    thread_id: request_thread_id,
+                    checkpoint_exists: true,
+                    requires_fresh_retry: false,
+                    trust_state_recommendation: "replaying".to_string(),
+                    checkpoint: Some(checkpoint),
+                    fresh_retry_reason: None,
+                })
+            }
+        }
+    }
+}
+
+/// Determine the reason why a checkpoint requires fresh retry.
+/// Used to provide actionable feedback to the user.
+fn determine_fresh_retry_reason(checkpoint: &RecoveryCheckpoint) -> String {
+    if checkpoint.schema_version != crate::recovery_checkpoint::RECOVERY_CHECKPOINT_SCHEMA_VERSION
+    {
+        return format!(
+            "checkpoint schema version {} is incompatible (expected {})",
+            checkpoint.schema_version,
+            crate::recovery_checkpoint::RECOVERY_CHECKPOINT_SCHEMA_VERSION
+        );
+    }
+
+    if checkpoint
+        .thread_id
+        .as_deref()
+        .unwrap_or_default()
+        .trim()
+        .is_empty()
+    {
+        return "checkpoint has missing or empty thread_id".to_string();
+    }
+
+    if checkpoint.replay_cursor.is_none() && checkpoint.last_applied_event_seq.is_some() {
+        return "checkpoint has event sequence but no replay cursor".to_string();
+    }
+
+    // Default reason for other incompatible states
+    "checkpoint state is incompatible or corrupted".to_string()
 }
 
 #[command(rename_all = "camelCase")]
@@ -4742,6 +5095,108 @@ mod tests {
     }
 
     #[test]
+    fn thread_read_timeout_records_thread_read_error_and_degraded_runtime() {
+        let mut runtime = CodexAppServerRuntime {
+            process_state: super::ProcessState::Running,
+            ..CodexAppServerRuntime::default()
+        };
+        runtime.pending_rpcs.insert(
+            77.to_string(),
+            PendingRpcRequest {
+                kind: PendingRpcKind::ThreadRead,
+                sent_at_epoch_ms: 0,
+                timeout_ms: 1,
+            },
+        );
+
+        let expired = expire_pending_rpcs(&mut runtime, i64::MAX);
+        assert_eq!(expired, 1);
+        assert_eq!(
+            runtime.thread_read_errors.get("77").map(String::as_str),
+            Some("thread/read request timed out")
+        );
+        assert_eq!(runtime.status.state, "degraded");
+        assert_eq!(
+            runtime.parse_error_total.get("rpc_timeout").copied(),
+            Some(1)
+        );
+
+        let state = std::sync::Arc::new(std::sync::Mutex::new(runtime));
+        let err = wait_for_thread_read_response(&state, 77, Duration::from_millis(5))
+            .expect_err("timed out thread/read should stay non-authoritative");
+        assert!(err.contains("timed out"));
+    }
+
+    #[test]
+    fn cancelled_thread_read_waiter_returns_cancelled_error_after_thread_switch() {
+        let mut runtime = CodexAppServerRuntime {
+            process_state: super::ProcessState::Running,
+            ..CodexAppServerRuntime::default()
+        };
+        runtime.pending_rpcs.insert(
+            88.to_string(),
+            PendingRpcRequest {
+                kind: PendingRpcKind::ThreadRead,
+                sent_at_epoch_ms: now_epoch_ms(),
+                timeout_ms: 1_000,
+            },
+        );
+
+        let cancelled = cancel_pending_rpcs(&mut runtime, "rpc_cancelled_thread_switch");
+        assert_eq!(cancelled, 1);
+        assert!(runtime.pending_rpcs.is_empty());
+        assert_eq!(
+            runtime.thread_read_errors.get("88").map(String::as_str),
+            Some("thread/read request cancelled")
+        );
+
+        let state = std::sync::Arc::new(std::sync::Mutex::new(runtime));
+        let err = wait_for_thread_read_response(&state, 88, Duration::from_millis(5))
+            .expect_err("stale thread/read worker should be cancelled");
+        assert!(err.contains("cancelled"));
+    }
+
+    #[test]
+    fn fresh_retry_request_isolated_from_stale_thread_read_timeout() {
+        let mut runtime = CodexAppServerRuntime {
+            process_state: super::ProcessState::Running,
+            ..CodexAppServerRuntime::default()
+        };
+        runtime.pending_rpcs.insert(
+            91.to_string(),
+            PendingRpcRequest {
+                kind: PendingRpcKind::ThreadRead,
+                sent_at_epoch_ms: 0,
+                timeout_ms: 1,
+            },
+        );
+        let expired = expire_pending_rpcs(&mut runtime, i64::MAX);
+        assert_eq!(expired, 1);
+        assert!(runtime.thread_read_errors.contains_key("91"));
+
+        runtime.pending_rpcs.insert(
+            92.to_string(),
+            PendingRpcRequest {
+                kind: PendingRpcKind::ThreadRead,
+                sent_at_epoch_ms: now_epoch_ms(),
+                timeout_ms: 10_000,
+            },
+        );
+        runtime.thread_read_results.insert(
+            92.to_string(),
+            serde_json::json!({ "threadId": "th_retry" }),
+        );
+
+        let state = std::sync::Arc::new(std::sync::Mutex::new(runtime));
+        let value = wait_for_thread_read_response(&state, 92, Duration::from_millis(100))
+            .expect("fresh retry should not inherit stale timeout state");
+        assert_eq!(
+            value.get("threadId").and_then(serde_json::Value::as_str),
+            Some("th_retry")
+        );
+    }
+
+    #[test]
     fn initialized_handshake_guard_requires_initialized_state() {
         let runtime = CodexAppServerRuntime::default();
         let err = assert_initialized_handshake(&runtime).expect_err("handshake should be required");
@@ -5341,5 +5796,97 @@ mod tests {
             }
             _ => panic!("expected session delta"),
         }
+    }
+
+    #[test]
+    fn thread_recovery_checkpoint_status_reports_fresh_retry_reasons() {
+        use super::{determine_fresh_retry_reason, CodexThreadRecoveryCheckpointStatus};
+        use crate::recovery_checkpoint::{
+            RecoveryCheckpoint, RECOVERY_CHECKPOINT_SCHEMA_VERSION,
+        };
+
+        // Schema version mismatch
+        let bad_schema = RecoveryCheckpoint {
+            thread_id: Some("thread_1".to_string()),
+            last_applied_event_seq: Some(10),
+            replay_cursor: Some("cursor:10".to_string()),
+            inflight_effect_ids: vec![],
+            checkpoint_written_at_iso: "2026-03-07T04:00:00.000Z".to_string(),
+            schema_version: RECOVERY_CHECKPOINT_SCHEMA_VERSION + 99,
+            trust_pause_reason: None,
+        };
+        let reason = determine_fresh_retry_reason(&bad_schema);
+        assert!(reason.contains("schema version"));
+        assert!(reason.contains("incompatible"));
+
+        // Empty thread_id
+        let no_thread = RecoveryCheckpoint {
+            thread_id: Some("".to_string()),
+            last_applied_event_seq: Some(10),
+            replay_cursor: Some("cursor:10".to_string()),
+            inflight_effect_ids: vec![],
+            checkpoint_written_at_iso: "2026-03-07T04:00:00.000Z".to_string(),
+            schema_version: RECOVERY_CHECKPOINT_SCHEMA_VERSION,
+            trust_pause_reason: None,
+        };
+        let reason = determine_fresh_retry_reason(&no_thread);
+        assert!(reason.contains("missing or empty thread_id"));
+
+        // Missing replay cursor with event sequence
+        let no_cursor = RecoveryCheckpoint {
+            thread_id: Some("thread_2".to_string()),
+            last_applied_event_seq: Some(10),
+            replay_cursor: None,
+            inflight_effect_ids: vec![],
+            checkpoint_written_at_iso: "2026-03-07T04:00:00.000Z".to_string(),
+            schema_version: RECOVERY_CHECKPOINT_SCHEMA_VERSION,
+            trust_pause_reason: None,
+        };
+        let reason = determine_fresh_retry_reason(&no_cursor);
+        assert!(reason.contains("no replay cursor"));
+    }
+
+    #[test]
+    fn thread_recovery_checkpoint_status_serializes_for_frontend() {
+        use super::CodexThreadRecoveryCheckpointStatus;
+        use crate::recovery_checkpoint::{
+            RecoveryCheckpoint, RECOVERY_CHECKPOINT_SCHEMA_VERSION,
+        };
+
+        // No checkpoint case
+        let no_checkpoint = CodexThreadRecoveryCheckpointStatus {
+            thread_id: "thread_new".to_string(),
+            checkpoint_exists: false,
+            requires_fresh_retry: false,
+            trust_state_recommendation: "none".to_string(),
+            checkpoint: None,
+            fresh_retry_reason: None,
+        };
+        let json = serde_json::to_string(&no_checkpoint).expect("serialize");
+        assert!(json.contains("\"threadId\":\"thread_new\""));
+        assert!(json.contains("\"checkpointExists\":false"));
+        assert!(json.contains("\"requiresFreshRetry\":false"));
+
+        // Checkpoint exists, requires fresh retry
+        let checkpoint = RecoveryCheckpoint {
+            thread_id: Some("thread_corrupted".to_string()),
+            last_applied_event_seq: Some(5),
+            replay_cursor: None, // Missing cursor triggers fresh retry
+            inflight_effect_ids: vec![],
+            checkpoint_written_at_iso: "2026-03-07T04:00:00.000Z".to_string(),
+            schema_version: RECOVERY_CHECKPOINT_SCHEMA_VERSION,
+            trust_pause_reason: None,
+        };
+        let needs_retry = CodexThreadRecoveryCheckpointStatus {
+            thread_id: "thread_corrupted".to_string(),
+            checkpoint_exists: true,
+            requires_fresh_retry: true,
+            trust_state_recommendation: "trust_paused".to_string(),
+            checkpoint: Some(checkpoint),
+            fresh_retry_reason: Some("checkpoint has event sequence but no replay cursor".to_string()),
+        };
+        let json = serde_json::to_string(&needs_retry).expect("serialize");
+        assert!(json.contains("\"trustStateRecommendation\":\"trust_paused\""));
+        assert!(json.contains("\"freshRetryReason\""));
     }
 }

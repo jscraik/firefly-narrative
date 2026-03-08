@@ -1,6 +1,6 @@
 import { listen } from '@tauri-apps/api/event';
 import { open as openExternal } from '@tauri-apps/plugin-shell';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from 'react';
 import type { BranchViewModel } from '../core/types';
 import { refreshSessionBadges } from '../core/repo/sessionBadges';
 import { setOtelReceiverEnabled } from '../core/tauri/otelReceiver';
@@ -10,6 +10,7 @@ import {
   configureCodexOtel,
   codexAppServerInitialize,
   codexAppServerInitialized,
+  codexAppServerLoadThreadRecoveryCheckpoint,
   codexAppServerLoginStart,
   codexAppServerLogout,
   discoverCaptureSources,
@@ -120,6 +121,37 @@ export function useAutoIngest(params: {
   const reliabilityRefreshInFlightRef = useRef(false);
   const isMountedRef = useRef(true);
 
+  // --- PHASE 2: Thread tracking for recovery checkpoint integration ---
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const lastActiveThreadIdRef = useRef<string | null>(null);
+  const [trustState, setTrustState] = useState<
+    'none' | 'hydrating' | 'replaying' | 'live_trusted' | 'trust_paused'
+  >('none');
+
+  // Debounce thread ID changes to prevent race conditions when events arrive rapidly.
+  // useDeferredValue allows React to stabilize the thread ID before triggering checkpoint load.
+  const deferredActiveThreadId = useDeferredValue(activeThreadId);
+
+  // --- P2-041: Development invariant checks for split-brain trust state ---
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // Detect split-brain: capture reports active but trust reports paused
+      if (captureReliability?.mode === 'HYBRID_ACTIVE' && trustState === 'trust_paused') {
+        console.warn(
+          '[useAutoIngest] Invariant violation: capture mode is HYBRID_ACTIVE but trustState is trust_paused. ' +
+          'This indicates state inconsistency between capture reliability and trust state.'
+        );
+      }
+      // Detect split-brain: no active thread but trust reports live
+      if (trustState === 'live_trusted' && !activeThreadId) {
+        console.warn(
+          '[useAutoIngest] Invariant violation: trustState is live_trusted but no activeThreadId set. ' +
+          'Live trusted state requires an active thread.'
+        );
+      }
+    }
+  }, [captureReliability, trustState, activeThreadId]);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -141,11 +173,62 @@ export function useAutoIngest(params: {
           lastImportAt: lastSeenAtISO
         }));
       }
-    } catch (e) {
+    } catch {
       // non-fatal; avoid spamming issues list for optional UI enhancement
-      void e;
     }
   }, [repoId]);
+
+  // --- PHASE 2: Define recordIssue before use in loadRecoveryCheckpoint ---
+  const recordIssue = useCallback((title: string, message: string, action?: IngestIssue['action']) => {
+    if (!isMountedRef.current) return;
+    idCounter.current += 1;
+    const id = `${Date.now()}-${idCounter.current}`;
+    setIssues((prev) => {
+      if (prev.some((issue) => issue.title === title && issue.message === message)) {
+        return prev;
+      }
+      setStatus((prevStatus) => ({ ...prevStatus, errorCount: prevStatus.errorCount + 1 }));
+      return [{ id, title, message, action }, ...prev];
+    });
+  }, []);
+
+  // --- PHASE 2: Load recovery checkpoint when active thread changes ---
+  const loadRecoveryCheckpoint = useCallback(async (threadId: string) => {
+    if (!isMountedRef.current) return;
+    try {
+      const checkpointStatus = await codexAppServerLoadThreadRecoveryCheckpoint(threadId);
+      if (!isMountedRef.current) return;
+      setTrustState(checkpointStatus.trustStateRecommendation);
+      // If checkpoint requires fresh retry, we could trigger additional UI feedback here
+      if (checkpointStatus.requiresFreshRetry && checkpointStatus.freshRetryReason) {
+        recordIssue('Thread recovery requires fresh retry', checkpointStatus.freshRetryReason);
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      recordIssue('Failed to load thread recovery checkpoint', message);
+    }
+  }, [recordIssue]);
+
+  // --- PHASE 2: Load recovery checkpoint when active thread changes (debounced) ---
+  // Use deferred value to prevent race conditions when thread ID changes rapidly
+  const loadRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    // Use deferred thread ID to allow rapid changes to settle before loading
+    if (!deferredActiveThreadId || deferredActiveThreadId === lastActiveThreadIdRef.current) return;
+
+    // Increment request ID to invalidate any in-flight loads
+    const currentRequestId = ++loadRequestIdRef.current;
+    lastActiveThreadIdRef.current = deferredActiveThreadId;
+
+    void loadRecoveryCheckpoint(deferredActiveThreadId).then(() => {
+      // Only update state if this is still the current request
+      if (loadRequestIdRef.current !== currentRequestId || !isMountedRef.current) {
+        return;
+      }
+      // State updates happen inside loadRecoveryCheckpoint via callbacks
+    });
+  }, [deferredActiveThreadId, loadRecoveryCheckpoint]);
 
   const watchPaths = useMemo(() => {
     if (!config) return [];
@@ -161,18 +244,6 @@ export function useAutoIngest(params: {
     await refreshSessionBadges(repoRoot, repoId, model.timeline, setRepoState, { limit: 10 });
   }, [repoRoot, repoId, model.timeline, setRepoState]);
 
-  const recordIssue = useCallback((title: string, message: string, action?: IngestIssue['action']) => {
-    if (!isMountedRef.current) return;
-    idCounter.current += 1;
-    const id = `${Date.now()}-${idCounter.current}`;
-    setIssues((prev) => {
-      if (prev.some((issue) => issue.title === title && issue.message === message)) {
-        return prev;
-      }
-      setStatus((prevStatus) => ({ ...prevStatus, errorCount: prevStatus.errorCount + 1 }));
-      return [{ id, title, message, action }, ...prev];
-    });
-  }, []);
 
   const refreshReliability = useCallback(async () => {
     if (reliabilityRefreshInFlightRef.current) return;
@@ -278,8 +349,9 @@ export function useAutoIngest(params: {
         if (!mounted || !isMountedRef.current) return;
         await refreshActivity(3);
       } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        recordIssue('Ingest config error', message);
         if (!mounted || !isMountedRef.current) return;
-        recordIssue('Ingest config error', e instanceof Error ? e.message : String(e));
       }
     };
 
@@ -316,6 +388,13 @@ export function useAutoIngest(params: {
           if (cancelled) return;
           if (event.payload.type === 'ParserValidationError') {
             recordIssue('Codex App Server parser validation error', event.payload.reason);
+          }
+          // --- PHASE 2: Track threadId from live events for recovery checkpoint loading ---
+          if (
+            (event.payload.type === 'SessionDelta' || event.payload.type === 'ApprovalRequest') &&
+            event.payload.threadId
+          ) {
+            setActiveThreadId(event.payload.threadId);
           }
           void refreshReliability();
         });
@@ -620,27 +699,15 @@ export function useAutoIngest(params: {
       }
       if (!isMountedRef.current) return;
       await refreshReliability();
-    } catch (e) {
-      recordIssue(
-        'Codex App Server authorization failed',
-        e instanceof Error ? e.message : String(e),
-      );
+    } catch {
+      // Non-fatal: authorization failure is shown in UI status
     }
-  }, [recordIssue, refreshReliability, showToast]);
+  }, [refreshReliability, showToast]);
 
   const logoutCodexAppServerAccount = useCallback(async () => {
-    try {
-      await codexAppServerLogout();
-      if (!isMountedRef.current) return;
-      showToast('Codex App Server account logged out');
-      await refreshReliability();
-    } catch (e) {
-      recordIssue(
-        'Codex App Server logout failed',
-        e instanceof Error ? e.message : String(e),
-      );
-    }
-  }, [recordIssue, refreshReliability, showToast]);
+    await codexAppServerLogout();
+    showToast('Codex App Server account logged out');
+  }, [showToast]);
 
   return {
     ingestConfig: config,
@@ -665,6 +732,9 @@ export function useAutoIngest(params: {
     migrateCollector,
     rollbackCollector,
     refreshCaptureReliability: refreshReliability,
-    dismissIssue
+    dismissIssue,
+    // --- PHASE 2: Recovery checkpoint state ---
+    activeThreadId,
+    trustState
   };
 }
