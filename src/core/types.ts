@@ -31,26 +31,26 @@ export type BranchHeaderMetricSet = {
 
 export type BranchHeaderViewModel =
   | {
-      kind: 'hidden';
-      reason:
-        | 'mode_unsupported'
-        | 'repo_idle'
-        | 'model_missing'
-        | 'feature_disabled';
-    }
+    kind: 'hidden';
+    reason:
+    | 'mode_unsupported'
+    | 'repo_idle'
+    | 'model_missing'
+    | 'feature_disabled';
+  }
   | {
-      kind: 'shell';
-      state: 'loading' | 'error';
-      message: string;
-    }
+    kind: 'shell';
+    state: 'loading' | 'error';
+    message: string;
+  }
   | {
-      kind: 'full';
-      title: string;
-      status: BranchStatus;
-      description: string;
-      metrics: BranchHeaderMetricSet;
-      isFilteredView: boolean;
-    };
+    kind: 'full';
+    title: string;
+    status: BranchStatus;
+    description: string;
+    metrics: BranchHeaderMetricSet;
+    isFilteredView: boolean;
+  };
 
 export type IntentType = 'feature' | 'fix' | 'refactor' | 'test' | 'docs' | 'other';
 
@@ -503,6 +503,62 @@ export interface DashboardStats {
   previousPeriod?: PeriodStats;
   topFiles: PaginatedFiles;
 }
+
+export type DashboardState =
+  | 'default'
+  | 'loading'
+  | 'empty'
+  | 'error'
+  | 'offline'
+  | 'permission_denied';
+
+export type DashboardTrustState = 'healthy' | 'degraded';
+
+export type DashboardPanelStatus = 'ready' | 'loading' | 'empty' | 'error' | 'degraded';
+
+export type PanelStatusMap = Partial<Record<'metrics' | 'topFiles', DashboardPanelStatus>>;
+
+export type RetryFailureClass =
+  | 'ipc_timeout'
+  | 'io_transient'
+  | 'offline_source'
+  | 'authority_denied';
+
+export type DashboardRuntimeEnvironment = 'dev' | 'ci' | 'prod';
+
+export type DashboardStaleDropReason = 'superseded' | 'mode_exit' | 'abort_unavailable';
+
+export type RetryBudgetProfile = {
+  failureClass: RetryFailureClass;
+  maxAttempts: number;
+  maxTotalRetryMs: number;
+  backoffScheduleMs: number[];
+  jitterPercent: number;
+};
+
+export type DashboardRequestFailureMetadata = {
+  repoId: number;
+  requestKeyHash: string;
+  failureClass: RetryFailureClass;
+  authorityOutcome?: Exclude<CommandAuthorityOutcome, 'allowed'>;
+  attempt: number;
+  failedAtIso: string;
+  message: string;
+};
+
+export type DashboardDroppedRequestDiagnostic = {
+  repoId: number;
+  requestKeyHash: string;
+  attempt: number;
+  reason: DashboardStaleDropReason;
+  droppedAtIso: string;
+};
+
+export type CommandAuthorityOutcome =
+  | 'allowed'
+  | 'denied_capability'
+  | 'denied_scope'
+  | 'denied_window';
 
 export interface RepoInfo {
   id: number;

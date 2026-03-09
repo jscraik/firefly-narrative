@@ -4438,6 +4438,119 @@ pub fn ingest_codex_stream_event(
     Err(command_not_exposed_error("ingest_codex_stream_event"))
 }
 
+/// Reset the recovery checkpoint for a thread to a fresh retry state.
+///
+/// This clears the replay cursor and event sequence, forcing the next hydration
+/// to start fresh rather than attempting to resume from a potentially corrupted state.
+/// Use this when the app server is in `trust_paused` state due to hydration failures.
+///
+/// # Arguments
+/// * `thread_id` - The thread ID whose checkpoint should be reset
+///
+/// # Returns
+/// `true` if a checkpoint was found and reset, `false` if no checkpoint existed
+#[command(rename_all = "camelCase")]
+pub fn codex_app_server_retry_hydrate(
+    app_handle: AppHandle,
+    state: State<'_, CodexAppServerState>,
+    thread_id: String,
+) -> Result<bool, String> {
+    let request_thread_id = thread_id.trim().to_string();
+    if request_thread_id.is_empty() {
+        return Err("threadId is required".to_string());
+    }
+
+    // Verify handshake is complete before allowing recovery operations
+    {
+        let runtime = state.inner.lock().map_err(|e| e.to_string())?;
+        if runtime.handshake_state != HandshakeState::Initialized {
+            return Err(
+                "Handshake not complete; cannot retry hydrate before initialization".to_string(),
+            );
+        }
+    }
+
+    let pool = app_handle
+        .try_state::<crate::DbState>()
+        .map(|s| s.0.clone())
+        .ok_or("Database pool not available")?;
+
+    // Load existing checkpoint
+    let existing = tauri::async_runtime::block_on(async {
+        load_recovery_checkpoint(&pool, &request_thread_id).await
+    })?;
+
+    let Some(checkpoint) = existing else {
+        return Ok(false);
+    };
+
+    // Create fresh retry checkpoint (clears replay state)
+    let fresh = begin_fresh_retry(&checkpoint, &now_iso(), checkpoint.trust_pause_reason.as_deref());
+
+    // Persist the reset checkpoint
+    tauri::async_runtime::block_on(async { upsert_recovery_checkpoint(&pool, &fresh).await })?;
+
+    // Emit status update to refresh UI
+    {
+        let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
+        emit_status(&app_handle, &runtime.status);
+    }
+
+    Ok(true)
+}
+
+/// Clear the recovery checkpoint for a thread entirely.
+///
+/// This removes all recovery state for the thread, effectively treating it as
+/// a new thread on the next hydration attempt. Use this when the checkpoint
+/// state is stale or no longer relevant.
+///
+/// # Arguments
+/// * `thread_id` - The thread ID whose checkpoint should be deleted
+///
+/// # Returns
+/// `true` if a checkpoint was deleted, `false` if no checkpoint existed
+#[command(rename_all = "camelCase")]
+pub fn codex_app_server_clear_stale_state(
+    app_handle: AppHandle,
+    state: State<'_, CodexAppServerState>,
+    thread_id: String,
+) -> Result<bool, String> {
+    let request_thread_id = thread_id.trim().to_string();
+    if request_thread_id.is_empty() {
+        return Err("threadId is required".to_string());
+    }
+
+    // Verify handshake is complete before allowing recovery operations
+    {
+        let runtime = state.inner.lock().map_err(|e| e.to_string())?;
+        if runtime.handshake_state != HandshakeState::Initialized {
+            return Err(
+                "Handshake not complete; cannot clear stale state before initialization"
+                    .to_string(),
+            );
+        }
+    }
+
+    let pool = app_handle
+        .try_state::<crate::DbState>()
+        .map(|s| s.0.clone())
+        .ok_or("Database pool not available")?;
+
+    // Delete the checkpoint
+    let deleted = tauri::async_runtime::block_on(async {
+        crate::recovery_checkpoint::delete_recovery_checkpoint(&pool, &request_thread_id).await
+    })?;
+
+    // Emit status update to refresh UI
+    if deleted {
+        let mut runtime = state.inner.lock().map_err(|e| e.to_string())?;
+        emit_status(&app_handle, &runtime.status);
+    }
+
+    Ok(deleted)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{

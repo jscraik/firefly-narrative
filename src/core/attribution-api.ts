@@ -242,6 +242,12 @@ export type {
   FileStats,
   TrendContext,
   TrendColor,
+  DashboardState,
+  DashboardTrustState,
+  DashboardPanelStatus,
+  PanelStatusMap,
+  CommandAuthorityOutcome,
+  RetryBudgetProfile,
 } from './types';
 
 export interface ImportSuccess {
@@ -456,7 +462,7 @@ export function formatToolName(tool: string): string {
     'gemini': 'Gemini',
     'continue': 'Continue',
   };
-  
+
   return toolNames[tool] || tool;
 }
 

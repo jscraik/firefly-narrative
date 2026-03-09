@@ -358,3 +358,30 @@ export async function autoImportSessionFile(repoId: number, filePath: string): P
 export async function purgeExpiredSessions(repoId: number, retentionDays: number): Promise<number> {
   return await invoke<number>('purge_expired_sessions', { repoId, retentionDays });
 }
+
+/**
+ * Reset the recovery checkpoint for a thread to force a fresh hydrate retry.
+ * This clears the replay cursor and sequence state, allowing the system to
+ * re-attempt hydration from scratch.
+ *
+ * @param threadId - The thread ID to reset the checkpoint for
+ * @returns true if a checkpoint was reset, false if no checkpoint existed
+ */
+export async function codexAppServerRetryHydrate(
+  threadId: string,
+): Promise<boolean> {
+  return await invoke<boolean>('codex_app_server_retry_hydrate', { threadId });
+}
+
+/**
+ * Clear the recovery checkpoint for a thread entirely.
+ * This removes all state for the thread, forcing a complete fresh start.
+ *
+ * @param threadId - The thread ID to clear the checkpoint for
+ * @returns true if a checkpoint was deleted, false if no checkpoint existed
+ */
+export async function codexAppServerClearStaleState(
+  threadId: string,
+): Promise<boolean> {
+  return await invoke<boolean>('codex_app_server_clear_stale_state', { threadId });
+}

@@ -1,5 +1,6 @@
 import { Calendar, ChevronDown } from 'lucide-react';
-import type { TimeRange, TimeRangePreset } from '../../../core/types';
+import type { DashboardTrustState, TimeRange, TimeRangePreset } from '../../../core/types';
+import { DashboardTrustBadge } from './DashboardTrustBadge';
 import { TIME_RANGE_PRESETS } from './timeRangeUtils';
 
 interface DashboardHeaderProps {
@@ -8,6 +9,7 @@ interface DashboardHeaderProps {
   timeRange: TimeRange;
   onTimeRangeChange: (timeRange: TimeRange) => void;
   lastUpdated?: Date;
+  trustState?: DashboardTrustState;
 }
 
 export function DashboardHeader({
@@ -16,6 +18,7 @@ export function DashboardHeader({
   timeRange,
   onTimeRangeChange,
   lastUpdated,
+  trustState = 'healthy',
 }: DashboardHeaderProps) {
   return (
     <header
@@ -28,6 +31,7 @@ export function DashboardHeader({
           <h1 className="text-lg font-semibold text-text-primary">
             {repoName || 'Dashboard'}
           </h1>
+          <DashboardTrustBadge trustState={trustState} />
         </div>
 
         {/* Right: Time range picker + last updated */}

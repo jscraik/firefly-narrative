@@ -17,6 +17,11 @@ import { TopNav, type Mode } from './ui/components/TopNav';
 import { UpdateIndicator, UpdatePrompt } from './ui/components/UpdatePrompt';
 import { BranchView } from './ui/views/BranchView';
 import { DashboardView } from './ui/views/DashboardView';
+import { DashboardTrustBadge } from './ui/components/dashboard/DashboardTrustBadge';
+import {
+  DASHBOARD_FOCUS_RESTORE_MS,
+  deriveDashboardTrustState,
+} from './ui/views/dashboardState';
 import { DocsView } from './ui/views/DocsView';
 
 type AgentationComponentType = (typeof import('agentation'))['Agentation'];
@@ -193,6 +198,7 @@ export default function App() {
   );
 
   const importEnabled = mode === 'repo' && repoState.status === 'ready';
+  const dashboardTrustState = deriveDashboardTrustState(autoIngest.captureReliabilityStatus);
 
   // Focus management: save active element before drill-down, restore on back
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
@@ -225,7 +231,7 @@ export default function App() {
         lastFocusedElementRef.current = null;
       }
       clearFilterTimerRef.current = null;
-    }, 180); // Match transition duration
+    }, DASHBOARD_FOCUS_RESTORE_MS);
   }, []);
 
   useEffect(() => {
@@ -258,6 +264,9 @@ export default function App() {
         onImportAgentTrace={sessionImportHandlers.importAgentTrace}
         importEnabled={importEnabled}
       >
+        {repoState.status === 'ready' ? (
+          <DashboardTrustBadge trustState={dashboardTrustState} className="hidden sm:inline-flex" />
+        ) : null}
         {/* Update indicator in nav */}
         <UpdateIndicator status={updateStatus} onClick={checkForUpdates} />
       </TopNav>
@@ -271,6 +280,7 @@ export default function App() {
             setActionError={setActionError}
             onDrillDown={handleDrillDown}
             onModeChange={setMode}
+            captureReliabilityStatus={autoIngest.captureReliabilityStatus}
           />
         ) : mode === 'docs' ? (
           <DocsView

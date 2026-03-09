@@ -1,20 +1,35 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getDashboardStats,
   timeRangeToDateRange,
   type DashboardEmptyReason,
   type DashboardStats,
   type TimeRange,
-} from '../../core/attribution-api';
-import type { DashboardFilter } from '../../core/types';
-import type { RepoState } from '../../hooks/useRepoLoader';
-import type { Mode } from '../components/TopNav';
-import { DashboardEmptyState } from '../components/dashboard/DashboardEmptyState';
-import { DashboardErrorState } from '../components/dashboard/DashboardErrorState';
-import { DashboardHeader } from '../components/dashboard/DashboardHeader';
-import { DashboardLoadingState } from '../components/dashboard/DashboardLoadingState';
-import { MetricsGrid } from '../components/dashboard/MetricsGrid';
-import { TopFilesTable } from '../components/dashboard/TopFilesTable';
+} from "../../core/attribution-api";
+import type {
+  DashboardDroppedRequestDiagnostic,
+  DashboardFilter,
+  DashboardRequestFailureMetadata,
+  DashboardState,
+  PanelStatusMap,
+} from "../../core/types";
+import type { CaptureReliabilityStatus } from "../../core/tauri/ingestConfig";
+import type { RepoState } from "../../hooks/useRepoLoader";
+import type { Mode } from "../components/TopNav";
+import { DashboardEmptyState } from "../components/dashboard/DashboardEmptyState";
+import { DashboardErrorState } from "../components/dashboard/DashboardErrorState";
+import { DashboardHeader } from "../components/dashboard/DashboardHeader";
+import { DashboardLoadingState } from "../components/dashboard/DashboardLoadingState";
+import { MetricsGrid } from "../components/dashboard/MetricsGrid";
+import { TopFilesTable } from "../components/dashboard/TopFilesTable";
+import {
+  classifyDashboardFailure,
+  DASHBOARD_CHORD_TIMEOUT_MS,
+  DASHBOARD_DROPPED_REQUEST_LIMIT,
+  DASHBOARD_DROPPED_REQUEST_TTL_MS,
+  deriveDashboardTrustState,
+  hashDashboardRequestKey,
+} from "./dashboardState";
 
 interface DashboardViewProps {
   repoState: RepoState;
@@ -22,6 +37,11 @@ interface DashboardViewProps {
   setActionError: (error: string | null) => void;
   onDrillDown: (filter: DashboardFilter) => void;
   onModeChange: (mode: Mode) => void;
+  captureReliabilityStatus?: CaptureReliabilityStatus | null;
+}
+
+function getRepoName(path: string): string {
+  return path.split("/").filter(Boolean).pop() || path;
 }
 
 export function DashboardView({
@@ -30,127 +50,247 @@ export function DashboardView({
   setActionError,
   onDrillDown,
   onModeChange,
+  captureReliabilityStatus,
 }: DashboardViewProps) {
-  // Helper to get repo name from path
-  const getRepoName = (path: string): string => {
-    return path.split('/').filter(Boolean).pop() || path;
-  };
-  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [filesOffset, setFilesOffset] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [dashboardState, setDashboardState] = useState<DashboardState>("loading");
   const [loadingMore, setLoadingMore] = useState(false);
   const [emptyReason, setEmptyReason] = useState<DashboardEmptyReason | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [canRetry, setCanRetry] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>();
-  const [commandQuery, setCommandQuery] = useState('');
+  const [commandQuery, setCommandQuery] = useState("");
   const commandInputRef = useRef<HTMLInputElement>(null);
-  const sequenceRef = useRef<{ lastKey: string; ts: number }>({ lastKey: '', ts: 0 });
+  const sequenceRef = useRef<{ lastKey: string; ts: number }>({ lastKey: "", ts: 0 });
   const fetchRequestVersionRef = useRef(0);
+  const activeRequestRef = useRef<{
+    version: number;
+    repoId: number;
+    requestKeyHash: string;
+    attempt: number;
+  } | null>(null);
+  const failureMetadataRef = useRef<DashboardRequestFailureMetadata | null>(null);
+  const droppedRequestDiagnosticsRef = useRef<DashboardDroppedRequestDiagnostic[]>([]);
 
-  // Fetch stats on repo/timeRange change
-  const fetchStats = useCallback(async (isLoadMore = false) => {
-    const requestVersion = fetchRequestVersionRef.current + 1;
-    fetchRequestVersionRef.current = requestVersion;
-    const isStaleRequest = () => fetchRequestVersionRef.current !== requestVersion;
+  const dashboardTrustState = useMemo(
+    () => deriveDashboardTrustState(captureReliabilityStatus),
+    [captureReliabilityStatus],
+  );
+  const activeRepoId = repoState.status === "ready" ? repoState.repo.repoId : null;
 
-    if (repoState.status !== 'ready') {
-      setEmptyReason('no-repo');
-      setError(null);
-      setLoading(false);
-      setLoadingMore(false);
-      return;
-    }
+  const panelStatusMap = useMemo<PanelStatusMap>(
+    () => ({
+      metrics:
+        dashboardState === "loading"
+          ? "loading"
+          : dashboardTrustState === "degraded"
+            ? "degraded"
+            : "ready",
+      topFiles:
+        dashboardState === "loading"
+          ? "loading"
+          : emptyReason === "no-attribution"
+            ? "empty"
+            : dashboardTrustState === "degraded"
+              ? "degraded"
+              : "ready",
+    }),
+    [dashboardState, dashboardTrustState, emptyReason],
+  );
 
-    // Only set main loading state for initial load
-    if (!isLoadMore) {
-      setLoading(true);
-    }
-    setLoadingMore(true);
-    setError(null);
-
-    try {
-      const data = await getDashboardStats(
-        repoState.repo.repoId,
-        timeRange,
-        filesOffset,
-        20
+  const recordDroppedRequest = useCallback(
+    (entry: DashboardDroppedRequestDiagnostic) => {
+      const now = Date.now();
+      const retainedEntries = droppedRequestDiagnosticsRef.current
+        .filter((diagnostic) => now - Date.parse(diagnostic.droppedAtIso) <= DASHBOARD_DROPPED_REQUEST_TTL_MS)
+        .concat(entry);
+      droppedRequestDiagnosticsRef.current = retainedEntries.slice(
+        -DASHBOARD_DROPPED_REQUEST_LIMIT,
       );
-      if (isStaleRequest()) return;
+    },
+    [],
+  );
 
-      // Determine empty state
-      if (data.currentPeriod.period.commits === 0) {
-        setEmptyReason('no-commits');
-      } else if (data.currentPeriod.attribution.aiPercentage === 0) {
-        setEmptyReason('no-ai');
-      } else if (!data.topFiles.files.length) {
-        setEmptyReason('no-attribution');
-      } else {
-        setEmptyReason(null);
-      }
-
-      setStats(data);
-      setLastUpdated(new Date());
-    } catch (e) {
-      if (isStaleRequest()) return;
-      const errorMessage = e instanceof Error ? e.message : 'Failed to load dashboard';
-      setError(errorMessage);
-      setActionError(errorMessage);
-    } finally {
-      if (!isStaleRequest()) {
-        setLoading(false);
+  const fetchStats = useCallback(
+    async (isLoadMore = false) => {
+      if (repoState.status !== "ready") {
+        setEmptyReason("no-repo");
+        setError(null);
+        setCanRetry(true);
+        setDashboardState("empty");
         setLoadingMore(false);
+        activeRequestRef.current = null;
+        return;
       }
-    }
-  }, [repoState, timeRange, filesOffset, setActionError]);
+
+      const requestVersion = fetchRequestVersionRef.current + 1;
+      fetchRequestVersionRef.current = requestVersion;
+      const requestKeyHash = hashDashboardRequestKey({
+        repoId: repoState.repo.repoId,
+        timeRange:
+          typeof timeRange === "string" ? timeRange : `${timeRange.from}:${timeRange.to}`,
+        filesOffset,
+      });
+      const priorFailureAttempt =
+        failureMetadataRef.current?.repoId === repoState.repo.repoId &&
+        failureMetadataRef.current.requestKeyHash === requestKeyHash
+          ? failureMetadataRef.current.attempt
+          : 0;
+      const requestMeta = {
+        version: requestVersion,
+        repoId: repoState.repo.repoId,
+        requestKeyHash,
+        attempt: isLoadMore ? 1 : priorFailureAttempt + 1,
+      };
+      const isStaleRequest = (reason: DashboardDroppedRequestDiagnostic["reason"]) => {
+        if (fetchRequestVersionRef.current !== requestVersion) {
+          recordDroppedRequest({
+            repoId: requestMeta.repoId,
+            requestKeyHash: requestMeta.requestKeyHash,
+            attempt: requestMeta.attempt,
+            reason,
+            droppedAtIso: new Date().toISOString(),
+          });
+          return true;
+        }
+        return false;
+      };
+
+      if (activeRequestRef.current && activeRequestRef.current.version !== requestVersion) {
+        recordDroppedRequest({
+          repoId: activeRequestRef.current.repoId,
+          requestKeyHash: activeRequestRef.current.requestKeyHash,
+          attempt: activeRequestRef.current.attempt,
+          reason: "abort_unavailable",
+          droppedAtIso: new Date().toISOString(),
+        });
+      }
+      activeRequestRef.current = requestMeta;
+
+      if (!isLoadMore) {
+        setDashboardState("loading");
+      }
+      setLoadingMore(true);
+      setError(null);
+      setCanRetry(true);
+
+      try {
+        const data = await getDashboardStats(repoState.repo.repoId, timeRange, filesOffset, 20);
+        if (isStaleRequest("superseded")) return;
+
+        if (data.currentPeriod.period.commits === 0) {
+          setEmptyReason("no-commits");
+          setDashboardState("empty");
+        } else if (data.currentPeriod.attribution.aiPercentage === 0) {
+          setEmptyReason("no-ai");
+          setDashboardState("empty");
+        } else if (!data.topFiles.files.length) {
+          setEmptyReason("no-attribution");
+          setDashboardState("empty");
+        } else {
+          setEmptyReason(null);
+          setDashboardState("default");
+        }
+
+        setStats(data);
+        setLastUpdated(new Date());
+        failureMetadataRef.current = null;
+        activeRequestRef.current = null;
+        setActionError(null);
+      } catch (cause) {
+        if (isStaleRequest("superseded")) return;
+        const failure = classifyDashboardFailure(cause, captureReliabilityStatus);
+        setDashboardState(failure.state);
+        setError(failure.message);
+        setCanRetry(failure.canRetry);
+        setActionError(failure.message);
+        failureMetadataRef.current = {
+          repoId: requestMeta.repoId,
+          requestKeyHash: requestMeta.requestKeyHash,
+          failureClass: failure.failureClass,
+          authorityOutcome: failure.authorityOutcome,
+          attempt: requestMeta.attempt,
+          failedAtIso: new Date().toISOString(),
+          message: failure.message,
+        };
+        activeRequestRef.current = null;
+      } finally {
+        if (!isStaleRequest("superseded")) {
+          setLoadingMore(false);
+        }
+      }
+    },
+    [captureReliabilityStatus, filesOffset, recordDroppedRequest, repoState, setActionError, timeRange],
+  );
 
   useEffect(() => {
-    fetchStats();
+    void fetchStats();
   }, [fetchStats]);
 
-  // Drill-down navigation - switch to repo mode with filter
+  useEffect(() => {
+    if (activeRepoId === null) {
+      failureMetadataRef.current = null;
+      return;
+    }
+    failureMetadataRef.current = null;
+  }, [activeRepoId]);
+
+  useEffect(() => {
+    return () => {
+      if (activeRequestRef.current) {
+        recordDroppedRequest({
+          repoId: activeRequestRef.current.repoId,
+          requestKeyHash: activeRequestRef.current.requestKeyHash,
+          attempt: activeRequestRef.current.attempt,
+          reason: "mode_exit",
+          droppedAtIso: new Date().toISOString(),
+        });
+      }
+      activeRequestRef.current = null;
+      failureMetadataRef.current = null;
+    };
+  }, [recordDroppedRequest]);
+
   const handleDrillDown = useCallback(
     (filter: DashboardFilter) => {
-      // Add dateRange to filter if not provided
       const filterWithDate: DashboardFilter = {
         ...filter,
         dateRange: filter.dateRange || timeRangeToDateRange(timeRange),
       };
       onDrillDown(filterWithDate);
     },
-    [onDrillDown, timeRange]
+    [onDrillDown, timeRange],
   );
 
-  // Handle time range change
   const handleTimeRangeChange = useCallback((newTimeRange: TimeRange) => {
     setTimeRange(newTimeRange);
-    setFilesOffset(0); // Reset pagination on time range change
+    setFilesOffset(0);
   }, []);
 
-  // Handle load more with loading state
-  const handleLoadMoreWithState = useCallback(async () => {
+  const handleLoadMoreWithState = useCallback(() => {
     setFilesOffset((prev) => prev + 20);
-    // fetchStats will be called by the useEffect when filesOffset changes
   }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      const isTypingTarget = !!target && (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'SELECT' ||
-        target.isContentEditable
-      );
+      const isTypingTarget =
+        !!target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
 
-      if (event.key === '/' && !isTypingTarget) {
+      if (event.key === "/" && !isTypingTarget) {
         event.preventDefault();
         commandInputRef.current?.focus();
         return;
       }
 
-      if (event.key === 'Escape' && document.activeElement === commandInputRef.current) {
-        setCommandQuery('');
+      if (event.key === "Escape" && document.activeElement === commandInputRef.current) {
+        setCommandQuery("");
         commandInputRef.current?.blur();
         return;
       }
@@ -160,33 +300,33 @@ export function DashboardView({
       const now = Date.now();
       const key = event.key.toLowerCase();
       const prev = sequenceRef.current;
-      const withinChordWindow = now - prev.ts < 800;
+      const withinChordWindow = now - prev.ts < DASHBOARD_CHORD_TIMEOUT_MS;
 
-      if (key === 'g') {
-        sequenceRef.current = { lastKey: 'g', ts: now };
+      if (key === "g") {
+        sequenceRef.current = { lastKey: "g", ts: now };
         return;
       }
 
-      if (withinChordWindow && prev.lastKey === 'g' && key === 'd') {
-        onModeChange('dashboard');
-        sequenceRef.current = { lastKey: '', ts: 0 };
+      if (withinChordWindow && prev.lastKey === "g" && key === "d") {
+        onModeChange("dashboard");
+        sequenceRef.current = { lastKey: "", ts: 0 };
         return;
       }
 
-      if (withinChordWindow && prev.lastKey === 'g' && key === 'r') {
-        onModeChange('repo');
-        sequenceRef.current = { lastKey: '', ts: 0 };
+      if (withinChordWindow && prev.lastKey === "g" && key === "r") {
+        onModeChange("repo");
+        sequenceRef.current = { lastKey: "", ts: 0 };
         return;
       }
 
-      if (key === '1') handleTimeRangeChange('7d');
-      if (key === '2') handleTimeRangeChange('30d');
-      if (key === '3') handleTimeRangeChange('90d');
-      if (key === '4') handleTimeRangeChange('all');
+      if (key === "1") handleTimeRangeChange("7d");
+      if (key === "2") handleTimeRangeChange("30d");
+      if (key === "3") handleTimeRangeChange("90d");
+      if (key === "4") handleTimeRangeChange("all");
     };
 
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleTimeRangeChange, onModeChange]);
 
   const visibleFiles = useMemo(() => {
@@ -196,19 +336,31 @@ export function DashboardView({
     return stats.topFiles.files.filter((file) => file.filePath.toLowerCase().includes(query));
   }, [stats, commandQuery]);
 
-  if (repoState.status !== 'ready') {
+  if (repoState.status !== "ready") {
     return <DashboardEmptyState reason="no-repo" />;
   }
 
-  if (error) {
-    return <DashboardErrorState error={error} onRetry={fetchStats} />;
+  if (
+    dashboardState === "error" ||
+    dashboardState === "offline" ||
+    dashboardState === "permission_denied"
+  ) {
+    return (
+      <DashboardErrorState
+        state={dashboardState}
+        error={error ?? "Failed to load dashboard"}
+        onRetry={() => void fetchStats()}
+        onBackToRepo={() => onModeChange("repo")}
+        canRetry={canRetry}
+      />
+    );
   }
 
-  if (loading) {
+  if (dashboardState === "loading") {
     return <DashboardLoadingState />;
   }
 
-  if (emptyReason) {
+  if (dashboardState === "empty" && emptyReason) {
     return (
       <div className="dashboard-container animate-in fade-in slide-in-from-bottom-1 motion-page-enter">
         <DashboardHeader
@@ -217,6 +369,7 @@ export function DashboardView({
           timeRange={timeRange}
           onTimeRangeChange={handleTimeRangeChange}
           lastUpdated={lastUpdated}
+          trustState={dashboardTrustState}
         />
         <DashboardEmptyState reason={emptyReason} />
       </div>
@@ -235,10 +388,11 @@ export function DashboardView({
         timeRange={stats.timeRange}
         onTimeRangeChange={handleTimeRangeChange}
         lastUpdated={lastUpdated}
+        trustState={dashboardTrustState}
       />
 
       <main className="bg-bg-tertiary px-6 py-6" data-dashboard-content>
-        <section className="card mb-5 p-4">
+        <section className="card mb-5 p-4" data-panel-status={panelStatusMap.metrics}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
               <span className="btn-tertiary-soft rounded-md px-2 py-1 font-medium text-text-secondary">
@@ -261,38 +415,40 @@ export function DashboardView({
             />
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={() => handleDrillDown({ type: 'ai-only' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
+            <button type="button" onClick={() => handleDrillDown({ type: "ai-only" })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
               AI only
             </button>
-            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'codex' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
+            <button type="button" onClick={() => handleDrillDown({ type: "tool", value: "codex" })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
               Codex
             </button>
-            <button type="button" onClick={() => handleDrillDown({ type: 'tool', value: 'claude-code' })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
+            <button type="button" onClick={() => handleDrillDown({ type: "tool", value: "claude-code" })} className="btn-secondary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
               Claude
             </button>
             {commandQuery && (
-              <button type="button" onClick={() => setCommandQuery('')} className="btn-tertiary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
+              <button type="button" onClick={() => setCommandQuery("")} className="btn-tertiary-soft rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105">
                 Clear filter
               </button>
             )}
           </div>
         </section>
 
-        {/* Metrics Grid */}
-        <MetricsGrid
-          currentPeriod={stats.currentPeriod}
-          previousPeriod={stats.previousPeriod}
-          toolBreakdown={stats.currentPeriod.toolBreakdown}
-        />
+        <div data-panel-status={panelStatusMap.metrics}>
+          <MetricsGrid
+            currentPeriod={stats.currentPeriod}
+            previousPeriod={stats.previousPeriod}
+            toolBreakdown={stats.currentPeriod.toolBreakdown}
+          />
+        </div>
 
-        {/* Top Files Table */}
-        <TopFilesTable
-          files={visibleFiles}
-          hasMore={!commandQuery && stats.topFiles.hasMore}
-          isLoading={loadingMore}
-          onFileClick={handleDrillDown}
-          onLoadMore={handleLoadMoreWithState}
-        />
+        <div data-panel-status={panelStatusMap.topFiles}>
+          <TopFilesTable
+            files={visibleFiles}
+            hasMore={!commandQuery && stats.topFiles.hasMore}
+            isLoading={loadingMore}
+            onFileClick={handleDrillDown}
+            onLoadMore={handleLoadMoreWithState}
+          />
+        </div>
       </main>
     </div>
   );
