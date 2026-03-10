@@ -10,7 +10,7 @@ schema_version: 1
 
 ## Contradictions (resolved)
 
-- Canonicalized standalone screenshot workflow source of truth for landing-page work:
+- Standardized standalone screenshot workflow source of truth for landing-page work:
   - `README.md` and `docs/README.md` now route users to `docs/agents/frontend-website-rules.md`.
   - `screenshot.mjs` output is canonical as `screenshot-<N>.png` and `screenshot-<N>-<label>.png`.
   - `ERR_CONNECTION_REFUSED` retry behavior is documented in the canonical rule.

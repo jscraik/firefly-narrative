@@ -34,6 +34,7 @@ export type AskWhyTelemetryEventName =
 export type { AskWhyConfidenceBand, AskWhyCitationType, AskWhyFallbackReasonCode };
 
 export type AskWhyTelemetryPayload = {
+  request_key?: string;
   queryId: string;
   attemptId?: string;
   branchId?: string;
@@ -117,6 +118,7 @@ export type HeaderQualityReasonCode =
   | 'unknown';
 
 export type NarrativeTelemetryPayload = {
+  request_key?: string;
   schemaVersion?: NarrativeTelemetrySchemaVersion;
   attemptId?: string;
   branch?: string;
@@ -317,7 +319,7 @@ export function dispatchNarrativeTelemetry(
 
   const sanitizedPayload = sanitizePayloadValue(payload);
   const normalizedPayload = toRecordPayload(sanitizedPayload);
-  const validatablePayload = isValidatable(normalizedPayload);
+  const validatablePayload = !isDashboardEvent(event) ? asValidatablePayload(normalizedPayload) : null;
 
   // NOTE: For now, payload validation works for known types. Dashboard events skip validation or are validated elsewhere.
   if (validatablePayload && !validatePayload(event, validatablePayload)) return;
@@ -332,7 +334,7 @@ export function dispatchNarrativeTelemetry(
 
   // Ensure request_key is hashed if present in payload overrides
   let request_key_hash = envelopeOverrides?.request_key_hash;
-  const requestKey = normalizedPayload.request_key;
+  const requestKey = validatablePayload?.request_key;
   if (!request_key_hash && typeof requestKey === 'string') {
     request_key_hash = hashString(requestKey);
   }
@@ -356,11 +358,29 @@ export function dispatchNarrativeTelemetry(
   );
 }
 
-function isValidatable(payload: Record<string, unknown>): payload is NarrativeTelemetryPayload | AskWhyTelemetryPayload {
+function asValidatablePayload(payload: Record<string, unknown>): NarrativeTelemetryPayload | AskWhyTelemetryPayload | null {
   return (
     typeof payload === 'object' &&
     payload !== null &&
     ('eventOutcome' in payload || 'funnelStep' in payload || 'branchScope' in payload || 'attemptId' in payload)
+  )
+    ? (payload as NarrativeTelemetryPayload | AskWhyTelemetryPayload)
+    : null;
+}
+
+function isDashboardEvent(event: NarrativeTelemetryEventNameAll): event is DashboardTelemetryEventName {
+  return (
+    event === 'dashboard_retry_budget_exhausted' ||
+    event === 'dashboard_state_transition' ||
+    event === 'dashboard_action' ||
+    event === 'dashboard_source_authority' ||
+    event === 'dashboard_command_authority_denied' ||
+    event === 'open_repo' ||
+    event === 'import_session' ||
+    event === 'permission_denied' ||
+    event === 'apply_filter' ||
+    event === 'clear_filter' ||
+    event === 'view_activity'
   );
 }
 

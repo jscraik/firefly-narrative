@@ -449,8 +449,8 @@ body {
 
 /* Sidebar active state enhancer */
 .nav-item-active {
-  background: color-mix(in oklab, var(--accent-blue) 12%, var(--bg-tertiary)) !important;
-  color: var(--text-primary) !important;
+  background: color-mix(in oklab, var(--accent-blue) 12%, var(--bg-tertiary));
+  color: var(--text-primary);
   position: relative;
 }
 
@@ -467,7 +467,7 @@ body {
 }
 
 :root[data-theme="dark"] .nav-item-active {
-  background: color-mix(in oklab, var(--accent-blue) 15%, var(--bg-tertiary)) !important;
+  background: color-mix(in oklab, var(--accent-blue) 15%, var(--bg-tertiary));
 }
 
 /* v3 Dashboard — Activity row hover */

@@ -197,6 +197,9 @@ describe('CockpitView', () => {
       expect(tier).toBeTruthy();
       expect(label).toBeTruthy();
       expect(allowed.has(tier as string)).toBe(true);
+      if (label === null) {
+        throw new Error('Expected data-authority-label attribute to be present');
+      }
       expect(el).toHaveTextContent(label);
     });
   });

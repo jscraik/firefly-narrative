@@ -1,6 +1,7 @@
 # Testing and validation
 
 ## Table of Contents
+
 - [Typecheck](#typecheck)
 - [Checks and tests](#checks-and-tests)
 - [Test artifacts](#test-artifacts)
@@ -28,6 +29,7 @@
 - `pnpm test:artifacts`
 
 For flaky reproduction, keep artifact outputs stable:
+
 - `artifacts/test/summary-*.json`
 - `artifacts/test/test-output-*.log`
 - `artifacts/test/junit-*.xml`
@@ -35,6 +37,7 @@ For flaky reproduction, keep artifact outputs stable:
 - `artifacts/test/artifact-manifest.json`
 
 Optional targeted artifact modes:
+
 - `pnpm test:artifacts:unit`
 - `pnpm test:artifacts:integration`
 - `pnpm test:artifacts:e2e`
