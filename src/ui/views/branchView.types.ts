@@ -14,11 +14,11 @@ import type {
   TraceRange,
 } from '../../core/types';
 import type { IngestIssue, IngestStatus } from '../../hooks/useAutoIngest';
-import type { CockpitTableRow } from './cockpitViewData';
+import type { SurfaceTableRow } from './narrativeSurfaceData';
 
 export interface BranchViewProps {
   model: BranchViewModel;
-  pendingAction?: CockpitTableRow['action'];
+  pendingAction?: SurfaceTableRow['action'];
   onActionProcessed?: () => void;
   dashboardFilter?: DashboardFilter | null;
   onClearFilter?: () => void;

@@ -8,7 +8,7 @@ spec: docs/specs/2026-03-10-feat-updated-ui-views-spec.md
 ---
 
 ## Overview
-This plan implements the "Updated UI Views" contract from the cited spec by wiring all non-anchor modes through the shared cockpit surface, with a single trust normalization path and explicit per-element data authority cues. The implementation should preserve current routing and existing anchor behaviors (`dashboard`, `repo`, `docs`) while making cockpit mode rendering deterministic and contract-driven.
+This plan implements the "Updated UI Views" contract from the cited spec by wiring all non-anchor modes through the shared narrative surface, with a single trust normalization path and explicit per-element data authority cues. The implementation should preserve current routing and existing anchor behaviors (`dashboard`, `repo`, `docs`) while making surface mode rendering deterministic and contract-driven.
 
 ## Enhancement Summary
 
@@ -21,15 +21,15 @@ This plan implements the "Updated UI Views" contract from the cited spec by wiri
 - Added acceptance checks mapped directly to risk categories (`trust`, `routing`, `authority`, and `async safety`) for faster risk-driven sign-off.
 
 ## Problem Statement / Motivation
-Current UI mode coverage is partially implemented and includes gaps in trust/authority signaling consistency and mode coverage guarantees. The app risks contract drift when cockpit modes are rendered ad hoc, especially around:
+Current UI mode coverage is partially implemented and includes gaps in trust/authority signaling consistency and mode coverage guarantees. The app risks contract drift when shared surfaces are rendered ad hoc, especially around:
 - capture reliability normalization for `OTEL_ONLY` and degraded stream states,
 - per-element authority tier framing (`Repo`, `Live`, `Derived`, `Preview`),
-- and end-to-end checks at the Cockpit UI layer for source certainty signals.
+- and end-to-end checks at the shared narrative surface UI layer for source certainty signals.
 
 ## Scope and Non-Goals
 - In scope:
-  - Shared trust helper consolidation for `CaptureReliabilityStatus` → `CockpitTrustState` across dashboard and cockpit.
-  - Cockpit rendering contract completion for all defined `cockpit` modes in `Mode`.
+  - Shared trust helper consolidation for `CaptureReliabilityStatus` → `SurfaceTrustState` across dashboard and shared surfaces.
+  - Shared narrative surface contract completion for all defined `SurfaceMode` values in `Mode`.
   - Explicit per-element authority cue visibility and tests, including OTEL-only derived-summary behavior at the UI layer.
   - Deterministic routing/state tests and telemetry/validation coverage required by the spec.
 - Non-goals:
@@ -51,15 +51,15 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
   - `src/hooks/useAutoIngest.ts`
   - `src/ui/components/Sidebar.tsx`
   - `src/ui/views/dashboardState.ts`
-  - `src/ui/views/CockpitView.tsx`
-  - `src/ui/views/cockpitViewData.ts`
-  - `src/ui/views/__tests__/CockpitView.test.tsx`
-  - `src/ui/views/__tests__/cockpitViewData.test.tsx`
+  - `src/ui/views/NarrativeSurfaceView.tsx`
+  - `src/ui/views/narrativeSurfaceData.ts`
+  - `src/ui/views/__tests__/NarrativeSurfaceView.test.tsx`
+  - `src/ui/views/__tests__/narrativeSurfaceData.test.tsx`
   - `src/ui/views/__tests__/dashboardState.test.ts`
 - Add/adjust a short test checklist to ensure each mode can be routed and rendered by family before behavior details are touched.
 - Capture/update an explicit `Mode` registry artifact in the plan or code comments so every phase reads from the same source of truth.
 - **Exit criteria:**
-  - No ambiguity on which modes are anchor vs cockpit.
+  - No ambiguity on which modes are anchor vs shared surface.
   - No mode lacks a section assignment in the implementation plan.
   - Test checklist committed with pass/fail intent before Phase 2 changes begin.
 
@@ -67,42 +67,42 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
 - **Goal:** guarantee the only trust normalization source is shared, then make it visible at element level.
 - **Prerequisites:** completion and sign-off of Phase 1 mode registry.
 - **Actions:**
-  - Add or confirm a single shared helper path that maps `CaptureReliabilityStatus` to `CockpitTrustState` and is reused by dashboard and cockpit code paths.
-  - Ensure mapping includes explicit handling for `OTEL_ONLY` as a baseline/live-only source that maps to `CockpitTrustState.healthy` while rendering `derived_summary` authority cues.
-  - Extend `CockpitView` and `cockpitViewData` data generation so each rendered field includes deterministic `DataAuthorityTier` metadata.
-  - Add assertion coverage for per-element authority cue rendering across representative cockpit modes.
+  - Add or confirm a single shared helper path that maps `CaptureReliabilityStatus` to `SurfaceTrustState` and is reused by dashboard and shared surface code paths.
+  - Ensure mapping includes explicit handling for `OTEL_ONLY` as a baseline/live-only source that maps to `SurfaceTrustState.healthy` while rendering `derived_summary` authority cues.
+  - Extend `NarrativeSurfaceView` and `narrativeSurfaceData` data generation so each rendered field includes deterministic `DataAuthorityTier` metadata.
+  - Add assertion coverage for per-element authority cue rendering across representative shared surfaces.
 - **Exit criteria:**
   - A single helper is the only mapping function referenced by new/modified routing paths.
   - At least one `OTEL_ONLY` UI assertion and one unknown-state regression assertion are written.
   - Snapshot updates are limited to intentional content changes tied to cue labeling.
 
-### Phase 3 — Cockpit mode content hardening
+### Phase 3 — Shared surface content hardening
 - **Goal:** complete the spec’s mode surface with consistent structure and safe framing before deeper data wiring.
 - **Prerequisites:** completion and code review of Phase 2 trust/cue foundation.
 - **Actions:**
-  - Implement/update mode data in `cockpitViewData.ts` for all cockpit modes in spec matrix (`work-graph`, `assistant`, `live`, `sessions`, `transcripts`, `tools`, `costs`, `timeline`, `repo-pulse`, `diffs`, `snapshots`, `worktrees`, `attribution`, `skills`, `agents`, `memory`, `hooks`, `setup`, `ports`, `hygiene`, `deps`, `env`, `status`, `settings`).
+  - Implement/update mode data in `narrativeSurfaceData.ts` for all shared surface modes in the spec matrix (`work-graph`, `assistant`, `live`, `sessions`, `transcripts`, `tools`, `costs`, `timeline`, `repo-pulse`, `diffs`, `snapshots`, `worktrees`, `attribution`, `skills`, `agents`, `memory`, `hooks`, `setup`, `ports`, `hygiene`, `deps`, `env`, `status`, `settings`).
   - Keep all modes in a shared contract shape and ensure unknown/missing source states degrade safely to non-authoritative framing.
-  - For `repo`, `dashboard`, `docs`, preserve anchor-mode pathways and avoid adding cockpit-specific logic that bypasses anchor behavior.
+  - For `repo`, `dashboard`, `docs`, preserve anchor-mode pathways and avoid adding shared-surface logic that bypasses anchor behavior.
   - Add/adjust action availability logic where CTA availability depends on repo/trust/runtime state.
   - Add `DataAuthorityTier` coverage for representative high-risk modes (`status`, `work-graph`, `live`) first, then fill remaining modes in batches.
 - **Exit criteria:**
   - No `Mode` remains unmapped or uses legacy placeholders lacking section and authority metadata.
-  - No action path in cockpit bypasses shared action gating contract.
+  - No action path in shared surfaces bypasses the shared action gating contract.
   - Unknown source states consistently show safe framing across at least two sample pages and one shared fixture.
 
 ### Phase 4 — Verification and hardening layer
 - **Goal:** hard-stop risky regressions before rollout and establish release evidence.
 - **Prerequisites:** all mode data paths changed or intentionally deferred by scope.
 - **Actions:**
-  - Add dedicated helper-level and Cockpit-level tests for OTEL-only mapping and authority visibility:
+  - Add dedicated helper-level and shared-surface tests for OTEL-only mapping and authority visibility:
     - Shared helper unit test: `OTEL_ONLY` resolves via shared mapping to healthy trust state and explicit authority cue metadata (`derived_summary`).
-  - Add one dedicated integration-style UI test for OTEL-only and authority visibility in CockpitView:
-    - Render CockpitView in OTEL-only derived-summary mode.
+  - Add one dedicated integration-style UI test for OTEL-only and authority visibility in NarrativeSurfaceView:
+    - Render NarrativeSurfaceView in OTEL-only derived-summary mode.
     - Assert `derived_summary` cue is present and displayed at element scope.
   - Add regression tests for unknown capture modes and authority cue presence before implementation kickoff:
     - unknown mode mapped to degraded trust,
     - each representative tier (`live_repo`, `live_capture`, `derived_summary`, `static_scaffold`) has expected cue rendering.
-  - Add a contract-level matrix test that renders/serializes every non-anchor `Mode` through `cockpitViewData` and asserts each rendered element (`hero`, `metrics`, `highlights`, `activity`, `table`, `footerNote`) includes non-null `DataAuthorityTier` and cue metadata, preventing untested fallback drift.
+  - Add a contract-level matrix test that renders/serializes every non-anchor `Mode` through `narrativeSurfaceData` and asserts each rendered element (`hero`, `metrics`, `highlights`, `activity`, `table`, `footerNote`) includes non-null `DataAuthorityTier` and cue metadata, preventing untested fallback drift.
   - Run routing matrix tests for sidebar grouping and top-nav anchor-only behavior.
   - Validate retry class reuse for capture-related diagnostics remains shared (no duplicate budget constants or forks).
   - Add async discard test that proves late results do not overwrite route-specific state for docs autoload, drilldown, and trust refresh surfaces.
@@ -120,7 +120,7 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
     - fail Phase 5 if required sections are missing.
   - Compile final rollout evidence pack from commands, output logs, and risk register.
   - Validate telemetry event contract for release-blocking classes manually against a local or test harness sample.
-  - Conduct a focused visual/accessibility sweep for one representative mode per section (`Monitor`, `Workspace`, `Ecosystem`, `Health`, `Config`).
+  - Conduct a focused visual/accessibility sweep for one representative mode per section (`Evidence`, `Workspace`, `Integrations`, `Health`, `Configure`).
   - Confirm rollback instructions and owner contact path are in place before merge.
 - **Exit criteria:**
   - Artifacts include test results, command log, and unresolved risk callouts.
@@ -130,8 +130,8 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
 - Dependencies:
   - Existing shared trust primitives in `src/ui/views/dashboardState.ts`.
   - Capture-reliability and status flow in `src/hooks/useAutoIngest.ts`.
-  - Existing Cockpit render scaffolding in `CockpitView.tsx`.
-  - Type updates in `src/core/types.ts` (`CockpitTrustState`, `DataAuthorityTier`, `Mode`).
+  - Existing shared surface render scaffolding in `NarrativeSurfaceView.tsx`.
+  - Type updates in `src/core/types.ts` (`SurfaceTrustState`, `DataAuthorityTier`, `Mode`).
 - Risks:
   - Scope creep if per-mode deep data adapters are added without shared gating.
   - Regression risk in tests if existing snapshots were authored before authority cues.
@@ -140,7 +140,7 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
   - Keep implementation constrained to shared contracts before mode-specific enrichment.
   - Gate each batch with tests that assert both render shape and cue/trust classes.
 - **Internal dependencies:**
-  - Frontend owner for view/component changes (`CockpitView`, `CockpitView` test suite).
+  - Frontend owner for view/component changes (`NarrativeSurfaceView`, `NarrativeSurfaceView` test suite).
   - Frontend owner for shell and routing changes (`App.tsx`, `Sidebar.tsx`).
   - Tauri/runtime owner for docs autoload/runtime gate behavior.
 - **External dependencies:**
@@ -157,8 +157,8 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
 ## Test and Validation Strategy
 - Unit and component test matrix:
   - `src/ui/views/__tests__/dashboardState.test.ts`
-  - `src/ui/views/__tests__/CockpitView.test.tsx`
-  - `src/ui/views/__tests__/cockpitViewData.test.ts`
+  - `src/ui/views/__tests__/NarrativeSurfaceView.test.tsx`
+  - `src/ui/views/__tests__/narrativeSurfaceData.test.ts`
   - `src/ui/components/__tests__/TrustStateIndicator.test.tsx`
   - `src/ui/views/__tests__/docsAutoLoad.test.ts`
   - `src/ui/components/__tests__/Sidebar.test.tsx`
@@ -170,10 +170,10 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
   - Add a naming regression assertion that forbids legacy aliasing in primary shell-facing copy.
   - Include primary headings, sidebar labels, top-nav tabs, and section names in the canonical naming scan.
 - Test additions:
-  - OTEL-only UI-layer test for CockpitView + `derived_summary` cue.
+  - OTEL-only UI-layer test for NarrativeSurfaceView + `derived_summary` cue.
   - Unknown capture mode trust mapping tests at model and UI view boundary.
   - Per-element authority cue assertions (`data-authority-tier` and/or visible badge/label assertions).
-  - Route/family coverage test ensuring every non-anchor mode uses cockpit rendering and every anchor mode bypasses.
+  - Route/family coverage test ensuring every non-anchor mode uses shared surface rendering and every anchor mode bypasses.
   - Docs runtime-gate and one-shot autoload regression checks.
   - Replay stale async result discard assertions for route/request identity changes.
 - Required commands post-change:
@@ -185,7 +185,7 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
 ## Rollout / Migration / Monitoring
 - Rollout is phased:
   - Phase A: trust/helper and data contract hardening.
-  - Phase B: mode matrix + cockpit content + cue assertions.
+  - Phase B: mode matrix + shared surface content + cue assertions.
   - Phase C: full test and telemetry sanity checks, then release candidate.
 - Observability checks:
   - Validate release-blocking events for `ui_mode_changed`, `cockpit_view_rendered`, `cockpit_action_blocked`, and `async_result_discarded`.
@@ -199,7 +199,7 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
     - Required command: `required=('command log' 'pass/fail outcomes' 'risk matrix' 'residual risk notes' 'rollback decision' 'monitor window handoff' 'owner sign-off'); for h in "${required[@]}"; do rg -q -i "^##[[:space:]]+${h// /[[:space:]]*}" artifacts/ui-views-rollout-plan-evidence.md || { echo "Missing required evidence heading: $h"; exit 1; }; done`.
     - Required headings present: `command log`, `pass/fail outcomes`, `risk matrix`, `residual risk notes`, `rollback decision`, `monitor window handoff`, `owner sign-off`.
 - Rollback rule:
-  - If trust or routing checks fail in CI, revert to previous behavior in shared trust helper and gate Cockpit mode rendering to bounded fallback scaffolds.
+  - If trust or routing checks fail in CI, revert to previous behavior in shared trust helper and gate shared surface rendering to bounded fallback scaffolds.
 - **Rollout window and sequencing:**
   - Recommended sequencing: Weekday off-peak window for first full rollout with a 30-minute monitor window after merge.
   - First merge target should include only Phases 1–4 if telemetry confidence is insufficient to add production rollouts in the same pass.
@@ -213,8 +213,8 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
 
 ## Resolved Open Questions
 
-- Q: Should `OTEL_ONLY` be validated at both helper and Cockpit UI levels?
-  - A: Yes. Phase 4 requires both a shared helper unit test and a CockpitView integration-style assertion.
+- Q: Should `OTEL_ONLY` be validated at both helper and shared-surface UI levels?
+  - A: Yes. Phase 4 requires both a shared helper unit test and a NarrativeSurfaceView integration-style assertion.
 - Q: Where should rollout evidence be stored and what must it contain?
   - A: `artifacts/ui-views-rollout-plan-evidence.md` with commands, outcomes, risk matrix, residual risks, owner decisions, and rollback status.
 - Q: How should reduced-motion be validated?
@@ -222,13 +222,13 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
 
 ## Spec Open Questions — Resolved for this plan
 
-- Q: Which cockpit sections should receive real live data first after the shared shell lands?
+- Q: Which shared surface sections should receive real live data first after the shared shell lands?
   - A: `status`, `live`, and `sessions` first (high operational value), then `repo-pulse`, then `workspace` and `health` sections; `assistant` and `tools` remain scaffolded until shared adapters are in place.
   - Owner: Product + Frontend leads; due date: Phase 3 completion.
 - Q: Should sidebar badge counts remain static placeholders initially or become live-derived before broader rollout?
   - A: Static placeholders in phase one to keep implementation bounded; migrate to live-derived counts after shared adapter parity is proven on initial high-value sections.
   - Owner: Frontend lead; due date: after Phase 3 acceptance.
-- Q: Should top-nav continue to show only anchor experiences, or should it eventually expose section context for cockpit modes?
+- Q: Should top-nav continue to show only anchor experiences, or should it eventually expose section context for shared surface modes?
   - A: Keep anchor-only in phase one to match current contract; evaluate expansion as a follow-up phase only.
   - Owner: Product lead; due date: post-Phase 5 review.
 - Q: Should the assistant remain a guided operator surface in phase one, or evolve into a richer conversation workspace later?
@@ -239,11 +239,11 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
   - Owner: Frontend + Product leads.
 
 ## Acceptance Checklist
-- [ ] Routing safety: every `Mode` maps deterministically to anchor or cockpit rendering, including explicit test fixtures for unknown `Mode` values.
-- [ ] Trust safety: shared helper is the only `CaptureReliabilityStatus` → `CockpitTrustState` path for both dashboard and cockpit paths.
-- [ ] OTEL-only safety: UI-layer Cockpit integration test verifies `OTEL_ONLY` maps to allowed behavior and renders `derived_summary` cue.
+- [ ] Routing safety: every `Mode` maps deterministically to anchor or shared surface rendering, including explicit test fixtures for unknown `Mode` values.
+- [ ] Trust safety: shared helper is the only `CaptureReliabilityStatus` → `SurfaceTrustState` path for both dashboard and shared surface paths.
+- [ ] OTEL-only safety: UI-layer shared-surface integration test verifies `OTEL_ONLY` maps to allowed behavior and renders `derived_summary` cue.
 - [ ] Degradation safety: unknown capture states map to documented degraded-safe behavior with non-authoritative framing and no action escalations.
-- [ ] Authority transparency: all cockpit elements with rendered content include visible authority cueing and tier metadata.
+- [ ] Authority transparency: all shared surface elements with rendered content include visible authority cueing and tier metadata.
 - [ ] Authority coverage completeness: a phase-4 contract test verifies every non-anchor `Mode` path includes authority metadata for all rendered sections.
 - [ ] Canonical naming safety: primary shell-facing copy excludes legacy aliases and follows spec contract naming.
 - [ ] Accessibility and anchor safety: all anchor modes keep current shell semantics and remain keyboard-accessible with explicit anchor/tab behavior.

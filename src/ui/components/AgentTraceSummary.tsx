@@ -15,7 +15,7 @@ function StatPill({ label, value, tone }: { label: string; value: string; tone: 
 
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="text-[10px] uppercase tracking-wide">{label}</span>
+      <span className="text-[0.625rem] uppercase tracking-wide">{label}</span>
       <span className="font-semibold tabular-nums">{value}</span>
     </span>
   );
@@ -151,10 +151,10 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
               <Activity className="w-5 h-5 text-text-muted" />
             </div>
             <p className="text-sm font-medium text-text-secondary mb-1">No Agent Trace yet</p>
-            <p className="text-xs text-text-muted max-w-[240px] leading-relaxed">
+            <p className="text-xs text-text-muted max-w-[15rem] leading-relaxed">
               Import an Agent Trace or configure Codex OTel to see AI attribution for this commit
             </p>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-text-muted">
+            <div className="mt-3 flex items-center gap-1.5 text-[0.6875rem] text-text-muted">
               <Sparkles className="w-3 h-3" />
               <span>Tracks AI vs human contributions</span>
             </div>

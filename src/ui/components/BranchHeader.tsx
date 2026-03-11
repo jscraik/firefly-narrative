@@ -36,7 +36,7 @@ function Stat({
       {Icon && <Icon className="w-3.5 h-3.5 text-text-muted" />}
       <div className="flex items-baseline gap-1.5" title={title}>
         <span className={`text-base font-semibold tabular-nums ${valueClass}`}>{displayValue}</span>
-        <span className="text-[11px] text-text-muted">{label}</span>
+        <span className="text-[0.6875rem] text-text-muted">{label}</span>
       </div>
     </div>
   );
@@ -45,7 +45,7 @@ function Stat({
 function StatGroup({ children, label }: { children: React.ReactNode; label: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">{label}</span>
+      <span className="text-[0.625rem] font-semibold text-text-muted uppercase tracking-wider">{label}</span>
       <div className="flex items-center gap-4">{children}</div>
     </div>
   );
@@ -64,9 +64,9 @@ export function BranchHeader({
 
   if (viewModel.kind === 'shell') {
     return (
-      <section className="card p-5" aria-label="Branch context" aria-live="polite">
+      <section className="card p-5" aria-label="Repo evidence context" aria-live="polite">
         <h2 className="text-sm font-semibold text-text-primary">
-          {viewModel.state === 'loading' ? 'Loading branch context' : 'Branch context unavailable'}
+          {viewModel.state === 'loading' ? 'Loading repo evidence' : 'Repo evidence unavailable'}
         </h2>
         <p className="mt-2 text-sm text-text-tertiary">{viewModel.message}</p>
       </section>
@@ -74,7 +74,7 @@ export function BranchHeader({
   }
 
   return (
-    <section className="card p-5" aria-label="Branch context" aria-live="polite">
+    <section className="card p-5" aria-label="Repo evidence context" aria-live="polite">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3">
@@ -85,14 +85,14 @@ export function BranchHeader({
                 className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-                <span>Back to dashboard</span>
+                <span>Back to narrative brief</span>
               </button>
             )}
             <h1 className="text-2xl font-semibold text-text-primary">{viewModel.title}</h1>
             <span className="badge-open">{viewModel.status}</span>
             {viewModel.isFilteredView && (
               <span className="inline-flex items-center rounded-md bg-accent-blue-bg px-2 py-0.5 text-xs font-medium text-accent-blue">
-                Filtered view
+                Focused evidence slice
               </span>
             )}
           </div>
@@ -111,7 +111,7 @@ export function BranchHeader({
           <Stat metric={viewModel.metrics.commits} label="commits" icon={GitCommit} />
         </StatGroup>
 
-        <StatGroup label="AI">
+        <StatGroup label="Codex">
           <Stat metric={viewModel.metrics.prompts} label="prompts" icon={MessageSquare} />
           <Stat metric={viewModel.metrics.responses} label="responses" />
         </StatGroup>

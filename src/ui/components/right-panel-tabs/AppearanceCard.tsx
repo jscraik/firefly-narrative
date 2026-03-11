@@ -18,10 +18,10 @@ export function AppearanceCard({ fireflyEnabled, onToggleFirefly }: AppearanceCa
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
             <span className="text-xs font-medium text-text-secondary">Theme override</span>
-            <span className="text-[10px] text-text-tertiary">Force dark/light mode for testing</span>
+            <span className="text-[0.625rem] text-text-tertiary">Force dark/light mode for testing</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">
+            <span className="text-[0.625rem] font-medium text-text-tertiary uppercase tracking-wider">
               {theme === 'dark' ? 'Dark' : 'Light'}
             </span>
             <Toggle
@@ -36,7 +36,7 @@ export function AppearanceCard({ fireflyEnabled, onToggleFirefly }: AppearanceCa
           <div className="flex items-center justify-between border-t border-border-subtle/50 pt-3">
             <div className="flex flex-col gap-0.5">
               <span className="text-xs font-medium text-text-secondary">Firefly Signal</span>
-              <span className="text-[10px] text-text-tertiary">Ambient status indicator</span>
+              <span className="text-[0.625rem] text-text-tertiary">Ambient status indicator</span>
             </div>
             <Toggle
               checked={fireflyEnabled ?? true}
@@ -48,14 +48,14 @@ export function AppearanceCard({ fireflyEnabled, onToggleFirefly }: AppearanceCa
 
         <div className={`border-t border-border-subtle/50 pt-3 ${onToggleFirefly ? '' : 'mt-0'}`}>
           <div className="text-xs font-medium text-text-secondary mb-2">Color Semantics</div>
-          <div className="flex flex-wrap gap-2 text-[11px] font-medium">
+          <div className="flex flex-wrap gap-2 text-[0.6875rem] font-medium">
             <span className="rounded-full border border-accent-green-light bg-accent-green-bg px-2 py-0.5 text-accent-green">AI</span>
             <span className="rounded-full border border-accent-violet-light bg-accent-violet-bg px-2 py-0.5 text-accent-violet">Human</span>
             <span className="rounded-full border border-accent-amber-light bg-accent-amber-bg px-2 py-0.5 text-accent-amber">Mixed</span>
             <span className="rounded-full border border-border-subtle bg-bg-tertiary px-2 py-0.5 text-text-tertiary">Unknown</span>
             <span className="rounded-full border border-accent-red-light bg-accent-red-bg px-2 py-0.5 text-accent-red">Failed tests</span>
           </div>
-          <div className="mt-2 text-[11px] text-text-tertiary">
+          <div className="mt-2 text-[0.6875rem] text-text-tertiary">
             Session link lifecycle: <span className="text-text-secondary">Imported</span> →{' '}
             <span className="text-accent-amber">Matching</span> →{' '}
             <span className="text-accent-green">Linked</span>{' '}

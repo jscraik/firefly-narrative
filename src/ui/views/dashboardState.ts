@@ -3,13 +3,13 @@ import type {
   CommandAuthorityOutcome,
   DashboardRuntimeEnvironment,
   DashboardState,
-  CockpitTrustState,
+  SurfaceTrustState,
   DashboardTrustState,
   RetryBudgetProfile,
   RetryFailureClass,
 } from '../../core/types';
 
-export const COCKPIT_TRUST_LABELS = {
+export const SURFACE_TRUST_LABELS = {
   healthy: {
     default: 'Capture healthy',
     liveCapture: 'Capture healthy',
@@ -22,20 +22,20 @@ export const COCKPIT_TRUST_LABELS = {
   },
 } as const;
 
-function toCockpitTrustLabel(
+function toSurfaceTrustLabel(
   mode: string,
-  trustState: CockpitTrustState,
+  trustState: SurfaceTrustState,
 ): string {
   if (mode === 'OTEL_ONLY') {
     return trustState === 'healthy'
-      ? COCKPIT_TRUST_LABELS.healthy.otelOnly
-      : COCKPIT_TRUST_LABELS.degraded.otelOnly;
+      ? SURFACE_TRUST_LABELS.healthy.otelOnly
+      : SURFACE_TRUST_LABELS.degraded.otelOnly;
   }
 
   if (mode === 'HYBRID_ACTIVE') {
     return trustState === 'healthy'
-      ? COCKPIT_TRUST_LABELS.healthy.default
-      : COCKPIT_TRUST_LABELS.degraded.default;
+      ? SURFACE_TRUST_LABELS.healthy.default
+      : SURFACE_TRUST_LABELS.degraded.default;
   }
 
   if (mode === 'DEGRADED_STREAMING') {
@@ -46,12 +46,12 @@ function toCockpitTrustLabel(
     return 'Capture failure';
   }
 
-  return trustState === 'healthy' ? COCKPIT_TRUST_LABELS.healthy.default : COCKPIT_TRUST_LABELS.degraded.default;
+  return trustState === 'healthy' ? SURFACE_TRUST_LABELS.healthy.default : SURFACE_TRUST_LABELS.degraded.default;
 }
 
-export function deriveCockpitTrustState(
+export function deriveSurfaceTrustState(
   captureReliabilityStatus?: CaptureReliabilityStatus | null,
-): CockpitTrustState {
+): SurfaceTrustState {
   if (!captureReliabilityStatus) return 'healthy';
 
   if (
@@ -78,15 +78,15 @@ export function deriveCockpitTrustState(
   return 'degraded';
 }
 
-export function describeCockpitTrust(
+export function describeSurfaceTrust(
   captureReliabilityStatus?: CaptureReliabilityStatus | null,
-): { trustState: CockpitTrustState; trustLabel: string; reliabilityMode: string } {
+): { trustState: SurfaceTrustState; trustLabel: string; reliabilityMode: string } {
   const reliabilityMode = captureReliabilityStatus?.mode ?? 'HYBRID_ACTIVE';
-  const trustState = deriveCockpitTrustState(captureReliabilityStatus);
+  const trustState = deriveSurfaceTrustState(captureReliabilityStatus);
 
   return {
     trustState,
-    trustLabel: toCockpitTrustLabel(
+    trustLabel: toSurfaceTrustLabel(
       reliabilityMode,
       trustState,
     ),
@@ -206,7 +206,7 @@ export const DASHBOARD_RETRY_PROFILES: Record<
 export function deriveDashboardTrustState(
   captureReliabilityStatus?: CaptureReliabilityStatus | null,
 ): DashboardTrustState {
-  return deriveCockpitTrustState(captureReliabilityStatus);
+  return deriveSurfaceTrustState(captureReliabilityStatus);
 }
 
 export function classifyDashboardFailure(

@@ -14,37 +14,37 @@ const EMPTY_STATES: Record<Exclude<DashboardEmptyReason, 'no-repo'>, EmptyStateC
   'no-commits': {
     icon: <GitCommit className="w-16 h-16 text-text-muted" />,
     iconBackground: 'bg-bg-tertiary',
-    title: 'No commits in this time range',
-    message: 'There are no commits in the selected time period. Try a different range or create some commits!',
+    title: 'No commits in this narrative window',
+    message: 'There are no commits in the selected time period. Try a broader window so the narrative brief has evidence to work with.',
     primaryAction: {
       label: 'Select "All Time"',
       onClick: () => {/* Set time range to 'all' */ },
     },
-    delight: 'Every commit tells a story.',
+    delight: 'Every branch story starts with a commit.',
   },
 
   'no-ai': {
     icon: <Bot className="w-16 h-16 text-accent-blue" />,
     iconBackground: 'bg-accent-blue-bg',
-    title: 'No AI contributions detected',
+    title: 'No Codex session evidence detected',
     message: 'Import Codex sessions first to establish a trustworthy baseline. Additional providers can be layered in after the Codex flow is stable.',
     primaryAction: {
       label: 'Import Sessions',
       onClick: () => {/* Navigate to import */ },
     },
-    delight: 'Start your AI journey.',
+    delight: 'Trust starts with captured evidence.',
   },
 
   'no-attribution': {
     icon: <AlertCircle className="w-16 h-16 text-accent-amber" />,
     iconBackground: 'bg-accent-amber-bg',
-    title: 'No attribution data available',
-    message: 'AI sessions exist but couldn\'t be linked to commits. Check your linking settings or try manual linking.',
+    title: 'No attribution evidence available',
+    message: 'Sessions exist but couldn\'t be linked to commits. Check your linking settings or use Repo Evidence to verify the joins manually.',
     primaryAction: {
       label: 'Open Link Settings',
       onClick: () => {/* Open settings panel */ },
     },
-    delight: 'Connecting the dots...',
+    delight: 'Connecting the evidence trail...',
   },
 };
 
@@ -54,7 +54,7 @@ const EMPTY_STATES: Record<Exclude<DashboardEmptyReason, 'no-repo'>, EmptyStateC
 export function DashboardEmptyState({ reason }: DashboardEmptyStateProps) {
   if (reason === 'no-repo') {
     return (
-      <output className="dashboard-empty-state flex h-full min-h-[500px] items-center justify-center px-6 py-12">
+      <output className="dashboard-empty-state flex h-full min-h-[31.25rem] items-center justify-center px-6 py-12">
         <RepositoryPlaceholderCard variant="dashboard" />
       </output>
     );
@@ -64,7 +64,7 @@ export function DashboardEmptyState({ reason }: DashboardEmptyStateProps) {
 
   return (
     <motion.output
-      className="dashboard-empty-state flex flex-col items-center justify-center min-h-[500px] px-6 py-12"
+      className="dashboard-empty-state flex flex-col items-center justify-center min-h-[31.25rem] px-6 py-12"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" as const }}
@@ -79,9 +79,9 @@ export function DashboardEmptyState({ reason }: DashboardEmptyStateProps) {
         aria-hidden="true"
         animate={{
           boxShadow: [
-            "0 0 0 1px var(--border-subtle)",
-            "0 0 0 3px var(--bg-subtle)",
-            "0 0 0 1px var(--border-subtle)"
+            "0 0 0 0.0625rem var(--border-subtle)",
+            "0 0 0 0.1875rem var(--bg-subtle)",
+            "0 0 0 0.0625rem var(--border-subtle)"
           ],
         }}
         transition={{
@@ -91,7 +91,7 @@ export function DashboardEmptyState({ reason }: DashboardEmptyStateProps) {
         }}
         whileHover={{
           scale: 1.05,
-          boxShadow: "0 0 0 4px var(--accent-blue-light)",
+          boxShadow: "0 0 0 0.25rem var(--accent-blue-light)",
           transition: { duration: 0.2 }
         }}
       >

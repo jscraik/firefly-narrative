@@ -31,15 +31,15 @@ export type Mode =
 
 /**
  * AnchorMode — the three dedicated views with distinct behavior and richer interaction models.
- * These bypass the shared cockpit surface and must never be routed through CockpitView.
+ * These bypass the shared narrative surface and must never be routed through NarrativeSurfaceView.
  */
 export type AnchorMode = 'dashboard' | 'repo' | 'docs';
 
 /**
- * CockpitMode — every Mode that is NOT an anchor.
- * All cockpit modes render via the shared CockpitView + cockpitViewData contract.
+ * SurfaceMode — every Mode that is NOT an anchor.
+ * All non-anchor modes render via the shared NarrativeSurfaceView + narrativeSurfaceData contract.
  */
-export type CockpitMode = Exclude<Mode, AnchorMode>;
+export type SurfaceMode = Exclude<Mode, AnchorMode>;
 
 /**
  * ViewSection — the sidebar grouping for each mode.
@@ -68,7 +68,7 @@ export type Snapshot = {
   headSha: string;
   filesChanged: string[];
   message?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 };
 
 export type HeaderMetricUnavailableReason =
@@ -581,7 +581,7 @@ export type DashboardState =
 
 export type DashboardTrustState = 'healthy' | 'degraded';
 
-export type CockpitTrustState = DashboardTrustState;
+export type SurfaceTrustState = DashboardTrustState;
 export type DataAuthorityTier = 'live_repo' | 'live_capture' | 'derived_summary' | 'static_scaffold' | 'system_signal';
 
 export type DashboardPanelStatus = 'ready' | 'loading' | 'empty' | 'error' | 'degraded';

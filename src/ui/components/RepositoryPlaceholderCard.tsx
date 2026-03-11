@@ -28,9 +28,9 @@ export function RepositoryPlaceholderCard({
     breathingIcon: {
       animate: {
         boxShadow: [
-          "0 0 0 1px var(--border-subtle)",
-          "0 0 0 2px var(--accent-amber-light)",
-          "0 0 0 1px var(--border-subtle)"
+          "0 0 0 0.0625rem var(--border-subtle)",
+          "0 0 0 0.125rem var(--accent-amber-light)",
+          "0 0 0 0.0625rem var(--border-subtle)"
         ],
         backgroundColor: [
           "var(--secondary)",
@@ -59,34 +59,34 @@ export function RepositoryPlaceholderCard({
   const isDashboard = variant === 'dashboard';
   const isDocs = variant === 'docs';
 
-  let title = 'No repository loaded';
-  if (isDashboard) title = 'No dashboard loaded';
-  if (isDocs) title = 'No documentation loaded';
+  let title = 'No Repo Evidence Loaded';
+  if (isDashboard) title = 'No Narrative Brief Loaded';
+  if (isDocs) title = 'No Docs Workspace Loaded';
 
   let message =
-    'Open a repository to see your timeline, docs, and linked AI sessions in one place.';
+    'Open a repository to inspect branch evidence, linked sessions, and the claims Trace Narrative can actually support.';
   if (isDashboard) {
-    message = 'Open a repository to see contribution metrics, trends, and developer insights.';
+    message = 'Open a repository to build a narrative brief from commits, evidence coverage, and Codex-linked sessions.';
   } else if (isDocs) {
-    message = 'Documentation will render once a repository with a .narrative directory is loaded.';
+    message = 'Documentation will render once a repository with narrative docs is loaded into the workspace.';
   }
 
   const quickActions = isDashboard
     ? [
       {
-        title: 'Explore Trends',
-        detail: 'Commit velocity, test health, and activity patterns',
+        title: 'Read the Story',
+        detail: 'Commit rhythm, evidence coverage, and trust posture',
       },
       {
-        title: 'Trace AI Work',
-        detail: 'Session attribution from Claude/Codex/Cursor',
+        title: 'Trace Codex Work',
+        detail: 'Session evidence and branch joins from the Codex-first lane',
       },
     ]
     : isDocs
       ? [
         {
           title: 'Browse Guides',
-          detail: 'Render markdown docs from your repository',
+          detail: 'Render markdown docs from the active repository',
         },
         {
           title: 'Keep Context',
@@ -95,12 +95,12 @@ export function RepositoryPlaceholderCard({
       ]
       : [
         {
-          title: 'Explore History',
-          detail: 'Commit timeline + changed files + context',
+          title: 'Open Repo Evidence',
+          detail: 'Commit timeline, changed files, and evidence joins',
         },
         {
           title: 'Link Sessions',
-          detail: 'Connect Claude/Codex/Cursor activity to commits',
+          detail: 'Connect Codex sessions and other traces to concrete commits',
         },
       ];
 
@@ -117,7 +117,7 @@ export function RepositoryPlaceholderCard({
         transition={ANIMATION.breathingIcon.transition}
         whileHover={{
           scale: 1.05,
-          boxShadow: "0 0 0 3px var(--accent-amber-light)",
+          boxShadow: "0 0 0 0.1875rem var(--accent-amber-light)",
           transition: { duration: 0.2 }
         }}
       >
@@ -169,7 +169,7 @@ export function RepositoryPlaceholderCard({
             onClick={onOpenRepo}
             className="inline-flex items-center gap-2 rounded-xl border border-accent-amber-light bg-accent-amber-bg px-5 py-2.5 text-sm font-semibold text-accent-amber transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:bg-accent-amber-light hover:scale-105 active:scale-95 active:duration-75"
           >
-            Open a repository
+            Open Repo Evidence
             <ArrowRight className="h-4 w-4" />
           </button>
         </motion.div>
@@ -180,7 +180,7 @@ export function RepositoryPlaceholderCard({
         animate={{ opacity: [0.7, 1, 0.7] }}
         transition={{ duration: animations.waitingDuration, repeat: Infinity, ease: "easeInOut", delay: 1 }}
       >
-        Waiting for repository context…
+        Waiting for repository evidence…
       </motion.p>
     </motion.div>
   );

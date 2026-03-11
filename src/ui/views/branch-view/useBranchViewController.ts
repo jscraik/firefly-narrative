@@ -617,7 +617,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     setTrackingSettledNodeId(payload.selectedNodeId);
   }, [selectedNodeId]);
 
-  // Handle deep-linking from cockpit views
+  // Handle deep-linking from shared narrative surfaces
   useEffect(() => {
     if (!props.pendingAction) return;
 

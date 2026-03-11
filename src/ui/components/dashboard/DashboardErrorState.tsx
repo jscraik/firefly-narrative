@@ -45,7 +45,7 @@ export function DashboardErrorState({
   const isPermissionDenied = state === 'permission_denied';
 
   return (
-    <div className="dashboard-error-state flex flex-col items-center justify-center min-h-[500px] px-6 py-12">
+    <div className="dashboard-error-state flex flex-col items-center justify-center min-h-[31.25rem] px-6 py-12">
       {/* Error Icon */}
       <div
         className="mb-6 flex h-16 w-16 animate-shake-once items-center justify-center rounded-full bg-accent-red-bg"
@@ -88,25 +88,3 @@ export function DashboardErrorState({
     </div>
   );
 }
-
-/**
- * Add this CSS for shake animation:
- *
- * @keyframes shake {
- *   0%, 100% { transform: translateX(0); }
- *   20% { transform: translateX(-4px); }
- *   40% { transform: translateX(4px); }
- *   60% { transform: translateX(-4px); }
- *   80% { transform: translateX(4px); }
- * }
- *
- * .animate-shake-once {
- *   animation: shake 0.4s ease-in-out;
- * }
- *
- * @media (prefers-reduced-motion: reduce) {
- *   .animate-shake-once {
- *     animation: none;
- *   }
- * }
- */

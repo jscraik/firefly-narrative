@@ -19,7 +19,7 @@ function ActionButton(props: {
       type="button"
       disabled={disabled}
       className={[
-        'inline-flex items-center rounded-md border px-2 py-1 text-[11px] font-semibold disabled:opacity-50',
+        'inline-flex items-center rounded-md border px-2 py-1 text-[0.6875rem] font-semibold disabled:opacity-50',
         accent
           ? 'border-accent-amber-light bg-accent-amber-bg text-accent-amber hover:bg-accent-amber-light'
           : 'border-border-light bg-bg-secondary text-text-secondary hover:bg-bg-hover',
@@ -44,11 +44,11 @@ export function HooksStatusRow(props: {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[11px] text-text-tertiary">
+      <span className="text-[0.6875rem] text-text-tertiary">
         Hooks: {hookInstalled === null ? 'Unknown' : hookInstalled ? 'Installed' : 'Not installed'}
       </span>
       {hooksDir ? (
-        <span className="text-[11px] text-text-muted">
+        <span className="text-[0.6875rem] text-text-muted">
           (<span className="font-mono">{hooksDir}</span>)
         </span>
       ) : null}
@@ -88,17 +88,17 @@ export function RepoActionsCard(props: {
 
   return (
     <div className="mt-2 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-tertiary px-3 py-2">
-      <div className="text-[11px] text-text-secondary font-semibold">
+      <div className="text-[0.6875rem] text-text-secondary font-semibold">
         Indexed commits: <span className="font-mono">{indexedCount}</span>
       </div>
       {repoCounts ? (
-        <div className="text-[11px] text-text-tertiary">
+        <div className="text-[0.6875rem] text-text-tertiary">
           Anchors: attribution {repoCounts.attribution}/{repoCounts.total} · sessions {repoCounts.sessions}/
           {repoCounts.total} · lineage {repoCounts.lineage}/{repoCounts.total} · complete {repoCounts.complete}/
           {repoCounts.total}
         </div>
       ) : (
-        <div className="text-[11px] text-text-tertiary">
+        <div className="text-[0.6875rem] text-text-tertiary">
           Refresh to summarize Story Anchors coverage across indexed commits.
         </div>
       )}
@@ -111,7 +111,7 @@ export function RepoActionsCard(props: {
         <ActionButton label="Reconcile (write)" disabled={busy || !canRunRepoActions} accent onClick={onReconcileWrite} />
       </div>
       {exportProgress ? (
-        <div className="text-[11px] text-text-muted">
+        <div className="text-[0.6875rem] text-text-muted">
           Exporting… {exportProgress.done}/{exportProgress.total}
         </div>
       ) : null}
@@ -148,10 +148,10 @@ export function CommitActionsCard(props: {
 
   return (
     <div className="mt-2 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-tertiary px-3 py-2">
-      <div className="text-[11px] text-text-secondary font-semibold">
+      <div className="text-[0.6875rem] text-text-secondary font-semibold">
         Selected commit: <span className="font-mono">{selectedCommitSha.slice(0, 8)}</span>
       </div>
-      <div className="text-[11px] text-text-tertiary">
+      <div className="text-[0.6875rem] text-text-tertiary">
         Notes: attribution {status?.hasAttributionNote ? '✓' : '—'} · sessions {status?.hasSessionsNote ? '✓' : '—'} · lineage {status?.hasLineageNote ? '✓' : '—'}
       </div>
       <div className="flex flex-wrap gap-2">

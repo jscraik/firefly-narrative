@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { BranchViewModel, CockpitMode, DataAuthorityTier } from '../../../core/types';
+import type { BranchViewModel, SurfaceMode, DataAuthorityTier } from '../../../core/types';
 import type { CaptureReliabilityStatus } from '../../../core/tauri/ingestConfig';
 import type { RepoState } from '../../../hooks/useRepoLoader';
-import { buildCockpitViewModel } from '../cockpitViewData';
+import { buildNarrativeSurfaceViewModel } from '../narrativeSurfaceData';
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -41,7 +41,7 @@ function createRepoState(): RepoState {
         {
           id: 's1',
           tool: 'codex',
-          messages: [{ id: 'm1', role: 'user', text: 'Investigate cockpit routing' }],
+          messages: [{ id: 'm1', role: 'user', text: 'Investigate surface routing' }],
         },
       ],
       dirtyFiles: [],
@@ -92,11 +92,11 @@ function createCaptureReliabilityStatus(
 // ---------------------------------------------------------------------------
 
 /**
- * The complete set of CockpitMode values.  This is the authoritative registry
+ * The complete set of SurfaceMode values.  This is the authoritative registry
  * used by both the contract-matrix test and routing tests.  Any new Mode added
  * to `src/core/types.ts` that is not an anchor must appear here.
  */
-const ALL_COCKPIT_MODES: CockpitMode[] = [
+const ALL_SURFACE_MODES: SurfaceMode[] = [
   'live',
   'sessions',
   'transcripts',
@@ -134,9 +134,9 @@ const ALLOWED_AUTHORITY_TIERS = new Set<DataAuthorityTier>([
 // Existing trust-mapping tests (preserved verbatim)
 // ---------------------------------------------------------------------------
 
-describe('buildCockpitViewModel', () => {
+describe('buildNarrativeSurfaceViewModel', () => {
   it('maps OTEL_ONLY reliability to derived-summary authority cues', () => {
-    const model = buildCockpitViewModel(
+    const model = buildNarrativeSurfaceViewModel(
       'live',
       createRepoState(),
       createCaptureReliabilityStatus({ mode: 'OTEL_ONLY', otelBaselineHealthy: true }),
@@ -156,7 +156,7 @@ describe('buildCockpitViewModel', () => {
     const unknownModeReliabilityStatus = createCaptureReliabilityStatus({
       mode: 'NONSENSE_MODE' as CaptureReliabilityStatus['mode'],
     });
-    const model = buildCockpitViewModel('status', createRepoState(), unknownModeReliabilityStatus);
+    const model = buildNarrativeSurfaceViewModel('status', createRepoState(), unknownModeReliabilityStatus);
 
     expect(model.trustState).toBe('degraded');
     expect(model.heroAuthorityTier).toBe('live_capture');
@@ -164,14 +164,14 @@ describe('buildCockpitViewModel', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Phase 4 — Contract matrix: every CockpitMode must have authority on all elements
+  // Phase 4 — Contract matrix: every SurfaceMode must have authority on all elements
   // ---------------------------------------------------------------------------
 
-  describe('contract matrix — every CockpitMode includes non-null authority metadata', () => {
-    it.each(ALL_COCKPIT_MODES)(
+  describe('contract matrix — every SurfaceMode includes non-null authority metadata', () => {
+    it.each(ALL_SURFACE_MODES)(
       'mode "%s": hero, metrics, highlights, activity, and tableRows all have valid authority tier + label',
       (mode) => {
-        const model = buildCockpitViewModel(mode, createRepoState(), createCaptureReliabilityStatus());
+        const model = buildNarrativeSurfaceViewModel(mode, createRepoState(), createCaptureReliabilityStatus());
 
         // Hero-level authority
         expect(model.heroAuthorityTier).toBeTruthy();
@@ -228,21 +228,21 @@ describe('buildCockpitViewModel', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Phase 4 — Routing boundary: anchor modes must NOT be accepted as CockpitMode
+  // Phase 4 — Routing boundary: anchor modes must NOT be accepted as SurfaceMode
   // ---------------------------------------------------------------------------
 
-  describe('routing boundary — anchor modes are excluded from cockpit rendering', () => {
+  describe('routing boundary — anchor modes are excluded from shared surface rendering', () => {
     const ANCHOR_MODES = ['dashboard', 'repo', 'docs'] as const;
 
-    it('ALL_COCKPIT_MODES does not include any anchor mode', () => {
+    it('ALL_SURFACE_MODES does not include any anchor mode', () => {
       for (const anchor of ANCHOR_MODES) {
-        expect((ALL_COCKPIT_MODES as string[]).includes(anchor)).toBe(false);
+        expect((ALL_SURFACE_MODES as string[]).includes(anchor)).toBe(false);
       }
     });
 
-    it('ALL_COCKPIT_MODES covers the full non-anchor Mode union', () => {
+    it('ALL_SURFACE_MODES covers the full non-anchor Mode union', () => {
       // The list must have 24 entries (27 total modes − 3 anchors)
-      expect(ALL_COCKPIT_MODES).toHaveLength(24);
+      expect(ALL_SURFACE_MODES).toHaveLength(24);
     });
   });
 
@@ -252,7 +252,7 @@ describe('buildCockpitViewModel', () => {
 
   describe('authority tier coverage — all four DataAuthorityTier values are reachable', () => {
     it('OTEL_ONLY maps hero to derived_summary tier', () => {
-      const model = buildCockpitViewModel(
+      const model = buildNarrativeSurfaceViewModel(
         'live',
         createRepoState(),
         createCaptureReliabilityStatus({ mode: 'OTEL_ONLY', otelBaselineHealthy: true }),
@@ -261,7 +261,7 @@ describe('buildCockpitViewModel', () => {
     });
 
     it('HYBRID_ACTIVE maps hero to live_capture tier', () => {
-      const model = buildCockpitViewModel(
+      const model = buildNarrativeSurfaceViewModel(
         'live',
         createRepoState(),
         createCaptureReliabilityStatus({ mode: 'HYBRID_ACTIVE' }),
@@ -270,7 +270,7 @@ describe('buildCockpitViewModel', () => {
     });
 
     it('repo-grounded mode produces live_repo tier on at least one metric', () => {
-      const model = buildCockpitViewModel(
+      const model = buildNarrativeSurfaceViewModel(
         'status',
         createRepoState(),
         createCaptureReliabilityStatus(),
@@ -280,7 +280,7 @@ describe('buildCockpitViewModel', () => {
     });
 
     it('static_scaffold tier is reachable from static-scaffold modes (assistant)', () => {
-      const model = buildCockpitViewModel(
+      const model = buildNarrativeSurfaceViewModel(
         'assistant',
         createRepoState(),
         createCaptureReliabilityStatus(),
@@ -304,7 +304,7 @@ describe('buildCockpitViewModel', () => {
   describe('drift report — workspace drift is evaluated and exposed', () => {
     it('populates driftReport in the view model if repo is ready', () => {
       const repoState = createRepoState();
-      const model = buildCockpitViewModel('work-graph', repoState, createCaptureReliabilityStatus());
+      const model = buildNarrativeSurfaceViewModel('work-graph', repoState, createCaptureReliabilityStatus());
 
       expect(model.driftReport).toBeDefined();
       expect(model.driftReport?.status).toBe('healthy');
@@ -333,7 +333,7 @@ describe('buildCockpitViewModel', () => {
         ];
       }
 
-      const model = buildCockpitViewModel('work-graph', repoState, createCaptureReliabilityStatus());
+      const model = buildNarrativeSurfaceViewModel('work-graph', repoState, createCaptureReliabilityStatus());
       const churnMetric = model.driftReport?.metrics.find((m) => m.id === 'uncommitted_churn');
 
       expect(churnMetric?.value).toBe(650);
@@ -348,7 +348,7 @@ describe('buildCockpitViewModel', () => {
         repoState.model.dirtyFiles = Array(15).fill('file.ts');
       }
       
-      const model = buildCockpitViewModel('assistant', repoState, createCaptureReliabilityStatus());
+      const model = buildNarrativeSurfaceViewModel('assistant', repoState, createCaptureReliabilityStatus());
 
       expect(model.driftReport?.status).toBe('critical');
       

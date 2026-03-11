@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as echarts from 'echarts';
+import { useTheme } from '@design-studio/tokens';
 import type { TrendPoint } from '../../../core/types';
 
 interface TrendChartProps {
@@ -8,12 +9,38 @@ interface TrendChartProps {
 
 type RenderStrategy = 'svg_low_density' | 'canvas_high_density' | 'table_accessible_fallback';
 
+function resolveChartColor(variableName: string, fallback: string) {
+    if (typeof window === 'undefined') return fallback;
+    const value = window.getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
+}
+
+function resolveChartPalette(theme: string) {
+    const isLightTheme = theme === 'light';
+
+    return {
+        border: resolveChartColor('--border-light', isLightTheme ? 'rgba(13, 13, 13, 0.18)' : 'rgba(86, 96, 122, 0.72)'),
+        grid: resolveChartColor('--border-subtle', isLightTheme ? 'rgba(13, 13, 13, 0.1)' : 'rgba(76, 86, 110, 0.4)'),
+        textPrimary: resolveChartColor('--text-primary', isLightTheme ? 'rgba(13, 13, 13, 1)' : 'rgba(224, 224, 224, 1)'),
+        textMuted: resolveChartColor('--text-muted', isLightTheme ? 'rgba(93, 93, 93, 1)' : 'rgba(160, 160, 176, 1)'),
+        accentViolet: resolveChartColor('--accent-violet', isLightTheme ? 'rgba(146, 79, 247, 1)' : 'rgba(139, 92, 246, 1)'),
+        accentGreen: resolveChartColor('--accent-green', isLightTheme ? 'rgba(0, 134, 53, 1)' : 'rgba(16, 185, 129, 1)'),
+        tooltipBackground: isLightTheme ? 'rgba(255, 255, 255, 0.96)' : 'rgba(13, 13, 18, 0.92)',
+        tooltipShadow: isLightTheme ? 'rgba(13, 13, 13, 0.14)' : 'rgba(0, 0, 0, 0.5)',
+        accentVioletShadow: isLightTheme ? 'rgba(146, 79, 247, 0.18)' : 'rgba(139, 92, 246, 0.3)',
+        accentVioletAreaStart: isLightTheme ? 'rgba(146, 79, 247, 0.22)' : 'rgba(139, 92, 246, 0.4)',
+        accentVioletAreaEnd: isLightTheme ? 'rgba(146, 79, 247, 0)' : 'rgba(139, 92, 246, 0)',
+    };
+}
+
 export function TrendChart({ trend }: TrendChartProps) {
+    const { theme } = useTheme();
     const containerRef = useRef<HTMLDivElement>(null);
     const chartInstanceRef = useRef<echarts.EChartsType | null>(null);
 
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
     const [_frameCostBreach, _setFrameCostBreach] = useState(false);
+    const [chartPalette, setChartPalette] = useState(() => resolveChartPalette(theme));
 
     useEffect(() => {
         if (typeof window.matchMedia !== 'function') return;
@@ -33,6 +60,10 @@ export function TrendChart({ trend }: TrendChartProps) {
         if (totalPoints > 4000) return ['canvas_high_density', 'High Density (2k-100k points)']; // totalPoints is * 2
         return ['svg_low_density', 'Low Density (<=2k points)'];
     }, [totalPoints, prefersReducedMotion, _frameCostBreach]);
+
+    useEffect(() => {
+        setChartPalette(resolveChartPalette(theme));
+    }, [theme]);
 
     useEffect(() => {
         if (strategy === 'table_accessible_fallback' || !containerRef.current) {
@@ -66,19 +97,19 @@ export function TrendChart({ trend }: TrendChartProps) {
                 trigger: 'axis',
                 axisPointer: {
                     type: 'line',
-                    lineStyle: { color: '#3a3a50', type: 'dashed' }
+                    lineStyle: { color: chartPalette.border, type: 'dashed' }
                 },
-                backgroundColor: 'rgba(13, 13, 18, 0.9)',
-                borderColor: '#2a2a3a',
-                textStyle: { color: '#e0e0e0', fontSize: 11 },
+                backgroundColor: chartPalette.tooltipBackground,
+                borderColor: chartPalette.grid,
+                textStyle: { color: chartPalette.textPrimary, fontSize: 11 },
                 padding: [10, 14],
                 borderRadius: 8,
                 shadowBlur: 20,
-                shadowColor: 'rgba(0,0,0,0.5)'
+                shadowColor: chartPalette.tooltipShadow
             },
             legend: {
                 data: ['AI %', 'Commits'],
-                textStyle: { color: '#a0a0b0' }
+                textStyle: { color: chartPalette.textMuted }
             },
             grid: {
                 left: '3%',
@@ -90,25 +121,25 @@ export function TrendChart({ trend }: TrendChartProps) {
                 type: 'category',
                 boundaryGap: false,
                 data: times,
-                axisLine: { lineStyle: { color: '#3a3a50' } },
-                axisLabel: { color: '#a0a0b0' }
+                axisLine: { lineStyle: { color: chartPalette.border } },
+                axisLabel: { color: chartPalette.textMuted }
             },
             yAxis: [
                 {
                     type: 'value',
                     name: 'AI %',
                     position: 'left',
-                    axisLine: { show: true, lineStyle: { color: '#3a3a50' } },
-                    axisLabel: { color: '#8b5cf6', formatter: '{value}%' },
-                    splitLine: { lineStyle: { color: '#2a2a3a' } },
+                    axisLine: { show: true, lineStyle: { color: chartPalette.border } },
+                    axisLabel: { color: chartPalette.accentViolet, formatter: '{value}%' },
+                    splitLine: { lineStyle: { color: chartPalette.grid } },
                     max: 100,
                 },
                 {
                     type: 'value',
                     name: 'Commits',
                     position: 'right',
-                    axisLine: { show: true, lineStyle: { color: '#3a3a50' } },
-                    axisLabel: { color: '#10b981' },
+                    axisLine: { show: true, lineStyle: { color: chartPalette.border } },
+                    axisLabel: { color: chartPalette.accentGreen },
                     splitLine: { show: false }
                 }
             ],
@@ -121,15 +152,15 @@ export function TrendChart({ trend }: TrendChartProps) {
                     showSymbol: false,
                     lineStyle: {
                         width: 3,
-                        color: '#8b5cf6',
+                        color: chartPalette.accentViolet,
                         shadowBlur: 10,
-                        shadowColor: 'rgba(139, 92, 246, 0.3)'
+                        shadowColor: chartPalette.accentVioletShadow
                     },
                     areaStyle: {
                         opacity: 0.2,
                         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: 'rgba(139, 92, 246, 0.4)' },
-                            { offset: 1, color: 'rgba(139, 92, 246, 0)' }
+                            { offset: 0, color: chartPalette.accentVioletAreaStart },
+                            { offset: 1, color: chartPalette.accentVioletAreaEnd }
                         ])
                     },
                     data: aiData,
@@ -141,7 +172,7 @@ export function TrendChart({ trend }: TrendChartProps) {
                     yAxisIndex: 1,
                     barWidth: '40%',
                     itemStyle: {
-                        color: '#10b981',
+                        color: chartPalette.accentGreen,
                         borderRadius: [4, 4, 0, 0] // Rounded top corners
                     },
                     data: commitData,
@@ -155,7 +186,7 @@ export function TrendChart({ trend }: TrendChartProps) {
         const handleResize = () => chartInstanceRef.current?.resize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [trend, strategy, prefersReducedMotion]);
+    }, [chartPalette, trend, strategy, prefersReducedMotion]);
 
     // Simulate downsampling decision for large datasets as requested by spec
     const decimationNotice = totalPoints > 2000 && strategy !== 'table_accessible_fallback'

@@ -98,7 +98,7 @@ export function SourceLensView({
         <div className="mt-3 text-sm text-text-secondary">
           Source Lens only works when Narrative has attribution data (notes or local cache). It does not guess.
         </div>
-        {anchorsText ? <div className="mt-2 text-[11px] text-text-muted">{anchorsText}</div> : null}
+        {anchorsText ? <div className="mt-2 text-[0.6875rem] text-text-muted">{anchorsText}</div> : null}
         <ol className="mt-3 list-decimal pl-5 text-xs text-text-tertiary space-y-1">
           <li>Install Story Anchors hooks in Settings (recommended) or generate attribution notes via your workflow.</li>
           <li>Click “Import note” to pull attribution data for this commit.</li>
@@ -109,13 +109,13 @@ export function SourceLensView({
             type="button"
             onClick={handleImportNote}
             disabled={syncing}
-            className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-medium text-text-secondary hover:bg-bg-tertiary disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[0.6875rem] font-medium text-text-secondary hover:bg-bg-tertiary disabled:opacity-50"
           >
             Import note
           </button>
         </div>
         {syncStatus ? (
-          <div className="mt-2 text-[11px] text-text-muted">{syncStatus}</div>
+          <div className="mt-2 text-[0.6875rem] text-text-muted">{syncStatus}</div>
         ) : null}
       </div>
     );
@@ -127,7 +127,7 @@ export function SourceLensView({
   return (
     <div className="card overflow-hidden">
       <div className="p-5 border-b border-border-subtle">
-        {anchorsText ? <div className="mb-2 text-[11px] text-text-muted">{anchorsText}</div> : null}
+        {anchorsText ? <div className="mb-2 text-[0.6875rem] text-text-muted">{anchorsText}</div> : null}
         <SourceLensStats
           lines={lines}
           stats={stats}

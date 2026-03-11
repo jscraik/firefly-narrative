@@ -59,7 +59,7 @@ function CaptureLifecycleRail({
           return (
             <div key={step.id} className="flex items-center gap-1.5">
               <span className={`h-2 w-2 rounded-full border ${dotClass}`} />
-              <span className={`text-[10px] leading-4 ${textClass}`}>{step.label}</span>
+              <span className={`text-[0.625rem] leading-4 ${textClass}`}>{step.label}</span>
               {index < steps.length - 1 ? <span className="h-px w-3 bg-border-light" aria-hidden="true" /> : null}
             </div>
           );
@@ -75,7 +75,7 @@ function CaptureLifecycleRail({
             key={item.key}
             type="button"
             onClick={() => onSelectFilter?.(item.key)}
-            className={`rounded-md border px-2 py-0.5 text-[10px] transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 ${activeFilter === item.key
+            className={`rounded-md border px-2 py-0.5 text-[0.625rem] transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 ${activeFilter === item.key
               ? 'border-accent-blue-light bg-accent-blue-bg text-accent-blue'
               : 'btn-tertiary-soft'
               }`}
@@ -161,7 +161,7 @@ export function CaptureActivityStrip(props: {
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-xs font-semibold text-text-secondary">Capture</div>
-            <div className="text-[11px] text-text-tertiary mt-0.5">
+            <div className="mt-0.5 text-[0.6875rem] text-text-tertiary">
               {enabled
                 ? `On · Sources: ${sourcesLabel || '—'} · Issues: ${issueCount}`
                 : 'Off · Turn on to capture sessions and traces automatically.'}
@@ -169,7 +169,7 @@ export function CaptureActivityStrip(props: {
             {captureMode ? (
               <div className="mt-1 flex items-center gap-2">
                 <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${captureMode === 'HYBRID_ACTIVE'
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.625rem] font-semibold border ${captureMode === 'HYBRID_ACTIVE'
                     ? 'bg-accent-green-bg text-accent-green border-accent-green-light'
                     : captureMode === 'OTEL_ONLY'
                       ? 'bg-accent-blue-bg text-accent-blue border-accent-blue-light'
@@ -181,12 +181,12 @@ export function CaptureActivityStrip(props: {
                   {captureMode}
                 </span>
                 {captureModeMessage ? (
-                  <span className="text-[11px] text-text-tertiary">{captureModeMessage}</span>
+                  <span className="text-[0.6875rem] text-text-tertiary">{captureModeMessage}</span>
                 ) : null}
               </div>
             ) : null}
             {enabled ? (
-              <div className="text-[11px] text-text-muted">Last seen: {lastSeen}</div>
+              <div className="text-[0.6875rem] text-text-muted">Last seen: {lastSeen}</div>
             ) : null}
             {enabled ? (
               <CaptureLifecycleRail
@@ -202,7 +202,7 @@ export function CaptureActivityStrip(props: {
 
           {onToggle ? (
             <div className="flex items-center gap-2 text-xs text-text-secondary">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-text-tertiary">
+              <span className="text-[0.625rem] font-semibold uppercase tracking-wider text-text-tertiary">
                 {enabled ? 'On' : 'Off'}
               </span>
               <Toggle checked={enabled} onCheckedChange={(c) => onToggle(c)} aria-label="Auto-capture" />
@@ -212,10 +212,10 @@ export function CaptureActivityStrip(props: {
 
         <div className="pt-1">
           <div className="flex items-center justify-between">
-            <div className="text-[11px] font-semibold text-text-secondary">Recent</div>
+            <div className="text-[0.6875rem] font-semibold text-text-secondary">Recent</div>
             <button
               type="button"
-              className="text-[11px] text-text-tertiary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:text-text-secondary hover:scale-105"
+              className="text-[0.6875rem] text-text-tertiary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:text-text-secondary hover:scale-105"
               onClick={openDrawer}
               disabled={!onRequestAll}
             >
@@ -228,7 +228,7 @@ export function CaptureActivityStrip(props: {
           ) : (
             <div className="mt-2 flex flex-col gap-1.5">
               {recent.slice(0, 3).map((e) => (
-                <div key={e.id} className="text-[11px] text-text-tertiary">
+                <div key={e.id} className="text-[0.6875rem] text-text-tertiary">
                   {e.message}
                 </div>
               ))}
@@ -245,7 +245,7 @@ export function CaptureActivityStrip(props: {
             onClick={closeDrawer}
             aria-label="Close"
           />
-          <div className="absolute right-0 top-0 h-full w-full max-w-[520px] bg-bg-primary shadow-xl border-l border-border-subtle p-5 overflow-y-auto animate-in slide-in-from-right duration-300">
+          <div className="absolute right-0 top-0 h-full w-full max-w-[32.5rem] overflow-y-auto border-l border-border-subtle bg-bg-primary p-5 shadow-xl animate-in slide-in-from-right duration-300">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-text-secondary">Capture activity</div>
@@ -274,7 +274,7 @@ export function CaptureActivityStrip(props: {
                   {filteredItems.map((e) => (
                     <div key={e.id} className="card p-3">
                       <div className="text-xs text-text-secondary">{e.message}</div>
-                      <div className="mt-1 text-[11px] text-text-tertiary">
+                      <div className="mt-1 text-[0.6875rem] text-text-tertiary">
                         {formatTime(e.createdAtIso)}
                       </div>
                     </div>

@@ -18,8 +18,8 @@ describe('TopNav', () => {
     expect(screen.getByText('Narrative')).toBeInTheDocument();
     expect(screen.getByText('Docs')).toBeInTheDocument();
     
-    // Assistant mode should not be a tab
-    expect(screen.queryByText('Story Copilot')).not.toBeInTheDocument();
+    // Shared surface sub-modes should not appear as primary tabs
+    expect(screen.queryByText('Codex Copilot')).not.toBeInTheDocument();
   });
 
   it('supports arrow key navigation between anchor tabs', () => {
@@ -34,11 +34,11 @@ describe('TopNav', () => {
 
     const tablist = screen.getByRole('tablist');
     
-    // ArrowRight from Cockpit -> Docs
+    // ArrowRight from Narrative -> Docs
     fireEvent.keyDown(tablist, { key: 'ArrowRight' });
     expect(onModeChange).toHaveBeenCalledWith('docs');
 
-    // ArrowLeft from Cockpit -> Repo
+    // ArrowLeft from Narrative -> Repo
     fireEvent.keyDown(tablist, { key: 'ArrowLeft' });
     expect(onModeChange).toHaveBeenCalledWith('repo');
     
@@ -51,8 +51,8 @@ describe('TopNav', () => {
     expect(onModeChange).toHaveBeenCalledWith('docs');
   });
 
-  it('highlights the active anchor tab even if current mode is a cockpit mode', () => {
-    // Cockpit-adjacent modes should keep the Narrative anchor tab active.
+  it('highlights the active anchor tab even if current mode is a shared surface mode', () => {
+    // Surface-adjacent modes should keep the Narrative anchor tab active.
     render(
       <TopNav
         mode="assistant"
@@ -66,7 +66,7 @@ describe('TopNav', () => {
     expect(screen.getByRole('tab', { name: 'Docs' })).toHaveAttribute('aria-selected', 'false');
   });
 
-  it('maps non-anchor cockpit modes to Narrative tab and keyboard routing', () => {
+  it('maps non-anchor surface modes to Narrative tab and keyboard routing', () => {
     const onModeChange = vi.fn();
     render(
       <TopNav

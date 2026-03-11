@@ -9,7 +9,7 @@ const meta: Meta<typeof TraceHero> = {
     backgrounds: {
       default: 'dark',
       values: [
-        { name: 'dark', value: '#0b111e' },
+        { name: 'dark', value: 'rgb(11 17 30)' },
       ],
     },
   },

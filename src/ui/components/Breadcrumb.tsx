@@ -30,7 +30,7 @@ export function Breadcrumb({ segments }: BreadcrumbProps) {
                 className="flex items-center gap-1 text-text-secondary hover:text-accent-blue transition-colors"
               >
                 {Icon && <Icon className="w-3 h-3" />}
-                <span className="truncate max-w-[120px]">{segment.label}</span>
+                <span className="truncate max-w-[7.5rem]">{segment.label}</span>
               </a>
             ) : (
               <span
@@ -40,7 +40,7 @@ export function Breadcrumb({ segments }: BreadcrumbProps) {
                 aria-current={isLast ? 'page' : undefined}
               >
                 {Icon && <Icon className="w-3 h-3" />}
-                <span className="truncate max-w-[120px]">{segment.label}</span>
+                <span className="truncate max-w-[7.5rem]">{segment.label}</span>
               </span>
             )}
           </div>

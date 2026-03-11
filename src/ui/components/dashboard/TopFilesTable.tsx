@@ -135,7 +135,7 @@ function TableRow({ file, index, onClick }: TableRowProps) {
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      <td className="px-4 py-3 text-sm text-text-secondary font-medium truncate max-w-[200px]" title={file.filePath}>
+      <td className="px-4 py-3 text-sm text-text-secondary font-medium truncate max-w-[12.5rem]" title={file.filePath}>
         {file.filePath}
       </td>
       <td className="px-4 py-3 text-sm text-text-secondary text-right tabular-nums">

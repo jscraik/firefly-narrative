@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CaptureReliabilityStatus } from '../../../core/tauri/ingestConfig';
-import { describeCockpitTrust } from '../dashboardState';
+import { describeSurfaceTrust } from '../dashboardState';
 
 function createCaptureReliabilityStatus(
   overrides: Partial<CaptureReliabilityStatus> = {},
@@ -34,9 +34,9 @@ function createCaptureReliabilityStatus(
   };
 }
 
-describe('describeCockpitTrust', () => {
+describe('describeSurfaceTrust', () => {
   it('defaults to healthy trust when no capture status exists', () => {
-    const result = describeCockpitTrust();
+    const result = describeSurfaceTrust();
 
     expect(result.trustState).toBe('healthy');
     expect(result.trustLabel).toBe('Capture healthy');
@@ -49,7 +49,7 @@ describe('describeCockpitTrust', () => {
       mode: 'NONSENSE_MODE',
     } as unknown as CaptureReliabilityStatus;
 
-    const result = describeCockpitTrust(unknownModeStatus);
+    const result = describeSurfaceTrust(unknownModeStatus);
 
     expect(result.trustState).toBe('degraded');
     expect(result.trustLabel).toBe('Capture degraded');
@@ -66,10 +66,10 @@ describe('describeCockpitTrust', () => {
       otelBaselineHealthy: false,
     });
 
-    expect(describeCockpitTrust(healthyOtelOnly).trustState).toBe('healthy');
-    expect(describeCockpitTrust(healthyOtelOnly).trustLabel).toBe('Capture baseline healthy');
-    expect(describeCockpitTrust(degradedOtelOnly).trustState).toBe('degraded');
-    expect(describeCockpitTrust(degradedOtelOnly).trustLabel).toBe(
+    expect(describeSurfaceTrust(healthyOtelOnly).trustState).toBe('healthy');
+    expect(describeSurfaceTrust(healthyOtelOnly).trustLabel).toBe('Capture baseline healthy');
+    expect(describeSurfaceTrust(degradedOtelOnly).trustState).toBe('degraded');
+    expect(describeSurfaceTrust(degradedOtelOnly).trustLabel).toBe(
       'Capture baseline healthy, stream unavailable',
     );
   });

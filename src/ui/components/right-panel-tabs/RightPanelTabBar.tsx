@@ -87,7 +87,7 @@ export function RightPanelTabBar({
                 onClick={() => onChangeTab(tab.id)}
                 className={`
                   min-w-0 flex-1 inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2 border
-                  text-[10px] leading-4 font-medium whitespace-nowrap
+                  text-[0.625rem] leading-4 font-medium whitespace-nowrap
                   transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105
                   ${isActive
                     ? TAB_ACTIVE_STYLES[tab.id]

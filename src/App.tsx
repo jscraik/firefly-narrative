@@ -16,26 +16,19 @@ import { useSessionImport } from './hooks/useSessionImport';
 import { useSnapshots } from './hooks/useSnapshots';
 import { useTraceCollector } from './hooks/useTraceCollector';
 import { useUpdater } from './hooks/useUpdater';
-import { RepoEmptyState } from './ui/components/RepoEmptyState';
+import { AppContent } from './AppContent';
 import { Sidebar } from './ui/components/Sidebar';
 import { UpdatePrompt } from './ui/components/UpdatePrompt';
-import { BranchView } from './ui/views/BranchView';
-import { CockpitView } from './ui/views/CockpitView';
-import {
-  type CockpitTableRow,
-} from './ui/views/cockpitViewData';
-import { DashboardView } from './ui/views/DashboardView';
 import {
   DASHBOARD_FOCUS_RESTORE_MS,
 } from './ui/views/dashboardState';
-import { DocsView } from './ui/views/DocsView';
 import { TopNav } from './ui/components/TopNav';
 
 type AgentationComponentType = (typeof import('agentation'))['Agentation'];
 
 export default function App() {
   const [mode, setMode] = useState<Mode>('dashboard');
-  const [cockpitAction, setCockpitAction] = useState<import('./ui/views/cockpitViewData').CockpitAction | undefined>(undefined);
+  const [surfaceAction, setSurfaceAction] = useState<import('./ui/views/narrativeSurfaceData').SurfaceAction | undefined>(undefined);
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter | null>(null);
   const [isExitingFilteredView, setIsExitingFilteredView] = useState(false);
   const clearFilterTimerRef = useRef<number | null>(null);
@@ -257,152 +250,6 @@ export default function App() {
     };
   }, []);
 
-  const renderContent = () => {
-    // 1. Dashboard View
-    if (mode === 'dashboard') {
-      return (
-        <DashboardView
-          repoState={repoState}
-          setRepoState={setRepoState}
-          setActionError={setActionError}
-          onDrillDown={handleDrillDown}
-          onModeChange={setMode}
-          captureReliabilityStatus={autoIngest.captureReliabilityStatus}
-        />
-      );
-    }
-
-    // 2. Documentation View
-    if (mode === 'docs') {
-      return (
-        <DocsView
-          repoState={repoState}
-          setRepoState={setRepoState}
-          onClose={() => setMode('repo')}
-        />
-      );
-    }
-
-    // 3. Repository-specific logic
-    if (mode === 'repo') {
-      if (repoState.status === 'loading') {
-        return (
-          <div className="p-8 text-sm text-text-tertiary">
-            <div className="text-sm font-medium text-text-secondary">Indexing repo…</div>
-            <div className="mt-2 text-xs text-text-tertiary">
-              {indexingProgress?.message ?? 'Preparing index…'}
-            </div>
-            <div className="mt-3 h-2 w-64 max-w-full rounded-full bg-border-light overflow-hidden">
-              <div
-                className="h-full bg-accent-blue transition-[width] duration-300"
-                style={{ width: `${indexingProgress?.percent ?? 0}%` }}
-              />
-            </div>
-            <div className="mt-2 text-xs text-text-muted">
-              {indexingProgress?.total
-                ? `${indexingProgress.current ?? 0}/${indexingProgress.total} · ${indexingProgress.phase}`
-                : indexingProgress?.phase ?? 'loading'}
-            </div>
-          </div>
-        );
-      }
-
-      if (repoState.status === 'error') {
-        return (
-          <div className="p-8">
-            <div className="rounded-xl border border-accent-red-light bg-accent-red-bg p-4 text-sm text-text-secondary">
-              {repoState.message}
-            </div>
-            <div className="mt-4 text-sm text-text-tertiary">
-              Ensure the selected folder is a git repository and that <span className="font-mono">git</span> is
-              available on your PATH.
-            </div>
-          </div>
-        );
-      }
-
-      if (repoState.status === 'ready') {
-        return (
-          <BranchView
-            model={commitData.model ?? EMPTY_BRANCH_MODEL}
-            updateModel={(updater) => {
-              setRepoState((prev) => {
-                if (prev.status !== 'ready') return prev;
-                return { ...prev, model: updater(prev.model) };
-              });
-            }}
-            dashboardFilter={dashboardFilter}
-            onClearFilter={handleClearFilter}
-            isExitingFilteredView={isExitingFilteredView}
-            loadFilesForNode={commitData.loadFilesForNode}
-            loadDiffForFile={commitData.loadDiffForFile}
-            loadTraceRangesForFile={commitData.loadTraceRangesForFile}
-            onExportAgentTrace={traceCollectorHandlers.exportAgentTrace}
-            onRunOtlpSmokeTest={traceCollectorHandlers.runOtlpSmokeTestHandler}
-            onUpdateCodexOtelPath={traceCollectorHandlers.updateCodexOtelPath}
-            onToggleCodexOtelReceiver={updateCodexOtelReceiverEnabled}
-            onOpenCodexOtelDocs={traceCollectorHandlers.openCodexOtelDocs}
-            codexPromptExport={codexPromptExport}
-            attributionPrefs={attributionPrefs}
-            onUpdateAttributionPrefs={updateAttributionPrefs}
-            onPurgeAttributionMetadata={purgeAttributionMetadata}
-            onUnlinkSession={sessionImportHandlers.unlinkSession}
-            actionError={actionError}
-            setActionError={setActionError}
-            onDismissActionError={() => setActionError(null)}
-            ingestStatus={autoIngest.ingestStatus}
-            ingestActivityRecent={autoIngest.activityRecent}
-            onRequestIngestActivityAll={autoIngest.getActivityAll}
-            ingestIssues={autoIngest.issues}
-            onDismissIngestIssue={autoIngest.dismissIssue}
-            onToggleAutoIngest={autoIngest.toggleAutoIngest}
-            ingestToast={autoIngest.toast}
-            ingestConfig={autoIngest.ingestConfig}
-            otlpKeyStatus={autoIngest.otlpKeyStatus}
-            discoveredSources={autoIngest.discoveredSources}
-            collectorMigrationStatus={autoIngest.collectorMigrationStatus}
-            captureReliabilityStatus={autoIngest.captureReliabilityStatus}
-            onUpdateWatchPaths={autoIngest.updateWatchPaths}
-            onMigrateCollector={autoIngest.migrateCollector}
-            onRollbackCollector={autoIngest.rollbackCollector}
-            onRefreshCaptureReliability={autoIngest.refreshCaptureReliability}
-            onConfigureCodex={autoIngest.configureCodexTelemetry}
-            onRotateOtlpKey={autoIngest.rotateOtlpKey}
-            onGrantCodexConsent={autoIngest.grantCodexConsent}
-            onAuthorizeCodexAppServerForLiveTest={autoIngest.authorizeCodexAppServerForLiveTest}
-            onLogoutCodexAppServerAccount={autoIngest.logoutCodexAppServerAccount}
-            githubConnectorEnabled={githubConnectorEnabled}
-            onToggleGitHubConnector={handleToggleGitHubConnector}
-            pendingAction={cockpitAction}
-            onActionProcessed={() => setCockpitAction(undefined)}
-          />
-        );
-      }
-
-      return <RepoEmptyState setRepoState={setRepoState} />;
-    }
-
-    return (
-      <CockpitView
-        mode={mode}
-        repoState={repoState}
-        captureReliabilityStatus={autoIngest.captureReliabilityStatus}
-        autoIngestEnabled={autoIngest.ingestStatus.enabled}
-        onModeChange={setMode}
-        onOpenRepo={openRepo}
-        onImportSession={sessionImportHandlers.importSession}
-        onAction={(action) => {
-          if (action.type === 'navigate') {
-            setMode(action.mode);
-          } else {
-            setCockpitAction(action);
-            setMode('repo');
-          }
-        }}
-      />
-    );
-  };
-
   const repoRoot = repoState.status === 'ready' ? repoState.path : '';
 
   return (
@@ -441,7 +288,33 @@ export default function App() {
         <main className="flex-1 overflow-hidden relative flex flex-col">
           {/* `min-h-0` is critical so nested flex children can scroll instead of overflowing */}
           <div className="flex-1 min-h-0 overflow-hidden bg-bg-tertiary">
-            {renderContent()}
+            <AppContent
+              mode={mode}
+              repoState={repoState}
+              setRepoState={setRepoState}
+              indexingProgress={indexingProgress}
+              codexPromptExport={codexPromptExport}
+              attributionPrefs={attributionPrefs}
+              actionError={actionError}
+              setActionError={setActionError}
+              openRepo={openRepo}
+              updateAttributionPrefs={updateAttributionPrefs}
+              purgeAttributionMetadata={purgeAttributionMetadata}
+              commitData={commitData}
+              traceCollectorHandlers={traceCollectorHandlers}
+              sessionImportHandlers={sessionImportHandlers}
+              autoIngest={autoIngest}
+              updateCodexOtelReceiverEnabled={updateCodexOtelReceiverEnabled}
+              dashboardFilter={dashboardFilter}
+              onClearFilter={handleClearFilter}
+              isExitingFilteredView={isExitingFilteredView}
+              onDrillDown={handleDrillDown}
+              onModeChange={setMode}
+              githubConnectorEnabled={githubConnectorEnabled}
+              onToggleGitHubConnector={handleToggleGitHubConnector}
+              surfaceAction={surfaceAction}
+              setSurfaceAction={setSurfaceAction}
+            />
           </div>
         </main>
 

@@ -13,7 +13,7 @@ export function DashboardTrustBadge({
 
   return (
     <output
-      className={`inline-flex items-center gap-1 rounded-full border border-accent-amber-light bg-accent-amber-bg px-2.5 py-1 text-[11px] font-semibold text-accent-amber ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full border border-accent-amber-light bg-accent-amber-bg px-2.5 py-1 text-[0.6875rem] font-semibold text-accent-amber ${className}`}
       aria-label="Capture reliability degraded"
     >
       <span

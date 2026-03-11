@@ -6,7 +6,7 @@
  * Phase 4 — Verification and hardening layer:
  * - Every Mode in the sidebar maps to a unique deterministic human label.
  * - Anchor modes (dashboard, repo, docs) are present.
- * - All CockpitMode values are represented.
+ * - All SurfaceMode values are represented.
  * - No legacy aliases appear in primary labels.
  * - Section group labels match the ViewSection contract.
  */
@@ -32,7 +32,7 @@ const ANCHOR_MODES_TO_LABELS: Array<[Mode, string]> = [
 ];
 
 /**
- * Cockpit modes and their canonical sidebar labels.
+ * Shared surface modes and their canonical sidebar labels.
  * Each label must appear at least once as a nav button in the sidebar.
  */
 const COCKPIT_MODES_TO_LABELS: Array<[Mode, string]> = [
@@ -122,9 +122,9 @@ describe('Sidebar', () => {
     );
   });
 
-  describe('cockpit mode canonical labels — nav button presence', () => {
+  describe('surface mode canonical labels — nav button presence', () => {
     it.each(COCKPIT_MODES_TO_LABELS)(
-      'cockpit mode "%s" has a nav button with label "%s"',
+      'surface mode "%s" has a nav button with label "%s"',
       (mode, label) => {
         renderSidebar(mode as Mode);
         const buttons = navButtonLabels();

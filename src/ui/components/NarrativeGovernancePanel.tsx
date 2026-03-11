@@ -54,7 +54,7 @@ export function NarrativeGovernancePanel({ report, observability }: NarrativeGov
                 {Math.round(metric.score * 100)}% / target {Math.round(metric.threshold * 100)}%
               </span>
             </div>
-            <div className="mt-1 text-[11px] text-text-tertiary">{metric.rationale}</div>
+            <div className="mt-1 text-[0.6875rem] text-text-tertiary">{metric.rationale}</div>
           </div>
         ))}
       </div>
@@ -62,9 +62,9 @@ export function NarrativeGovernancePanel({ report, observability }: NarrativeGov
       <div className="mt-4 rounded-md border border-border-subtle bg-bg-primary px-3 py-2">
         <div className="text-xs font-medium text-text-secondary">Kill-switch matrix</div>
         {triggered.length === 0 ? (
-          <div className="mt-1 text-[11px] text-text-tertiary">No rules triggered in this branch view.</div>
+          <div className="mt-1 text-[0.6875rem] text-text-tertiary">No rules triggered in this branch view.</div>
         ) : (
-          <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] text-text-secondary">
+          <ul className="mt-2 list-disc space-y-1 pl-4 text-[0.6875rem] text-text-secondary">
             {triggered.map((rule) => (
               <li key={rule.id}>
                 <span className="font-medium">{rule.label}</span> ({rule.severity}): {rule.rationale}

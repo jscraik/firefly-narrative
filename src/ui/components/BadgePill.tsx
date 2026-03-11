@@ -34,7 +34,7 @@ function getToolIcon(tool: SessionBadgeTool) {
  * Get CSS classes for tool-specific styling
  */
 function getToolClasses(tool: SessionBadgeTool): string {
-  const baseClasses = 'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium';
+  const baseClasses = 'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.625rem] font-medium';
 
   switch (tool) {
     case 'claude-code':
@@ -106,7 +106,7 @@ export function BadgePill({ badge }: BadgePillProps) {
       <span className={className} title={title}>
         {badge.label}
         {typeof presentCount === 'number' ? (
-          <span className="ml-1 font-mono text-[10px] opacity-80">{presentCount}/3</span>
+          <span className="ml-1 font-mono text-[0.625rem] opacity-80">{presentCount}/3</span>
         ) : null}
       </span>
     );
@@ -144,7 +144,7 @@ export function BadgePill({ badge }: BadgePillProps) {
     // Multiple tools: show generic with mixed indicator
       return (
         <span
-        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium pill-tool-neutral"
+        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.625rem] font-medium pill-tool-neutral"
         title={`Sessions: ${badge.sessionTools.join(', ')}`}
       >
         <Bot className="w-3 h-3" />

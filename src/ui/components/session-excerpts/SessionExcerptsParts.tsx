@@ -25,7 +25,7 @@ export function ExpandableHighlight({ text, id }: { text: string; id: string }) 
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="ml-1 text-accent-blue hover:text-accent-blue/80 text-[10px] font-medium inline-flex items-center gap-0.5"
+          className="ml-1 text-accent-blue hover:text-accent-blue/80 text-[0.625rem] font-medium inline-flex items-center gap-0.5"
           aria-expanded={expanded}
           aria-controls={`${id}-text`}
         >
@@ -55,7 +55,7 @@ export function ToolPill(props: {
   const { tool, durationMin, agentName, redactionCount } = props;
 
   return (
-    <div className="flex items-center gap-2 text-[11px] text-text-muted">
+    <div className="flex items-center gap-2 text-[0.6875rem] text-text-muted">
       <span className="px-2 py-1 bg-bg-primary rounded-md font-mono text-text-tertiary">{tool}</span>
       {agentName ? <span className="text-text-tertiary">· {agentName}</span> : null}
       {typeof durationMin === 'number' ? <span>{formatDuration(durationMin)}</span> : null}
@@ -77,7 +77,7 @@ export function LinkStatus(props: {
   if (!excerpt.linkedCommitSha) {
     return (
       <div
-        className="flex items-center gap-2 text-[11px] text-text-tertiary"
+        className="flex items-center gap-2 text-[0.6875rem] text-text-tertiary"
         title="Session imported successfully, but no confident commit match has been linked yet."
       >
         <Link2Off className="w-3 h-3" />
@@ -90,7 +90,7 @@ export function LinkStatus(props: {
   const confidencePercent = excerpt.linkConfidence ? Math.round(excerpt.linkConfidence * 100) : 0;
 
   return (
-    <div className="flex items-center gap-2 text-[11px] text-text-muted">
+    <div className="flex items-center gap-2 text-[0.6875rem] text-text-muted">
       <Link2 className="w-3 h-3" />
       <button
         type="button"
@@ -207,7 +207,7 @@ export function SessionLinkPipeline({ excerpt }: { excerpt: SessionExcerpt }) {
   ] as const;
 
   return (
-    <div className="mt-1 w-full max-w-[220px]" title="Session link lifecycle">
+    <div className="mt-1 w-full max-w-[13.75rem]" title="Session link lifecycle">
       <div className="flex items-center gap-1.5">
         {steps.map((step, index) => {
           const complete = step.id < activeStep;
@@ -217,7 +217,7 @@ export function SessionLinkPipeline({ excerpt }: { excerpt: SessionExcerpt }) {
           return (
             <div key={step.id} className="flex min-w-0 items-center gap-1.5">
               <span className={`h-2 w-2 shrink-0 rounded-full border ${dotClass}`} />
-              <span className={`text-[10px] leading-4 ${active ? 'text-text-secondary font-semibold' : 'text-text-muted'}`}>
+              <span className={`text-[0.625rem] leading-4 ${active ? 'text-text-secondary font-semibold' : 'text-text-muted'}`}>
                 {step.label}
               </span>
               {index < steps.length - 1 ? <span className="h-px w-3 bg-border-light" aria-hidden="true" /> : null}

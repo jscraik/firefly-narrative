@@ -194,7 +194,7 @@ export function Timeline({
           }}
         >
           {/* Connection line - visible path */}
-          <div className="pointer-events-none absolute left-0 right-0 top-[38px] h-[1px] bg-border-subtle" />
+          <div className="pointer-events-none absolute left-0 right-0 top-[2.375rem] h-[0.0625rem] bg-border-subtle" />
 
           <motion.div
             className="relative flex min-w-max items-start gap-2 px-4 py-2"

@@ -80,34 +80,34 @@ export function CaptureModeCard(props: {
         <div className="text-xs font-semibold text-text-secondary">Capture mode</div>
         <button
           type="button"
-          className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold"
+          className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[0.6875rem] font-semibold"
           onClick={() => onRefreshReliability?.()}
         >
           Refresh
         </button>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${captureModeClass(captureMode)}`}>
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold border ${captureModeClass(captureMode)}`}>
           {captureMode}
         </span>
         {captureReliability?.reasons?.[0] ? (
-          <span className="text-[11px] text-text-tertiary">{captureReliability.reasons[0]}</span>
+          <span className="text-[0.6875rem] text-text-tertiary">{captureReliability.reasons[0]}</span>
         ) : (
-          <span className="text-[11px] text-text-tertiary">Reliability status not yet available.</span>
+          <span className="text-[0.6875rem] text-text-tertiary">Reliability status not yet available.</span>
         )}
       </div>
       {appServerStatus ? (
         <div className="mt-3 rounded-md border border-border-subtle bg-bg-tertiary p-2">
-          <div className="text-[11px] font-semibold text-text-secondary">Codex App Server</div>
-          <div className="mt-1 text-[11px] text-text-tertiary">
+          <div className="text-[0.6875rem] font-semibold text-text-secondary">Codex App Server</div>
+          <div className="mt-1 text-[0.6875rem] text-text-tertiary">
             state: <span className="font-mono">{appServerStatus.state}</span> · auth:{' '}
             <span className="font-mono">{appServerStatus.authState}</span> · initialized:{' '}
             <span className="font-mono">{appServerStatus.initialized ? 'yes' : 'no'}</span>
           </div>
           {appServerStatus.authState === 'authenticated' ? (
-            <div className="mt-1 text-[11px] text-accent-green">Authorization status: logged in and authorized.</div>
+            <div className="mt-1 text-[0.6875rem] text-accent-green">Authorization status: logged in and authorized.</div>
           ) : appServerStatus.lastError ? (
-            <div className="mt-1 text-[11px] text-text-tertiary">
+            <div className="mt-1 text-[0.6875rem] text-text-tertiary">
               {appServerStatus.lastError}
             </div>
           ) : null}
@@ -115,7 +115,7 @@ export function CaptureModeCard(props: {
             {isAuthorized ? (
               <button
                 type="button"
-                className="inline-flex items-center rounded-full border border-accent-green-light bg-accent-green-bg px-2 py-1 text-[11px] font-semibold text-accent-green"
+                className="inline-flex items-center rounded-full border border-accent-green-light bg-accent-green-bg px-2 py-1 text-[0.6875rem] font-semibold text-accent-green"
                 disabled
                 onClick={() => void onAuthorize?.()}
               >
@@ -124,7 +124,7 @@ export function CaptureModeCard(props: {
             ) : (
               <button
                 type="button"
-                className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
+                className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[0.6875rem] font-semibold disabled:opacity-50"
                 disabled={authBusy}
                 onClick={() => void onAuthorize?.()}
               >
@@ -134,7 +134,7 @@ export function CaptureModeCard(props: {
             {hasAuthUrl ? (
               <button
                 type="button"
-                className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
+                className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[0.6875rem] font-semibold disabled:opacity-50"
                 disabled={authBusy}
                 onClick={() => {
                   void handleLoginInBrowser();
@@ -144,13 +144,13 @@ export function CaptureModeCard(props: {
               </button>
             ) : null}
             {isAuthorized ? (
-              <span className="inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold border border-accent-green-light bg-accent-green-bg text-accent-green">
+              <span className="inline-flex items-center rounded-full px-2 py-1 text-[0.625rem] font-semibold border border-accent-green-light bg-accent-green-bg text-accent-green">
                 Logged in
               </span>
             ) : null}
             <button
               type="button"
-              className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
+              className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[0.6875rem] font-semibold disabled:opacity-50"
               disabled={authBusy}
               onClick={() => void onLogout?.()}
             >
@@ -175,15 +175,15 @@ export function CollectorMigrationCard(props: {
   return (
     <div className="rounded-lg border border-border-subtle bg-bg-secondary p-3">
       <div className="text-xs font-semibold text-text-secondary">Collector migration</div>
-      <div className="mt-1 text-[11px] text-text-tertiary">
+      <div className="mt-1 text-[0.6875rem] text-text-tertiary">
         Canonical root: <span className="font-mono">{migrationStatus?.canonicalRoot ?? '~/.agents/otel-collector'}</span>
       </div>
-      <div className="mt-1 text-[11px] text-text-tertiary">
+      <div className="mt-1 text-[0.6875rem] text-text-tertiary">
         Legacy root: <span className="font-mono">{migrationStatus?.legacyRoot ?? '~/.agents/otel/collector'}</span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${migrationStatus?.migrationRequired
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold border ${migrationStatus?.migrationRequired
             ? 'bg-accent-amber-bg text-accent-amber border-accent-amber-light'
             : 'bg-accent-green-bg text-accent-green border-accent-green-light'
             }`}
@@ -191,7 +191,7 @@ export function CollectorMigrationCard(props: {
           {migrationStatus?.migrationRequired ? 'Migration required' : 'Canonicalized'}
         </span>
         {migrationStatus?.status ? (
-          <span className="inline-flex items-center rounded-full border border-border-subtle bg-bg-tertiary px-2 py-0.5 text-[11px] text-text-secondary">
+          <span className="inline-flex items-center rounded-full border border-border-subtle bg-bg-tertiary px-2 py-0.5 text-[0.6875rem] text-text-secondary">
             Status: {migrationStatus.status}
           </span>
         ) : null}
@@ -201,7 +201,7 @@ export function CollectorMigrationCard(props: {
         <ActionButton disabled={migrationBusy} onClick={onDryRun}>Dry run</ActionButton>
         <ActionButton disabled={migrationBusy} onClick={onRollback}>Rollback</ActionButton>
       </div>
-      {migrationStatus?.lastError ? <div className="mt-2 text-[11px] text-accent-red">{migrationStatus.lastError}</div> : null}
+      {migrationStatus?.lastError ? <div className="mt-2 text-[0.6875rem] text-accent-red">{migrationStatus.lastError}</div> : null}
     </div>
   );
 }
@@ -212,7 +212,7 @@ export function AutoIngestToggleCard(props: { enabled: boolean; onToggle: (enabl
     <div className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-bg-secondary p-3">
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium text-text-secondary">Enable auto‑ingest</span>
-        <span className="text-[11px] text-text-tertiary">Process logs in background</span>
+        <span className="text-[0.6875rem] text-text-tertiary">Process logs in background</span>
       </div>
       <Toggle checked={enabled} onCheckedChange={(checked) => onToggle(checked)} aria-label="Enable auto-ingest" />
     </div>
@@ -231,7 +231,7 @@ export function DiscoveryCard(props: {
     <div className="rounded-lg border border-border-subtle bg-bg-secondary p-3">
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${autoIngestEnabled
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold ${autoIngestEnabled
             ? 'bg-accent-green-bg text-accent-green border border-accent-green-light'
             : 'bg-bg-tertiary text-text-tertiary border border-border-subtle'
             }`}
@@ -239,23 +239,23 @@ export function DiscoveryCard(props: {
           {autoIngestEnabled ? 'Active' : 'Inactive'}
         </span>
         {discoveredSummary ? (
-          <span className="inline-flex items-center rounded-full border border-border-subtle bg-bg-tertiary px-2 py-0.5 text-[11px] font-medium text-text-secondary">
+          <span className="inline-flex items-center rounded-full border border-border-subtle bg-bg-tertiary px-2 py-0.5 text-[0.6875rem] font-medium text-text-secondary">
             {discoveredSummary}
           </span>
         ) : null}
       </div>
-      <div className="text-[11px] text-text-tertiary">Add source folders quickly, then save watch paths. Open advanced editor only if you need manual path tuning.</div>
+      <div className="text-[0.6875rem] text-text-tertiary">Add source folders quickly, then save watch paths. Open advanced editor only if you need manual path tuning.</div>
       <div className="mt-2 flex items-center gap-2">
         <button
           type="button"
-          className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold"
+          className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[0.6875rem] font-semibold"
           onClick={onAutoDetect}
           disabled={detectionStatus === 'searching'}
         >
           {detectionStatus === 'searching' ? 'Auto-detecting…' : 'Auto-detect paths'}
         </button>
         {statusMessage ? (
-          <span className={`text-[11px] ${detectionStatus === 'error' ? 'text-accent-red' : detectionStatus === 'not-found' ? 'text-accent-orange' : 'text-text-tertiary'}`}>
+          <span className={`text-[0.6875rem] ${detectionStatus === 'error' ? 'text-accent-red' : detectionStatus === 'not-found' ? 'text-accent-orange' : 'text-text-tertiary'}`}>
             {statusMessage}
           </span>
         ) : null}
@@ -298,7 +298,7 @@ export function WatchPathsCard(props: {
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs font-semibold text-text-secondary">Watch Paths</div>
         <HelpPopover
-          content={<div className="space-y-1"><p>Locations where Narrator looks for AI conversation logs.</p><p className="font-mono text-[10px] text-text-muted">~/.codex/sessions</p></div>}
+          content={<div className="space-y-1"><p>Locations where Narrator looks for AI conversation logs.</p><p className="font-mono text-[0.625rem] text-text-muted">~/.codex/sessions</p></div>}
         />
       </div>
 
@@ -311,7 +311,7 @@ export function WatchPathsCard(props: {
       <div className="mt-3 flex items-center gap-2">
         <button
           type="button"
-          className="inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-accent-blue-light transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
+          className="inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2 py-1 text-[0.6875rem] font-semibold text-accent-blue hover:bg-accent-blue-light transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
           onClick={onSaveWatchPaths}
         >
           Save watch paths
@@ -338,7 +338,7 @@ function ActionButton(props: { children: ReactNode; disabled?: boolean; onClick:
   return (
     <button
       type="button"
-      className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[11px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 disabled:opacity-50"
+      className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[0.6875rem] font-semibold transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 disabled:opacity-50"
       disabled={disabled}
       onClick={() => void onClick()}
     >

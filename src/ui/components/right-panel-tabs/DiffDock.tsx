@@ -106,7 +106,7 @@ export function DiffDock({
           </button>
           <button
             type="button"
-            className="btn-secondary-soft inline-flex items-center rounded-md px-1.5 py-1 text-[10px] text-text-tertiary"
+            className="btn-secondary-soft inline-flex items-center rounded-md px-1.5 py-1 text-[0.625rem] text-text-tertiary"
             onClick={onTogglePip}
             title={diffPip ? 'Dock diff panel' : 'Pop out diff panel'}
             aria-label={diffPip ? 'Dock diff panel' : 'Pop out diff panel'}
@@ -115,7 +115,7 @@ export function DiffDock({
           </button>
         </div>
         {diffExpanded && !diffPip && (
-          <div className="max-h-[400px] overflow-auto border-t border-border-light">
+          <div className="max-h-[25rem] overflow-auto border-t border-border-light">
             <DiffViewer
               diffText={diffText}
               loading={loadingDiff}
@@ -133,7 +133,7 @@ export function DiffDock({
             aria-modal="true"
             aria-labelledby="diff-dock-dialog-title"
             tabIndex={-1}
-            className="h-[min(70vh,680px)] w-[min(92vw,860px)] sm:h-[min(74vh,740px)] sm:w-[min(94vw,940px)] xl:h-[min(78vh,820px)] xl:w-[min(96vw,1080px)] overflow-hidden rounded-xl border border-border-light bg-bg-secondary shadow-lg"
+            className="h-[min(70vh,42.5rem)] w-[min(92vw,53.75rem)] sm:h-[min(74vh,46.25rem)] sm:w-[min(94vw,58.75rem)] xl:h-[min(78vh,51.25rem)] xl:w-[min(96vw,67.5rem)] overflow-hidden rounded-xl border border-border-light bg-bg-secondary shadow-lg"
           >
             <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2 text-xs text-text-secondary">
               <span id="diff-dock-dialog-title" className="min-w-0 truncate font-medium">
@@ -141,14 +141,14 @@ export function DiffDock({
               </span>
               <button
                 type="button"
-                className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[10px]"
+                className="btn-secondary-soft inline-flex items-center rounded-md px-2 py-1 text-[0.625rem]"
                 onClick={onDock}
                 aria-label="Close diff dialog and dock panel"
               >
                 Dock
               </button>
             </div>
-            <div className="h-[calc(100%-37px)] overflow-auto">
+            <div className="h-[calc(100%-2.3125rem)] overflow-auto">
               <DiffViewer
                 diffText={diffText}
                 loading={loadingDiff}

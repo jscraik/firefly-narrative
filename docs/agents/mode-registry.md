@@ -1,46 +1,59 @@
 # Mode Registry
 
-This registry tracks the mapping between `Mode` values and their view family/section as part of the "Updated UI Views" implementation.
+## Table of Contents
 
-| Mode | Family | Section | Description |
+- [Mode Map](#mode-map)
+- [Contract Status](#contract-status)
+- [Current Product Posture](#current-product-posture)
+
+## Mode Map
+
+This registry tracks the mapping between `Mode` values and their view family and section in the redesigned Trace Narrative shell.
+
+| Mode | Family | Section | Current label |
 | :--- | :--- | :--- | :--- |
-| `dashboard` | **Anchor** | Overview | Main analytics dashboard |
-| `work-graph` | Cockpit | Overview | Workspace relationship graph |
-| `assistant` | Cockpit | Overview | Story Copilot interactive assistant |
-| `live` | Cockpit | Monitor | Live trace feed |
-| `sessions` | Cockpit | Monitor | Session history and imports |
-| `transcripts` | Cockpit | Monitor | Transcript lens and analysis |
-| `tools` | Cockpit | Monitor | Tool usage and pulse |
-| `costs` | Cockpit | Monitor | Operational costs tracking |
-| `timeline` | Cockpit | Monitor | Decision and event timeline |
-| `repo` | **Anchor** | Workspace | Individual repository evidence view |
-| `repo-pulse` | Cockpit | Workspace | Cross-repository pulse and health |
-| `diffs` | Cockpit | Workspace | Diff review and staging |
-| `snapshots` | Cockpit | Workspace | Checkpoints and repo snapshots |
-| `worktrees` | Cockpit | Workspace | Isolated parallel branch workspaces |
-| `attribution` | Cockpit | Workspace | Trace lens and attribution logic |
-| `skills` | Cockpit | Ecosystem | Agent skills and capabilities |
-| `agents` | Cockpit | Ecosystem | Agent roles and definitions |
-| `memory` | Cockpit | Ecosystem | Shared memory and context graph |
-| `hooks` | Cockpit | Ecosystem | External hooks and triggers |
-| `setup` | Cockpit | Ecosystem | Tooling and environment setup |
-| `ports` | Cockpit | Ecosystem | Port and service mapping |
-| `hygiene` | Cockpit | Health | Resource cleanup and hygiene |
-| `deps` | Cockpit | Health | Dependency watch and security |
-| `env` | Cockpit | Health | Environment variable hygiene |
-| `status` | Cockpit | Health | Trust center and capture status |
-| `docs` | **Anchor** | Configure | Documentation and guides |
-| `settings` | Cockpit | Configure | Application settings |
+| `dashboard` | Anchor | Narrative | Narrative Brief |
+| `work-graph` | Surface | Narrative | Story Map |
+| `assistant` | Surface | Narrative | Codex Copilot |
+| `live` | Surface | Evidence | Live Capture |
+| `sessions` | Surface | Evidence | Sessions |
+| `transcripts` | Surface | Evidence | Transcript Lens |
+| `tools` | Surface | Evidence | Tool Pulse |
+| `costs` | Surface | Evidence | Cost Watch |
+| `timeline` | Surface | Evidence | Causal Timeline |
+| `repo` | Anchor | Workspace | `Repo Evidence` |
+| `repo-pulse` | Surface | Workspace | Workspace Pulse |
+| `diffs` | Surface | Workspace | Diff Review |
+| `snapshots` | Surface | Workspace | Checkpoints |
+| `worktrees` | Surface | Workspace | `Worktrees` |
+| `attribution` | Surface | Workspace | Attribution Lens |
+| `skills` | Surface | Integrations | Codex Skills |
+| `agents` | Surface | Integrations | Agent Roles |
+| `memory` | Surface | Integrations | Memory Graph |
+| `hooks` | Surface | Integrations | Hooks |
+| `setup` | Surface | Integrations | Setup |
+| `ports` | Surface | Integrations | Ports |
+| `hygiene` | Surface | Health | Hygiene |
+| `deps` | Surface | Health | Dependency Watch |
+| `env` | Surface | Health | `Env Hygiene` |
+| `status` | Surface | Health | Trust Center |
+| `docs` | Anchor | Configure | Docs |
+| `settings` | Surface | Configure | Settings |
 
 ## Contract Status
 
-- [x] Cockpit View definition (dynamic)
-- [x] Mode-to-Section mapping
-- [ ] Narrative-led auto-switching rules
+- [x] Anchor-mode shell preserved
+- [x] Section taxonomy updated to narrative-first labels
+- [x] Hygiene and Settings retained as first-class views
+- [ ] Signature provenance visualization added
+- [ ] Multi-provider shell expansion after Codex-first stabilization
 
-## Automation Rules
+## Current Product Posture
 
-- **Low Confidence Narrative Recall**: Automatically trigger a secondary verification pass if narrative confidence drops below 60%.
-- **High Drift Delta Alert**: Flag branches where the `diff` surface area exceeds narrative coverage by more than 40%.
-- **Actionable Projection Verification**: Verify that every narrative projection has at least one associated `Task` or `Linear` ticket link.
-- **Protocol Enforcer**: Block branch completion if mandatory narrative "Evidence" links for core modules are missing.
+The shell is currently Codex-first.
+
+That means:
+
+- the dashboard and assistant copy should privilege Codex workflows
+- other providers may still exist in the system, but they are not the primary shell story yet
+- future provider expansion should happen after the Codex narrative flow is clearly trustworthy

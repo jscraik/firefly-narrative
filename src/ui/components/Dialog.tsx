@@ -56,7 +56,7 @@ export function Dialog({
         />
         <DialogPrimitive.Content
           className={clsx(
-            'fixed left-1/2 top-1/2 z-50 w-[400px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2',
+            'fixed left-1/2 top-1/2 z-50 w-[25rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2',
             'rounded-xl border border-border-light bg-bg-secondary p-5 shadow-xl',
             'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
             'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95'

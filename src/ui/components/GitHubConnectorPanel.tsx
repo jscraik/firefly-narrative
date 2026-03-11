@@ -22,7 +22,7 @@ export function GitHubConnectorPanel(props: GitHubConnectorPanelProps) {
       <div className="mt-4 flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-medium text-text-secondary">Enable GitHub metadata context</span>
-          <span className="text-[10px] text-text-tertiary">Opt-in only. Untrusted text is sanitized and redacted.</span>
+          <span className="text-[0.625rem] text-text-tertiary">Opt-in only. Untrusted text is sanitized and redacted.</span>
         </div>
         <Toggle checked={enabled} onCheckedChange={onToggle} aria-label="Toggle GitHub connector context" />
       </div>

@@ -1,8 +1,8 @@
 import type { CaptureReliabilityStatus } from '../../core/tauri/ingestConfig';
-import type { CockpitMode, DataAuthorityTier, SessionExcerpt, BranchNarrative, Snapshot } from '../../core/types';
+import type { SurfaceMode, DataAuthorityTier, SessionExcerpt, BranchNarrative, Snapshot } from '../../core/types';
 import { evaluateDriftDelta, type DriftReport } from '../../core/narrative/automation';
 import type { RepoState } from '../../hooks/useRepoLoader';
-import { describeCockpitTrust, deriveCockpitTrustState } from './dashboardState';
+import { describeSurfaceTrust, deriveSurfaceTrustState } from './dashboardState';
 
 function formatConfidence(confidence?: number): string {
   if (confidence === undefined) return 'unknown';
@@ -18,35 +18,35 @@ function calculateDeterministicCost(session: SessionExcerpt): string {
 }
 
 // Re-export so existing consumers (tests, views) can still import from this module
-export type { CockpitMode } from '../../core/types';
+export type { SurfaceMode } from '../../core/types';
 
-export type CockpitTone = 'blue' | 'violet' | 'green' | 'amber' | 'red' | 'slate';
+export type SurfaceTone = 'blue' | 'violet' | 'green' | 'amber' | 'red' | 'slate';
 
-export type CockpitAuthorityCue = {
+export type SurfaceAuthorityCue = {
   authorityTier: DataAuthorityTier;
   authorityLabel: string;
 };
 
-export interface CockpitMetric {
+export interface SurfaceMetric {
   label: string;
   value: string;
   detail: string;
-  tone: CockpitTone;
+  tone: SurfaceTone;
   authorityTier?: DataAuthorityTier;
   authorityLabel?: string;
 }
 
-export interface CockpitHighlight {
+export interface SurfaceHighlight {
   eyebrow: string;
   title: string;
   body: string;
-  tone: CockpitTone;
+  tone: SurfaceTone;
   authorityTier?: DataAuthorityTier;
   authorityLabel?: string;
-  action?: CockpitAction;
+  action?: SurfaceAction;
 }
 
-export type CockpitAction = {
+export type SurfaceAction = {
   type: 'open_evidence';
   evidenceId: string;
 } | {
@@ -54,30 +54,30 @@ export type CockpitAction = {
   commitSha: string;
 } | {
   type: 'navigate';
-  mode: CockpitMode;
+  mode: SurfaceMode;
 };
 
-export interface CockpitActivityItem {
+export interface SurfaceActivityItem {
   title: string;
   meta: string;
   detail: string;
   status: 'ok' | 'warn' | 'critical' | 'info';
   authorityTier?: DataAuthorityTier;
   authorityLabel?: string;
-  action?: CockpitAction;
+  action?: SurfaceAction;
 }
 
-export interface CockpitTableRow {
+export interface SurfaceTableRow {
   primary: string;
   secondary: string;
   tertiary: string;
   authorityTier?: DataAuthorityTier;
   authorityLabel?: string;
-  action?: CockpitAction;
+  action?: SurfaceAction;
 }
 
-export interface CockpitViewModel {
-  mode: CockpitMode;
+export interface NarrativeSurfaceViewModel {
+  mode: SurfaceMode;
   section: string;
   title: string;
   subtitle: string;
@@ -86,19 +86,19 @@ export interface CockpitViewModel {
   heroAuthorityTier: DataAuthorityTier;
   heroAuthorityLabel: string;
   trustState: 'healthy' | 'degraded';
-  metrics: Array<CockpitMetric & CockpitAuthorityCue>;
+  metrics: Array<SurfaceMetric & SurfaceAuthorityCue>;
   highlightsTitle: string;
-  highlights: Array<CockpitHighlight & CockpitAuthorityCue>;
+  highlights: Array<SurfaceHighlight & SurfaceAuthorityCue>;
   activityTitle: string;
-  activity: Array<CockpitActivityItem & CockpitAuthorityCue>;
+  activity: Array<SurfaceActivityItem & SurfaceAuthorityCue>;
   tableTitle: string;
   tableColumns: [string, string, string];
-  tableRows: Array<CockpitTableRow & CockpitAuthorityCue>;
+  tableRows: Array<SurfaceTableRow & SurfaceAuthorityCue>;
   footerNote: string;
   driftReport?: import('../../core/narrative/automation').DriftReport;
 }
 
-interface CockpitContext {
+interface SurfaceContext {
   repoName: string;
   repoPath: string;
   commitCount: number;
@@ -114,26 +114,26 @@ interface CockpitContext {
   captureReliabilityStatus: CaptureReliabilityStatus | null | undefined;
   trustState: 'healthy' | 'degraded';
   trustLabel: string;
-  trustAuthority: CockpitAuthorityCue;
+  trustAuthority: SurfaceAuthorityCue;
   driftReport?: DriftReport;
 }
 
-const FALLBACK_AUTHORITY: CockpitAuthorityCue = {
+const FALLBACK_AUTHORITY: SurfaceAuthorityCue = {
   authorityTier: 'static_scaffold',
-  authorityLabel: 'Cockpit static scaffold',
+  authorityLabel: 'Surface scaffold',
 };
 
-const LOCAL_REPO_AUTHORITY: CockpitAuthorityCue = {
+const LOCAL_REPO_AUTHORITY: SurfaceAuthorityCue = {
   authorityTier: 'derived_summary',
   authorityLabel: 'Derived from local repo state',
 };
 
-const LIVE_CAPTURE_AUTHORITY: CockpitAuthorityCue = {
+const LIVE_CAPTURE_AUTHORITY: SurfaceAuthorityCue = {
   authorityTier: 'live_capture',
   authorityLabel: 'Live capture reliability diagnostics',
 };
 
-const OTEL_ONLY_AUTHORITY: CockpitAuthorityCue = {
+const OTEL_ONLY_AUTHORITY: SurfaceAuthorityCue = {
   authorityTier: 'derived_summary',
   authorityLabel: 'Derived from baseline OTEL-only telemetry',
 };
@@ -141,13 +141,13 @@ const OTEL_ONLY_AUTHORITY: CockpitAuthorityCue = {
 
 function inferCaptureAuthority(
   captureReliabilityStatus?: CaptureReliabilityStatus | null,
-): CockpitAuthorityCue {
+): SurfaceAuthorityCue {
   if (!captureReliabilityStatus) {
     return LOCAL_REPO_AUTHORITY;
   }
 
   if (captureReliabilityStatus.mode === 'OTEL_ONLY') {
-    const trustState = deriveCockpitTrustState(captureReliabilityStatus);
+    const trustState = deriveSurfaceTrustState(captureReliabilityStatus);
     return {
       ...OTEL_ONLY_AUTHORITY,
       authorityLabel:
@@ -163,15 +163,15 @@ function inferCaptureAuthority(
   };
 }
 
-type CockpitAuthoritySeed = {
+type SurfaceAuthoritySeed = {
   authorityTier?: DataAuthorityTier;
   authorityLabel?: string;
 };
 
-function normalizeAuthority<T extends CockpitAuthoritySeed>(
+function normalizeAuthority<T extends SurfaceAuthoritySeed>(
   item: T,
-  fallback: CockpitAuthorityCue,
-): T & CockpitAuthorityCue {
+  fallback: SurfaceAuthorityCue,
+): T & SurfaceAuthorityCue {
   return {
     ...item,
     authorityTier: item.authorityTier ?? fallback.authorityTier,
@@ -181,8 +181,8 @@ function normalizeAuthority<T extends CockpitAuthoritySeed>(
 
 function inferAuthorityFromText(
   text: string,
-  context: CockpitContext,
-): CockpitAuthorityCue {
+  context: SurfaceContext,
+): SurfaceAuthorityCue {
   const lowered = text.toLowerCase();
   if (lowered.includes('capture') || lowered.includes('trust') || lowered.includes('stream')) {
     if (context.captureReliabilityMode === 'OTEL_ONLY') {
@@ -210,9 +210,9 @@ function inferAuthorityFromText(
 }
 
 function normalizeMetric(
-  metric: CockpitMetric,
-  context: CockpitContext,
-): CockpitMetric & CockpitAuthorityCue {
+  metric: SurfaceMetric,
+  context: SurfaceContext,
+): SurfaceMetric & SurfaceAuthorityCue {
   return normalizeAuthority(
     metric,
     inferAuthorityFromText(`${metric.label} ${metric.detail} ${metric.value}`, context),
@@ -220,9 +220,9 @@ function normalizeMetric(
 }
 
 function normalizeHighlight(
-  highlight: CockpitHighlight,
-  context: CockpitContext,
-): CockpitHighlight & CockpitAuthorityCue {
+  highlight: SurfaceHighlight,
+  context: SurfaceContext,
+): SurfaceHighlight & SurfaceAuthorityCue {
   return normalizeAuthority(
     highlight,
     inferAuthorityFromText(`${highlight.eyebrow} ${highlight.title} ${highlight.body}`, context),
@@ -235,14 +235,14 @@ type ActivitySeed = {
   value: string;
   time: string;
   description: string;
-  authority: CockpitAuthorityCue;
-  action?: CockpitAction;
+  authority: SurfaceAuthorityCue;
+  action?: SurfaceAction;
 };
 
 function normalizeActivity(
   activity: ActivitySeed,
-): CockpitActivityItem & CockpitAuthorityCue {
-  let status: CockpitActivityItem['status'] = 'info';
+): SurfaceActivityItem & SurfaceAuthorityCue {
+  let status: SurfaceActivityItem['status'] = 'info';
   const text = `${activity.label} ${activity.value} ${activity.description}`.toLowerCase();
   
   if (text.includes('fail') || text.includes('critical') || text.includes('error') || text.includes('drift')) {
@@ -265,16 +265,16 @@ function normalizeActivity(
 }
 
 function normalizeActivityItem(
-  activity: CockpitActivityItem,
-  context: CockpitContext,
-): CockpitActivityItem & CockpitAuthorityCue {
+  activity: SurfaceActivityItem,
+  context: SurfaceContext,
+): SurfaceActivityItem & SurfaceAuthorityCue {
   return normalizeAuthority(
     activity,
     inferAuthorityFromText(`${activity.title} ${activity.meta} ${activity.detail}`, context),
   );
 }
 
-function mapDriftStatusToActivityStatus(status: DriftReport['status']): CockpitActivityItem['status'] {
+function mapDriftStatusToActivityStatus(status: DriftReport['status']): SurfaceActivityItem['status'] {
   switch (status) {
     case 'critical':
       return 'critical';
@@ -286,30 +286,30 @@ function mapDriftStatusToActivityStatus(status: DriftReport['status']): CockpitA
 }
 
 function normalizeTableRow(
-  row: CockpitTableRow,
-  context: CockpitContext,
-): CockpitTableRow & CockpitAuthorityCue {
+  row: SurfaceTableRow,
+  context: SurfaceContext,
+): SurfaceTableRow & SurfaceAuthorityCue {
   return normalizeAuthority(
     row,
     inferAuthorityFromText(`${row.primary} ${row.secondary} ${row.tertiary}`, context),
   );
 }
 
-type CockpitDefinition = {
+type SurfaceDefinition = {
   section: string;
   title: string;
-  subtitle: (context: CockpitContext) => string;
-  heroTitle: (context: CockpitContext) => string;
-  heroBody: (context: CockpitContext) => string;
-  metrics: (context: CockpitContext) => CockpitMetric[];
+  subtitle: (context: SurfaceContext) => string;
+  heroTitle: (context: SurfaceContext) => string;
+  heroBody: (context: SurfaceContext) => string;
+  metrics: (context: SurfaceContext) => SurfaceMetric[];
   highlightsTitle: string;
-  highlights: (context: CockpitContext) => CockpitHighlight[];
+  highlights: (context: SurfaceContext) => SurfaceHighlight[];
   activityTitle: string;
-  activity: (context: CockpitContext) => CockpitActivityItem[];
+  activity: (context: SurfaceContext) => SurfaceActivityItem[];
   tableTitle: string;
   tableColumns: [string, string, string];
-  tableRows: (context: CockpitContext) => CockpitTableRow[];
-  footerNote: (context: CockpitContext) => string;
+  tableRows: (context: SurfaceContext) => SurfaceTableRow[];
+  footerNote: (context: SurfaceContext) => string;
 };
 
 function getRepoName(repoState: RepoState): string {
@@ -330,13 +330,13 @@ function buildContext(
   repoState: RepoState,
   captureReliabilityStatus?: CaptureReliabilityStatus | null,
   autoIngestEnabled?: boolean,
-): CockpitContext {
+): SurfaceContext {
   const commitCount = repoState.status === 'ready' ? Math.max(repoState.model.timeline.length, 1) : 47;
   const sessionExcerpts = repoState.status === 'ready' ? (repoState.model.sessionExcerpts ?? []) : [];
   const sessionCount = repoState.status === 'ready'
     ? Math.max(sessionExcerpts.length, 3)
     : 12;
-  const trust = describeCockpitTrust(captureReliabilityStatus);
+  const trust = describeSurfaceTrust(captureReliabilityStatus);
   const hasLiveRepoData = repoState.status === 'ready';
 
   const changedFiles = repoState.status === 'ready'
@@ -369,14 +369,14 @@ function buildContext(
   };
 }
 
-const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
+const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
   'work-graph': {
     section: 'Narrative',
-    title: 'Work Graph',
-    subtitle: () => 'Cross-repo activity patterns, dormant branches, and operational hotspots.',
-    heroTitle: (context) => `See where ${context.repoName} fits inside the wider workspace graph.`,
+    title: 'Story Map',
+    subtitle: () => 'Cross-repo branch narratives, trust hotspots, and evidence gaps that deserve attention.',
+    heroTitle: (context) => `See where ${context.repoName} fits inside the wider story map.`,
     heroBody: (_context) =>
-      'This view maps active repos, sleeping branches, and attention clusters so the workspace feels readable at a glance instead of buried in lists.',
+      'This view maps active repos, sleeping branches, and fragile trust lanes so the workspace reads like connected evidence chains instead of disconnected status cards.',
     metrics: (context) => [
       { label: 'Active repos', value: '8', detail: '4 pushed in the last 24h', tone: 'blue' },
       { label: 'Dormant lanes', value: '3', detail: 'Need explicit follow-up', tone: 'amber' },
@@ -399,13 +399,13 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     ],
     highlightsTitle: 'Graph lenses',
     highlights: () => [
-      { eyebrow: 'Hot path', title: 'Launch + telemetry cluster', body: 'Multiple recent branches converge on dashboard, telemetry, and rollout verification surfaces.', tone: 'violet' },
+      { eyebrow: 'Hot path', title: 'Evidence + telemetry knot', body: 'Recent work keeps converging on dashboard, capture, and rollout verification lanes. That overlap is where trace confidence is won or lost.', tone: 'violet' },
       { eyebrow: 'Dormant risk', title: 'Spec drift on older plans', body: 'Older planning artifacts are aging faster than implementation notes. Treat them as archival until revalidated.', tone: 'amber' },
       { eyebrow: 'Narrative moat', title: 'Trace-first provenance lane', body: 'Keep explainability and evidence trails visible at the graph level so this view feels more trustworthy than a generic activity chart.', tone: 'blue' },
     ],
     activityTitle: 'Recent graph movements',
     activity: (context) => [
-      { title: 'trace-narrative', meta: 'now', detail: `${context.commitCount} commits contribute to the active story loop`, status: 'ok' },
+      { title: 'trace-narrative', meta: 'now', detail: `${context.commitCount} commits contribute to the active narrative loop`, status: 'ok' },
       { title: 'coding-harness', meta: '42m ago', detail: 'Environment gate cleared after rollout evidence refresh', status: 'info' },
       { title: 'config/codex', meta: '1h ago', detail: 'Automation governance changes touched multiple operator surfaces', status: 'warn' },
       { title: 'otel-collector', meta: '2h ago', detail: 'Telemetry hardening remains a shared dependency for trust-heavy views', status: 'info' },
@@ -413,20 +413,20 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     tableTitle: 'Repos needing attention',
     tableColumns: ['Repository', 'Pressure', 'Next move'],
     tableRows: (context) => [
-      { primary: context.repoName, secondary: context.hasLiveRepoData ? 'Active story' : 'Preview', tertiary: `Tracking ${context.commitCount} commits and ${context.sessionCount} sessions.` },
+      { primary: context.repoName, secondary: context.hasLiveRepoData ? 'Active evidence lane' : 'Preview', tertiary: `Tracking ${context.commitCount} commits and ${context.sessionCount} sessions.` },
       { primary: 'coding-harness', secondary: 'Stable baseline', tertiary: 'High-confidence automated benchmarks' },
       { primary: 'config/codex', secondary: 'Rule lane', tertiary: 'Guardrails aligned with recent rollout' },
       { primary: 'otel-collector', secondary: 'System bus', tertiary: 'Telemetry source for all views' },
     ],
-    footerNote: () => 'Recommended next step: use this page as the workspace triage entry point, then drop into repo mode for deep narrative evidence.',
+    footerNote: () => 'Recommended next step: use this page to spot the weak joins first, then drop into Repo Evidence for the underlying branch story.',
   },
   assistant: {
     section: 'Narrative',
     title: 'Codex Copilot',
     subtitle: () => 'A Codex-first copilot for repos, sessions, costs, and hygiene.',
-    heroTitle: (context) => `Turn ${context.repoName} into a Codex-grounded control surface.`,
+    heroTitle: (context) => `Turn ${context.repoName} into a Codex-grounded narrative partner.`,
     heroBody: () =>
-      'This assistant works as an orchestration layer, not a toy chat box. It starts from Codex evidence and keeps provider expansion as an explicit later step.',
+      'This assistant is here to reconstruct what changed, why it changed, and how confident we should be. It starts from Codex evidence and keeps provider expansion as an explicit later step.',
     metrics: (context) => [
       { label: 'Context packs', value: '6', detail: 'Repo, session, cost, hooks, hygiene, docs', tone: 'blue' },
       { label: 'Provider phase', value: 'Codex-first', detail: 'Additional providers come after the core shell feels trustworthy', tone: 'violet' },
@@ -441,22 +441,22 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     ],
     highlightsTitle: 'Suggested asks',
     highlights: (context) => [
-      { 
+      {
         eyebrow: 'Explain', 
         title: 'Why did this branch change?', 
-        body: `Bridge from cockpit context into ${context.repoName}'s narrative evidence and linked sessions.`, 
+        body: `Bridge from this surface into ${context.repoName}'s repo evidence, linked sessions, and the claims we can actually support.`,
         tone: 'violet',
         action: context.narrative?.evidenceLinks[0] ? { type: 'open_evidence' as const, evidenceId: context.narrative.evidenceLinks[0].id } : undefined
       },
-      { eyebrow: 'Triage', title: 'What needs attention today?', body: 'Use workspace health, cost drift, and recent activity to recommend the next operator move.', tone: 'blue' },
-      { eyebrow: 'Protect', title: 'What is risky to clean up?', body: 'Make cleanup suggestions explicit about blast radius, rollback posture, and hidden dependencies.', tone: 'amber' },
+      { eyebrow: 'Triage', title: 'What needs attention today?', body: 'Use trust posture, workspace health, and recent activity to recommend the next safe move, not just the loudest move.', tone: 'blue' },
+      { eyebrow: 'Protect', title: 'What is risky to clean up?', body: 'Make cleanup suggestions explicit about blast radius, rollback posture, and hidden dependencies before anything looks routine.', tone: 'amber' },
     ],
     activityTitle: 'Conversation starters',
     activity: (context) => [
       ...context.sessionExcerpts.slice(0, 2).map((s) => ({
         title: `Discuss ${s.tool || 'recent'} session`,
         meta: 'Prompt',
-        detail: s.messages[0]?.text.slice(0, 50) + '...',
+        detail: `${s.messages[0]?.text.slice(0, 50)}...`,
         status: 'info' as const,
         authorityTier: 'derived_summary' as const,
         authorityLabel: 'Suggested from recent activity',
@@ -478,8 +478,8 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
         authorityTier: 'system_signal' as const,
         action: { type: 'navigate' as const, mode: 'snapshots' as const }
       }] : []),
-      { title: 'Ask about repo drift', meta: 'Prompt', detail: `Summarize the biggest deltas in ${context.repoName}.`, status: context.hasLiveRepoData ? 'ok' : 'warn' },
-      { title: 'Review telemetry health', meta: 'Prompt', detail: context.trustLabel, status: context.trustState === 'healthy' ? 'ok' : 'warn' },
+      { title: 'Ask for the branch story', meta: 'Prompt', detail: `Summarize the biggest deltas in ${context.repoName} and explain the evidence behind them.`, status: context.hasLiveRepoData ? 'ok' : 'warn' },
+      { title: 'Review trust posture', meta: 'Prompt', detail: context.trustLabel, status: context.trustState === 'healthy' ? 'ok' : 'warn' },
     ],
     tableTitle: 'Available context sources',
     tableColumns: ['Source', 'Role', 'Why it matters'],
@@ -687,7 +687,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     section: 'Evidence',
     title: 'Costs',
     subtitle: () => 'Model spend, burn rate, projection, and anomaly windows.',
-    heroTitle: () => 'Cost visibility is part of the operator cockpit, not an afterthought.',
+    heroTitle: () => 'Cost visibility is part of the narrative workstation, not an afterthought.',
     heroBody: () =>
       'This page turns cost analytics into a calmer, more decision-oriented surface: current burn, which models dominate it, and where a budget alert should trigger follow-up.',
     metrics: (context) => [
@@ -796,7 +796,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
         eyebrow: 'Insight',
         title: h.title,
         body: h.whyThisMatters,
-        tone: 'blue' as CockpitTone
+        tone: 'blue' as SurfaceTone
       })) || [
         { eyebrow: 'Freshness', title: 'What changed recently?', body: 'Sort by recent commit activity to keep the workspace map aligned with actual attention.', tone: 'blue' },
         { eyebrow: 'Risk', title: 'Where is drift hiding?', body: 'Call out dirty or unpushed repos that look harmless until they block a later flow.', tone: 'amber' },
@@ -872,7 +872,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
       }),
       ...(context.changedFiles.length === 0 ? [
         { primary: 'src/App.tsx', secondary: 'Stable', tertiary: 'Controls shell routing and view orchestration' },
-        { primary: 'src/ui/views/CockpitView.tsx', secondary: 'Stable', tertiary: 'Defines the updated operator surfaces' }
+        { primary: 'src/ui/views/NarrativeSurfaceView.tsx', secondary: 'Stable', tertiary: 'Defines the updated operator surfaces' }
       ] : [])
     ],
     footerNote: () => 'Diffs page should reduce context-switch cost and make it obvious when repo mode is the right next step.',
@@ -903,7 +903,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
       meta: new Date(snap.atISO).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       detail: `${snap.filesChanged.length} files changed on ${snap.branch}`,
       status: (snap.type === 'automatic' ? 'info' : 'ok') as 'info' | 'ok'
-    })) as CockpitActivityItem[]).concat(context.snapshots.length === 0 ? [
+    })) as SurfaceActivityItem[]).concat(context.snapshots.length === 0 ? [
       { title: 'No snapshots captured', meta: 'Idle', detail: 'Snapshot engine is active but awaiting trigger', status: 'info' }
     ] : []),
     tableTitle: 'Snapshot inventory',
@@ -938,7 +938,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     ],
     activityTitle: 'Worktree watchlist',
     activity: () => [
-      { title: 'feature/cockpit-views', meta: 'dirty', detail: 'Active UI pass across shell and view routing', status: 'warn' },
+      { title: 'feature/narrative-surfaces', meta: 'dirty', detail: 'Active UI pass across shell and view routing', status: 'warn' },
       { title: 'main', meta: 'clean', detail: 'Safe fallback for verification and comparison', status: 'ok' },
       { title: 'release/checkpoint', meta: 'detached', detail: 'Needs review before any cleanup action', status: 'critical' },
       { title: 'telemetry-lane', meta: 'clean', detail: 'Useful for isolated reliability experiments', status: 'info' },
@@ -946,7 +946,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     tableTitle: 'Worktree inventory',
     tableColumns: ['Worktree', 'Status', 'Operator advice'],
     tableRows: () => [
-      { primary: 'feature/cockpit-views', secondary: 'Dirty', tertiary: 'Continue implementation and validate before prune' },
+      { primary: 'feature/narrative-surfaces', secondary: 'Dirty', tertiary: 'Continue implementation and validate before prune' },
       { primary: 'main', secondary: 'Clean', tertiary: 'Use as stable comparison point' },
       { primary: 'release/checkpoint', secondary: 'Detached', tertiary: 'Do not delete until intent is confirmed' },
       { primary: 'telemetry-lane', secondary: 'Clean', tertiary: 'Keep for reliability verification' },
@@ -995,7 +995,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     subtitle: () => 'Local skill inventory, quality cues, and discovery lanes.',
     heroTitle: () => 'Skills are part of the workstation, not external trivia.',
     heroBody: () =>
-      'This view promotes skill availability and quality signals into the cockpit. It should make local capabilities discoverable without becoming a marketplace.',
+      'This view promotes skill availability and quality signals into the workstation. It should make local capabilities discoverable without becoming a marketplace.',
     metrics: () => [
       { label: 'Installed skills', value: '82', detail: 'Across shared and repo-specific paths', tone: 'blue' },
       { label: 'Recently used', value: '14', detail: 'Touched in the last day', tone: 'violet' },
@@ -1010,7 +1010,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     ],
     activityTitle: 'Skill pulse',
     activity: () => [
-      { title: 'brainstorming', meta: 'active', detail: 'Used to define the new cockpit-view direction before implementation', status: 'ok' },
+      { title: 'brainstorming', meta: 'active', detail: 'Used to define the new surface direction before implementation', status: 'ok' },
       { title: 'diagram-cli', meta: 'recent', detail: 'Helpful for architecture-first routing before UI work', status: 'info' },
       { title: 'systematic-debugging', meta: 'idle', detail: 'Best reserved for failures rather than speculative use', status: 'info' },
       { title: 'ui-visual-regression', meta: 'next', detail: 'A good follow-up once visual parity and polish work deepens', status: 'warn' },
@@ -1021,7 +1021,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
       { primary: 'brainstorming', secondary: 'Scope decisions', tertiary: 'Use before committing to major UI structure' },
       { primary: 'diagram-cli', secondary: 'Architecture bootstrap', tertiary: 'Required for repo-first understanding' },
       { primary: 'baseline-ui', secondary: 'Visual consistency', tertiary: 'Good follow-up for polish pass' },
-      { primary: 'playwright-interactive', secondary: 'Visual QA', tertiary: 'Useful once cockpit routes render live' },
+      { primary: 'playwright-interactive', secondary: 'Visual QA', tertiary: 'Useful once surface routes render live' },
     ],
     footerNote: () => 'Skills view should help the operator choose the right workflow, not drown them in catalogue depth.',
   },
@@ -1055,8 +1055,8 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     tableColumns: ['Role', 'Why use it', 'Current fit'],
     tableRows: () => [
       { primary: 'worker', secondary: 'Bounded implementation task', tertiary: 'Good for isolated component work' },
-      { primary: 'design-implementation-reviewer', secondary: 'Visual discrepancy review', tertiary: 'Useful after the first cockpit pass lands' },
-      { primary: 'kieran-typescript-reviewer', secondary: 'Strict TS review', tertiary: 'Helpful after cockpit data wiring' },
+      { primary: 'design-implementation-reviewer', secondary: 'Visual discrepancy review', tertiary: 'Useful after the first surface pass lands' },
+      { primary: 'kieran-typescript-reviewer', secondary: 'Strict TS review', tertiary: 'Helpful after surface data wiring' },
       { primary: 'monitor', secondary: 'Long-running poll', tertiary: 'Only for external waits, not this UI pass' },
     ],
     footerNote: () => 'Agents page should help the operator decide when not to delegate just as much as when to do it.',
@@ -1084,7 +1084,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     activity: () => [
       { title: 'Dashboard v3 contract lane', meta: 'Relevant', detail: 'Useful for trust-state and workflow-spec routing guidance', status: 'ok' },
       { title: 'Repo naming drift', meta: 'Resolved', detail: 'trace-narrative is the active worktree; older names are historical', status: 'warn' },
-      { title: 'Telemetry hardening notes', meta: 'Relevant', detail: 'Support reliability messaging in cockpit surfaces', status: 'info' },
+      { title: 'Telemetry hardening notes', meta: 'Relevant', detail: 'Support reliability messaging across shared narrative surfaces', status: 'info' },
       { title: 'Unverified specifics', meta: 'Avoid', detail: 'Do not present older counts or paths as current without checking', status: 'critical' },
     ],
     tableTitle: 'Memory lanes',
@@ -1157,7 +1157,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
       { title: 'Architecture manifest present', meta: 'Pass', detail: 'Diagram artifacts were available before planning edits', status: 'ok' },
       { title: 'Learnings file read', meta: 'Pass', detail: 'Repo shell gotchas and tool patterns were loaded up front', status: 'ok' },
       { title: 'Config drift watch', meta: 'Caution', detail: 'Historical path drift still matters for docs and memory', status: 'warn' },
-      { title: 'Capabilities review', meta: 'Ongoing', detail: 'Keep Tauri authority narrow as cockpit breadth grows', status: 'info' },
+      { title: 'Capabilities review', meta: 'Ongoing', detail: 'Keep Tauri authority narrow as surface breadth grows', status: 'info' },
     ],
     tableTitle: 'Setup surfaces',
     tableColumns: ['Surface', 'Why it matters', 'Current posture'],
@@ -1173,7 +1173,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     section: 'Integrations',
     title: 'Ports',
     subtitle: () => 'Bound services, local addresses, and process ownership clues.',
-    heroTitle: () => 'Local network state belongs in the cockpit when it affects trust.',
+    heroTitle: () => 'Local network state belongs in the workstation when it affects trust.',
     heroBody: () =>
       'Here the ports surface becomes a lightweight debugging tool for local app servers, OTEL receivers, and automation webhooks.',
     metrics: () => [
@@ -1186,7 +1186,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     highlights: () => [
       { eyebrow: 'Health', title: 'What is listening right now?', body: 'Keep service ownership and purpose visible so troubleshooting starts from evidence.', tone: 'blue' },
       { eyebrow: 'Trust', title: 'Unknown listeners should stand out', body: 'Anything not clearly owned by the workspace deserves review, not a tiny footnote.', tone: 'amber' },
-      { eyebrow: 'Context', title: 'Tie ports back to features', body: 'When a webhook or app server matters to the UI, point directly to the affected cockpit view.', tone: 'violet' },
+      { eyebrow: 'Context', title: 'Tie ports back to features', body: 'When a webhook or app server matters to the UI, point directly to the affected narrative surface.', tone: 'violet' },
     ],
     activityTitle: 'Port activity',
     activity: () => [
@@ -1266,7 +1266,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     ],
     activityTitle: 'Dependency watchlist',
     activity: () => [
-      { title: 'React + Vite lane', meta: 'Stable', detail: 'Core UI stack looks healthy for the current cockpit pass', status: 'ok' },
+      { title: 'React + Vite lane', meta: 'Stable', detail: 'Core UI stack looks healthy for the current surface pass', status: 'ok' },
       { title: 'Charting bundle weight', meta: 'Watch', detail: 'Keep dense-chart dependencies lazy where possible', status: 'warn' },
       { title: 'Security patch available', meta: 'Soon', detail: 'One transitive lane needs follow-up in the next maintenance pass', status: 'critical' },
       { title: 'Token packages', meta: 'Aligned', detail: 'Design system tarball versions appear consistent', status: 'info' },
@@ -1333,7 +1333,7 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
     highlightsTitle: 'Settings priorities',
     highlights: () => [
       { eyebrow: 'Scope', title: 'Let users understand scan boundaries', body: 'Scan roots and source toggles should make it obvious what data the app can and cannot see.', tone: 'blue' },
-      { eyebrow: 'Trust', title: 'Settings affect interpretation', body: 'When sources are disabled, other cockpit views should reflect that honestly.', tone: 'amber' },
+      { eyebrow: 'Trust', title: 'Settings affect interpretation', body: 'When sources are disabled, other narrative surfaces should reflect that honestly.', tone: 'amber' },
       { eyebrow: 'Cost', title: 'Budgeting belongs here', body: 'Operator budgets and warnings are part of sustainable usage, not buried secondary preferences.', tone: 'violet' },
     ],
     activityTitle: 'Recent setting notes',
@@ -1355,50 +1355,65 @@ const cockpitDefinitions: Record<CockpitMode, CockpitDefinition> = {
   },
   status: {
     section: 'Health',
-    title: 'System Status',
-    subtitle: () => 'A single place for trust posture, capability health, and recent failures.',
-    heroTitle: () => 'Make the app’s reliability visible without making it dramatic.',
+    title: 'Trust Center',
+    subtitle: () => 'Codex capture health, authority boundaries, and the next safe recovery move.',
+    heroTitle: () => 'Make trust visible, legible, and actionable.',
     heroBody: (context) =>
-      `This page gathers the trust signals that affect every other cockpit section in ${context.repoName}: capture posture, authority boundaries, and whether recent failures need explicit follow-up.`,
+      `This page gathers the trust signals that affect every other narrative surface in ${context.repoName}: Codex capture posture, evidence joins, authority boundaries, and whether recent failures need explicit follow-up before the story is trusted.`,
     metrics: (context) => [
-      { label: 'Overall', value: context.trustState === 'healthy' ? 'OK' : 'Watch', detail: context.trustLabel, tone: context.trustState === 'healthy' ? 'green' : 'amber' },
-      { label: 'Capability denials', value: '0', detail: 'No current authority blocks', tone: 'blue' },
-      { label: 'Dropped requests', value: '1', detail: 'Recent stale-response discard observed', tone: 'violet' },
-      { label: 'Action needed', value: context.trustState === 'healthy' ? 'None' : 'Review capture', detail: 'Operator-visible recovery path required', tone: context.trustState === 'healthy' ? 'green' : 'amber' },
+      {
+        label: 'Evidence posture',
+        value: context.trustState === 'healthy' ? 'Grounded' : 'Caution',
+        detail: context.trustLabel,
+        tone: context.trustState === 'healthy' ? 'green' : 'amber',
+      },
+      {
+        label: 'Codex capture',
+        value: context.captureReliabilityMode === 'HYBRID_ACTIVE' ? 'Hybrid' : context.captureReliabilityMode === 'OTEL_ONLY' ? 'Baseline' : 'Degraded',
+        detail: 'Provider expansion stays secondary until this lane is trustworthy',
+        tone: context.trustState === 'healthy' ? 'blue' : 'amber',
+      },
+      { label: 'Authority boundary', value: 'Fail-closed', detail: 'No privileged action should outrun its runtime check', tone: 'violet' },
+      {
+        label: 'Next safe move',
+        value: context.trustState === 'healthy' ? 'Inspect evidence' : 'Review capture',
+        detail: context.trustState === 'healthy' ? 'Repo Evidence and Live Capture can be trusted as-is' : 'Use Live Capture and Settings before trusting derived claims or attribution',
+        tone: context.trustState === 'healthy' ? 'green' : 'amber',
+      },
     ],
-    highlightsTitle: 'Status principles',
+    highlightsTitle: 'Trust principles',
     highlights: () => [
-      { eyebrow: 'Clarity', title: 'Separate degraded from broken', body: 'A trust overlay is not the same thing as a top-level failure, and the UI should not blur the two.', tone: 'blue' },
-      { eyebrow: 'Recovery', title: 'Make next actions explicit', body: 'If the system is offline, denied, or degraded, show the operator what changed and what to try next.', tone: 'amber' },
-      { eyebrow: 'Audit', title: 'Keep a bounded failure memory', body: 'Recent dropped requests or retry exhaustion should be inspectable without becoming permanent noise.', tone: 'violet' },
+      { eyebrow: 'Clarity', title: 'Separate degraded from broken', body: 'A trust overlay is not the same thing as a total system failure, and the UI should not blur the two.', tone: 'blue' },
+      { eyebrow: 'Codex first', title: 'Protect the initial provider lane', body: 'Before adding more providers, make sure Codex capture, linking, and recovery cues are dependable.', tone: 'violet' },
+      { eyebrow: 'Recovery', title: 'Make next actions explicit', body: 'If capture is degraded, show what changed, what is still safe to inspect, and which surface should be opened next.', tone: 'amber' },
     ],
-    activityTitle: 'Recent status events',
+    activityTitle: 'Recent trust events',
     activity: (context) => [
       { title: 'Capture posture', meta: 'Now', detail: context.trustLabel, status: context.trustState === 'healthy' ? 'ok' : 'warn' },
-      { title: 'Retry budget', meta: 'Recent', detail: 'No exhausted retry loops in the current sample', status: 'ok' },
-      { title: 'Permission boundary', meta: 'Recent', detail: 'No broadening beyond the approved dashboard contract', status: 'info' },
-      { title: 'Dropped request record', meta: 'Recent', detail: 'One stale response was ignored instead of mutating current state', status: 'warn' },
+      { title: 'Codex session ingest', meta: 'Now', detail: context.sessionCount > 0 ? `${context.sessionCount} sessions available for trust-aware evidence` : 'No imported Codex sessions yet', status: context.sessionCount > 0 ? 'info' : 'warn' },
+      { title: 'Authority boundary', meta: 'Recent', detail: 'No broadening beyond the approved Codex-first shell contract', status: 'ok' },
+      { title: 'Dropped request record', meta: 'Recent', detail: 'Stale responses were ignored instead of mutating the active narrative state', status: 'warn' },
     ],
-    tableTitle: 'Status matrix',
+    tableTitle: 'Trust matrix',
     tableColumns: ['Surface', 'Current state', 'Operator action'],
     tableRows: (context) => [
-      { primary: 'Capture reliability', secondary: context.trustState === 'healthy' ? 'Healthy' : 'Degraded', tertiary: context.trustState === 'healthy' ? 'No action required' : 'Review ingest and trust overlays' },
-      { primary: 'Command authority', secondary: 'Allowed', tertiary: 'Stay fail-closed on new routes' },
+      { primary: 'Capture reliability', secondary: context.trustState === 'healthy' ? 'Healthy' : 'Degraded', tertiary: context.trustState === 'healthy' ? 'Safe to inspect evidence normally' : 'Open Live Capture and Settings before trusting derived claims' },
+      { primary: 'Repo evidence joins', secondary: context.unlinkedSessionCount === 0 ? 'Linked' : `${context.unlinkedSessionCount} floating`, tertiary: context.unlinkedSessionCount === 0 ? 'Narrative links are grounded' : 'Link floating sessions before over-reading attribution or intent' },
+      { primary: 'Command authority', secondary: 'Fail-closed', tertiary: 'Keep new routes behind explicit capability checks' },
       { primary: 'Dropped requests', secondary: 'Bounded', tertiary: 'Inspect only when the count climbs' },
-      { primary: 'Telemetry events', secondary: 'Structured', tertiary: 'Keep redacted and operator-relevant' },
     ],
-    footerNote: () => 'Status page should help the operator trust the rest of the cockpit, especially when something is only partially healthy.',
+    footerNote: () => 'Trust Center should help the operator decide what is safe to believe right now, what still needs verification, and where to go next to close the gap.',
   },
 };
 
-export function buildCockpitViewModel(
-  mode: CockpitMode,
+export function buildNarrativeSurfaceViewModel(
+  mode: SurfaceMode,
   repoState: RepoState,
   captureReliabilityStatus?: CaptureReliabilityStatus | null,
   autoIngestEnabled?: boolean,
-): CockpitViewModel {
+): NarrativeSurfaceViewModel {
   const context = buildContext(repoState, captureReliabilityStatus, autoIngestEnabled);
-  const definition = cockpitDefinitions[mode];
+  const definition = surfaceDefinitions[mode];
 
   return {
     mode,

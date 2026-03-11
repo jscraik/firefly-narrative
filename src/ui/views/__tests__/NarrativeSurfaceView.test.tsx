@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BranchViewModel } from '../../../core/types';
 import type { CaptureReliabilityStatus } from '../../../core/tauri/ingestConfig';
 import type { RepoState } from '../../../hooks/useRepoLoader';
-import { CockpitView } from '../CockpitView';
+import { NarrativeSurfaceView } from '../NarrativeSurfaceView';
 
 function createRepoState(): RepoState {
   return {
@@ -38,7 +38,7 @@ function createRepoState(): RepoState {
         {
           id: 's1',
           tool: 'codex',
-          messages: [{ id: 'm1', role: 'user', text: 'Investigate cockpit routing' }],
+          messages: [{ id: 'm1', role: 'user', text: 'Investigate surface routing' }],
         },
       ],
       meta: {
@@ -82,10 +82,10 @@ function createCaptureReliabilityStatus(
   };
 }
 
-describe('CockpitView', () => {
+describe('NarrativeSurfaceView', () => {
   it('renders a Trace Narrative-native live operations view', () => {
     render(
-      <CockpitView
+      <NarrativeSurfaceView
         mode="live"
         repoState={createRepoState()}
         captureReliabilityStatus={createCaptureReliabilityStatus()}
@@ -104,7 +104,7 @@ describe('CockpitView', () => {
 
   it('surfaces the degraded trust badge when capture is not healthy', () => {
     render(
-      <CockpitView
+      <NarrativeSurfaceView
         mode="status"
         repoState={createRepoState()}
         captureReliabilityStatus={createCaptureReliabilityStatus({ mode: 'DEGRADED_STREAMING' })}
@@ -115,8 +115,8 @@ describe('CockpitView', () => {
     );
 
     expect(screen.getByLabelText('Capture reliability degraded')).toBeInTheDocument();
-    expect(screen.getByText('System Status')).toBeInTheDocument();
-    expect(screen.getByText('Recent status events')).toBeInTheDocument();
+    expect(screen.getByText('Trust Center')).toBeInTheDocument();
+    expect(screen.getByText('Recent trust events')).toBeInTheDocument();
   });
 
   it('treats unknown capture modes as degraded trust', () => {
@@ -126,7 +126,7 @@ describe('CockpitView', () => {
     } as unknown as CaptureReliabilityStatus;
 
     render(
-      <CockpitView
+      <NarrativeSurfaceView
         mode="live"
         repoState={createRepoState()}
         captureReliabilityStatus={unknownModeReliabilityStatus}
@@ -142,7 +142,7 @@ describe('CockpitView', () => {
 
   it('renders derived-summary authority cues for OTEL_ONLY capture reliability', () => {
     render(
-      <CockpitView
+      <NarrativeSurfaceView
         mode="live"
         repoState={createRepoState()}
         captureReliabilityStatus={createCaptureReliabilityStatus({
@@ -171,9 +171,9 @@ describe('CockpitView', () => {
     expect(derivedLabelElements.length).toBeGreaterThan(0);
   });
 
-  it('includes per-element authority cues on cockpit sections', () => {
+  it('includes per-element authority cues on surface sections', () => {
     render(
-      <CockpitView
+      <NarrativeSurfaceView
         mode="live"
         repoState={createRepoState()}
         captureReliabilityStatus={createCaptureReliabilityStatus()}

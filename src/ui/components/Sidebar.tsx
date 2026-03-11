@@ -68,14 +68,14 @@ export function Sidebar({ mode, onModeChange, onOpenRepo, onImportSession }: Sid
                 <span className="flex-1 text-left">{label}</span>
                 {badge !== undefined && (
                     <span className={clsx(
-                        "text-[10px] px-1.5 py-0.5 rounded font-medium",
+                        "text-[0.625rem] rounded px-1.5 py-0.5 font-medium",
                         typeof badge === 'number' ? "text-accent-blue" : "bg-bg-tertiary text-text-muted"
                     )}>
                         {badge}
                     </span>
                 )}
                 {status && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-green-bg text-accent-green font-medium">
+                    <span className="text-[0.625rem] rounded bg-accent-green-bg px-1.5 py-0.5 font-medium text-accent-green">
                         {status}
                     </span>
                 )}
@@ -84,7 +84,7 @@ export function Sidebar({ mode, onModeChange, onOpenRepo, onImportSession }: Sid
     };
 
     const SectionLabel = ({ children }: { children: ReactNode }) => (
-        <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-text-muted opacity-60">
+        <div className="mb-2 px-3 text-[0.625rem] font-bold uppercase tracking-wider text-text-muted opacity-60">
             {children}
         </div>
     );
@@ -193,7 +193,7 @@ export function Sidebar({ mode, onModeChange, onOpenRepo, onImportSession }: Sid
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-subtle text-text-muted cursor-pointer hover:bg-bg-hover transition-colors">
                     <Search className="w-3.5 h-3.5" />
                     <span className="text-xs">Quick search...</span>
-                    <span className="ml-auto text-[10px] border border-border-subtle px-1 rounded opacity-50">⌘K</span>
+                    <span className="ml-auto rounded border border-border-subtle px-1 text-[0.625rem] opacity-50">⌘K</span>
                 </div>
             </div>
         </aside>

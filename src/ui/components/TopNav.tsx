@@ -29,7 +29,7 @@ export function TopNav(props: {
     children
   } = props;
 
-  const isCockpitMode = (m: Mode) => m !== 'repo' && m !== 'docs';
+  const isSurfaceMode = (m: Mode) => m !== 'repo' && m !== 'docs';
   const surfaceLabel = mode === 'repo'
     ? 'Repo evidence'
     : mode === 'docs'
@@ -42,7 +42,7 @@ export function TopNav(props: {
       : 'Codex-first reconstruction across story, evidence, and trust';
 
   const Tab = (p: { id: Mode; label: string; icon: ReactNode }) => {
-    const isActive = p.id === 'dashboard' ? isCockpitMode(mode) : mode === p.id;
+    const isActive = p.id === 'dashboard' ? isSurfaceMode(mode) : mode === p.id;
     return (
       <button
         role="tab"
@@ -67,7 +67,7 @@ export function TopNav(props: {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     const order: Mode[] = ['repo', 'dashboard', 'docs'];
-    const currentMode = isCockpitMode(mode) ? 'dashboard' : mode;
+    const currentMode = isSurfaceMode(mode) ? 'dashboard' : mode;
     const currentIndex = order.indexOf(currentMode as Mode);
     if (currentIndex === -1) return;
     if (event.key === 'Home') {
@@ -87,7 +87,7 @@ export function TopNav(props: {
     <header className="grid h-14 w-full grid-cols-[1fr_auto_1fr] items-center border-b border-border-light bg-bg-secondary px-4">
       <div className="flex items-center gap-3 justify-self-start">
         <div className="flex flex-col">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+          <span className="text-[0.625rem] font-semibold uppercase tracking-[0.18em] text-text-muted">
             Trace Narrative
           </span>
           <span className="text-sm font-medium text-text-primary">{surfaceLabel}</span>

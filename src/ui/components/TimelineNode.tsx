@@ -60,12 +60,12 @@ export const TimelineNodeComponent = forwardRef<HTMLDivElement, TimelineNodeProp
         ref={ref}
         data-node-id={node.id}
         className="relative flex flex-col items-center"
-        style={{ minWidth: '100px' }}
+        style={{ minWidth: '6.25rem' }}
       >
         {/* Label above with tooltip for truncated text */}
         {showLabel && node.label ? (
           <div
-            className="mb-2 h-4 w-32 text-center text-[11px] font-medium text-text-secondary leading-tight px-1"
+            className="mb-2 h-4 w-32 px-1 text-center text-[0.6875rem] font-medium leading-tight text-text-secondary"
             title={node.label}
           >
             <span className="block truncate">{node.label}</span>
@@ -101,7 +101,7 @@ export const TimelineNodeComponent = forwardRef<HTMLDivElement, TimelineNodeProp
         )}
 
         {/* Date below */}
-        <div className="mt-2 h-4 text-[10px] text-text-muted">
+        <div className="mt-2 h-4 text-[0.625rem] text-text-muted">
           {showLabel && node.atISO
             ? new Date(node.atISO).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
             : ''}

@@ -68,7 +68,7 @@ export function DashboardHeader({
           {/* Sync status / Last Updated */}
           <div className="flex items-center gap-2">
             {lastUpdated && (
-              <span className="text-[10px] uppercase tracking-wider font-bold text-text-muted opacity-80">
+              <span className="text-[0.625rem] uppercase tracking-wider font-bold text-text-muted opacity-80">
                 Synced {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
