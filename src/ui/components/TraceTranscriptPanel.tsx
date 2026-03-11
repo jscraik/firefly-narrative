@@ -58,7 +58,7 @@ function roleBadge(role: SessionMessageRole) {
   const Icon = config.icon;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium border ${config.badgeClass}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.6875rem] font-medium ${config.badgeClass}`}>
       <Icon className="h-3 w-3" />
       {config.label}
     </span>
@@ -125,13 +125,13 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
       {isExpanded && (
         <div className="border-t border-accent-green-light">
           <div className="flex items-center justify-between px-3 py-1.5 bg-accent-green-bg/40 border-b border-accent-green-light">
-            <span className="text-[10px] uppercase tracking-wide text-accent-green">
+            <span className="text-[0.625rem] uppercase tracking-wide text-accent-green">
               Arguments
             </span>
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1 text-[10px] text-accent-green hover:text-accent-green/80 transition-colors"
+              className="inline-flex items-center gap-1 text-[0.625rem] text-accent-green transition-colors hover:text-accent-green/80"
             >
               {copied ? (
                 <><Check className="w-3 h-3" /> Copied</>
@@ -142,11 +142,11 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
           </div>
           <div className="p-3">
             {hasInput ? (
-              <pre className="text-[11px] text-text-secondary whitespace-pre-wrap break-words font-mono leading-relaxed">
+              <pre className="font-mono text-[0.6875rem] leading-relaxed whitespace-pre-wrap break-words text-text-secondary">
                 {toolInput}
               </pre>
             ) : (
-              <span className="text-[11px] text-text-tertiary italic">No input recorded</span>
+              <span className="text-[0.6875rem] italic text-text-tertiary">No input recorded</span>
             )}
           </div>
         </div>
@@ -209,7 +209,7 @@ function MessageCard({
             {messageTitle(message)}
           </span>
         </div>
-        <span className="text-[10px] text-text-muted">
+        <span className="text-[0.625rem] text-text-muted">
           {config.description}
         </span>
       </div>
@@ -262,7 +262,7 @@ function EmptyState() {
           <Sparkles className="w-5 h-5 text-text-muted" />
         </div>
         <p className="text-sm text-text-tertiary mb-1">No conversation loaded</p>
-        <p className="text-xs text-text-muted max-w-[280px]">
+        <p className="max-w-[17.5rem] text-xs text-text-muted">
           Import a session to see the full conversation including thinking, planning, and tool calls.
         </p>
       </div>
@@ -280,7 +280,7 @@ function StatsBar({ stats }: { stats: Record<SessionMessageRole, number> }) {
   ].filter(item => item.count > 0);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.6875rem]">
       {items.map(({ count, label, color }) => (
         <span key={label} className="flex items-center gap-1">
           <span className={`font-semibold ${color}`}>{count}</span>

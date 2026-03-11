@@ -29,7 +29,7 @@ function TestCaseRow({ test, onFileClick }: { test: TestCase; onFileClick?: (pat
             </button>
           ) : null}
         </div>
-        <div className="text-[11px] text-text-muted tabular-nums">
+        <div className="text-[0.6875rem] text-text-muted tabular-nums">
           {(test.durationMs / 1000).toFixed(2)}s
         </div>
       </div>
@@ -123,7 +123,7 @@ export function TestResultsPanel({
               </span>
             )}
           </div>
-          <div className="mt-2 flex items-center gap-4 text-[11px] text-text-tertiary">
+          <div className="mt-2 flex items-center gap-4 text-[0.6875rem] text-text-tertiary">
             <span className="flex items-center gap-1.5">
               <XCircle className="h-3.5 w-3.5 text-accent-red" />
               {testRun.failed} failed
@@ -151,7 +151,7 @@ export function TestResultsPanel({
 
       {expanded && (
         <div id={panelId} className="border-t border-border-subtle px-5 pb-5">
-          <div className="mt-4 text-[11px] text-text-muted">
+          <div className="mt-4 text-[0.6875rem] text-text-muted">
             Imported JUnit XML
             {testRun.sourceBasename ? ` · ${testRun.sourceBasename}` : ''}
             {testRun.importedAtISO ? ` · ${new Date(testRun.importedAtISO).toLocaleString()}` : ''}
@@ -159,8 +159,8 @@ export function TestResultsPanel({
 
           {mentionedFiles.length > 0 ? (
             <div className="mt-4">
-              <div className="text-[10px] uppercase tracking-wider text-text-muted">Mentioned files</div>
-              <div className="mt-1 text-[11px] text-text-muted">
+              <div className="text-[0.625rem] uppercase tracking-wider text-text-muted">Mentioned files</div>
+              <div className="mt-1 text-[0.6875rem] text-text-muted">
                 From imported test results. Best-effort — may not be changed in this commit.
               </div>
               <div className="mt-2 flex flex-wrap gap-2">

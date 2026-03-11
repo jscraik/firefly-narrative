@@ -54,7 +54,7 @@ export function AuthorBadge({ line }: AuthorBadgeProps) {
     case 'ai_agent':
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent-green-light text-accent-green"
+          className="inline-flex items-center gap-1 rounded-full bg-accent-green-light px-2 py-0.5 text-[0.625rem] font-medium text-accent-green"
           title={formatBadgeTitle('AI-generated', title)}
         >
           <Bot className="w-3 h-3" />
@@ -64,7 +64,7 @@ export function AuthorBadge({ line }: AuthorBadgeProps) {
     case 'ai_tab':
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent-blue-light text-accent-blue"
+          className="inline-flex items-center gap-1 rounded-full bg-accent-blue-light px-2 py-0.5 text-[0.625rem] font-medium text-accent-blue"
           title={formatBadgeTitle('Assist suggestions', title)}
         >
           <Bot className="w-3 h-3" />
@@ -74,7 +74,7 @@ export function AuthorBadge({ line }: AuthorBadgeProps) {
     case 'mixed':
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent-amber-light text-accent-amber"
+          className="inline-flex items-center gap-1 rounded-full bg-accent-amber-light px-2 py-0.5 text-[0.625rem] font-medium text-accent-amber"
           title={formatBadgeTitle('Modified lines (AI + human edits)', title)}
         >
           <Users className="w-3 h-3" />
@@ -84,7 +84,7 @@ export function AuthorBadge({ line }: AuthorBadgeProps) {
     case 'human':
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-bg-primary text-text-secondary"
+          className="inline-flex items-center gap-1 rounded-full bg-bg-primary px-2 py-0.5 text-[0.625rem] font-medium text-text-secondary"
           title={formatBadgeTitle('Human-authored', title)}
         >
           <User className="w-3 h-3" />
@@ -94,7 +94,7 @@ export function AuthorBadge({ line }: AuthorBadgeProps) {
     default:
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-bg-primary text-text-muted"
+          className="inline-flex items-center gap-1 rounded-full bg-bg-primary px-2 py-0.5 text-[0.625rem] font-medium text-text-muted"
           title={formatBadgeTitle('Unknown source', title)}
         >
           <HelpCircle className="w-3 h-3" />

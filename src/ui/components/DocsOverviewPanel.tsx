@@ -249,9 +249,9 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
                 className="mb-6 inline-flex rounded-2xl border border-border-subtle bg-bg-secondary p-4 shadow-sm"
                 animate={{
                   boxShadow: [
-                    "0 0 0 1px var(--border-subtle)",
-                    "0 0 0 3px var(--bg-subtle)",
-                    "0 0 0 1px var(--border-subtle)"
+                    "0 0 0 0.0625rem var(--border-subtle)",
+                    "0 0 0 0.1875rem var(--bg-subtle)",
+                    "0 0 0 0.0625rem var(--border-subtle)"
                   ],
                 }}
                 transition={{
@@ -261,7 +261,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
                 }}
                 whileHover={{
                   scale: 1.05,
-                  boxShadow: "0 0 0 4px var(--accent-blue-light)",
+                  boxShadow: "0 0 0 0.25rem var(--accent-blue-light)",
                   transition: { duration: 0.2 }
                 }}
               >

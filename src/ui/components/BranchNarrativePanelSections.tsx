@@ -133,7 +133,7 @@ export function SummarySection({
                 >
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-sm font-medium text-text-primary">{item.title}</span>
-                    <span className={`text-[11px] font-medium uppercase ${confidenceTierStyle(item.confidenceTier)}`}>
+                    <span className={`text-[0.6875rem] font-medium uppercase ${confidenceTierStyle(item.confidenceTier)}`}>
                       {item.confidenceTier} {(item.confidence * 100).toFixed(0)}%
                     </span>
                   </div>
@@ -141,7 +141,7 @@ export function SummarySection({
                   <button
                     type="button"
                     onClick={() => handleRecallLaneOpen(item)}
-                    className="mt-2 rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
+                    className="mt-2 rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[0.6875rem] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
                   >
                     {actionLabel}
                   </button>
@@ -243,7 +243,7 @@ export function SummarySection({
                     detailLevel,
                   })
                 }
-                className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
+                className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[0.6875rem] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
               >
                 This is key
               </button>
@@ -259,7 +259,7 @@ export function SummarySection({
                     detailLevel,
                   })
                 }
-                className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
+                className="rounded-md border border-border-subtle bg-bg-primary px-2 py-1 text-[0.6875rem] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
               >
                 Wrong
               </button>
@@ -274,7 +274,7 @@ export function SummarySection({
           <button
             type="button"
             onClick={() => onOpenRawDiff()}
-            className="mt-2 rounded-md border border-accent-amber-light bg-bg-primary px-2 py-1 text-[11px] text-accent-amber transition-colors hover:border-border-light hover:bg-bg-secondary"
+            className="mt-2 rounded-md border border-accent-amber-light bg-bg-primary px-2 py-1 text-[0.6875rem] text-accent-amber transition-colors hover:border-border-light hover:bg-bg-secondary"
           >
             Open raw diff now
           </button>

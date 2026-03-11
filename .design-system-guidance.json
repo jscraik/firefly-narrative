@@ -42,7 +42,14 @@
     "src/ui/components/RepositoryPlaceholderCard.tsx",
     "src/ui/components/Sidebar.tsx",
     "src/ui/components/SourceLensView.tsx",
-    "src/ui/components/StoryAnchorsPanel.tsx"
+    "src/ui/components/StoryAnchorsPanel.tsx",
+    "src/ui/components/DocsOverviewPanel.tsx",
+    "src/ui/components/AtlasSearchPanel.tsx",
+    "src/ui/components/AuthorBadge.tsx",
+    "src/ui/components/BranchNarrativePanelSections.tsx",
+    "src/ui/components/TestResultsPanel.tsx",
+    "src/ui/components/TraceTranscriptPanel.tsx",
+    "src/ui/components/TrustStateIndicator.tsx"
   ],
   "ignore": [
     "node_modules",
