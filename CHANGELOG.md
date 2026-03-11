@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/jscraik/trace-narrative/compare/firefly-narrative-v0.18.0...firefly-narrative-v0.18.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* **ci:** skip bot-only gates for dependabot PRs ([#79](https://github.com/jscraik/trace-narrative/issues/79)) ([fa6b1c1](https://github.com/jscraik/trace-narrative/commit/fa6b1c1d0ce915eca313b1effc6b485edb348c5a))
+
 ## [0.18.0](https://github.com/jscraik/trace-narrative/compare/firefly-narrative-v0.17.1...firefly-narrative-v0.18.0) (2026-03-08)
 
 
