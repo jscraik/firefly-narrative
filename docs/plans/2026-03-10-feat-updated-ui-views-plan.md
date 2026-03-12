@@ -248,7 +248,7 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
 - [x] Canonical naming safety: primary shell-facing copy excludes legacy aliases and follows spec contract naming.
 - [x] Accessibility and anchor safety: all anchor modes keep current shell semantics and remain keyboard-accessible with explicit anchor/tab behavior.
 - [x] Async safety: stale async results are ignored after request/route transitions, with coverage at docs auto-load, dashboard request supersession, and branch-scope callback invalidation.
-- [ ] Operational readiness: rollout artifacts include command outputs, residual risks, and rollback decision by owner for a go/no-go.
+- [ ] Operational readiness: rollout artifacts include command outputs, residual risks, and rollback decision by owner for a go/no-go. (Telemetry spot-check and evidence refresh completed on 2026-03-12; final owner go/no-go sign-off remains.)
 - [x] Rollout evidence completeness: `artifacts/ui-views-rollout-plan-evidence.md` contains required sections and owner sign-off.
 - [x] Evidence bootstrap: evidence artifact command guard and required section checks pass before merge.
 - [x] Static quality gate: `pnpm typecheck`, `pnpm lint`, and `pnpm test` all pass.

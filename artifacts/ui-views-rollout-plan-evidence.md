@@ -18,22 +18,24 @@
 ## Command Log
 
 ```text
-pnpm typecheck  ->  clean (0 errors)
-pnpm lint       ->  clean (token lint, component-size lint, and Biome all passed)
-pnpm test       ->  51 test files, 431 tests passed (0 failed)
+pnpm test -- src/core/telemetry/__tests__/narrativeTelemetry.test.ts  ->  clean (51 files, 431 tests passed)
+pnpm docs:lint  ->  clean (Vale + markdownlint)
+pnpm check      ->  clean (design-guidance, lint, docs:lint, typecheck, test, audit)
+pnpm test:deep  ->  clean (unit + integration + a11y all passed)
 ```
 
-- `pnpm typecheck` on `2026-03-12`: clean
-- `pnpm lint` on `2026-03-12`: clean
-- `pnpm test` on `2026-03-12`: `431/431` passed
+- `pnpm test -- src/core/telemetry/__tests__/narrativeTelemetry.test.ts` on `2026-03-12`: `431/431` tests passed with telemetry coverage (`narrativeTelemetry.test.ts`: `12/12` pass)
+- `pnpm docs:lint` on `2026-03-12`: clean (`0` Vale errors, `0` markdownlint errors)
+- `pnpm check` on `2026-03-12`: clean (design guidance, lint, docs lint, typecheck, test, and audit all passed)
+- `pnpm test:deep` on `2026-03-12`: clean (`431/431` unit tests + `1/1` integration + `23/23` a11y tests passed)
 
 ## Pass/Fail Outcomes
 
 - `dashboardState.test.ts`: `3` pass, `0` fail
   Notes: trust state mapping, OTEL_ONLY, unknown modes
-- `NarrativeSurfaceView.test.tsx`: `5` pass, `0` fail
+- `NarrativeSurfaceView.test.tsx`: `6` pass, `0` fail
   Notes: authority cues, OTEL-only `derived_summary`, degraded badge, per-element data-authority attributes
-- `narrativeSurfaceData.test.ts`: `35` pass, `0` fail
+- `narrativeSurfaceData.test.ts`: `37` pass, `0` fail
   Notes: contract matrix across all `24` `SurfaceMode` values, routing boundary, tier coverage, drift-state framing
 - `narrativeSurfaceProvenance` coverage:
   - `NarrativeSurfaceView.test.tsx`: `7` pass, `0` fail
@@ -81,6 +83,7 @@ pnpm test       ->  51 test files, 431 tests passed (0 failed)
   - `clear_filter`
   - `view_activity`
 - Local validation confirms the telemetry contract now uses the narrative/dashboard event set above rather than the older `ui_mode_changed`, `cockpit_view_rendered`, and `cockpit_action_blocked` names referenced in the original rollout draft.
+- Release-candidate telemetry spot check completed on `2026-03-12` via `pnpm test -- src/core/telemetry/__tests__/narrativeTelemetry.test.ts`; contract assertions and pseudonymized payload checks remain green.
 - Evidence sources:
   - `src/core/telemetry/narrativeTelemetry.ts`
   - `src/ui/views/branch-view/useBranchTelemetry.ts`
@@ -95,6 +98,9 @@ pnpm test       ->  51 test files, 431 tests passed (0 failed)
 - Trust Center shared surface
   Artifact: `artifacts/screenshots/ui-views-rollout-2026-03-12/trust-center-surface.png`
   Notes: confirms narrative-first health surface framing, retained sidepanel layout, and new signature provenance lane
+- Story Map critical signal state
+  Artifact: `artifacts/screenshots/ui-views-rollout-2026-03-12/story-map-critical-signal.png`
+  Notes: confirms red signal authority badge rendering (`SIGNAL FROM DRIFT GUARDRAIL EVALUATION`) on critical drift status
 
 ## Risk Matrix
 
@@ -129,7 +135,7 @@ pnpm test       ->  51 test files, 431 tests passed (0 failed)
 - Many shared modes still intentionally rely on `static_scaffold` or `derived_summary` authority until richer live adapters are wired.
 - `assistant` mode intentionally uses `static_scaffold` authority in this phase; promotion to live data requires a separate plan.
 - Badge counts in the sidebar remain static placeholders; live-derived counts remain deferred.
-- The shell now carries trust and authority cues coherently, but the release-candidate telemetry spot check is still open.
+- Release-candidate telemetry spot check passed on `2026-03-12`; monitor window should still watch fallback, kill-switch, and retry-budget trends after merge.
 
 ## Rollback Decision
 

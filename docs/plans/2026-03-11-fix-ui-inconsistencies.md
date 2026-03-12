@@ -25,23 +25,24 @@ The earlier shell inconsistencies were mostly resolved during the Trace Narrativ
 
 ### Visual Verification
 
-- [ ] Verify the red `Signal` authority badge in a mocked critical drift state on live shared surfaces.
+- [x] Verify the red `Signal` authority badge in a mocked critical drift state on live shared surfaces.
 - [ ] Confirm the remaining `OK` pill alignment and padding in graph/timeline activity rows.
-- [ ] Reconfirm the Trust Center surface still reads cleanly after the signature provenance lane is introduced.
+- [x] Reconfirm the Trust Center surface still reads cleanly after the signature provenance lane is introduced.
 
 ### Rollout Readiness
 
-- [ ] Complete a release-candidate telemetry spot check against the current `narrative:telemetry` contract.
-- [ ] Confirm the rollout evidence pack includes current screenshots, command logs, and owner fields.
+- [x] Complete a release-candidate telemetry spot check against the current `narrative:telemetry` contract.
+- [x] Confirm the rollout evidence pack includes current screenshots, command logs, and owner fields.
 
 ## Evidence Capture
 
-- [ ] Capture one shared-surface screenshot with a critical `Signal` badge visible.
+- [x] Capture one shared-surface screenshot with a critical `Signal` badge visible.
 - [x] Capture one screenshot of the final Trust Center shared surface after provenance-lane integration.
 
 ## Validation
 
-- [ ] `pnpm docs:lint`
-- [ ] `pnpm typecheck`
-- [ ] `pnpm test`
-- [ ] `pnpm check`
+- [x] `pnpm docs:lint`
+- [x] `pnpm typecheck`
+- [x] `pnpm test`
+- [x] `pnpm check`
+- [x] `pnpm test:deep`

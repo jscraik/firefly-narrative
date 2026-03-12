@@ -432,6 +432,8 @@ const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
             : context.driftReport.status === 'watch'
               ? 'amber'
               : 'red',
+        authorityTier: 'system_signal',
+        authorityLabel: 'Signal from drift guardrail evaluation',
       },
       { label: 'Trust posture', value: context.trustState === 'healthy' ? 'Stable' : 'Review', detail: context.trustLabel, tone: context.trustState === 'healthy' ? 'green' : 'amber' },
     ],
