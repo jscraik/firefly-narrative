@@ -130,7 +130,7 @@ Direction:
 
 ## Deferred Work
 
-- bespoke signature visualization for provenance and causality
+- deeper repo-anchor provenance visualization inside `Repo Evidence`
 - provider-expansion UX beyond Codex
 - deeper repo/docs onboarding states
 - broader shell and landing-page visual system cleanup

@@ -357,4 +357,34 @@ describe('buildNarrativeSurfaceViewModel', () => {
       expect(driftAlert?.authorityTier).toBe('system_signal');
     });
   });
+
+  describe('signature provenance lane', () => {
+    it('adds a provenance rail to Story Map, Causal Timeline, and Trust Center', () => {
+      for (const mode of ['work-graph', 'timeline', 'status'] as const) {
+        const model = buildNarrativeSurfaceViewModel(mode, createRepoState(), createCaptureReliabilityStatus());
+
+        expect(model.provenance).toBeDefined();
+        expect(model.provenance?.nodes).toHaveLength(4);
+        expect(model.provenance?.title.length).toBeGreaterThan(0);
+        expect(model.provenance?.summary.length).toBeGreaterThan(0);
+
+        for (const node of model.provenance?.nodes ?? []) {
+          expect(ALLOWED_AUTHORITY_TIERS.has(node.authorityTier)).toBe(true);
+          expect(node.authorityLabel).toBeTruthy();
+        }
+      }
+    });
+
+    it('keeps provenance gated by system_signal when trust is degraded', () => {
+      const model = buildNarrativeSurfaceViewModel(
+        'status',
+        createRepoState(),
+        createCaptureReliabilityStatus({ mode: 'DEGRADED_STREAMING' }),
+      );
+
+      const decisionNode = model.provenance?.nodes[model.provenance.nodes.length - 1];
+      expect(decisionNode?.authorityTier).toBe('system_signal');
+      expect(decisionNode?.title).toContain('Review capture first');
+    });
+  });
 });

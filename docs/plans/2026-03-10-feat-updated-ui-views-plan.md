@@ -239,19 +239,19 @@ Current UI mode coverage is partially implemented and includes gaps in trust/aut
   - Owner: Frontend + Product leads.
 
 ## Acceptance Checklist
-- [ ] Routing safety: every `Mode` maps deterministically to anchor or shared surface rendering, including explicit test fixtures for unknown `Mode` values.
-- [ ] Trust safety: shared helper is the only `CaptureReliabilityStatus` → `SurfaceTrustState` path for both dashboard and shared surface paths.
-- [ ] OTEL-only safety: UI-layer shared-surface integration test verifies `OTEL_ONLY` maps to allowed behavior and renders `derived_summary` cue.
-- [ ] Degradation safety: unknown capture states map to documented degraded-safe behavior with non-authoritative framing and no action escalations.
-- [ ] Authority transparency: all shared surface elements with rendered content include visible authority cueing and tier metadata.
-- [ ] Authority coverage completeness: a phase-4 contract test verifies every non-anchor `Mode` path includes authority metadata for all rendered sections.
-- [ ] Canonical naming safety: primary shell-facing copy excludes legacy aliases and follows spec contract naming.
-- [ ] Accessibility and anchor safety: all anchor modes keep current shell semantics and remain keyboard-accessible with explicit anchor/tab behavior.
-- [ ] Async safety: stale async results are ignored after request/route transitions; tests prove one-shot docs autoload, discard behavior, and request invalidation.
+- [x] Routing safety: every `Mode` maps deterministically to anchor or shared surface rendering, including explicit test fixtures for unknown `Mode` values.
+- [x] Trust safety: shared helper is the only `CaptureReliabilityStatus` → `SurfaceTrustState` path for both dashboard and shared surface paths.
+- [x] OTEL-only safety: UI-layer shared-surface integration test verifies `OTEL_ONLY` maps to allowed behavior and renders `derived_summary` cue.
+- [x] Degradation safety: unknown capture states map to documented degraded-safe behavior with non-authoritative framing and no action escalations.
+- [x] Authority transparency: all shared surface elements with rendered content include visible authority cueing and tier metadata.
+- [x] Authority coverage completeness: a phase-4 contract test verifies every non-anchor `Mode` path includes authority metadata for all rendered sections.
+- [x] Canonical naming safety: primary shell-facing copy excludes legacy aliases and follows spec contract naming.
+- [x] Accessibility and anchor safety: all anchor modes keep current shell semantics and remain keyboard-accessible with explicit anchor/tab behavior.
+- [x] Async safety: stale async results are ignored after request/route transitions, with coverage at docs auto-load, dashboard request supersession, and branch-scope callback invalidation.
 - [ ] Operational readiness: rollout artifacts include command outputs, residual risks, and rollback decision by owner for a go/no-go.
-- [ ] Rollout evidence completeness: `artifacts/ui-views-rollout-plan-evidence.md` contains required sections and owner sign-off.
-- [ ] Evidence bootstrap: evidence artifact command guard and required section checks pass before merge.
-- [ ] Static quality gate: `pnpm typecheck`, `pnpm lint`, and `pnpm test` all pass.
+- [x] Rollout evidence completeness: `artifacts/ui-views-rollout-plan-evidence.md` contains required sections and owner sign-off.
+- [x] Evidence bootstrap: evidence artifact command guard and required section checks pass before merge.
+- [x] Static quality gate: `pnpm typecheck`, `pnpm lint`, and `pnpm test` all pass.
 
 ## Sources & References
 - [docs/specs/2026-03-10-feat-updated-ui-views-spec.md](/Users/jamiecraik/dev/trace-narrative/docs/specs/2026-03-10-feat-updated-ui-views-spec.md)

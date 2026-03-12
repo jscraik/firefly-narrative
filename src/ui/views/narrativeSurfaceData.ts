@@ -1,5 +1,5 @@
 import type { CaptureReliabilityStatus } from '../../core/tauri/ingestConfig';
-import type { SurfaceMode, DataAuthorityTier, SessionExcerpt, BranchNarrative, Snapshot } from '../../core/types';
+import type { Mode, SurfaceMode, DataAuthorityTier, SessionExcerpt, BranchNarrative, Snapshot } from '../../core/types';
 import { evaluateDriftDelta, type DriftReport } from '../../core/narrative/automation';
 import type { RepoState } from '../../hooks/useRepoLoader';
 import { describeSurfaceTrust, deriveSurfaceTrustState } from './dashboardState';
@@ -54,7 +54,7 @@ export type SurfaceAction = {
   commitSha: string;
 } | {
   type: 'navigate';
-  mode: SurfaceMode;
+  mode: Mode;
 };
 
 export interface SurfaceActivityItem {
@@ -76,6 +76,28 @@ export interface SurfaceTableRow {
   action?: SurfaceAction;
 }
 
+export type SurfaceProvenanceNodeState = 'observed' | 'linked' | 'derived' | 'review';
+
+export interface SurfaceProvenanceNode {
+  eyebrow: string;
+  title: string;
+  detail: string;
+  state: SurfaceProvenanceNodeState;
+  tone: SurfaceTone;
+  edgeLabel?: string;
+  authorityTier?: DataAuthorityTier;
+  authorityLabel?: string;
+  action?: SurfaceAction;
+}
+
+export interface SurfaceProvenancePanel {
+  eyebrow: string;
+  title: string;
+  summary: string;
+  footnote: string;
+  nodes: Array<SurfaceProvenanceNode & SurfaceAuthorityCue>;
+}
+
 export interface NarrativeSurfaceViewModel {
   mode: SurfaceMode;
   section: string;
@@ -94,6 +116,7 @@ export interface NarrativeSurfaceViewModel {
   tableTitle: string;
   tableColumns: [string, string, string];
   tableRows: Array<SurfaceTableRow & SurfaceAuthorityCue>;
+  provenance?: SurfaceProvenancePanel;
   footerNote: string;
   driftReport?: import('../../core/narrative/automation').DriftReport;
 }
@@ -295,6 +318,20 @@ function normalizeTableRow(
   );
 }
 
+type SurfaceProvenancePanelSeed = Omit<SurfaceProvenancePanel, 'nodes'> & {
+  nodes: SurfaceProvenanceNode[];
+};
+
+function normalizeProvenanceNode(
+  node: SurfaceProvenanceNode,
+  context: SurfaceContext,
+): SurfaceProvenanceNode & SurfaceAuthorityCue {
+  return normalizeAuthority(
+    node,
+    inferAuthorityFromText(`${node.eyebrow} ${node.title} ${node.detail}`, context),
+  );
+}
+
 type SurfaceDefinition = {
   section: string;
   title: string;
@@ -309,6 +346,7 @@ type SurfaceDefinition = {
   tableTitle: string;
   tableColumns: [string, string, string];
   tableRows: (context: SurfaceContext) => SurfaceTableRow[];
+  provenance?: (context: SurfaceContext) => SurfaceProvenancePanelSeed;
   footerNote: (context: SurfaceContext) => string;
 };
 
@@ -418,6 +456,70 @@ const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
       { primary: 'config/codex', secondary: 'Rule lane', tertiary: 'Guardrails aligned with recent rollout' },
       { primary: 'otel-collector', secondary: 'System bus', tertiary: 'Telemetry source for all views' },
     ],
+    provenance: (context) => ({
+      eyebrow: 'Signature view',
+      title: 'Trace provenance lane',
+      summary:
+        'Read this rail left to right to see where the story is directly observed, where it is only joined by evidence, and where the operator still needs to verify the claim.',
+      footnote:
+        context.unlinkedSessionCount === 0
+          ? 'All visible sessions currently join to a commit or evidence lane.'
+          : `${context.unlinkedSessionCount} session${context.unlinkedSessionCount === 1 ? '' : 's'} still float outside a commit join and should stay visible as unresolved work.`,
+      nodes: [
+        {
+          eyebrow: 'Observed',
+          title: context.captureReliabilityMode === 'HYBRID_ACTIVE' ? 'Capture posture is live' : 'Capture posture is constrained',
+          detail:
+            context.captureReliabilityMode === 'HYBRID_ACTIVE'
+              ? 'Codex capture and local repo state are arriving together.'
+              : `Current posture: ${context.trustLabel}`,
+          state: 'observed',
+          tone: context.trustState === 'healthy' ? 'blue' : 'amber',
+          authorityTier: context.trustAuthority.authorityTier,
+          authorityLabel: context.trustAuthority.authorityLabel,
+        },
+        {
+          eyebrow: 'Joined',
+          title: context.unlinkedSessionCount === 0 ? 'Sessions join to commits' : 'Floating sessions remain',
+          detail:
+            context.unlinkedSessionCount === 0
+              ? 'The active branch story has commit-linked session evidence.'
+              : 'Some session evidence still needs a commit or file join before the graph can be trusted.',
+          state: 'linked',
+          tone: context.unlinkedSessionCount === 0 ? 'green' : 'amber',
+          edgeLabel: 'linked via',
+          action: { type: 'navigate', mode: 'sessions' },
+        },
+        {
+          eyebrow: 'Derived',
+          title: context.narrative ? 'Narrative claim is assembled' : 'Narrative is still provisional',
+          detail: context.narrative?.summary ?? 'Claims remain scaffolded until repo evidence is opened and reviewed.',
+          state: 'derived',
+          tone: context.narrative ? 'violet' : 'slate',
+          edgeLabel: 'supports',
+          action: context.narrative?.evidenceLinks[0]
+            ? { type: 'open_evidence', evidenceId: context.narrative.evidenceLinks[0].id }
+            : { type: 'navigate', mode: 'repo' },
+        },
+        {
+          eyebrow: 'Decision',
+          title: context.trustState === 'healthy' ? 'Open repo evidence next' : 'Pause and verify trust first',
+          detail:
+            context.trustState === 'healthy'
+              ? 'The branch story is ready for deeper inspection in Repo Evidence.'
+              : 'Use Trust Center and Live Capture before accepting derived claims as stable.',
+          state: 'review',
+          tone: context.trustState === 'healthy' ? 'green' : 'red',
+          edgeLabel: 'gates',
+          authorityTier: context.trustState === 'healthy' ? 'live_repo' : 'system_signal',
+          authorityLabel:
+            context.trustState === 'healthy'
+              ? 'Repo evidence is ready for inspection'
+              : 'Verification gate still active',
+          action: { type: 'navigate', mode: context.trustState === 'healthy' ? 'repo' : 'status' },
+        },
+      ],
+    }),
     footerNote: () => 'Recommended next step: use this page to spot the weak joins first, then drop into Repo Evidence for the underlying branch story.',
   },
   assistant: {
@@ -774,6 +876,65 @@ const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
         tertiary: 'Link sessions to commits for visibility'
       }] : [])
     ].slice(0, 4),
+    provenance: (context) => ({
+      eyebrow: 'Signature view',
+      title: 'Causal chain rail',
+      summary:
+        'Timeline becomes more useful when chronology is paired with a visible evidence chain: commit boundary, session join, cited evidence, then the causal claim we are willing to repeat.',
+      footnote:
+        context.sessionExcerpts.some((session) => !session.linkedCommitSha)
+          ? 'Floating sessions should remain visible in the rail so a missing join is treated as part of the story, not hidden debt.'
+          : 'Every visible step has at least one commit-linked session join in the current workspace slice.',
+      nodes: [
+        {
+          eyebrow: 'Observed',
+          title: 'Commit boundary',
+          detail: `${context.commitCount} commits are indexed in the active repo window.`,
+          state: 'observed',
+          tone: 'blue',
+          authorityTier: context.hasLiveRepoData ? 'live_repo' : 'derived_summary',
+          authorityLabel: context.hasLiveRepoData ? 'Derived from selected repo state' : 'Derived summary context',
+        },
+        {
+          eyebrow: 'Joined',
+          title: context.sessionExcerpts.some((session) => session.linkedCommitSha) ? 'Session evidence attached' : 'Session join still pending',
+          detail: context.sessionExcerpts.some((session) => session.linkedCommitSha)
+            ? 'At least one session excerpt already lands on a commit boundary.'
+            : 'No commit-linked session evidence is currently available in this timeline slice.',
+          state: 'linked',
+          tone: context.sessionExcerpts.some((session) => session.linkedCommitSha) ? 'green' : 'amber',
+          edgeLabel: 'explained by',
+          action: { type: 'navigate', mode: 'sessions' },
+        },
+        {
+          eyebrow: 'Derived',
+          title: context.narrative ? 'Evidence citation is ready' : 'Citations still need grounding',
+          detail: context.narrative?.evidenceLinks[0]?.label ?? 'Open Repo Evidence to confirm which citation best supports this branch story.',
+          state: 'derived',
+          tone: context.narrative ? 'violet' : 'slate',
+          edgeLabel: 'cited as',
+          action: context.narrative?.evidenceLinks[0]
+            ? { type: 'open_evidence', evidenceId: context.narrative.evidenceLinks[0].id }
+            : { type: 'navigate', mode: 'repo' },
+        },
+        {
+          eyebrow: 'Review',
+          title: 'Causal claim',
+          detail: context.trustState === 'healthy'
+            ? 'The timeline is ready for why-driven drill-down.'
+            : 'Keep the claim soft until capture posture and joins recover.',
+          state: 'review',
+          tone: context.trustState === 'healthy' ? 'green' : 'red',
+          edgeLabel: 'repeated as',
+          authorityTier: context.trustState === 'healthy' ? 'derived_summary' : 'system_signal',
+          authorityLabel:
+            context.trustState === 'healthy'
+              ? 'Derived claim with supporting evidence'
+              : 'Claim held behind trust warning',
+          action: { type: 'navigate', mode: context.trustState === 'healthy' ? 'repo' : 'status' },
+        },
+      ],
+    }),
     footerNote: () => 'Timeline should remain a bridge surface: lightweight, fast, and one click away from deeper evidence.',
   },
   'repo-pulse': {
@@ -1402,6 +1563,66 @@ const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
       { primary: 'Command authority', secondary: 'Fail-closed', tertiary: 'Keep new routes behind explicit capability checks' },
       { primary: 'Dropped requests', secondary: 'Bounded', tertiary: 'Inspect only when the count climbs' },
     ],
+    provenance: (context) => ({
+      eyebrow: 'Signature view',
+      title: 'Trust decision rail',
+      summary:
+        'Trust Center should show what must be true before a narrative claim becomes safe to repeat: capture posture, evidence joins, authority boundary, then the next safe operator move.',
+      footnote:
+        context.trustState === 'healthy'
+          ? 'The rail currently ends in an inspectable evidence action rather than a stop condition.'
+          : 'The rail ends in a verification gate so degraded trust cannot masquerade as routine work.',
+      nodes: [
+        {
+          eyebrow: 'Observed',
+          title: context.trustState === 'healthy' ? 'Capture posture is grounded' : 'Capture posture is degraded',
+          detail: context.trustLabel,
+          state: 'observed',
+          tone: context.trustState === 'healthy' ? 'green' : 'amber',
+          authorityTier: context.trustAuthority.authorityTier,
+          authorityLabel: context.trustAuthority.authorityLabel,
+        },
+        {
+          eyebrow: 'Joined',
+          title: context.unlinkedSessionCount === 0 ? 'Evidence joins hold' : 'Evidence joins are incomplete',
+          detail:
+            context.unlinkedSessionCount === 0
+              ? 'Session evidence currently lands on commits or files.'
+              : `${context.unlinkedSessionCount} floating session${context.unlinkedSessionCount === 1 ? '' : 's'} should be linked before trusting attribution-heavy claims.`,
+          state: 'linked',
+          tone: context.unlinkedSessionCount === 0 ? 'green' : 'amber',
+          edgeLabel: 'depends on',
+          action: { type: 'navigate', mode: 'sessions' },
+        },
+        {
+          eyebrow: 'Derived',
+          title: 'Authority gate stays fail-closed',
+          detail: 'Runtime checks still decide whether privileged actions are actually allowed.',
+          state: 'derived',
+          tone: 'violet',
+          edgeLabel: 'bounded by',
+          authorityTier: 'derived_summary',
+          authorityLabel: 'Explained by the shared shell contract',
+        },
+        {
+          eyebrow: 'Review',
+          title: context.trustState === 'healthy' ? 'Open repo evidence' : 'Review capture first',
+          detail:
+            context.trustState === 'healthy'
+              ? 'The next safe move is deeper evidence inspection.'
+              : 'Use Live Capture or Settings before promoting derived claims into operator truth.',
+          state: 'review',
+          tone: context.trustState === 'healthy' ? 'green' : 'red',
+          edgeLabel: 'permits',
+          authorityTier: context.trustState === 'healthy' ? 'live_repo' : 'system_signal',
+          authorityLabel:
+            context.trustState === 'healthy'
+              ? 'Evidence inspection is currently safe'
+              : 'Verification gate still active',
+          action: { type: 'navigate', mode: context.trustState === 'healthy' ? 'repo' : 'live' },
+        },
+      ],
+    }),
     footerNote: () => 'Trust Center should help the operator decide what is safe to believe right now, what still needs verification, and where to go next to close the gap.',
   },
 };
@@ -1414,6 +1635,7 @@ export function buildNarrativeSurfaceViewModel(
 ): NarrativeSurfaceViewModel {
   const context = buildContext(repoState, captureReliabilityStatus, autoIngestEnabled);
   const definition = surfaceDefinitions[mode];
+  const provenance = definition.provenance?.(context);
 
   return {
     mode,
@@ -1433,6 +1655,12 @@ export function buildNarrativeSurfaceViewModel(
     tableTitle: definition.tableTitle,
     tableColumns: definition.tableColumns,
     tableRows: definition.tableRows(context).map((row) => normalizeTableRow(row, context)),
+    provenance: provenance
+      ? {
+          ...provenance,
+          nodes: provenance.nodes.map((node) => normalizeProvenanceNode(node, context)),
+        }
+      : undefined,
     footerNote: definition.footerNote(context),
     driftReport: context.driftReport,
   };

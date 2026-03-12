@@ -1,33 +1,47 @@
-# UI Design & Implementation Inconsistency Fixes
+# UI Polish Verification Checklist
 
-## Overview
-This plan addresses inconsistencies found during the UI audit, focusing on navigation visibility, drift status accuracy, and visual signal rendering.
+## Table of Contents
 
-## Identified Inconsistencies
-1.  **TopNav Visibility**: The anchor navigation tabs (Repo, Narrative, Docs) disappear when entering narrative modes, making it hard to switch back to Repo/Docs without the sidebar.
-2.  **Drift Status False Positive**: The Drift metric defaults to "Drifting" (amber) if the repo is not ready or if drift is undefined, which is alarmist.
-3.  **Red Signal Rendering**: The `system_signal` badge for critical drift alerts needs verification in a live (mocked) critical state to ensure premium aesthetics and visibility.
-4.  **Sidebar A11y**: Sidebar navigation buttons lack semantic tab roles.
+- [Current State](#current-state)
+- [Resolved Items](#resolved-items)
+- [Remaining Release Checks](#remaining-release-checks)
+- [Evidence Capture](#evidence-capture)
+- [Validation](#validation)
 
-## Implementation Plan
+## Current State
 
-### Phase 1: Navigation & Visibility
-- [ ] Update `App.tsx` to render `TopNav` consistently across all primary modes.
-- [ ] Ensure `TopNav` correctly highlights "Narrative" when any narrative sub-mode (e.g., `assistant`, `work-graph`) is active.
+This document is now a release-polish checklist, not a feature implementation plan.
 
-### Phase 2: Drift Metric Accuracy
-- [ ] Update `narrativeSurfaceData.ts` to show "Healthy" or "N/A" instead of "Drifting" when drift is 0 or undefined.
-- [ ] Add a "Calculating..." state and blue/slate tone for pending drift assessments.
+The earlier shell inconsistencies were mostly resolved during the Trace Narrative redesign pass. What remains is a short verification lane to confirm the visual and telemetry details that still matter before rollout closure.
 
-### Phase 3: Visual Signal Hardening
-- [ ] Temporarily mock a `critical` drift state in `automation.ts` or `narrativeSurfaceData.ts`.
-- [ ] Verify the red `Signal` badge renders in the Assistant activity feed and Snapshot metrics.
-- [ ] Check alignment and padding of the red badge relative to other cues.
+## Resolved Items
 
-### Phase 4: A11y & Polish
-- [ ] Add `role="tab"` and associated ARIA attributes to Sidebar navigation if appropriate, or ensure `TopNav` is the clear primary.
-- [ ] Fix the "OK" pill alignment in graph movements.
+- [x] `TopNav` stays visible across the primary narrative shell and keeps the Narrative anchor active for shared surfaces.
+- [x] Drift state no longer defaults to an alarmist warning when the value is pending.
+- [x] Shared-surface drift copy now includes a neutral `Calculating` state with a slate tone.
+- [x] Sidebar navigation uses tab semantics and no longer relies on generic button-only behavior.
 
-## Verification
-- [ ] Use `browser_subagent` to capture screenshots of the fixed `TopNav` and the red `Signal` badge.
-- [ ] Run unit tests to ensure no regressions in navigation logic.
+## Remaining Release Checks
+
+### Visual Verification
+
+- [ ] Verify the red `Signal` authority badge in a mocked critical drift state on live shared surfaces.
+- [ ] Confirm the remaining `OK` pill alignment and padding in graph/timeline activity rows.
+- [ ] Reconfirm the Trust Center surface still reads cleanly after the signature provenance lane is introduced.
+
+### Rollout Readiness
+
+- [ ] Complete a release-candidate telemetry spot check against the current `narrative:telemetry` contract.
+- [ ] Confirm the rollout evidence pack includes current screenshots, command logs, and owner fields.
+
+## Evidence Capture
+
+- [ ] Capture one shared-surface screenshot with a critical `Signal` badge visible.
+- [x] Capture one screenshot of the final Trust Center shared surface after provenance-lane integration.
+
+## Validation
+
+- [ ] `pnpm docs:lint`
+- [ ] `pnpm typecheck`
+- [ ] `pnpm test`
+- [ ] `pnpm check`

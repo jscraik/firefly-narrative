@@ -117,6 +117,25 @@ describe('NarrativeSurfaceView', () => {
     expect(screen.getByLabelText('Capture reliability degraded')).toBeInTheDocument();
     expect(screen.getByText('Trust Center')).toBeInTheDocument();
     expect(screen.getByText('Recent trust events')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Trust decision rail' })).toBeInTheDocument();
+  });
+
+  it('renders the provenance lane on Story Map surfaces', () => {
+    render(
+      <NarrativeSurfaceView
+        mode="work-graph"
+        repoState={createRepoState()}
+        captureReliabilityStatus={createCaptureReliabilityStatus()}
+        onModeChange={vi.fn()}
+        onOpenRepo={vi.fn()}
+        onImportSession={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Trace provenance lane' })).toBeInTheDocument();
+    expect(screen.getByText('Observed')).toBeInTheDocument();
+    expect(screen.getByText('Joined')).toBeInTheDocument();
+    expect(screen.getByText('Derived')).toBeInTheDocument();
   });
 
   it('treats unknown capture modes as degraded trust', () => {
@@ -189,7 +208,7 @@ describe('NarrativeSurfaceView', () => {
     const cueBadges = document.querySelectorAll('[data-authority-short-label]');
     expect(cueBadges.length).toBe(cueElements.length);
 
-    const allowed = new Set(['live_repo', 'live_capture', 'derived_summary', 'static_scaffold']);
+    const allowed = new Set(['live_repo', 'live_capture', 'derived_summary', 'static_scaffold', 'system_signal']);
     const shortLabelByTier: Record<string, string> = {
       live_repo: 'Repo',
       live_capture: 'Live',

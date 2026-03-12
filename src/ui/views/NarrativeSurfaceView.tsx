@@ -9,6 +9,7 @@ import {
   type SurfaceMode,
   type SurfaceTableRow,
 } from './narrativeSurfaceData';
+import { ProvenanceSection } from './narrativeSurfaceProvenance';
 import {
   ActivitySection,
   AuthorityCue,
@@ -112,8 +113,8 @@ export function NarrativeSurfaceView({
                 <Search className="h-4 w-4" />
                 Jump into repo evidence
               </button>
-	          </div>
-	        </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -124,6 +125,10 @@ export function NarrativeSurfaceView({
               <MetricCard key={metric.label} metric={metric} />
             ))}
           </section>
+
+          {viewModel.provenance && (
+            <ProvenanceSection provenance={viewModel.provenance} onAction={onAction} />
+          )}
 
           <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             <HighlightsSection

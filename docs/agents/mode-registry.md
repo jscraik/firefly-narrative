@@ -45,7 +45,7 @@ This registry tracks the mapping between `Mode` values and their view family and
 - [x] Anchor-mode shell preserved
 - [x] Section taxonomy updated to narrative-first labels
 - [x] Hygiene and Settings retained as first-class views
-- [ ] Signature provenance visualization added
+- [x] Signature provenance visualization added to shared narrative surfaces
 - [ ] Multi-provider shell expansion after Codex-first stabilization
 
 ## Current Product Posture
