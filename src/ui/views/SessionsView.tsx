@@ -191,7 +191,7 @@ export function SessionsView({
               </div>
               <div className="flex flex-col gap-2 mt-4 text-sm text-text-secondary pr-4 pb-2">
                 <p>Confidence is high due to reliable commit attribution matching agent trace messages.</p>
-                <button type="button" className="text-accent-blue hover:underline self-start font-medium mt-1">Review weak joins →</button>
+                <button type="button" className="text-accent-blue hover:underline self-start font-medium mt-1 transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98]">Review weak joins →</button>
               </div>
             </ArticleSection>
           </section>
@@ -237,7 +237,7 @@ export function SessionsView({
                     </div>
                     <div className="flex items-center gap-4 shrink-0">
                       <span className="text-xs text-text-muted whitespace-nowrap">{formatTimeAgo(session.importedAtISO)}</span>
-                      <button type="button" className="text-sm border border-border-light rounded-lg px-3 py-1 bg-bg-primary text-text-secondary hover:text-text-primary hover:border-border-strong group-hover:bg-bg-secondary transition hidden sm:block">
+                      <button type="button" className="text-sm border border-border-light rounded-lg px-3 py-1 bg-bg-primary text-text-secondary hover:text-text-primary hover:border-border-strong group-hover:bg-bg-secondary hidden sm:block transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98]">
                         Inspect
                       </button>
                     </div>

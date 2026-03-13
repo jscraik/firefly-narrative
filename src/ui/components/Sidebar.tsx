@@ -133,7 +133,7 @@ export function Sidebar({ mode, onModeChange, onOpenRepo, onImportSession }: Sid
                 aria-selected={isActive}
                 onClick={() => onModeChange(id)}
                 className={clsx(
-                    "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition duration-150 active:scale-[0.98]",
+                    "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:scale-[0.98]",
                     isActive
                         ? "nav-item-active shadow-sm"
                         : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
@@ -214,7 +214,7 @@ export function Sidebar({ mode, onModeChange, onOpenRepo, onImportSession }: Sid
                     <button
                         type="button"
                         onClick={() => setShowFullMap((value) => !value)}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition duration-150 active:scale-[0.98]"
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:scale-[0.98]"
                     >
                         <Layers3 className="w-4 h-4" />
                         <span className="flex-1 text-left">{showFullMap ? 'Show Primary Views' : 'Show Full Map'}</span>
@@ -227,7 +227,7 @@ export function Sidebar({ mode, onModeChange, onOpenRepo, onImportSession }: Sid
                         <button
                             type="button"
                             onClick={onOpenRepo}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition duration-150 active:scale-[0.98]"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:scale-[0.98]"
                         >
                             <GitBranch className="w-4 h-4" />
                             <span className="flex-1 text-left">Open Repo</span>
@@ -235,7 +235,7 @@ export function Sidebar({ mode, onModeChange, onOpenRepo, onImportSession }: Sid
                         <button
                             type="button"
                             onClick={onImportSession}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition duration-150 active:scale-[0.98]"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:scale-[0.98]"
                         >
                             <Database className="w-4 h-4" />
                             <span className="flex-1 text-left">Import Session</span>

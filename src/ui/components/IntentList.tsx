@@ -35,7 +35,7 @@ export function IntentList({ items }: { items: IntentItem[] }) {
             <div key={it.id} className="flex items-start justify-between gap-4 group">
               <div className="flex items-start gap-3 flex-1">
                 <span
-                  className={`mt-1 text-lg leading-none transition-transform duration-150 ease-out group-hover:translate-x-0.5 ${config.className}`}
+                  className={`mt-1 text-lg leading-none transition-transform duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0.5 ${config.className}`}
                   title={config.label}
                 >
                   {config.icon}

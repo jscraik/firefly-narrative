@@ -63,7 +63,7 @@ function HygieneIssueRow({ issue }: { issue: HygieneIssue }) {
             </span>
           </div>
         </div>
-        <button type="button" className="shrink-0 text-xs px-2 py-1 bg-bg-primary rounded border border-border-light hover:border-border-strong text-text-secondary">
+        <button type="button" className="shrink-0 text-xs px-2 py-1 bg-bg-primary rounded border border-border-light hover:border-border-strong text-text-secondary transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98]">
           Review
         </button>
       </div>

@@ -129,7 +129,7 @@ function TableRow({ file, index, onClick }: TableRowProps) {
 
   return (
     <tr
-      className="border-b border-border-subtle last:border-b-0 hover:bg-accent-blue-bg focus-visible:bg-accent-blue-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-blue cursor-pointer transition-colors duration-150 ease-out animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-forwards"
+      className="border-b border-border-subtle last:border-b-0 hover:bg-accent-blue-bg focus-visible:bg-accent-blue-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-blue cursor-pointer transition-colors duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-forwards"
       style={rowStyle}
       onClick={onClick}
       onKeyDown={handleKeyDown}
@@ -171,7 +171,7 @@ function LoadMoreButton({ onClick, isLoading }: LoadMoreButtonProps) {
       disabled={isLoading}
       className={`
         btn-secondary-soft inline-flex items-center gap-2 px-4 py-2 rounded-lg
-        text-sm font-medium transition duration-150 ease-out
+        text-sm font-medium transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
         ${isLoading
           ? 'text-text-muted cursor-not-allowed opacity-50'
           : 'text-text-secondary'

@@ -109,7 +109,7 @@ function PermissionsBadge({ count, label, severity }: { count: number; label: st
       <div className="flex items-center gap-3">
         <span className="text-lg font-semibold">{count}</span>
         {severity !== 'info' && (
-          <button type="button" className="rounded-lg bg-bg-primary border border-border-light px-3 py-1.5 text-xs font-medium hover:bg-bg-secondary transition">
+          <button type="button" className="rounded-lg bg-bg-primary border border-border-light px-3 py-1.5 text-xs font-medium hover:bg-bg-secondary transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98]">
             Review
           </button>
         )}

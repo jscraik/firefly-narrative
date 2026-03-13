@@ -66,7 +66,7 @@ export function AiContributionBadge({ stats, showZero = false }: AiContributionB
       className={`
         inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium
         border ${style.bg} ${style.text} ${style.border}
-        transition duration-150 hover:shadow-sm
+        transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:shadow-sm
       `}
       title={getTooltip(stats)}
     >

@@ -77,7 +77,7 @@ export const TimelineNodeComponent = forwardRef<HTMLDivElement, TimelineNodeProp
         {/* Dot with selection glow */}
         <button
           type="button"
-          className={`timeline-dot transition duration-150 ${node.status || 'ok'} ${selected ? 'selected' : ''} ${hasSession ? 'has-session' : ''} ${pulsing ? 'pulse-once' : ''}`}
+          className={`timeline-dot transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${node.status || 'ok'} ${selected ? 'selected' : ''} ${hasSession ? 'has-session' : ''} ${pulsing ? 'pulse-once' : ''}`}
           onClick={onSelect}
           title={node.label ?? node.id}
           aria-label={node.label ?? node.id}

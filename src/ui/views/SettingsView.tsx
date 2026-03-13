@@ -97,7 +97,7 @@ export function SettingsView(_props: SettingsViewProps) {
                 <span className="text-sm font-mono text-text-secondary">~/Documents/Projects/</span>
                 <span className="rounded-md bg-accent-amber-bg/50 px-2 py-0.5 text-[0.6875rem] font-medium text-accent-amber border border-accent-amber/20">SCANNING</span>
               </div>
-              <button type="button" className="mt-4 self-start rounded-lg border border-border-strong bg-bg-secondary px-4 py-2 text-sm font-medium text-text-primary shadow-xs transition hover:bg-bg-tertiary">
+              <button type="button" className="mt-4 self-start rounded-lg border border-border-strong bg-bg-secondary px-4 py-2 text-sm font-medium text-text-primary shadow-xs transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98] hover:bg-bg-tertiary">
                 Add Directory...
               </button>
             </div>
@@ -124,7 +124,7 @@ export function SettingsView(_props: SettingsViewProps) {
               <ToggleRow label="Launch at login" checked={true} description="Start Trace silently in the menu bar." />
               <ToggleRow label="Check for updates automatically" checked={true} />
               <div className="mt-2 p-3 border-t border-border-subtle/50">
-                <button type="button" className="rounded-lg border border-border-light bg-bg-primary px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-bg-secondary hover:text-text-primary">
+                <button type="button" className="rounded-lg border border-border-light bg-bg-primary px-4 py-2 text-sm font-medium text-text-secondary transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-[0.98] hover:bg-bg-secondary hover:text-text-primary">
                   Export Debug Logs
                 </button>
               </div>
