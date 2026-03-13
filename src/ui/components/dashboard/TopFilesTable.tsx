@@ -1,5 +1,6 @@
 import type { FileStats } from '../../../core/attribution-api';
 import type { DashboardFilter } from '../../../core/types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TopFilesTableProps {
   files: FileStats[];
@@ -71,20 +72,22 @@ export function TopFilesTable({
               </tr>
             </thead>
             <tbody>
-              {files.map((file, index) => (
-                <TableRow
-                  key={file.filePath}
-                  file={file}
-                  index={index}
-                  onClick={() =>
-                    onFileClick({
-                      type: 'file',
-                      value: file.filePath,
-                      dateRange: undefined, // Caller should provide if needed
-                    })
-                  }
-                />
-              ))}
+              <AnimatePresence>
+                {files.map((file, index) => (
+                  <TableRow
+                    key={file.filePath}
+                    file={file}
+                    index={index}
+                    onClick={() =>
+                      onFileClick({
+                        type: 'file',
+                        value: file.filePath,
+                        dateRange: undefined,
+                      })
+                    }
+                  />
+                ))}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>
@@ -116,10 +119,6 @@ interface TableRowProps {
  * Keyboard: Enter/Space triggers onClick, Tab navigates between rows
  */
 function TableRow({ file, index, onClick }: TableRowProps) {
-  const rowStyle = {
-    animationDelay: `${200 + index * 30}ms`, // Stagger after metrics grid
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -128,9 +127,12 @@ function TableRow({ file, index, onClick }: TableRowProps) {
   };
 
   return (
-    <tr
-      className="border-b border-border-subtle last:border-b-0 hover:bg-accent-blue-bg focus-visible:bg-accent-blue-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-blue cursor-pointer transition-colors duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-forwards"
-      style={rowStyle}
+    <motion.tr
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ delay: index * 0.03, duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="border-b border-border-subtle last:border-b-0 hover:bg-accent-blue-bg focus-visible:bg-accent-blue-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-blue cursor-pointer transition-colors duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
       onClick={onClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -147,7 +149,7 @@ function TableRow({ file, index, onClick }: TableRowProps) {
       <td className="px-4 py-3 text-sm text-text-secondary text-right tabular-nums">
         {file.commitCount}
       </td>
-    </tr>
+    </motion.tr>
   );
 }
 

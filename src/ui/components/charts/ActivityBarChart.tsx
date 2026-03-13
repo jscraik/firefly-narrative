@@ -85,10 +85,9 @@ function createActivityBarChartOptions({
       textStyle: { color: palette.textPrimary, fontSize: 11, fontFamily: 'inherit' },
       padding: [6, 10],
       borderRadius: 6,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatter: (params: any) => {
-        const list: any[] = Array.isArray(params) ? params : [params];
-        const p = list[0];
+      formatter: (params: unknown) => {
+        const list = Array.isArray(params) ? params : [params];
+        const p = list[0] as { name: string; value: string | number };
         return `${p.name}<br/><b>${p.value}${unit}</b>`;
       },
     },

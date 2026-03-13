@@ -7,6 +7,7 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import type { CaptureReliabilityStatus } from '../../core/tauri/ingestConfig';
 import type { Mode } from '../../core/types';
@@ -204,60 +205,67 @@ export function LiveCaptureView({
               </div>
 
               <div className="mt-5 space-y-3">
-                {viewModel.activity.map((item, _index) => (
-                  <article
-                    key={`${item.title}-${item.meta}`}
-                    className="rounded-2xl border border-border-light bg-bg-primary/80 p-4"
-                    data-authority-tier={item.authorityTier}
-                    data-authority-label={item.authorityLabel}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
+                <AnimatePresence initial={false}>
+                  {viewModel.activity.map((item, _index) => (
+                    <motion.article
+                      key={`${item.title}-${item.meta}`}
+                      layout
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+                      className="rounded-2xl border border-border-light bg-bg-primary/80 p-4"
+                      data-authority-tier={item.authorityTier}
+                      data-authority-label={item.authorityLabel}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={clsx(
+                                'h-2 w-2 rounded-full',
+                                item.status === 'ok'
+                                  ? 'bg-accent-green'
+                                  : item.status === 'warn'
+                                    ? 'bg-accent-amber'
+                                    : item.status === 'critical'
+                                      ? 'bg-accent-red'
+                                      : 'bg-accent-blue',
+                              )}
+                            />
+                            <p className="text-sm font-semibold text-text-primary">{item.title}</p>
+                          </div>
+                          <p className="text-xs uppercase tracking-[0.18em] text-text-muted">{item.meta}</p>
+                        </div>
                         <div className="flex items-center gap-2">
+                          <AuthorityCue authorityTier={item.authorityTier} authorityLabel={item.authorityLabel} />
                           <span
                             className={clsx(
-                              'h-2 w-2 rounded-full',
-                              item.status === 'ok'
-                                ? 'bg-accent-green'
-                                : item.status === 'warn'
-                                  ? 'bg-accent-amber'
-                                  : item.status === 'critical'
-                                    ? 'bg-accent-red'
-                                    : 'bg-accent-blue',
+                              'inline-flex rounded-full border px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.14em]',
+                              activityStatusClasses[item.status],
                             )}
-                          />
-                          <p className="text-sm font-semibold text-text-primary">{item.title}</p>
+                          >
+                            {item.status}
+                          </span>
                         </div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-text-muted">{item.meta}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <AuthorityCue authorityTier={item.authorityTier} authorityLabel={item.authorityLabel} />
-                        <span
-                          className={clsx(
-                            'inline-flex rounded-full border px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.14em]',
-                            activityStatusClasses[item.status],
-                          )}
+                      <p className="mt-3 text-sm leading-6 text-text-secondary">{item.detail}</p>
+                      {item.action ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!onAction || !item.action) return;
+                            onAction(item.action);
+                          }}
+                          className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border-light bg-bg-secondary px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary transition hover:border-accent-blue-light hover:text-text-primary"
                         >
-                          {item.status}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-text-secondary">{item.detail}</p>
-                    {item.action ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!onAction || !item.action) return;
-                          onAction(item.action);
-                        }}
-                        className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border-light bg-bg-secondary px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary transition hover:border-accent-blue-light hover:text-text-primary"
-                      >
-                        Follow signal
-                        <ArrowUpRight className="h-3.5 w-3.5" />
-                      </button>
-                    ) : null}
-                  </article>
-                ))}
+                          Follow signal
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
+                    </motion.article>
+                  ))}
+                </AnimatePresence>
               </div>
             </article>
 

@@ -1,5 +1,6 @@
 import { Bot, Check, ChevronDown, ChevronUp, Copy, Lightbulb, Sparkles, Terminal, User, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { SessionExcerpt, SessionMessage, SessionMessageRole } from '../../core/types';
 
 const ROLE_CONFIG: Record<SessionMessageRole, {
@@ -122,35 +123,45 @@ function ToolCallDetails({ message }: { message: SessionMessage }) {
         {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
       </button>
 
-      {isExpanded && (
-        <div className="border-t border-accent-green-light">
-          <div className="flex items-center justify-between px-3 py-1.5 bg-accent-green-bg/40 border-b border-accent-green-light">
-            <span className="text-[0.625rem] uppercase tracking-wide text-accent-green">
-              Arguments
-            </span>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex items-center gap-1 text-[0.625rem] text-accent-green transition-colors hover:text-accent-green/80"
-            >
-              {copied ? (
-                <><Check className="w-3 h-3" /> Copied</>
-              ) : (
-                <><Copy className="w-3 h-3" /> Copy</>
-              )}
-            </button>
-          </div>
-          <div className="p-3">
-            {hasInput ? (
-              <pre className="font-mono text-[0.6875rem] leading-relaxed whitespace-pre-wrap break-words text-text-secondary">
-                {toolInput}
-              </pre>
-            ) : (
-              <span className="text-[0.6875rem] italic text-text-tertiary">No input recorded</span>
-            )}
-          </div>
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-accent-green-light">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-accent-green-bg/40 border-b border-accent-green-light">
+                <span className="text-[0.625rem] uppercase tracking-wide text-accent-green">
+                  Arguments
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-1 text-[0.625rem] text-accent-green transition-colors hover:text-accent-green/80"
+                >
+                  {copied ? (
+                    <><Check className="w-3 h-3" /> Copied</>
+                  ) : (
+                    <><Copy className="w-3 h-3" /> Copy</>
+                  )}
+                </button>
+              </div>
+              <div className="p-3">
+                {hasInput ? (
+                  <pre className="font-mono text-[0.6875rem] leading-relaxed whitespace-pre-wrap break-words text-text-secondary">
+                    {toolInput}
+                  </pre>
+                ) : (
+                  <span className="text-[0.6875rem] italic text-text-tertiary">No input recorded</span>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -162,10 +173,10 @@ function ThinkingBlock({ message }: { message: SessionMessage }) {
   const displayText = isExpanded || !isLong ? text : `${text.slice(0, 200)}...`;
 
   return (
-    <div className="mt-2">
-      <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap break-words">
+    <motion.div layout className="mt-2 text-sm text-text-secondary leading-relaxed whitespace-pre-wrap break-words">
+      <motion.div layout="position">
         {displayText}
-      </div>
+      </motion.div>
       {isLong && (
         <button
           type="button"
@@ -179,7 +190,7 @@ function ThinkingBlock({ message }: { message: SessionMessage }) {
           )}
         </button>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -195,12 +206,19 @@ function MessageCard({
   const config = ROLE_CONFIG[message.role];
 
   return (
-    <div className={`rounded-xl border px-4 py-4 transition hover:shadow-sm min-w-0 ${message.role === 'user' ? 'bg-bg-tertiary border-border-light' :
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={`rounded-xl border px-4 py-4 transition hover:shadow-sm min-w-0 ${message.role === 'user' ? 'bg-bg-tertiary border-border-light' :
       message.role === 'thinking' ? 'bg-accent-amber-bg/50 border-accent-amber-light' :
         message.role === 'plan' ? 'bg-accent-violet-bg/50 border-accent-violet-light' :
           message.role === 'tool_call' ? 'bg-accent-green-bg/50 border-accent-green-light' :
             'bg-bg-secondary border-border-light'
-      }`}>
+      }`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between gap-3 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -244,7 +262,7 @@ function MessageCard({
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -343,14 +361,16 @@ export function TraceTranscriptPanel({
 
       {/* Messages */}
       <div className="space-y-3">
-        {visibleMessages.map((message) => (
-          <MessageCard
-            key={message.id}
-            message={message}
-            selectedFile={selectedFile}
-            onFileClick={onFileClick}
-          />
-        ))}
+        <AnimatePresence initial={false}>
+          {visibleMessages.map((message) => (
+            <MessageCard
+              key={message.id}
+              message={message}
+              selectedFile={selectedFile}
+              onFileClick={onFileClick}
+            />
+          ))}
+        </AnimatePresence>
       </div>
 
       {/* Show more/less */}
