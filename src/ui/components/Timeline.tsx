@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { TimelineNode as TimelineNodeType } from '../../core/types';
-import type { FireflyEvent } from '../../hooks/useFirefly';
+import type { TraceEvent as TraceSignalEvent } from '../../hooks/useTraceSignal';
 import { useTimelineNavigation } from '../../hooks/useTimelineNavigation';
 import { BadgePill } from './BadgePill';
-import { FireflySignal } from './FireflySignal';
+import { TraceSignalIndicator } from './TraceSignalIndicator';
 import { TimelineNavButtons } from './TimelineNavButtons';
 import { TimelineNodeComponent } from './TimelineNode';
 
-export interface FireflyTrackingSettlePayload {
+export interface TraceSignalTrackingSettlePayload {
   selectedNodeId: string;
   x: number;
   y: number;
@@ -19,10 +19,10 @@ export interface TimelineProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   pulseCommitId?: string | null;
-  fireflyEvent?: FireflyEvent;
-  fireflyDisabled?: boolean;
-  fireflyBurstType?: 'success' | 'error' | null;
-  onFireflyTrackingSettled?: (payload: FireflyTrackingSettlePayload) => void;
+  traceSignalEvent?: TraceSignalEvent;
+  traceSignalDisabled?: boolean;
+  traceSignalBurstType?: 'success' | 'error' | null;
+  onTraceSignalTrackingSettled?: (payload: TraceSignalTrackingSettlePayload) => void;
 }
 
 export function Timeline({
@@ -30,10 +30,10 @@ export function Timeline({
   selectedId,
   onSelect,
   pulseCommitId,
-  fireflyEvent = { type: 'idle', selectedNodeId: null },
-  fireflyDisabled = false,
-  fireflyBurstType = null,
-  onFireflyTrackingSettled,
+  traceSignalEvent = { type: 'idle', selectedNodeId: null },
+  traceSignalDisabled = false,
+  traceSignalBurstType = null,
+  onTraceSignalTrackingSettled,
 }: TimelineProps) {
   const layout = {
     padding: 7,
@@ -47,8 +47,8 @@ export function Timeline({
     scrollToNode,
   } = useTimelineNavigation({ nodes, selectedId, onSelect });
 
-  // Firefly position tracking
-  const [fireflyPos, setFireflyPos] = useState({ x: 0, y: 0 });
+  // Trace signal position tracking
+  const [traceSignalPos, setTraceSignalPos] = useState({ x: 0, y: 0 });
   const nodeRefs = useRef<Map<string, HTMLElement>>(new Map());
   const settleRafRef = useRef<number | null>(null);
   const keyboardPulseTimerRef = useRef<number | null>(null);
@@ -66,7 +66,7 @@ export function Timeline({
     }, 300);
   }, []);
 
-  const measureFireflyPosition = useCallback(() => {
+  const measureTraceSignalPosition = useCallback(() => {
     if (!selectedId) return null;
     const node = nodeRefs.current.get(selectedId);
     const container = containerRef.current;
@@ -79,7 +79,7 @@ export function Timeline({
       y: nodeRect.top - containerRect.top,
     };
 
-    setFireflyPos(nextPos);
+    setTraceSignalPos(nextPos);
     return nextPos;
   }, [selectedId, containerRef]);
 
@@ -93,18 +93,18 @@ export function Timeline({
     let settleRafB = 0;
 
     const runSettleCheck = () => {
-      const first = measureFireflyPosition();
+      const first = measureTraceSignalPosition();
       if (!first) return;
 
       settleRafA = window.requestAnimationFrame(() => {
-        const second = measureFireflyPosition();
+        const second = measureTraceSignalPosition();
         if (!second || cancelled) return;
 
         const stableX = Math.abs(first.x - second.x) <= 1;
         const stableY = Math.abs(first.y - second.y) <= 1;
 
         if (stableX && stableY) {
-          onFireflyTrackingSettled?.({
+          onTraceSignalTrackingSettled?.({
             selectedNodeId: selectedId,
             x: second.x,
             y: second.y,
@@ -120,7 +120,7 @@ export function Timeline({
     runSettleCheck();
 
     const handleScroll = () => {
-      measureFireflyPosition();
+      measureTraceSignalPosition();
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
@@ -136,7 +136,7 @@ export function Timeline({
         window.cancelAnimationFrame(settleRafRef.current);
       }
     };
-  }, [measureFireflyPosition, onFireflyTrackingSettled, selectedId, containerRef]);
+  }, [measureTraceSignalPosition, onTraceSignalTrackingSettled, selectedId, containerRef]);
 
   useEffect(() => {
     return () => {
@@ -153,7 +153,7 @@ export function Timeline({
 
   return (
     <div
-      className="bg-bg-secondary/80 backdrop-blur-lg border-t border-border-subtle"
+      className="bg-bg-subtle  border-t border-border-subtle"
       style={{ padding: `${layout.padding}px` }}
     >
       <div className="flex items-center gap-3">
@@ -194,7 +194,7 @@ export function Timeline({
           }}
         >
           {/* Connection line - visible path */}
-          <div className="pointer-events-none absolute left-0 right-0 top-[38px] h-[1px] bg-border-subtle" />
+          <div className="pointer-events-none absolute left-0 right-0 top-[2.375rem] h-[0.0625rem] bg-border-subtle" />
 
           <motion.div
             className="relative flex min-w-max items-start gap-2 px-4 py-2"
@@ -228,13 +228,13 @@ export function Timeline({
             ))}
           </motion.div>
 
-          {/* Firefly Signal */}
-          <FireflySignal
-            x={fireflyPos.x}
-            y={fireflyPos.y}
-            event={fireflyEvent}
-            disabled={fireflyDisabled}
-            burstType={fireflyBurstType}
+          {/* Trace Signal */}
+          <TraceSignalIndicator
+            x={traceSignalPos.x}
+            y={traceSignalPos.y}
+            event={traceSignalEvent}
+            disabled={traceSignalDisabled}
+            burstType={traceSignalBurstType}
           />
         </div>
 

@@ -107,7 +107,7 @@ export function SessionExcerpts(props: SessionExcerptsProps) {
               isSelected={selectedCommitId === linkedCommitSha}
             />
             {excerpt.needsReview ? (
-              <span className="rounded bg-accent-amber-bg px-1.5 py-0.5 text-[11px] text-accent-amber">Needs review</span>
+              <span className="rounded bg-accent-amber-bg px-1.5 py-0.5 text-[0.6875rem] text-accent-amber">Needs review</span>
             ) : null}
             <SessionLinkPipeline excerpt={excerpt} />
           </div>
@@ -123,7 +123,7 @@ export function SessionExcerpts(props: SessionExcerptsProps) {
                   type="button"
                   onClick={() => onSelectSession?.(item.id)}
                   className={[
-                    'px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-150',
+                    'rounded-lg border px-3 py-1.5 text-[0.6875rem] font-medium transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]',
                     isActive
                       ? 'bg-accent-blue-light border-accent-blue text-accent-blue shadow-sm ring-1 ring-accent-blue/20'
                       : 'bg-bg-secondary border-border-light text-text-secondary hover:bg-bg-hover hover:border-border-medium',
@@ -142,7 +142,7 @@ export function SessionExcerpts(props: SessionExcerptsProps) {
           <SessionStats excerpt={excerpt} filesTouchedCount={filesTouched.length} />
 
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-text-muted">AI-suggested highlights</div>
+            <div className="text-[0.625rem] uppercase tracking-wider text-text-muted">AI-suggested highlights</div>
             {highlights.length > 0 ? (
               <ul className="mt-2 list-disc pl-4 space-y-2">
                 {highlights.map((highlight) => (
@@ -152,15 +152,15 @@ export function SessionExcerpts(props: SessionExcerptsProps) {
             ) : (
               <div className="mt-2 text-xs text-text-muted">No highlights available.</div>
             )}
-            <div className="mt-2 text-[11px] text-text-muted">
+            <div className="mt-2 text-[0.6875rem] text-text-muted">
               Review these in the Conversation panel before reusing or sharing.
             </div>
           </div>
 
           {filesTouched.length > 0 ? (
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-text-muted">Mentioned files</div>
-              <div className="mt-1 text-[11px] text-text-muted">
+              <div className="text-[0.625rem] uppercase tracking-wider text-text-muted">Mentioned files</div>
+              <div className="mt-1 text-[0.6875rem] text-text-muted">
                 From imported session logs. Best-effort — may not be changed in this commit.
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -191,13 +191,13 @@ export function SessionExcerpts(props: SessionExcerptsProps) {
                   );
                 })}
                 {filesTouched.length > 8 ? (
-                  <span className="text-[11px] text-text-muted">+{filesTouched.length - 8} more</span>
+                  <span className="text-[0.6875rem] text-text-muted">+{filesTouched.length - 8} more</span>
                 ) : null}
               </div>
             </div>
           ) : null}
 
-          <div className="text-[11px] text-text-muted">Full conversation appears below in the Conversation panel.</div>
+          <div className="text-[0.6875rem] text-text-muted">Full conversation appears below in the Conversation panel.</div>
         </div>
       </div>
 
@@ -244,16 +244,16 @@ function SessionStats({ excerpt, filesTouchedCount }: { excerpt: SessionExcerpt;
   return (
     <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
       <div>
-        <div className="text-[10px] uppercase tracking-wider text-text-muted">Messages</div>
+        <div className="text-[0.625rem] uppercase tracking-wider text-text-muted">Messages</div>
         <div className="font-semibold">{excerpt.messages.length}</div>
       </div>
       <div>
-        <div className="text-[10px] uppercase tracking-wider text-text-muted">Mentioned files</div>
+        <div className="text-[0.625rem] uppercase tracking-wider text-text-muted">Mentioned files</div>
         <div className="font-semibold">{filesTouchedCount}</div>
       </div>
       {typeof excerpt.durationMin === 'number' ? (
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-text-muted">Duration</div>
+          <div className="text-[0.625rem] uppercase tracking-wider text-text-muted">Duration</div>
           <div className="font-semibold">{excerpt.durationMin} min</div>
         </div>
       ) : null}

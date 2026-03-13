@@ -817,8 +817,8 @@ describe("BranchView transition and integration coverage", () => {
 
     render(<BranchView {...props} />);
 
-    const backButton = await screen.findByRole("button", { name: /back to dashboard/i });
-    expect(screen.getByRole("region", { name: "Branch context" })).toBeInTheDocument();
+    const backButton = await screen.findByRole("button", { name: /back to narrative brief/i });
+    expect(screen.getByRole("region", { name: "Repo evidence context" })).toBeInTheDocument();
 
     await user.tab();
     expect(backButton).toHaveFocus();

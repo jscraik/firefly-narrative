@@ -48,7 +48,14 @@ src-tauri/icons/*.ico
 .vscode
 
 # Generated artifacts
-artifacts/
+artifacts/**
+!artifacts/ui-views-rollout-plan-evidence.md
+!artifacts/screenshots/
+artifacts/screenshots/**
+!artifacts/screenshots/ui-views-rollout-2026-03-12/
+!artifacts/screenshots/ui-views-rollout-2026-03-12/dashboard-empty-state.png
+!artifacts/screenshots/ui-views-rollout-2026-03-12/trust-center-surface.png
+!artifacts/screenshots/ui-views-rollout-2026-03-12/story-map-critical-signal.png
 
 # Release artifacts should be published via GitHub Releases (not committed)
 *.dmg
@@ -62,6 +69,7 @@ coverage/
 .agent/
 tmp/
 *.bak.*
+.tmp_pr_body.md
 app-state.png
 app-working.png
 .agents/
@@ -84,6 +92,17 @@ package-lock.json
 
 FORJAMIE.md
 
+
+# Scratch refactoring scripts
+*.mjs
+*.js
+!commitlint.config.js
+!postcss.config.js
+!tailwind.config.js
+!vite.config.js
+
+# Temporary screenshots for review
+temporary screenshots/
 
 environment.toml
 app-screenshot.png

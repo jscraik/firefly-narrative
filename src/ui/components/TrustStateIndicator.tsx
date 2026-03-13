@@ -11,7 +11,7 @@
  * - trust_paused: Trust paused due to divergence, auth drift, or error
  *
  * Recovery affordances for trust_paused:
- * - Retry hydrate from fresh checkpoint
+ * - Retry hydrate from fresh snapshot
  * - Clear stale state (requires privileged authorization)
  * - View blocking reason detail
  */
@@ -158,22 +158,22 @@ export function TrustStateIndicator(props: TrustStateIndicatorProps) {
           </span>
         </div>
         {activeThreadId && (
-          <span className="text-[10px] font-mono text-text-muted" title={activeThreadId}>
+          <span className="text-[0.625rem] font-mono text-text-muted" title={activeThreadId}>
             {activeThreadId.slice(0, 8)}…
           </span>
         )}
       </div>
 
-      <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">{description}</p>
+      <p className="mt-1 text-[0.6875rem] leading-relaxed text-text-secondary">{description}</p>
 
       {trustState === 'trust_paused' && blockingReasons.length > 0 && (
         <div className="mt-2 space-y-1">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+          <div className="text-[0.625rem] font-semibold uppercase tracking-wide text-text-muted">
             Blocking Reasons
           </div>
-          <ul className="list-disc space-y-0.5 pl-3 text-[11px] text-text-tertiary">
-            {blockingReasons.slice(0, 3).map((reason, index) => (
-              <li key={`br-${index}-${reason.slice(0, 20)}`}>{reason}</li>
+          <ul className="list-disc space-y-0.5 pl-3 text-[0.6875rem] text-text-tertiary">
+            {blockingReasons.slice(0, 3).map((reason, _index) => (
+              <li key={`br-${reason.slice(0, 20)}`}>{reason}</li>
             ))}
           </ul>
         </div>
@@ -185,7 +185,7 @@ export function TrustStateIndicator(props: TrustStateIndicatorProps) {
             <button
               type="button"
               onClick={onRetryHydrate}
-              className="rounded-md border border-accent-amber-light bg-bg-primary px-2.5 py-1 text-[11px] font-medium text-accent-amber transition-colors hover:bg-bg-secondary"
+              className="rounded-md border border-accent-amber-light bg-bg-primary px-2.5 py-1 text-[0.6875rem] font-medium text-accent-amber transition-colors hover:bg-bg-secondary"
             >
               Retry Hydrate
             </button>
@@ -194,7 +194,7 @@ export function TrustStateIndicator(props: TrustStateIndicatorProps) {
             <button
               type="button"
               onClick={onClearStaleState}
-              className="rounded-md border border-accent-red-light bg-bg-primary px-2.5 py-1 text-[11px] font-medium text-accent-red transition-colors hover:bg-bg-secondary"
+              className="rounded-md border border-accent-red-light bg-bg-primary px-2.5 py-1 text-[0.6875rem] font-medium text-accent-red transition-colors hover:bg-bg-secondary"
             >
               Clear Stale State
             </button>
@@ -203,7 +203,7 @@ export function TrustStateIndicator(props: TrustStateIndicatorProps) {
       )}
 
       {trustState === 'trust_paused' && (
-        <p className="mt-2 text-[10px] text-text-muted">
+        <p className="mt-2 text-[0.625rem] text-text-muted">
           Approvals are disabled until trust is restored
         </p>
       )}
@@ -223,7 +223,7 @@ export function TrustStateCompact(props: {
 
   return (
     <output
-      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${styles.bg} ${styles.text} ${className}`}
+      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase ${styles.bg} ${styles.text} ${className}`}
       aria-label={`Trust: ${stateLabel(trustState)}`}
     >
       <span aria-hidden="true">{styles.icon}</span>

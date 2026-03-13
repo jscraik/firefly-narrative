@@ -15,12 +15,12 @@ export function NeedsAttentionList(props: {
         {issues.map((issue) => (
           <div key={issue.id} className="rounded-lg border border-accent-amber-light bg-accent-amber-bg p-3">
             <div className="text-xs font-semibold text-accent-amber">{issue.title}</div>
-            <div className="mt-1 whitespace-pre-wrap text-[11px] text-text-secondary">{issue.message}</div>
+            <div className="mt-1 whitespace-pre-wrap text-[0.6875rem] text-text-secondary">{issue.message}</div>
             <div className="mt-2 flex items-center gap-2">
               {issue.action ? (
                 <button
                   type="button"
-                  className="inline-flex items-center rounded-md border border-accent-amber-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
+                  className="inline-flex items-center rounded-md border border-accent-amber-light bg-bg-secondary px-2 py-1 text-[0.6875rem] font-semibold text-accent-amber hover:bg-accent-amber-light transition duration-200 ease-out active:duration-75 active:scale-[0.98] hover:scale-105"
                   onClick={issue.action.handler}
                 >
                   {issue.action.label}
@@ -28,7 +28,7 @@ export function NeedsAttentionList(props: {
               ) : null}
               <button
                 type="button"
-                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
+                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[0.6875rem] font-semibold text-text-secondary hover:bg-bg-hover transition duration-200 ease-out active:duration-75 active:scale-[0.98] hover:scale-105"
                 onClick={() => onDismiss(issue.id)}
               >
                 Dismiss

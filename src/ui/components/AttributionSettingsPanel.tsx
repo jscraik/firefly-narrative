@@ -80,7 +80,7 @@ export function AttributionSettingsPanel({
                             />
                             <button
                                 type="button"
-                                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-hover"
+                                className="inline-flex items-center rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[0.6875rem] font-semibold text-text-secondary hover:bg-bg-hover"
                                 onClick={() => {
                                     const trimmed = retentionDays.trim();
                                     if (!trimmed) {
@@ -99,7 +99,7 @@ export function AttributionSettingsPanel({
 
                         <button
                             type="button"
-                            className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light"
+                            className="inline-flex items-center rounded-md border border-accent-amber-light bg-accent-amber-bg px-2 py-1 text-[0.6875rem] font-semibold text-accent-amber hover:bg-accent-amber-light"
                             onClick={onPurgeAttributionMetadata}
                         >
                             Purge cache

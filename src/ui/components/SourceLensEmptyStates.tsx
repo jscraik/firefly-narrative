@@ -46,7 +46,7 @@ export function SourceLensEmptyStates({
           <p className="text-xs text-text-muted">
             Import a session or attribution note to see line sources
           </p>
-          <p className="mt-2 text-[11px] text-text-muted">
+          <p className="mt-2 text-[0.6875rem] text-text-muted">
             Attribution is sourced from git notes; no AI detection is performed.
           </p>
         </div>

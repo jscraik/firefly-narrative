@@ -1,5 +1,6 @@
 import type { FileStats } from '../../../core/attribution-api';
 import type { DashboardFilter } from '../../../core/types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TopFilesTableProps {
   files: FileStats[];
@@ -10,7 +11,7 @@ interface TopFilesTableProps {
 }
 
 /**
- * TopFilesTable — Displays ranked list of files by AI contribution.
+ * TopFilesTable — Displays ranked files by trace evidence coverage.
  *
  * Per dashboard-motion-spec.yml:
  * - Row hover: bg-accent-blue-bg, 150ms ease-out
@@ -28,7 +29,7 @@ export function TopFilesTable({
   if (files.length === 0) {
     return (
       <div className="text-center py-12 text-text-muted text-sm">
-        No files data available for this time range.
+        No attributed files are available for this window.
       </div>
     );
   }
@@ -37,7 +38,7 @@ export function TopFilesTable({
     <section data-top-files-table>
       <div className="card p-4 animate-fade-in-up delay-100">
         <h2 className="text-lg font-semibold text-text-primary mb-4">
-          Top AI-Contributed Files
+          Evidence-Ranked Files
         </h2>
 
         <div className="overflow-hidden rounded-lg border border-border-light bg-bg-secondary">
@@ -71,20 +72,22 @@ export function TopFilesTable({
               </tr>
             </thead>
             <tbody>
-              {files.map((file, index) => (
-                <TableRow
-                  key={file.filePath}
-                  file={file}
-                  index={index}
-                  onClick={() =>
-                    onFileClick({
-                      type: 'file',
-                      value: file.filePath,
-                      dateRange: undefined, // Caller should provide if needed
-                    })
-                  }
-                />
-              ))}
+              <AnimatePresence>
+                {files.map((file, index) => (
+                  <TableRow
+                    key={file.filePath}
+                    file={file}
+                    index={index}
+                    onClick={() =>
+                      onFileClick({
+                        type: 'file',
+                        value: file.filePath,
+                        dateRange: undefined,
+                      })
+                    }
+                  />
+                ))}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>
@@ -116,10 +119,6 @@ interface TableRowProps {
  * Keyboard: Enter/Space triggers onClick, Tab navigates between rows
  */
 function TableRow({ file, index, onClick }: TableRowProps) {
-  const rowStyle = {
-    animationDelay: `${200 + index * 30}ms`, // Stagger after metrics grid
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -128,14 +127,17 @@ function TableRow({ file, index, onClick }: TableRowProps) {
   };
 
   return (
-    <tr
-      className="border-b border-border-subtle last:border-b-0 hover:bg-accent-blue-bg focus-visible:bg-accent-blue-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-blue cursor-pointer transition-colors duration-150 ease-out animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-forwards"
-      style={rowStyle}
+    <motion.tr
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ delay: index * 0.03, duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="border-b border-border-subtle last:border-b-0 hover:bg-accent-blue-bg focus-visible:bg-accent-blue-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-blue cursor-pointer transition-colors duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
       onClick={onClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      <td className="px-4 py-3 text-sm text-text-secondary font-medium truncate max-w-[200px]" title={file.filePath}>
+      <td className="px-4 py-3 text-sm text-text-secondary font-medium truncate max-w-[12.5rem]" title={file.filePath}>
         {file.filePath}
       </td>
       <td className="px-4 py-3 text-sm text-text-secondary text-right tabular-nums">
@@ -147,7 +149,7 @@ function TableRow({ file, index, onClick }: TableRowProps) {
       <td className="px-4 py-3 text-sm text-text-secondary text-right tabular-nums">
         {file.commitCount}
       </td>
-    </tr>
+    </motion.tr>
   );
 }
 
@@ -171,7 +173,7 @@ function LoadMoreButton({ onClick, isLoading }: LoadMoreButtonProps) {
       disabled={isLoading}
       className={`
         btn-secondary-soft inline-flex items-center gap-2 px-4 py-2 rounded-lg
-        text-sm font-medium transition-all duration-150 ease-out
+        text-sm font-medium transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
         ${isLoading
           ? 'text-text-muted cursor-not-allowed opacity-50'
           : 'text-text-secondary'

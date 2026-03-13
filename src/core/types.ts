@@ -1,5 +1,55 @@
 export type BranchStatus = 'open' | 'merged';
 
+export type Mode =
+  | 'dashboard'
+  | 'repo'
+  | 'docs'
+  | 'live'
+  | 'sessions'
+  | 'transcripts'
+  | 'tools'
+  | 'costs'
+  | 'setup'
+  | 'ports'
+  | 'work-graph'
+  | 'repo-pulse'
+  | 'timeline'
+  | 'diffs'
+  | 'snapshots'
+  | 'skills'
+  | 'agents'
+  | 'memory'
+  | 'hooks'
+  | 'hygiene'
+  | 'deps'
+  | 'worktrees'
+  | 'env'
+  | 'settings'
+  | 'assistant'
+  | 'attribution'
+  | 'status';
+
+/**
+ * AnchorMode — the three dedicated views with distinct behavior and richer interaction models.
+ * These bypass the shared narrative surface and must never be routed through NarrativeSurfaceView.
+ */
+export type AnchorMode = 'dashboard' | 'repo' | 'docs';
+
+/**
+ * SurfaceMode — every Mode that is NOT an anchor.
+ * All non-anchor modes enter NarrativeSurfaceView; some still use the shared surface contract,
+ * while signature evidence screens can branch into dedicated layouts from there.
+ */
+export type SurfaceMode = Exclude<Mode, AnchorMode>;
+
+/**
+ * ViewSection — the sidebar grouping for each mode.
+ * Determines section headers and framing in operator-facing copy.
+ */
+export type ViewSection = 'Narrative' | 'Evidence' | 'Workspace' | 'Integrations' | 'Health' | 'Configure';
+
+
+
 export type Stats = {
   added: number;
   removed: number;
@@ -7,6 +57,19 @@ export type Stats = {
   commits: number;
   prompts: number;
   responses: number;
+};
+
+export type SnapshotType = 'automatic' | 'manual' | 'preflight' | 'recovery';
+
+export type Snapshot = {
+  id: string;
+  atISO: string;
+  type: SnapshotType;
+  branch: string;
+  headSha: string;
+  filesChanged: string[];
+  message?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type HeaderMetricUnavailableReason =
@@ -31,26 +94,26 @@ export type BranchHeaderMetricSet = {
 
 export type BranchHeaderViewModel =
   | {
-      kind: 'hidden';
-      reason:
-        | 'mode_unsupported'
-        | 'repo_idle'
-        | 'model_missing'
-        | 'feature_disabled';
-    }
+    kind: 'hidden';
+    reason:
+    | 'mode_unsupported'
+    | 'repo_idle'
+    | 'model_missing'
+    | 'feature_disabled';
+  }
   | {
-      kind: 'shell';
-      state: 'loading' | 'error';
-      message: string;
-    }
+    kind: 'shell';
+    state: 'loading' | 'error';
+    message: string;
+  }
   | {
-      kind: 'full';
-      title: string;
-      status: BranchStatus;
-      description: string;
-      metrics: BranchHeaderMetricSet;
-      isFilteredView: boolean;
-    };
+    kind: 'full';
+    title: string;
+    status: BranchStatus;
+    description: string;
+    metrics: BranchHeaderMetricSet;
+    isFilteredView: boolean;
+  };
 
 export type IntentType = 'feature' | 'fix' | 'refactor' | 'test' | 'docs' | 'other';
 
@@ -376,6 +439,10 @@ export type BranchViewModel = {
   timeline: TimelineNode[];
   // Optional, mainly for demo mode
   sessionExcerpts?: SessionExcerpt[];
+  // Dirty working-tree files (live repo mode)
+  dirtyFiles?: string[];
+  // Added + removed lines across staged and unstaged working-tree diffs (live repo mode)
+  dirtyChurnLines?: number;
   filesChanged?: FileChange[];
   diffsByFile?: Record<string, string>;
   traceSummaries?: {
@@ -385,6 +452,7 @@ export type BranchViewModel = {
   traceStatus?: TraceCollectorStatus;
   traceConfig?: TraceCollectorConfig;
   narrative?: BranchNarrative;
+  snapshots?: Snapshot[];
   meta?: {
     repoPath?: string;
     branchName?: string;
@@ -503,6 +571,65 @@ export interface DashboardStats {
   previousPeriod?: PeriodStats;
   topFiles: PaginatedFiles;
 }
+
+export type DashboardState =
+  | 'default'
+  | 'loading'
+  | 'empty'
+  | 'error'
+  | 'offline'
+  | 'permission_denied';
+
+export type DashboardTrustState = 'healthy' | 'degraded';
+
+export type SurfaceTrustState = DashboardTrustState;
+export type DataAuthorityTier = 'live_repo' | 'live_capture' | 'derived_summary' | 'static_scaffold' | 'system_signal';
+
+export type DashboardPanelStatus = 'ready' | 'loading' | 'empty' | 'error' | 'degraded';
+
+export type PanelStatusMap = Partial<Record<'metrics' | 'topFiles', DashboardPanelStatus>>;
+
+export type RetryFailureClass =
+  | 'ipc_timeout'
+  | 'io_transient'
+  | 'offline_source'
+  | 'authority_denied';
+
+export type DashboardRuntimeEnvironment = 'dev' | 'ci' | 'prod';
+
+export type DashboardStaleDropReason = 'superseded' | 'mode_exit' | 'abort_unavailable';
+
+export type RetryBudgetProfile = {
+  failureClass: RetryFailureClass;
+  maxAttempts: number;
+  maxTotalRetryMs: number;
+  backoffScheduleMs: number[];
+  jitterPercent: number;
+};
+
+export type DashboardRequestFailureMetadata = {
+  repoId: number;
+  requestKeyHash: string;
+  failureClass: RetryFailureClass;
+  authorityOutcome?: Exclude<CommandAuthorityOutcome, 'allowed'>;
+  attempt: number;
+  failedAtIso: string;
+  message: string;
+};
+
+export type DashboardDroppedRequestDiagnostic = {
+  repoId: number;
+  requestKeyHash: string;
+  attempt: number;
+  reason: DashboardStaleDropReason;
+  droppedAtIso: string;
+};
+
+export type CommandAuthorityOutcome =
+  | 'allowed'
+  | 'denied_capability'
+  | 'denied_scope'
+  | 'denied_window';
 
 export interface RepoInfo {
   id: number;

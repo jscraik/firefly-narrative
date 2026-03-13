@@ -69,7 +69,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
     const { title, message, isWebMode } = getUserFriendlyError(status.error);
 
     return (
-      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
+      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
         <div className="rounded-xl border border-accent-red-light bg-bg-secondary shadow-lg p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-accent-red mt-0.5 shrink-0" />
@@ -81,7 +81,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
                   <button
                     type="button"
                     onClick={onCheckAgain}
-                    className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-tertiary px-2 py-1 text-xs font-medium text-text-secondary hover:bg-bg-hover transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
+                    className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-tertiary px-2 py-1 text-xs font-medium text-text-secondary hover:bg-bg-hover transition duration-200 ease-out active:duration-75 active:scale-[0.98] hover:scale-105"
                   >
                     <RefreshCw className="w-3 h-3" />
                     Try Again
@@ -89,7 +89,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
                 )}
                 {isWebMode && (
                   <a
-                    href="https://github.com/jscraik/firefly-narrative/releases"
+                    href="https://github.com/jscraik/trace-narrative/releases"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-medium text-accent-blue hover:text-accent-blue/80 flex items-center gap-1"
@@ -119,7 +119,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
   // Downloading state
   if (status.type === 'downloading') {
     return (
-      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
+      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
         <div className="rounded-xl border border-accent-blue-light bg-accent-blue-bg shadow-lg p-4">
           <div className="flex items-center gap-3">
             <Loader2 className="w-5 h-5 text-accent-blue motion-safe:animate-spin shrink-0" />
@@ -127,7 +127,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
               <div className="font-semibold text-text-primary text-sm">Downloading Update</div>
               <div className="mt-2 h-1.5 bg-accent-blue-light rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-accent-blue transition-all duration-300"
+                  className="h-full bg-accent-blue transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
                   style={{ width: `${status.progress}%` }}
                 />
               </div>
@@ -142,7 +142,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
   // Ready to install state
   if (status.type === 'ready') {
     return (
-      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
+      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
         <div className="rounded-xl border border-accent-green-light bg-accent-green-bg shadow-lg p-4">
           <div className="flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-accent-green mt-0.5 shrink-0" />
@@ -176,7 +176,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
       : null;
 
     return (
-      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
+      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
         <div className="rounded-xl border border-border-light bg-bg-secondary shadow-lg p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-blue">
@@ -197,7 +197,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
                 <button
                   type="button"
                   onClick={onUpdate}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-blue text-text-inverted text-xs font-medium hover:opacity-90 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-1"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-blue text-text-inverted text-xs font-medium hover:opacity-90 transition duration-200 ease-out active:duration-75 active:scale-[0.98] hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-1"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download & Install
@@ -206,7 +206,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="px-3 py-1.5 rounded-lg border border-border-light text-text-secondary text-xs font-medium hover:bg-bg-tertiary transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:duration-75 active:scale-95 hover:scale-105"
+                    className="px-3 py-1.5 rounded-lg border border-border-light text-text-secondary text-xs font-medium hover:bg-bg-tertiary transition duration-200 ease-out active:duration-75 active:scale-[0.98] hover:scale-105"
                   >
                     Later
                   </button>

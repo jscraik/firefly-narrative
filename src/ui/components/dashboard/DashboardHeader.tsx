@@ -1,5 +1,6 @@
 import { Calendar, ChevronDown } from 'lucide-react';
-import type { TimeRange, TimeRangePreset } from '../../../core/types';
+import type { DashboardTrustState, TimeRange, TimeRangePreset } from '../../../core/types';
+import { DashboardTrustBadge } from './DashboardTrustBadge';
 import { TIME_RANGE_PRESETS } from './timeRangeUtils';
 
 interface DashboardHeaderProps {
@@ -8,6 +9,9 @@ interface DashboardHeaderProps {
   timeRange: TimeRange;
   onTimeRangeChange: (timeRange: TimeRange) => void;
   lastUpdated?: Date;
+  trustState?: DashboardTrustState;
+  onOpenRepo?: () => void;
+  onImportSession?: () => void;
 }
 
 export function DashboardHeader({
@@ -16,11 +20,14 @@ export function DashboardHeader({
   timeRange,
   onTimeRangeChange,
   lastUpdated,
+  trustState = 'healthy',
+  onOpenRepo: _onOpenRepo,
+  onImportSession: _onImportSession,
 }: DashboardHeaderProps) {
   return (
     <header
       data-dashboard-header
-      className="sticky top-0 z-10 h-16 bg-bg-secondary border-b border-border-light px-6"
+      className="sticky top-0 z-10 h-14 bg-bg-subtle  border-b border-border-subtle px-6"
     >
       <div className="flex items-center justify-between h-full">
         {/* Left: Repo info */}
@@ -28,6 +35,7 @@ export function DashboardHeader({
           <h1 className="text-lg font-semibold text-text-primary">
             {repoName || 'Dashboard'}
           </h1>
+          <DashboardTrustBadge trustState={trustState} />
         </div>
 
         {/* Right: Time range picker + last updated */}
@@ -55,12 +63,17 @@ export function DashboardHeader({
             </div>
           </div>
 
-          {/* Last Updated */}
-          {lastUpdated && (
-            <span className="text-xs text-text-muted">
-              Updated {lastUpdated.toLocaleTimeString()}
-            </span>
-          )}
+          <div className="h-4 w-px bg-border-subtle" />
+
+          {/* Sync status / Last Updated */}
+          <div className="flex items-center gap-2">
+            {lastUpdated && (
+              <span className="text-[0.625rem] uppercase tracking-wider font-bold text-text-muted opacity-80">
+                Synced {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            <div className="w-1.5 h-1.5 rounded-full bg-accent-green shadow-[0_0_8px_var(--accent-green)]" />
+          </div>
         </div>
       </div>
     </header>

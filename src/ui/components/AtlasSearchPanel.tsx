@@ -282,13 +282,13 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
           <details className="mt-2">
             <summary className="cursor-pointer text-xs text-text-secondary">Capabilities / Introspect / Doctor (raw)</summary>
             <div className="mt-2 grid grid-cols-1 gap-3">
-              <pre className="max-h-40 overflow-auto rounded-md bg-bg-primary p-3 text-[11px] text-text-secondary">
+              <pre className="max-h-40 overflow-auto rounded-md bg-bg-primary p-3 text-[0.6875rem] text-text-secondary">
                 {summarizeObject(info.capabilities)}
               </pre>
-              <pre className="max-h-40 overflow-auto rounded-md bg-bg-primary p-3 text-[11px] text-text-secondary">
+              <pre className="max-h-40 overflow-auto rounded-md bg-bg-primary p-3 text-[0.6875rem] text-text-secondary">
                 {summarizeObject(info.introspect)}
               </pre>
-              <pre className="max-h-40 overflow-auto rounded-md bg-bg-primary p-3 text-[11px] text-text-secondary">
+              <pre className="max-h-40 overflow-auto rounded-md bg-bg-primary p-3 text-[0.6875rem] text-text-secondary">
                 {summarizeObject(info.doctor)}
               </pre>
             </div>
@@ -329,7 +329,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
                 >
                   <div className="flex flex-col gap-1">
                     <div className="text-xs font-medium text-text-secondary">{formatHitMeta(hit)}</div>
-                    <div className="text-[11px] text-text-tertiary">Chunk {hit.chunkIndex} · score {hit.score.toFixed(2)}</div>
+                    <div className="text-[0.6875rem] text-text-tertiary">Chunk {hit.chunkIndex} · score {hit.score.toFixed(2)}</div>
                     <div className="text-xs text-text-tertiary whitespace-pre-wrap break-words">{hit.snippet || '(no snippet)'}</div>
                   </div>
                 </button>
@@ -368,7 +368,7 @@ export function AtlasSearchPanel(props: { repoId: number | null }) {
               <div className="flex flex-col gap-2">
                 {selectedSession.chunks.map((c) => (
                   <div key={c.chunkUid} className="rounded-md border border-border-light bg-bg-primary p-3">
-                    <div className="text-[11px] text-text-tertiary">
+                    <div className="text-[0.6875rem] text-text-tertiary">
                       Chunk {c.chunkIndex} · {c.roleMask}
                     </div>
                     <div className="mt-1 text-xs text-text-secondary whitespace-pre-wrap break-words">{c.text}</div>

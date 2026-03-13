@@ -80,16 +80,16 @@ export function SourceLensStats({
             </>
           ) : null}
           {!hasNote ? (
-            <div className="mt-2 text-[11px] text-text-muted">
+            <div className="mt-2 text-[0.6875rem] text-text-muted">
               No attribution note yet. Source Lens only shows data written by your tools.
             </div>
           ) : null}
           {hasLocalOnly ? (
-            <div className="mt-2 text-[11px] text-text-muted">
+            <div className="mt-2 text-[0.6875rem] text-text-muted">
               Session traces are local-only. Import local sessions to view trace details.
             </div>
           ) : null}
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[0.6875rem] text-text-muted">
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${evidenceTone}`}
               title={evidenceTitle}
@@ -113,7 +113,7 @@ export function SourceLensStats({
             <span className="text-xs text-text-tertiary">{humanLines} Human (no AI trace)</span>
           </div>
           {mixedLines > 0 ? (
-            <div className="text-[11px] text-text-muted inline-flex items-center gap-1">
+            <div className="text-[0.6875rem] text-text-muted inline-flex items-center gap-1">
               <span>Mixed = AI text that was later edited.</span>
               <span title="Legend: AI-generated vs AI-assisted vs human edits.">
                 <HelpCircle className="h-3 w-3 text-text-muted" aria-hidden="true" />
@@ -125,7 +125,7 @@ export function SourceLensStats({
               type="button"
               onClick={onImportNote}
               disabled={syncing}
-              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-tertiary disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[0.6875rem] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-tertiary disabled:opacity-50"
             >
               <RefreshCw className={`h-3 w-3 ${syncing ? 'motion-safe:animate-spin' : ''}`} />
               Import note
@@ -134,7 +134,7 @@ export function SourceLensStats({
               type="button"
               onClick={onExportNote}
               disabled={syncing}
-              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-tertiary disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-[0.6875rem] font-medium text-text-secondary transition-colors motion-reduce:transition-none hover:bg-bg-tertiary disabled:opacity-50"
             >
               <Save className="h-3 w-3" />
               Export note
@@ -168,7 +168,7 @@ export function SourceLensStats({
         {agentPercentage}% agent-generated
       </div>
       {stats?.toolBreakdown && stats.toolBreakdown.length > 0 ? (
-        <div className="mt-2 text-[11px] text-text-tertiary text-right">
+        <div className="mt-2 text-[0.6875rem] text-text-tertiary text-right">
           Tools:{' '}
           {stats.toolBreakdown.slice(0, 2).map((toolStat, index) => (
             <span key={`${toolStat.tool}-${toolStat.model ?? 'unknown'}`}>
@@ -179,11 +179,11 @@ export function SourceLensStats({
         </div>
       ) : null}
       {noteSummary?.promptCount ? (
-        <div className="mt-1 text-[11px] text-text-muted text-right">
+        <div className="mt-1 text-[0.6875rem] text-text-muted text-right">
           Prompts: {noteSummary.promptCount}
         </div>
       ) : null}
-      <div className="mt-3 rounded-md border border-border-subtle bg-bg-tertiary px-3 py-2 text-[11px] text-text-secondary">
+      <div className="mt-3 rounded-md border border-border-subtle bg-bg-tertiary px-3 py-2 text-[0.6875rem] text-text-secondary">
         <div className="font-semibold">How to read this</div>
         <ul className="mt-1 list-disc pl-4 space-y-1 text-text-tertiary">
           <li>Badge shows the primary source for each line.</li>
@@ -192,35 +192,35 @@ export function SourceLensStats({
         </ul>
       </div>
       {showMetadataPending ? (
-        <div className="mt-3 rounded-md border border-accent-amber-light bg-accent-amber-bg px-3 py-2 text-[11px] text-text-secondary">
+        <div className="mt-3 rounded-md border border-accent-amber-light bg-accent-amber-bg px-3 py-2 text-[0.6875rem] text-text-secondary">
           <div className="font-semibold text-accent-amber">Prompt metadata caching is enabled.</div>
           <div className="mt-1">Re-import the attribution note to cache prompt summaries.</div>
         </div>
       ) : null}
       {showMetadataOptIn ? (
-        <div className="mt-3 rounded-md border border-accent-blue-light bg-accent-blue-bg px-3 py-2 text-[11px] text-text-secondary">
+        <div className="mt-3 rounded-md border border-accent-blue-light bg-accent-blue-bg px-3 py-2 text-[0.6875rem] text-text-secondary">
           <div className="font-semibold text-accent-blue">Prompt metadata is available for this repo.</div>
           <div className="mt-1">Enable caching to view prompt summaries and tool/model details.</div>
           <button
             type="button"
             onClick={onEnableMetadata}
             disabled={syncing}
-            className="mt-2 inline-flex items-center gap-1 rounded-md border border-accent-blue-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-accent-blue-light disabled:opacity-50"
+            className="mt-2 inline-flex items-center gap-1 rounded-md border border-accent-blue-light bg-bg-secondary px-2 py-1 text-[0.6875rem] font-semibold text-accent-blue hover:bg-accent-blue-light disabled:opacity-50"
           >
             Enable metadata
           </button>
         </div>
       ) : null}
       {syncStatus ? (
-        <div className="mt-2 text-[11px] text-text-muted text-right">{syncStatus}</div>
+        <div className="mt-2 text-[0.6875rem] text-text-muted text-right">{syncStatus}</div>
       ) : null}
       {statsError ? (
-        <div className="mt-2 text-[11px] text-accent-amber text-right">{statsError}</div>
+        <div className="mt-2 text-[0.6875rem] text-accent-amber text-right">{statsError}</div>
       ) : null}
       {noteSummaryError ? (
-        <div className="mt-2 text-[11px] text-accent-amber text-right">{noteSummaryError}</div>
+        <div className="mt-2 text-[0.6875rem] text-accent-amber text-right">{noteSummaryError}</div>
       ) : null}
-      <div className="mt-3 text-[11px] text-text-muted">
+      <div className="mt-3 text-[0.6875rem] text-text-muted">
         Attribution indicates how lines were generated or edited; it is not a legal ownership claim.
       </div>
     </>

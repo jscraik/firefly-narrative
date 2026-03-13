@@ -95,7 +95,7 @@ export function TelemetrySettingsPanel({
                 {onOpenCodexOtelDocs ? (
                     <button
                         type="button"
-                        className="inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2.5 py-1 text-[11px] font-semibold text-accent-blue transition-colors hover:bg-accent-blue-light"
+                        className="inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2.5 py-1 text-[0.6875rem] font-semibold text-accent-blue transition-colors hover:bg-accent-blue-light"
                         onClick={onOpenCodexOtelDocs}
                         aria-label="Open Codex OTel setup guide"
                     >
@@ -111,7 +111,7 @@ export function TelemetrySettingsPanel({
                         <div className="text-xs font-semibold text-text-secondary">Codex Telemetry</div>
                         <HelpPopover content="Enables exporting telemetry data to a local OTel receiver." />
                     </div>
-                    <div className="text-[11px] text-text-tertiary mb-3">
+                    <div className="mb-3 text-[0.6875rem] text-text-tertiary">
                         Uses a local OTLP receiver with an API key stored securely on this machine.
                     </div>
 
@@ -127,7 +127,7 @@ export function TelemetrySettingsPanel({
                         </div>
                     )}
 
-                    <div className="mt-3 text-[11px] text-text-tertiary flex items-center justify-between">
+                    <div className="mt-3 flex items-center justify-between text-[0.6875rem] text-text-tertiary">
                         <span>Receiver key: <span className="font-mono text-text-secondary">{maskedKey ?? 'not set'}</span></span>
                         <button
                             type="button"
@@ -143,7 +143,7 @@ export function TelemetrySettingsPanel({
                     <div className="mt-3">
                         <button
                             type="button"
-                            className="inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2 py-1 text-[11px] font-semibold text-accent-blue hover:bg-accent-blue-light disabled:opacity-50"
+                            className="inline-flex items-center rounded-md border border-accent-blue-light bg-accent-blue-bg px-2 py-1 text-[0.6875rem] font-semibold text-accent-blue hover:bg-accent-blue-light disabled:opacity-50"
                             onClick={onConfigureCodex}
                             disabled={!hasConsent}
                         >
@@ -169,12 +169,12 @@ export function TelemetrySettingsPanel({
                                     type="text"
                                     value={otelPath}
                                     onChange={(event) => setOtelPath(event.target.value)}
-                                    className="min-w-[220px] flex-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-xs text-text-secondary outline-none focus:border-border-medium"
+                                    className="min-w-[13.75rem] flex-1 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-xs text-text-secondary outline-none focus:border-border-medium"
                                     placeholder="/tmp/codex-otel.json"
                                 />
                                 <button
                                     type="button"
-                                    className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${otelPath.trim() && otelPath !== (traceConfig?.codexOtelLogPath ?? '/tmp/codex-otel.json')
+                                    className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-semibold transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] disabled:cursor-not-allowed disabled:opacity-50 ${otelPath.trim() && otelPath !== (traceConfig?.codexOtelLogPath ?? '/tmp/codex-otel.json')
                                             ? 'border-accent-blue-light bg-accent-blue-bg text-accent-blue hover:bg-accent-blue-light'
                                             : 'border-border-light bg-bg-secondary text-text-secondary hover:bg-bg-hover'
                                         }`}
@@ -186,8 +186,8 @@ export function TelemetrySettingsPanel({
                             </div>
                         </div>
                     ) : (
-                        <div className="rounded-md border border-border-subtle bg-bg-secondary px-3 py-2 text-[11px] text-text-tertiary">
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${filePathHiddenReason.badgeClass}`}>
+                        <div className="rounded-md border border-border-subtle bg-bg-secondary px-3 py-2 text-[0.6875rem] text-text-tertiary">
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.625rem] font-semibold ${filePathHiddenReason.badgeClass}`}>
                                 <span aria-hidden="true">{filePathHiddenReason.icon}</span>
                                 <span className={`inline-block h-1.5 w-1.5 rounded-full ${filePathHiddenReason.dotClass}`} aria-hidden="true" />
                                 {filePathHiddenReason.badge}
@@ -200,7 +200,7 @@ export function TelemetrySettingsPanel({
                         <div className="flex items-center justify-between pt-2 mt-3 border-t border-border-subtle/50">
                             <div className="flex flex-col gap-0.5">
                                 <span className="text-xs font-medium text-text-secondary">Embedded OTel receiver</span>
-                                <span className="text-[10px] text-text-tertiary">Runs a local OTLP receiver (port 4318)</span>
+                                <span className="text-[0.625rem] text-text-tertiary">Runs a local OTLP receiver (port 4318)</span>
                             </div>
                             <Toggle checked={receiverEnabled} onCheckedChange={(c) => onToggleCodexOtelReceiver(c)} aria-label="Embedded Codex OTel receiver (local)" />
                         </div>
@@ -213,7 +213,7 @@ export function TelemetrySettingsPanel({
                                 <HelpPopover content="Full prompt text is visible in logs. This is great for debugging but risky for sensitive data." />
                             </div>
                             {logUserPromptConfigPath ? (
-                                <div className="mt-1 text-[11px] text-text-secondary font-mono bg-bg-tertiary px-1 py-0.5 rounded inline-block">
+                                <div className="mt-1 inline-block rounded bg-bg-tertiary px-1 py-0.5 font-mono text-[0.6875rem] text-text-secondary">
                                     {logUserPromptConfigPath}
                                 </div>
                             ) : null}
@@ -221,11 +221,11 @@ export function TelemetrySettingsPanel({
                                 <button
                                     type="button"
                                     onClick={handleCopyPromptSnippet}
-                                    className="inline-flex items-center rounded-md border border-accent-amber-light bg-bg-secondary px-2 py-1 text-[11px] font-semibold text-accent-amber hover:bg-accent-amber-light"
+                                    className="inline-flex items-center rounded-md border border-accent-amber-light bg-bg-secondary px-2 py-1 text-[0.6875rem] font-semibold text-accent-amber hover:bg-accent-amber-light"
                                 >
                                     {copiedPromptSnippet ? 'Snippet copied' : 'Copy disable snippet'}
                                 </button>
-                                <span className="font-mono text-[11px] text-text-secondary">{disablePromptSnippet}</span>
+                                <span className="font-mono text-[0.6875rem] text-text-secondary">{disablePromptSnippet}</span>
                             </div>
                         </div>
                     ) : null}

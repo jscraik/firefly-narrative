@@ -2,6 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardStats } from '../../../core/attribution-api';
 import type { BranchViewModel } from '../../../core/types';
+import type { CaptureReliabilityStatus } from '../../../core/tauri/ingestConfig';
 import type { RepoState } from '../../../hooks/useRepoLoader';
 
 const mockGetDashboardStats = vi.hoisted(() => vi.fn());
@@ -14,12 +15,32 @@ vi.mock('../../../core/attribution-api', async () => {
   };
 });
 
+vi.mock('@design-studio/tokens', () => ({
+  useTheme: () => ({ colorScheme: 'dark', theme: 'system' })
+}));
+
 vi.mock('../../components/dashboard/DashboardLoadingState', () => ({
   DashboardLoadingState: () => <div data-testid="dashboard-loading">loading</div>,
 }));
 
 vi.mock('../../components/dashboard/DashboardErrorState', () => ({
-  DashboardErrorState: ({ error }: { error: string }) => <div data-testid="dashboard-error">{error}</div>,
+  DashboardErrorState: ({
+    error,
+    state,
+    canRetry,
+  }: {
+    error: string;
+    state?: string;
+    canRetry?: boolean;
+  }) => (
+    <div
+      data-testid="dashboard-error"
+      data-state={state ?? 'error'}
+      data-can-retry={String(canRetry ?? true)}
+    >
+      {error}
+    </div>
+  ),
 }));
 
 vi.mock('../../components/dashboard/DashboardEmptyState', () => ({
@@ -27,7 +48,17 @@ vi.mock('../../components/dashboard/DashboardEmptyState', () => ({
 }));
 
 vi.mock('../../components/dashboard/DashboardHeader', () => ({
-  DashboardHeader: ({ repoName }: { repoName: string }) => <div data-testid="dashboard-header">{repoName}</div>,
+  DashboardHeader: ({
+    repoName,
+    trustState,
+  }: {
+    repoName: string;
+    trustState?: string;
+  }) => (
+    <div data-testid="dashboard-header" data-trust-state={trustState ?? 'healthy'}>
+      {repoName}
+    </div>
+  ),
 }));
 
 vi.mock('../../components/dashboard/MetricsGrid', () => ({
@@ -38,6 +69,22 @@ vi.mock('../../components/dashboard/TopFilesTable', () => ({
   TopFilesTable: ({ files }: { files: Array<{ filePath: string }> }) => (
     <div data-testid="top-files">{files.map((file) => file.filePath).join(',')}</div>
   ),
+}));
+
+vi.mock('../../components/dashboard/TrendChart', () => ({
+  TrendChart: () => <div data-testid="trend-chart">trend chart</div>,
+}));
+
+vi.mock('../../components/dashboard/QuickActions', () => ({
+  QuickActions: () => <div data-testid="quick-actions">quick actions</div>,
+}));
+
+vi.mock('../../components/dashboard/RecentActivity', () => ({
+  RecentActivity: () => <div data-testid="recent-activity">recent activity</div>,
+}));
+
+vi.mock('../../components/dashboard/BottomStats', () => ({
+  BottomStats: () => <div data-testid="bottom-stats">bottom stats</div>,
 }));
 
 import { DashboardView } from '../DashboardView';
@@ -134,6 +181,37 @@ function createDashboardStats(repoId: number, repoName: string): DashboardStats 
       limit: 20,
       hasMore: false,
     },
+  };
+}
+
+function createCaptureReliabilityStatus(
+  overrides: Partial<CaptureReliabilityStatus> = {},
+): CaptureReliabilityStatus {
+  return {
+    mode: 'HYBRID_ACTIVE',
+    otelBaselineHealthy: true,
+    streamExpected: true,
+    streamHealthy: true,
+    reasons: [],
+    metrics: {
+      streamEventsAccepted: 10,
+      streamEventsDuplicates: 0,
+      streamEventsDropped: 0,
+      streamEventsReplaced: 0,
+    },
+    transitions: [],
+    appServer: {
+      state: 'running',
+      initialized: true,
+      initializeSent: true,
+      authState: 'authenticated',
+      authMode: 'device_code',
+      streamHealthy: true,
+      streamKillSwitch: false,
+      restartBudget: 3,
+      restartAttemptsInWindow: 0,
+    },
+    ...overrides,
   };
 }
 
@@ -236,5 +314,83 @@ describe('DashboardView', () => {
     expect(screen.queryByTestId('dashboard-error')).not.toBeInTheDocument();
     expect(setActionError).not.toHaveBeenCalledWith('stale dashboard failure');
     expect(screen.getByTestId('dashboard-header')).toHaveTextContent('repo-two');
+  });
+
+  it('surfaces degraded trust state in the dashboard header', async () => {
+    mockGetDashboardStats.mockResolvedValue(createDashboardStats(1, 'repo-one'));
+
+    render(
+      <DashboardView
+        repoState={createRepoState(1)}
+        setRepoState={vi.fn()}
+        setActionError={vi.fn()}
+        onDrillDown={vi.fn()}
+        onModeChange={vi.fn()}
+        captureReliabilityStatus={createCaptureReliabilityStatus({
+          mode: 'DEGRADED_STREAMING',
+          streamHealthy: false,
+          reasons: ['Stream stalled'],
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-header')).toHaveAttribute(
+        'data-trust-state',
+        'degraded',
+      );
+    });
+  });
+
+  it('treats permission denied failures as non-retryable', async () => {
+    mockGetDashboardStats.mockRejectedValue(new Error('Permission denied for dashboard command'));
+    const setActionError = vi.fn();
+
+    render(
+      <DashboardView
+        repoState={createRepoState(1)}
+        setRepoState={vi.fn()}
+        setActionError={setActionError}
+        onDrillDown={vi.fn()}
+        onModeChange={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-error')).toHaveAttribute(
+        'data-state',
+        'permission_denied',
+      );
+      expect(screen.getByTestId('dashboard-error')).toHaveAttribute(
+        'data-can-retry',
+        'false',
+      );
+    });
+
+    expect(setActionError).toHaveBeenCalledWith('Permission denied for dashboard command');
+  });
+
+  it('maps capture failure mode errors to offline state', async () => {
+    mockGetDashboardStats.mockRejectedValue(new Error('dashboard unavailable'));
+
+    render(
+      <DashboardView
+        repoState={createRepoState(1)}
+        setRepoState={vi.fn()}
+        setActionError={vi.fn()}
+        onDrillDown={vi.fn()}
+        onModeChange={vi.fn()}
+        captureReliabilityStatus={createCaptureReliabilityStatus({
+          mode: 'FAILURE',
+          streamHealthy: false,
+          reasons: ['Collector unavailable'],
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-error')).toHaveAttribute('data-state', 'offline');
+      expect(screen.getByTestId('dashboard-error')).toHaveAttribute('data-can-retry', 'true');
+    });
   });
 });

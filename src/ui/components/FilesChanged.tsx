@@ -32,9 +32,9 @@ export function FilesChanged({
   }, [selectedFile]);
 
   return (
-    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
-      <div className="section-header">{title ?? 'Files changed'}</div>
-      <div className="section-subheader">From git: files changed in this commit</div>
+    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
+      <div className="section-header">{title ?? 'Files in this evidence window'}</div>
+      <div className="section-subheader">Changed files linked to the selected commit, branch, or evidence slice</div>
       <div className="mt-4 divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden">
         {files.length === 0 ? (
           <div className="p-6 flex flex-col items-center text-center">
@@ -42,7 +42,7 @@ export function FilesChanged({
               <FileCode className="w-4 h-4 text-text-muted" />
             </div>
             <p className="text-sm text-text-tertiary">No files changed</p>
-            <p className="text-xs text-text-muted mt-0.5">Select a commit to see what changed</p>
+            <p className="text-xs text-text-muted mt-0.5">Select a commit to inspect file evidence</p>
           </div>
         ) : (
           files.map((f) => (
@@ -53,17 +53,17 @@ export function FilesChanged({
               }}
               type="button"
               aria-pressed={selectedFile === f.path}
-              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all duration-150 ${selectedFile === f.path
-                ? 'bg-accent-blue-bg border-l-[3px] border-l-accent-blue -ml-[3px] pl-[18px] shadow-sm'
-                : 'hover:bg-bg-tertiary border-l-[3px] border-l-transparent'
+              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${selectedFile === f.path
+                ? 'bg-accent-blue-bg border-l-[0.1875rem] border-l-accent-blue -ml-[0.1875rem] pl-[1.125rem] shadow-sm'
+                : 'hover:bg-bg-tertiary border-l-[0.1875rem] border-l-transparent'
                 }`}
               onClick={() => selectFile(f.path)}
             >
-              <div className={`truncate font-mono text-[12px] ${selectedFile === f.path ? 'text-accent-blue' : 'text-text-secondary'
+              <div className={`truncate font-mono text-[0.75rem] ${selectedFile === f.path ? 'text-accent-blue' : 'text-text-secondary'
                 }`}>
                 {f.path}
               </div>
-              <div className="flex shrink-0 items-center gap-2 font-mono text-[11px] tabular-nums">
+              <div className="flex shrink-0 items-center gap-2 font-mono text-[0.6875rem] tabular-nums">
                 {traceByFile?.[f.path] ? (
                   (() => {
                     const summary = traceByFile[f.path];

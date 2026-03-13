@@ -14,7 +14,7 @@ import type {
   NarrativeConfidenceTier,
   TestRun,
 } from '../../../core/types';
-import { useFirefly } from '../../../hooks/useFirefly';
+import { useTraceSignal } from '../../../hooks/useTraceSignal';
 import { useTestImport } from '../../../hooks/useTestImport';
 import {
   createBranchHeaderRequestIdentityKey,
@@ -22,7 +22,7 @@ import {
   deriveLegacyBranchHeaderViewModel,
 } from '../../components/branchHeaderMapper';
 import type { RightPanelTabs } from '../../components/RightPanelTabs';
-import type { FireflyTrackingSettlePayload, Timeline } from '../../components/Timeline';
+import type { TraceSignalTrackingSettlePayload, Timeline } from '../../components/Timeline';
 import type { BranchViewLayout } from '../BranchViewLayout';
 import { TIMING } from '../branchView.constants';
 import { shouldRouteEvidenceToRawDiff } from '../branchViewEvidence';
@@ -67,6 +67,7 @@ function deriveTrustStateFromCaptureStatus(status: CaptureReliabilityStatus | nu
 export function useBranchViewController(props: BranchViewProps): ComponentProps<typeof BranchViewLayout> {
   const {
     model,
+    onModeChange,
     dashboardFilter,
     onClearFilter,
     isExitingFilteredView,
@@ -310,11 +311,11 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     setActionError,
   });
 
-  const reportFireflyError = useCallback((message: string) => {
+  const reportTraceSignalError = useCallback((message: string) => {
     setActionError(message);
   }, [setActionError]);
 
-  const firefly = useFirefly({
+  const traceSignal = useTraceSignal({
     selectedNodeId,
     selectedCommitSha,
     hasSelectedFile: Boolean(selectedFile),
@@ -324,7 +325,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     loadingTrace,
     traceRequestedForSelection,
     traceSummary: selectedCommitSha ? model.traceSummaries?.byCommit[selectedCommitSha] : undefined,
-    onPersistenceError: reportFireflyError,
+    onPersistenceError: reportTraceSignalError,
   });
 
   const demoTestRun = useMemo((): TestRun | undefined => {
@@ -482,13 +483,22 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     recallLaneItemId?: string;
     recallLaneConfidenceBand?: NarrativeConfidenceTier;
     fallbackItemId?: string;
+    targetCommitSha?: string;
   }) => {
     if (activeBranchScopeRef.current !== branchScopeKey) {
       return;
     }
 
+    const targetCommitSha = laneContext?.targetCommitSha;
+    const switchedCommit = Boolean(targetCommitSha && targetCommitSha !== selectedNodeId);
+    const activeCommitSha = targetCommitSha ?? selectedNodeId ?? undefined;
+
     setDetailLevel('diff');
-    if (!selectedFile && files[0]?.path) {
+    if (switchedCommit && targetCommitSha) {
+      setTrackingSettledNodeId(null);
+      setSelectedNodeId(targetCommitSha);
+      selectFile(null);
+    } else if (!selectedFile && files[0]?.path) {
       selectFile(files[0].path);
     }
     bumpObservability('fallbackUsedCount');
@@ -502,14 +512,14 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
       recallLaneItemId: laneContext?.recallLaneItemId,
       recallLaneConfidenceBand: laneContext?.recallLaneConfidenceBand,
       viewInstanceId: narrativeViewInstanceIdRef.current ?? undefined,
-      itemId: laneContext?.fallbackItemId ?? laneContext?.recallLaneItemId ?? selectedNodeId ?? undefined,
+      itemId: laneContext?.fallbackItemId ?? laneContext?.recallLaneItemId ?? activeCommitSha,
       funnelStep: 'evidence_ready',
       eventOutcome: 'fallback',
-      funnelSessionId: `${telemetryBranchScope}:${selectedNodeId ?? 'none'}:${selectedFile ?? 'no-file'}`,
+      funnelSessionId: `${telemetryBranchScope}:${activeCommitSha ?? 'none'}:${selectedFile ?? 'no-file'}`,
     });
     emitFirstWinCompleted(
       'fallback',
-      laneContext?.fallbackItemId ?? laneContext?.recallLaneItemId ?? selectedNodeId ?? undefined
+      laneContext?.fallbackItemId ?? laneContext?.recallLaneItemId ?? activeCommitSha
     );
   }, [
     bumpObservability,
@@ -549,6 +559,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
         handleOpenRawDiff({
           ...laneContext,
           fallbackItemId: link.commitSha ?? link.id,
+          targetCommitSha: link.commitSha,
         });
       }
       if (link.filePath) {
@@ -601,11 +612,36 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     onRunOtlpSmokeTest(selectedNodeId, files);
   }, [files, onRunOtlpSmokeTest, selectedNodeId]);
 
-  const handleFireflyTrackingSettled = useCallback((payload: FireflyTrackingSettlePayload) => {
+  const handleTraceSignalTrackingSettled = useCallback((payload: TraceSignalTrackingSettlePayload) => {
     if (!selectedNodeId) return;
     if (payload.selectedNodeId !== selectedNodeId) return;
     setTrackingSettledNodeId(payload.selectedNodeId);
   }, [selectedNodeId]);
+
+  // Handle deep-linking from shared narrative surfaces
+  useEffect(() => {
+    if (!props.pendingAction) return;
+
+    if (props.pendingAction.type === 'open_evidence') {
+      const { evidenceId } = props.pendingAction;
+      const link = narrative.evidenceLinks.find((l) => l.id === evidenceId);
+
+      if (link) {
+        handleOpenEvidence(link);
+      }
+      props.onActionProcessed?.();
+      return;
+    }
+
+    if (props.pendingAction.type === 'open_raw_diff') {
+      const { commitSha } = props.pendingAction;
+      handleOpenRawDiff({
+        fallbackItemId: commitSha,
+        targetCommitSha: commitSha,
+      });
+      props.onActionProcessed?.();
+    }
+  }, [props.pendingAction, narrative.evidenceLinks, handleOpenEvidence, handleOpenRawDiff, props.onActionProcessed]);
 
   // Ask-Why state extracted to dedicated hook
   const { askWhyState, handleSubmitAskWhy, handleOpenAskWhyCitation } = useBranchAskWhyState({
@@ -634,8 +670,8 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     if (!selectedCommitSha) return;
     await importJUnitForCommit(selectedCommitSha);
     await refreshRepoTestRun();
-    firefly.triggerBurst('success');
-  }, [firefly, importJUnitForCommit, model.source, refreshRepoTestRun, repoId, selectedCommitSha]);
+    traceSignal.triggerBurst('success');
+  }, [traceSignal, importJUnitForCommit, model.source, refreshRepoTestRun, repoId, selectedCommitSha]);
 
   const captureActivityProps = ingestStatus ? {
     enabled: ingestStatus.enabled,
@@ -709,8 +745,8 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     diffText,
     loadingDiff: loadingDiff || loadingTrace,
     traceRanges,
-    fireflyEnabled: firefly.enabled,
-    onToggleFirefly: firefly.toggle,
+    fireflyEnabled: traceSignal.enabled,
+    onToggleFirefly: traceSignal.toggle,
   };
 
   const timelineProps: ComponentProps<typeof Timeline> = {
@@ -718,10 +754,10 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     selectedId: selectedNodeId,
     onSelect: handleSelectNode,
     pulseCommitId,
-    fireflyEvent: firefly.event,
-    fireflyDisabled: !firefly.enabled,
-    fireflyBurstType: firefly.burstType,
-    onFireflyTrackingSettled: handleFireflyTrackingSettled,
+    traceSignalEvent: traceSignal.event,
+    traceSignalDisabled: !traceSignal.enabled,
+    traceSignalBurstType: traceSignal.burstType,
+    onTraceSignalTrackingSettled: handleTraceSignalTrackingSettled,
   };
 
   return {
@@ -754,7 +790,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
         ? deriveTrustStateFromCaptureStatus(captureReliabilityStatus)
         : 'none',
       activeThreadId: captureReliabilityStatus?.appServer?.lastTransitionAtIso
-        ? `checkpoint:${captureReliabilityStatus.appServer.lastTransitionAtIso}`
+        ? `snapshot:${captureReliabilityStatus.appServer.lastTransitionAtIso}`
         : null,
       captureReliabilityStatus,
       codexAppServerStatus: captureReliabilityStatus?.appServer ?? null,
@@ -773,5 +809,7 @@ export function useBranchViewController(props: BranchViewProps): ComponentProps<
     onDismissActionError,
     rightPanelProps,
     timelineProps,
+    captureReliabilityStatus,
+    onModeChange,
   };
 }

@@ -80,6 +80,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      echarts:
+        specifier: ^6.0.0
+        version: 6.0.0
       framer-motion:
         specifier: ^12.34.2
         version: 12.34.2(@emotion/is-prop-valid@1.4.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -114,6 +117,9 @@ importers:
       '@biomejs/biome':
         specifier: ^2.3.13
         version: 2.3.13
+      '@brainwav/design-system-guidance':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@lhci/cli':
         specifier: ^0.15.1
         version: 0.15.1
@@ -361,6 +367,10 @@ packages:
     engines: {node: '>=24.0.0'}
     hasBin: true
 
+  '@brainwav/design-system-guidance@0.0.2':
+    resolution: {integrity: sha512-lli4/6vYlTBZFVbOT1/f9n4tdhqlFPOe6vVGBT6hzXXLmUtU34FhEshIY+TC2dVTrPZaC1cMB/rr47GwO7Uidw==}
+    hasBin: true
+
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
@@ -407,19 +417,19 @@ packages:
     resolution: {integrity: sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA==}
 
   '@design-studio/runtime@file:vendor/design-studio/design-studio-runtime-2.0.0.tgz':
-    resolution: {integrity: sha512-f+2R/LH5bLDlBj8U9beBZxeitekzot1AtMZrHBdMzp7R8uAKmSSLjMHdLgs9iA/CooljRF5x3e38fdEntKzClg==, tarball: file:vendor/design-studio/design-studio-runtime-2.0.0.tgz}
+    resolution: {integrity: sha512-f+2R/LH5bLDlBj8U9beBZxeitekzot1AtMZrHBdMzp7R8uAKmSSLjMHdLgs9iA/CooljRF5x3e38fdEntKzClg==}
     version: 2.0.0
     peerDependencies:
       react: ^19.0.0
 
   '@design-studio/tokens@file:vendor/design-studio/design-studio-tokens-2.0.0.tgz':
-    resolution: {integrity: sha512-tAvVVP2gVXD+AN2oLEUXIAzUU4lGSWqgtQWrjqXpr+PjJDQKMSypgYA4AzvA+IODYRI+mA7IBZvvFWWPQbm2zQ==, tarball: file:vendor/design-studio/design-studio-tokens-2.0.0.tgz}
+    resolution: {integrity: sha512-tAvVVP2gVXD+AN2oLEUXIAzUU4lGSWqgtQWrjqXpr+PjJDQKMSypgYA4AzvA+IODYRI+mA7IBZvvFWWPQbm2zQ==}
     version: 2.0.0
     peerDependencies:
       react: ^19.2.4
 
   '@design-studio/ui@file:vendor/design-studio/design-studio-ui-0.0.1.tgz':
-    resolution: {integrity: sha512-JsbvgYguQ9DMn2FkXQ6dHIHr+j2hyxnvpWlXWNdNVX2GfOWicYWMGFpRlN8Nn38OqY288lbbb1iw7KoazX4gCw==, tarball: file:vendor/design-studio/design-studio-ui-0.0.1.tgz}
+    resolution: {integrity: sha512-JsbvgYguQ9DMn2FkXQ6dHIHr+j2hyxnvpWlXWNdNVX2GfOWicYWMGFpRlN8Nn38OqY288lbbb1iw7KoazX4gCw==}
     version: 0.0.1
     peerDependencies:
       react: ^19.0.0
@@ -2921,6 +2931,9 @@ packages:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
 
+  echarts@6.0.0:
+    resolution: {integrity: sha512-Tte/grDQRiETQP4xz3iZWSvoHrkCQtwqd6hs+mifXcjrCuo2iKWbajFObuLJVBlDIJlOzgQPd1hsaKt/3+OMkQ==}
+
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
@@ -4753,6 +4766,9 @@ packages:
   tslib@1.14.1:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
 
+  tslib@2.3.0:
+    resolution: {integrity: sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg==}
+
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
@@ -5116,6 +5132,9 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
+  zrender@6.0.0:
+    resolution: {integrity: sha512-41dFXEEXuJpNecuUQq6JlbybmnHaqqpGlbH1yxnA5V9MMP4SbohSVZsJIwz+zdjQXSSlR1Vc34EgH1zxyTDvhg==}
+
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
@@ -5314,6 +5333,8 @@ snapshots:
     transitivePeerDependencies:
       - '@octokit/core'
       - '@types/node'
+
+  '@brainwav/design-system-guidance@0.0.2': {}
 
   '@bramus/specificity@2.4.2':
     dependencies:
@@ -7850,6 +7871,11 @@ snapshots:
       es-errors: 1.3.0
       gopd: 1.2.0
 
+  echarts@6.0.0:
+    dependencies:
+      tslib: 2.3.0
+      zrender: 6.0.0
+
   ee-first@1.1.1: {}
 
   electron-to-chromium@1.5.282: {}
@@ -10204,6 +10230,8 @@ snapshots:
 
   tslib@1.14.1: {}
 
+  tslib@2.3.0: {}
+
   tslib@2.8.1: {}
 
   tunnel-agent@0.6.0:
@@ -10554,5 +10582,9 @@ snapshots:
       zod: 3.25.76
 
   zod@3.25.76: {}
+
+  zrender@6.0.0:
+    dependencies:
+      tslib: 2.3.0
 
   zwitch@2.0.4: {}

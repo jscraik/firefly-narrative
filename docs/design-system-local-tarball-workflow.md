@@ -2,6 +2,15 @@
 
 Use this workflow to refresh Narrative with local DesignSystem packages.
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [1) Build DesignSystem packages](#1-build-designsystem-packages)
+- [2) Pack deterministic tarballs into Narrative](#2-pack-deterministic-tarballs-into-narrative)
+- [3) Install/update in Narrative](#3-installupdate-in-narrative)
+- [4) Validate integration](#4-validate-integration)
+- [5) Commit checklist](#5-commit-checklist)
+
 ## Prerequisites
 
 Set local paths once per terminal:

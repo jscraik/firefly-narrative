@@ -17,7 +17,7 @@ export function Select(props: {
         aria-label={props['aria-label']}
         className={clsx(
           'inline-flex items-center justify-between gap-2 rounded-md border border-border-light bg-bg-secondary px-2 py-1 text-xs text-text-secondary',
-          'min-w-[140px]',
+          'min-w-[8.75rem]',
           triggerClassName
         )}
       >
@@ -59,4 +59,3 @@ export function Select(props: {
     </SelectPrimitive.Root>
   );
 }
-

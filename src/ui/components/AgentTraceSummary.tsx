@@ -15,7 +15,7 @@ function StatPill({ label, value, tone }: { label: string; value: string; tone: 
 
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="text-[10px] uppercase tracking-wide">{label}</span>
+      <span className="text-[0.625rem] uppercase tracking-wide">{label}</span>
       <span className="font-semibold tabular-nums">{value}</span>
     </span>
   );
@@ -108,7 +108,7 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
           {onSmokeTest ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-secondary px-3 py-1.5 text-xs font-semibold text-text-secondary transition-all duration-150 hover:bg-bg-tertiary disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-secondary px-3 py-1.5 text-xs font-semibold text-text-secondary transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:scale-[0.98] hover:bg-bg-tertiary disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onSmokeTest}
               disabled={!hasFiles}
               aria-disabled={!hasFiles}
@@ -120,7 +120,7 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
           {onExport ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-secondary px-3 py-1.5 text-xs font-semibold text-text-secondary hover:bg-bg-tertiary disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-border-light bg-bg-secondary px-3 py-1.5 text-xs font-semibold text-text-secondary transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] active:scale-[0.98] hover:bg-bg-tertiary disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onExport}
               disabled={!hasFiles}
               aria-disabled={!hasFiles}
@@ -145,16 +145,16 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
       ) : null}
 
       {!summary ? (
-        <div className="mt-5 rounded-xl border border-dashed border-border-light bg-bg-tertiary/50 px-5 py-6">
+        <div className="mt-5 rounded-xl border border-dashed border-border-light bg-bg-tertiary px-5 py-6">
           <div className="flex flex-col items-center text-center">
             <div className="w-12 h-12 rounded-full bg-bg-primary flex items-center justify-center mb-3">
               <Activity className="w-5 h-5 text-text-muted" />
             </div>
             <p className="text-sm font-medium text-text-secondary mb-1">No Agent Trace yet</p>
-            <p className="text-xs text-text-muted max-w-[240px] leading-relaxed">
+            <p className="text-xs text-text-muted max-w-[15rem] leading-relaxed">
               Import an Agent Trace or configure Codex OTel to see AI attribution for this commit
             </p>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-text-muted">
+            <div className="mt-3 flex items-center gap-1.5 text-[0.6875rem] text-text-muted">
               <Sparkles className="w-3 h-3" />
               <span>Tracks AI vs human contributions</span>
             </div>
@@ -164,7 +164,7 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
         <div className="mt-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="trace-bar">
-              <div className="trace-bar-fill transition-all duration-500 ease-out" style={{ width: `${aiPercent}%` }} />
+              <div className="trace-bar-fill transition-[width] duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ease-out" style={{ width: `${aiPercent}%` }} />
             </div>
             <div className="text-sm font-semibold text-text-secondary">{traceLabel}</div>
           </div>

@@ -39,7 +39,7 @@ function CitationButton({ citation, onClick }: { citation: AskWhyCitation; onCli
     <button
       type="button"
       onClick={onClick}
-      className="rounded border border-border-subtle bg-bg-primary px-2 py-0.5 text-[11px] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
+      className="rounded border border-border-subtle bg-bg-primary px-2 py-0.5 text-[0.6875rem] text-text-secondary transition-colors hover:border-border-light hover:bg-bg-secondary"
     >
       <span className="font-medium text-text-primary">{citation.label}</span>
       <span className="ml-1.5 uppercase tracking-wide text-text-muted">{citationTypeLabel(citation.type)}</span>
@@ -90,7 +90,7 @@ export function AskWhyAnswerCard({ state, onSubmit, onOpenCitation, onOpenRawDif
         <div className="mt-3 space-y-2" aria-live="polite">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-text-secondary">Answer</span>
-            <span className={`text-[11px] font-medium uppercase ${confidenceBandStyle(state.answer.confidenceBand)}`}>
+            <span className={`text-[0.6875rem] font-medium uppercase ${confidenceBandStyle(state.answer.confidenceBand)}`}>
               {state.answer.confidenceBand} {(state.answer.confidence * 100).toFixed(0)}%
             </span>
           </div>
@@ -99,7 +99,7 @@ export function AskWhyAnswerCard({ state, onSubmit, onOpenCitation, onOpenRawDif
 
           {state.answer.citations.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[11px] text-text-muted">Citations:</span>
+              <span className="text-[0.6875rem] text-text-muted">Citations:</span>
               {state.answer.citations.map((citation) => (
                 <CitationButton
                   key={citation.id}

@@ -326,6 +326,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             codex_app_server::codex_app_server_submit_approval,
             codex_app_server::get_codex_stream_dedupe_log,
             codex_app_server::get_capture_reliability_status,
+            codex_app_server::codex_app_server_retry_hydrate,
+            codex_app_server::codex_app_server_clear_stale_state,
             import::commands::backfill_recent_sessions,
             // Story Anchors (Git Notes + hooks)
             story_anchors::commands::get_story_anchor_status,

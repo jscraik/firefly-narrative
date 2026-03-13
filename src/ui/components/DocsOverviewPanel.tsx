@@ -249,9 +249,9 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
                 className="mb-6 inline-flex rounded-2xl border border-border-subtle bg-bg-secondary p-4 shadow-sm"
                 animate={{
                   boxShadow: [
-                    "0 0 0 1px var(--border-subtle)",
-                    "0 0 0 3px var(--bg-subtle)",
-                    "0 0 0 1px var(--border-subtle)"
+                    "0 0 0 0.0625rem var(--border-subtle)",
+                    "0 0 0 0.1875rem var(--bg-subtle)",
+                    "0 0 0 0.0625rem var(--border-subtle)"
                   ],
                 }}
                 transition={{
@@ -261,7 +261,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
                 }}
                 whileHover={{
                   scale: 1.05,
-                  boxShadow: "0 0 0 4px var(--accent-blue-light)",
+                  boxShadow: "0 0 0 0.25rem var(--accent-blue-light)",
                   transition: { duration: 0.2 }
                 }}
               >
@@ -278,7 +278,7 @@ export function DocsOverviewPanel({ repoRoot, onClose }: DocsOverviewPanelProps)
               <div className="flex flex-wrap gap-3 justify-center">
                 <button
                   type="button"
-                  className="btn-secondary-soft inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:scale-105 active:scale-95 transition-all"
+                  className="btn-secondary-soft inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:scale-105 active:scale-[0.98] transition"
                   onClick={async () => {
                     try {
                       await ensureNarrativeDirs(repoRoot);

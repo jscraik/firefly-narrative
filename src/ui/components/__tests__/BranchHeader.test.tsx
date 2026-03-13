@@ -19,8 +19,8 @@ describe("BranchHeader", () => {
     };
 
     render(<BranchHeader viewModel={vm} />);
-    expect(screen.getByRole("region", { name: "Branch context" })).toBeInTheDocument();
-    expect(screen.getByText("Loading branch context")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Repo evidence context" })).toBeInTheDocument();
+    expect(screen.getByText("Loading repo evidence")).toBeInTheDocument();
   });
 
   it("renders full branch header and supports clearing dashboard filter", () => {
@@ -44,10 +44,10 @@ describe("BranchHeader", () => {
     render(<BranchHeader viewModel={vm} onClearFilter={onClearFilter} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "feature/branch-header" })).toBeInTheDocument();
-    expect(screen.getByText("Filtered view")).toBeInTheDocument();
+    expect(screen.getByText("Focused evidence slice")).toBeInTheDocument();
     expect(screen.getAllByText("—")).toHaveLength(2);
 
-    fireEvent.click(screen.getByRole("button", { name: /Back to dashboard/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Back to narrative brief/i }));
     expect(onClearFilter).toHaveBeenCalledTimes(1);
   });
 
@@ -73,7 +73,7 @@ describe("BranchHeader", () => {
 
     render(<BranchHeader viewModel={vm} onClearFilter={onClearFilter} />);
 
-    const button = screen.getByRole("button", { name: /Back to dashboard/i });
+    const button = screen.getByRole("button", { name: /Back to narrative brief/i });
     await user.tab();
     expect(button).toHaveFocus();
 
@@ -99,6 +99,6 @@ describe("BranchHeader", () => {
     };
 
     render(<BranchHeader viewModel={vm} />);
-    expect(screen.queryByRole("button", { name: /back to dashboard/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /back to narrative brief/i })).not.toBeInTheDocument();
   });
 });

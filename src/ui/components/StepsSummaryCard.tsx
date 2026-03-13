@@ -75,7 +75,7 @@ export function StepsSummaryCard(props: {
   const tracePresent = Boolean(traceSummary);
 
   return (
-    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
+    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
       <div className="section-header">STEPS</div>
       <div className="section-subheader">What the assistant did for this commit.</div>
 
@@ -127,8 +127,8 @@ export function StepsSummaryCard(props: {
                     {s.needsReview ? ' · Needs review' : ''}
                   </div>
                   <div className="mt-2 flex flex-col gap-1">
-                    {(s.messages ?? []).slice(0, 12).map((m, idx) => (
-                      <div key={`${s.sessionId}-${idx}`} className="text-[11px] text-text-tertiary">
+                    {(s.messages ?? []).slice(0, 12).map((m, _idx) => (
+                      <div key={`${s.sessionId}-${m.role}-${m.text.slice(0, 10)}`} className="text-[0.6875rem] text-text-tertiary">
                         <span className="font-medium text-text-muted">{m.role}</span>
                         {m.toolName ? <span className="text-text-muted"> · {m.toolName}</span> : null}
                         <span className="text-text-tertiary"> · {m.text}</span>
@@ -144,4 +144,3 @@ export function StepsSummaryCard(props: {
     </div>
   );
 }
-

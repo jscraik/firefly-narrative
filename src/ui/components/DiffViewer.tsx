@@ -67,12 +67,12 @@ export function DiffViewer(props: DiffViewerProps) {
             </svg>
           </div>
           <p className="text-sm text-text-secondary font-medium">No diff to display</p>
-          <p className="text-xs text-text-muted mt-1 max-w-[240px]">
+          <p className="mt-1 max-w-[15rem] text-xs text-text-muted">
             Select a file from the commit to view its changes. Demo data may not include diffs for all files.
           </p>
         </div>
       ) : (
-        <pre className="text-[12px] leading-loose text-text-secondary font-mono">
+        <pre className="font-mono text-[0.75rem] leading-loose text-text-secondary">
           {(() => {
             let currentLineNumber = 0;
             let inHunk = false;

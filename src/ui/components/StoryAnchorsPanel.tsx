@@ -305,8 +305,8 @@ export function StoryAnchorsPanel(props: {
         </span>
         <GitBranch className="w-3.5 h-3.5 text-text-secondary" />
         <span className="font-medium text-text-secondary">Trace Narrative</span>
-        <span className={`text-[10px] ${hooksColor}`}>{hooksLabel}</span>
-        <span className="text-[10px] text-text-muted">· {anchorsLabel}</span>
+        <span className={`text-[0.625rem] ${hooksColor}`}>{hooksLabel}</span>
+        <span className="text-[0.625rem] text-text-muted">· {anchorsLabel}</span>
       </summary>
 
       <div className="mt-3 flex flex-col gap-3 rounded-lg border border-border-light bg-bg-secondary p-3">
@@ -347,10 +347,10 @@ export function StoryAnchorsPanel(props: {
             onMigrateAttributionRef={migrateSelectedAttributionAction}
           />
         ) : (
-          <div className="text-[11px] text-text-muted">Select a commit to manage its session link note.</div>
+          <div className="text-[0.6875rem] text-text-muted">Select a commit to manage its session link note.</div>
         )}
 
-        {message ? <div className="text-[11px] text-text-muted">{message}</div> : null}
+        {message ? <div className="text-[0.6875rem] text-text-muted">{message}</div> : null}
       </div>
     </details>
   );

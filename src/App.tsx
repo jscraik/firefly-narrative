@@ -1,28 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import { EMPTY_BRANCH_MODEL } from './core/models/emptyBranchModel';
 import { setOtelReceiverEnabled } from './core/tauri/otelReceiver';
 import { normalizeHttpUrl } from './core/utils/url';
 import type {
+  BranchViewModel,
   DashboardFilter,
+  Mode,
   TraceCollectorConfig
 } from './core/types';
 import { useAutoIngest } from './hooks/useAutoIngest';
 import { useCommitData } from './hooks/useCommitData';
 import { useRepoLoader } from './hooks/useRepoLoader';
 import { useSessionImport } from './hooks/useSessionImport';
+import { useSnapshots } from './hooks/useSnapshots';
 import { useTraceCollector } from './hooks/useTraceCollector';
 import { useUpdater } from './hooks/useUpdater';
-import { RepoEmptyState } from './ui/components/RepoEmptyState';
-import { TopNav, type Mode } from './ui/components/TopNav';
-import { UpdateIndicator, UpdatePrompt } from './ui/components/UpdatePrompt';
-import { BranchView } from './ui/views/BranchView';
-import { DashboardView } from './ui/views/DashboardView';
-import { DocsView } from './ui/views/DocsView';
+import { AppContent } from './AppContent';
+import { Sidebar } from './ui/components/Sidebar';
+import { UpdatePrompt } from './ui/components/UpdatePrompt';
+import {
+  DASHBOARD_FOCUS_RESTORE_MS,
+} from './ui/views/dashboardState';
+import { TopNav } from './ui/components/TopNav';
 
 type AgentationComponentType = (typeof import('agentation'))['Agentation'];
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('demo');
+  const [mode, setMode] = useState<Mode>('dashboard');
+  const [surfaceAction, setSurfaceAction] = useState<import('./ui/views/narrativeSurfaceData').SurfaceAction | undefined>(undefined);
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter | null>(null);
   const [isExitingFilteredView, setIsExitingFilteredView] = useState(false);
   const clearFilterTimerRef = useRef<number | null>(null);
@@ -154,11 +160,21 @@ export default function App() {
     }
   });
 
+  useSnapshots({
+    repoRoot: repoState.status === 'ready' ? repoState.repo.root : '',
+    setRepoState: (updater: (prev: BranchViewModel) => BranchViewModel) => {
+      setRepoState((prev) => {
+        if (prev.status !== 'ready') return prev;
+        return { ...prev, model: updater(prev.model) };
+      });
+    }
+  });
+
   // Commit data loading (model, path, files, diffs, traces)
   const commitData = useCommitData({
     mode,
     repoState,
-    diffCache: diffCache as unknown as React.MutableRefObject<{ get(key: string): string | undefined; set(key: string, value: string): void }>,
+    diffCache: diffCache as unknown as MutableRefObject<{ get(key: string): string | undefined; set(key: string, value: string): void }>,
     model: null // Will be computed inside the hook
   });
 
@@ -192,8 +208,6 @@ export default function App() {
     [setRepoState, setActionError]
   );
 
-  const importEnabled = mode === 'repo' && repoState.status === 'ready';
-
   // Focus management: save active element before drill-down, restore on back
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
 
@@ -225,7 +239,7 @@ export default function App() {
         lastFocusedElementRef.current = null;
       }
       clearFilterTimerRef.current = null;
-    }, 180); // Match transition duration
+    }, DASHBOARD_FOCUS_RESTORE_MS);
   }, []);
 
   useEffect(() => {
@@ -236,141 +250,84 @@ export default function App() {
     };
   }, []);
 
-  return (
-    <div className="flex h-full flex-col bg-bg-primary text-text-primary">
-      {/* Update Notification */}
-      {updateStatus && (
-        <UpdatePrompt
-          status={updateStatus}
-          onUpdate={downloadAndInstall}
-          onClose={dismiss}
-          onCheckAgain={checkForUpdates}
-        />
-      )}
+  const repoRoot = repoState.status === 'ready' ? repoState.path : '';
 
-      <TopNav
-        mode={mode}
-        onModeChange={setMode}
-        repoPath={commitData.repoPath}
+  return (
+    <div className="flex h-screen bg-bg-primary text-text-primary overflow-hidden">
+      <Sidebar 
+        mode={mode} 
+        onModeChange={setMode} 
         onOpenRepo={openRepo}
         onImportSession={sessionImportHandlers.importSession}
-        onImportKimiSession={sessionImportHandlers.importKimiSession}
-        onImportAgentTrace={sessionImportHandlers.importAgentTrace}
-        importEnabled={importEnabled}
-      >
-        {/* Update indicator in nav */}
-        <UpdateIndicator status={updateStatus} onClick={checkForUpdates} />
-      </TopNav>
+      />
 
-      {/* `min-h-0` is critical so nested flex children can scroll instead of overflowing */}
-      <div className="flex-1 min-h-0 overflow-hidden bg-bg-tertiary">
-        {mode === 'dashboard' ? (
-          <DashboardView
-            repoState={repoState}
-            setRepoState={setRepoState}
-            setActionError={setActionError}
-            onDrillDown={handleDrillDown}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Update Notification */}
+        {updateStatus && (
+          <UpdatePrompt
+            status={updateStatus}
+            onUpdate={downloadAndInstall}
+            onClose={dismiss}
+            onCheckAgain={checkForUpdates}
+          />
+        )}
+
+        {/* Header navigation and actions */}
+        <TopNav
+            mode={mode}
             onModeChange={setMode}
+            repoPath={repoRoot}
+            onOpenRepo={openRepo}
+            onImportSession={sessionImportHandlers.importSession}
+            onImportKimiSession={sessionImportHandlers.importKimiSession}
+            onImportAgentTrace={sessionImportHandlers.importAgentTrace}
+            importEnabled={repoState.status === 'ready'}
           />
-        ) : mode === 'docs' ? (
-          <DocsView
-            repoState={repoState}
-            setRepoState={setRepoState}
-            onClose={() => setMode('repo')}
-          />
-        ) : mode === 'repo' && repoState.status === 'loading' ? (
-          <div className="p-8 text-sm text-text-tertiary">
-            <div className="text-sm font-medium text-text-secondary">Indexing repo…</div>
-            <div className="mt-2 text-xs text-text-tertiary">
-              {indexingProgress?.message ?? 'Preparing index…'}
-            </div>
-            <div className="mt-3 h-2 w-64 max-w-full rounded-full bg-border-light overflow-hidden">
-              <div
-                className="h-full bg-accent-blue transition-[width] duration-300"
-                style={{ width: `${indexingProgress?.percent ?? 0}%` }}
-              />
-            </div>
-            <div className="mt-2 text-xs text-text-muted">
-              {indexingProgress?.total
-                ? `${indexingProgress.current ?? 0}/${indexingProgress.total} · ${indexingProgress.phase}`
-                : indexingProgress?.phase ?? 'loading'}
-            </div>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-hidden relative flex flex-col">
+          {/* `min-h-0` is critical so nested flex children can scroll instead of overflowing */}
+          <div className="app-canvas flex-1 min-h-0 overflow-hidden">
+            <AppContent
+              mode={mode}
+              repoState={repoState}
+              setRepoState={setRepoState}
+              indexingProgress={indexingProgress}
+              codexPromptExport={codexPromptExport}
+              attributionPrefs={attributionPrefs}
+              actionError={actionError}
+              setActionError={setActionError}
+              openRepo={openRepo}
+              updateAttributionPrefs={updateAttributionPrefs}
+              purgeAttributionMetadata={purgeAttributionMetadata}
+              commitData={commitData}
+              traceCollectorHandlers={traceCollectorHandlers}
+              sessionImportHandlers={sessionImportHandlers}
+              autoIngest={autoIngest}
+              updateCodexOtelReceiverEnabled={updateCodexOtelReceiverEnabled}
+              dashboardFilter={dashboardFilter}
+              onClearFilter={handleClearFilter}
+              isExitingFilteredView={isExitingFilteredView}
+              onDrillDown={handleDrillDown}
+              onModeChange={setMode}
+              githubConnectorEnabled={githubConnectorEnabled}
+              onToggleGitHubConnector={handleToggleGitHubConnector}
+              surfaceAction={surfaceAction}
+              setSurfaceAction={setSurfaceAction}
+            />
           </div>
-        ) : mode === 'repo' && repoState.status === 'error' ? (
-          <div className="p-8">
-            <div className="rounded-xl border border-accent-red-light bg-accent-red-bg p-4 text-sm text-text-secondary">
-              {repoState.message}
-            </div>
-            <div className="mt-4 text-sm text-text-tertiary">
-              Ensure the selected folder is a git repository and that <span className="font-mono">git</span> is
-              available on your PATH.
-            </div>
-          </div>
-        ) : commitData.model ? (
-          <BranchView
-            model={commitData.model}
-            updateModel={(updater) => {
-              setRepoState((prev) => {
-                if (prev.status !== 'ready') return prev;
-                return { ...prev, model: updater(prev.model) };
-              });
+        </main>
+
+        {isAgentationEnabled && AgentationComponent && normalizedAgentationEndpoint && (
+          <AgentationComponent
+            endpoint={normalizedAgentationEndpoint}
+            webhookUrl={agentationWebhookUrl}
+            onSessionCreated={(sessionId) => {
+              console.log('Session started:', sessionId);
             }}
-            dashboardFilter={dashboardFilter}
-            onClearFilter={handleClearFilter}
-            isExitingFilteredView={isExitingFilteredView}
-            loadFilesForNode={commitData.loadFilesForNode}
-            loadDiffForFile={commitData.loadDiffForFile}
-            loadTraceRangesForFile={commitData.loadTraceRangesForFile}
-            onExportAgentTrace={traceCollectorHandlers.exportAgentTrace}
-            onRunOtlpSmokeTest={traceCollectorHandlers.runOtlpSmokeTestHandler}
-            onUpdateCodexOtelPath={traceCollectorHandlers.updateCodexOtelPath}
-            onToggleCodexOtelReceiver={updateCodexOtelReceiverEnabled}
-            onOpenCodexOtelDocs={traceCollectorHandlers.openCodexOtelDocs}
-            codexPromptExport={codexPromptExport}
-            attributionPrefs={attributionPrefs}
-            onUpdateAttributionPrefs={updateAttributionPrefs}
-            onPurgeAttributionMetadata={purgeAttributionMetadata}
-            onUnlinkSession={sessionImportHandlers.unlinkSession}
-            actionError={actionError}
-            setActionError={setActionError}
-            onDismissActionError={() => setActionError(null)}
-            ingestStatus={autoIngest.ingestStatus}
-            ingestActivityRecent={autoIngest.activityRecent}
-            onRequestIngestActivityAll={autoIngest.getActivityAll}
-            ingestIssues={autoIngest.issues}
-            onDismissIngestIssue={autoIngest.dismissIssue}
-            onToggleAutoIngest={autoIngest.toggleAutoIngest}
-            ingestToast={autoIngest.toast}
-            ingestConfig={autoIngest.ingestConfig}
-            otlpKeyStatus={autoIngest.otlpKeyStatus}
-            discoveredSources={autoIngest.discoveredSources}
-            collectorMigrationStatus={autoIngest.collectorMigrationStatus}
-            captureReliabilityStatus={autoIngest.captureReliabilityStatus}
-            onUpdateWatchPaths={autoIngest.updateWatchPaths}
-            onMigrateCollector={autoIngest.migrateCollector}
-            onRollbackCollector={autoIngest.rollbackCollector}
-            onRefreshCaptureReliability={autoIngest.refreshCaptureReliability}
-            onConfigureCodex={autoIngest.configureCodexTelemetry}
-            onRotateOtlpKey={autoIngest.rotateOtlpKey}
-            onGrantCodexConsent={autoIngest.grantCodexConsent}
-            onAuthorizeCodexAppServerForLiveTest={autoIngest.authorizeCodexAppServerForLiveTest}
-            onLogoutCodexAppServerAccount={autoIngest.logoutCodexAppServerAccount}
-            githubConnectorEnabled={githubConnectorEnabled}
-            onToggleGitHubConnector={handleToggleGitHubConnector}
           />
-        ) : (
-          <RepoEmptyState setRepoState={setRepoState} />
         )}
       </div>
-      {isAgentationEnabled && AgentationComponent && normalizedAgentationEndpoint && (
-        <AgentationComponent
-          endpoint={normalizedAgentationEndpoint}
-          webhookUrl={agentationWebhookUrl}
-          onSessionCreated={(sessionId) => {
-            console.log('Session started:', sessionId);
-          }}
-        />
-      )}
     </div>
   );
 }
