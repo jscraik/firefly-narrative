@@ -9,10 +9,10 @@ test.describe('Narrative App', () => {
     await expect(page).toHaveTitle(/Narrative/);
   });
 
-  test('demo mode is available', async ({ page }) => {
-    // Look for demo mode button or link
-    const demoButton = page.locator('text=Demo').first();
-    await expect(demoButton).toBeVisible();
+  test('live Capture mode is available', async ({ page }) => {
+    // Look for Live Capture button or link - Live Capture is a primary item in the sidebar
+    const liveButton = page.locator('text=Live Capture').first();
+    await expect(liveButton).toBeVisible();
   });
 
   test('navigation elements exist', async ({ page }) => {
