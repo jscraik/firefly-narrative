@@ -32,7 +32,7 @@ export function FilesChanged({
   }, [selectedFile]);
 
   return (
-    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
+    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
       <div className="section-header">{title ?? 'Files in this evidence window'}</div>
       <div className="section-subheader">Changed files linked to the selected commit, branch, or evidence slice</div>
       <div className="mt-4 divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden">

@@ -245,7 +245,7 @@ export function CaptureActivityStrip(props: {
             onClick={closeDrawer}
             aria-label="Close"
           />
-          <div className="absolute right-0 top-0 h-full w-full max-w-[32.5rem] overflow-y-auto border-l border-border-subtle bg-bg-primary p-5 shadow-xl animate-in slide-in-from-right duration-300">
+          <div className="absolute right-0 top-0 h-full w-full max-w-[32.5rem] overflow-y-auto border-l border-border-subtle bg-bg-primary p-5 shadow-xl animate-in slide-in-from-right duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-text-secondary">Capture activity</div>

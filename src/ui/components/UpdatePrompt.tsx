@@ -69,7 +69,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
     const { title, message, isWebMode } = getUserFriendlyError(status.error);
 
     return (
-      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
+      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
         <div className="rounded-xl border border-accent-red-light bg-bg-secondary shadow-lg p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-accent-red mt-0.5 shrink-0" />
@@ -119,7 +119,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
   // Downloading state
   if (status.type === 'downloading') {
     return (
-      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
+      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
         <div className="rounded-xl border border-accent-blue-light bg-accent-blue-bg shadow-lg p-4">
           <div className="flex items-center gap-3">
             <Loader2 className="w-5 h-5 text-accent-blue motion-safe:animate-spin shrink-0" />
@@ -127,7 +127,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
               <div className="font-semibold text-text-primary text-sm">Downloading Update</div>
               <div className="mt-2 h-1.5 bg-accent-blue-light rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-accent-blue transition duration-300"
+                  className="h-full bg-accent-blue transition duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
                   style={{ width: `${status.progress}%` }}
                 />
               </div>
@@ -142,7 +142,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
   // Ready to install state
   if (status.type === 'ready') {
     return (
-      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
+      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
         <div className="rounded-xl border border-accent-green-light bg-accent-green-bg shadow-lg p-4">
           <div className="flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-accent-green mt-0.5 shrink-0" />
@@ -176,7 +176,7 @@ export function UpdatePrompt({ status, onUpdate, onClose, onDismiss, onCheckAgai
       : null;
 
     return (
-      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-300">
+      <div className="fixed top-4 right-4 z-50 w-80 animate-in slide-in-from-right fade-in duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
         <div className="rounded-xl border border-border-light bg-bg-secondary shadow-lg p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-blue">

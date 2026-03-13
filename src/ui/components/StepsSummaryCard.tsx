@@ -75,7 +75,7 @@ export function StepsSummaryCard(props: {
   const tracePresent = Boolean(traceSummary);
 
   return (
-    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
+    <div className="card p-5 animate-fade-in-up delay-200 hover:shadow-lg transition-shadow duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
       <div className="section-header">STEPS</div>
       <div className="section-subheader">What the assistant did for this commit.</div>
 

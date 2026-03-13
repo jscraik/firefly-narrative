@@ -164,7 +164,7 @@ export function AgentTraceSummary(props: AgentTraceSummaryProps) {
         <div className="mt-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="trace-bar">
-              <div className="trace-bar-fill transition-[width] duration-500 ease-out" style={{ width: `${aiPercent}%` }} />
+              <div className="trace-bar-fill transition-[width] duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ease-out" style={{ width: `${aiPercent}%` }} />
             </div>
             <div className="text-sm font-semibold text-text-secondary">{traceLabel}</div>
           </div>
