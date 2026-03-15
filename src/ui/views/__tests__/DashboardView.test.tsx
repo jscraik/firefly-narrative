@@ -61,10 +61,6 @@ vi.mock('../../components/dashboard/DashboardHeader', () => ({
   ),
 }));
 
-vi.mock('../../components/dashboard/MetricsGrid', () => ({
-  MetricsGrid: () => <div data-testid="metrics-grid">metrics</div>,
-}));
-
 vi.mock('../../components/dashboard/TopFilesTable', () => ({
   TopFilesTable: ({ files }: { files: Array<{ filePath: string }> }) => (
     <div data-testid="top-files">{files.map((file) => file.filePath).join(',')}</div>
@@ -73,14 +69,6 @@ vi.mock('../../components/dashboard/TopFilesTable', () => ({
 
 vi.mock('../../components/dashboard/TrendChart', () => ({
   TrendChart: () => <div data-testid="trend-chart">trend chart</div>,
-}));
-
-vi.mock('../../components/dashboard/QuickActions', () => ({
-  QuickActions: () => <div data-testid="quick-actions">quick actions</div>,
-}));
-
-vi.mock('../../components/dashboard/RecentActivity', () => ({
-  RecentActivity: () => <div data-testid="recent-activity">recent activity</div>,
 }));
 
 vi.mock('../../components/dashboard/BottomStats', () => ({

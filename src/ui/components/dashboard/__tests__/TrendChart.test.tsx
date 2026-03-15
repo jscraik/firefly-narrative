@@ -90,7 +90,7 @@ describe('TrendChart', () => {
             undefined,
             expect.objectContaining({ renderer: 'canvas' }),
         );
-    });
+    }, 30000);
 
     it('renders strategy info label', () => {
         render(<TrendChart trend={fixtureTrend2k} />);

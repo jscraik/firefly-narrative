@@ -47,8 +47,5 @@
 				"useImportType": "error"
 			}
 		}
-	},
-	"organizeImports": {
-		"enabled": true
 	}
 }

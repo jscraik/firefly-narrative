@@ -12,6 +12,7 @@ import { BranchView } from './ui/views/BranchView';
 import { DashboardView } from './ui/views/DashboardView';
 import { DocsView } from './ui/views/DocsView';
 import { NarrativeSurfaceView } from './ui/views/NarrativeSurfaceView';
+import { SkeletonIntent, SkeletonTimeline } from './ui/components/Skeleton';
 
 type AppContentProps = {
   mode: Mode;
@@ -96,21 +97,34 @@ export function AppContent({
   if (mode === 'repo') {
     if (repoState.status === 'loading') {
       return (
-        <div className="p-8 text-sm text-text-tertiary">
-          <div className="text-sm font-medium text-text-secondary">Indexing repo…</div>
-          <div className="mt-2 text-xs text-text-tertiary">
-            {indexingProgress?.message ?? 'Preparing index…'}
+        <div className="p-8 flex flex-col h-full overflow-hidden">
+          <div className="mb-8">
+            <div className="text-sm font-medium text-text-secondary">Indexing repo…</div>
+            <div className="mt-2 text-xs text-text-tertiary">
+              {indexingProgress?.message ?? 'Preparing index…'}
+            </div>
+            <div className="mt-3 h-2 w-64 max-w-full overflow-hidden rounded-full bg-border-light">
+              <div
+                className="h-full bg-accent-blue transition-[width] duration-300"
+                style={{ width: `${indexingProgress?.percent ?? 0}%` }}
+              />
+            </div>
+            <div className="mt-2 text-xs text-text-muted">
+              {indexingProgress?.total
+                ? `${indexingProgress.current ?? 0}/${indexingProgress.total} · ${indexingProgress.phase}`
+                : indexingProgress?.phase ?? 'loading'}
+            </div>
           </div>
-          <div className="mt-3 h-2 w-64 max-w-full overflow-hidden rounded-full bg-border-light">
-            <div
-              className="h-full bg-accent-blue transition-[width] duration-300"
-              style={{ width: `${indexingProgress?.percent ?? 0}%` }}
-            />
-          </div>
-          <div className="mt-2 text-xs text-text-muted">
-            {indexingProgress?.total
-              ? `${indexingProgress.current ?? 0}/${indexingProgress.total} · ${indexingProgress.phase}`
-              : indexingProgress?.phase ?? 'loading'}
+          
+          <div className="flex-1 grid grid-cols-2 gap-12 opacity-50">
+             <div>
+               <div className="mb-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Loading intents...</div>
+               <SkeletonIntent count={5} />
+             </div>
+             <div>
+               <div className="mb-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Hydrating timeline...</div>
+               <SkeletonTimeline count={7} />
+             </div>
           </div>
         </div>
       );
