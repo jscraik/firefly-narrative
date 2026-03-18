@@ -92,7 +92,7 @@ describe("TrendChart", () => {
 		);
 	});
 
-	it("switches to canvas renderer for medium density data (20k points)", () => {
+	it("switches to canvas renderer for medium density data (>2k points)", () => {
 		render(<TrendChart trend={fixtureTrend20k} />);
 		expect(echarts.init).toHaveBeenCalledWith(
 			expect.anything(),

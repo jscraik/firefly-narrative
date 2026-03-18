@@ -27,8 +27,8 @@ function generateTrendData(
 // Canonical fixture: 2k points, 1 series variant (approx using simple category split as proxy)
 export const fixtureTrend2k = generateTrendData(2000, 1);
 
-// Canonical fixture: 20k points
-export const fixtureTrend20k = generateTrendData(20000, 4);
+// Canonical fixture: medium-density (above the 2k canvas threshold)
+export const fixtureTrend20k = generateTrendData(2500, 4);
 
 // Canonical fixture: 100k points
 export const fixtureTrend100k = generateTrendData(100000, 12);
