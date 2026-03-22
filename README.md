@@ -6,7 +6,7 @@
 
 <div align="center">
 
-[![CI](https://github.com/jscraik/trace-narrative/actions/workflows/ci.yml/badge.svg)](https://github.com/jscraik/trace-narrative/actions)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/jscraik/trace-narrative/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/jscraik/trace-narrative/tree/main)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![tauri v2](https://img.shields.io/badge/tauri-v2-orange.svg)](https://tauri.app)
 
@@ -142,6 +142,23 @@ Then open a git repository and see your commit history come to life with narrati
 - **Atlas Search**: Full-text search across your entire narrative history.
 - **Live Updates**: Watch your repo change in real-time.
 - **Auto-Ingest**: Automatically capture sessions from supported tools.
+
+---
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `pnpm install` | Install dependencies |
+| `pnpm tauri:dev` | Run desktop app in dev mode |
+| `pnpm tauri:build` | Build production desktop app |
+| `pnpm lint` | Run linter (Biome) |
+| `pnpm typecheck` | TypeScript type checking |
+| `pnpm test` | Run unit tests |
+| `pnpm build` | Build web assets only |
+| `pnpm check` | Run all quality gates |
+| `pnpm audit` | Security audit |
+| `pnpm docs:lint` | Lint documentation |
 
 ---
 

@@ -661,7 +661,7 @@
   },
   "ciProviderPolicy": {
     "activeProvider": "circleci",
-    "mode": "shadow",
+    "mode": "required",
     "migrationStage": "circleci-only",
     "transitionStatusArtifactPath": ".harness/ci-provider-transition-status.json",
     "authorityConfigPath": "harness.contract.json",
