@@ -634,7 +634,8 @@
       "feature/*",
       "fix/*",
       "chore/*",
-      "refactor/*"
+      "refactor/*",
+      "release-please--**"
     ],
     "protectedBranchDenylist": [
       "main",
