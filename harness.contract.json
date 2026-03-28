@@ -635,6 +635,7 @@
       "fix/*",
       "chore/*",
       "refactor/*",
+      "codex/*",
       "release-please--**"
     ],
     "protectedBranchDenylist": [
