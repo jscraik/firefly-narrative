@@ -341,6 +341,8 @@ preflight_local_memory_gold() {
 		-d '{"level":"observation"}' \
 		"http://127.0.0.1:${rest_port}/api/v1/observe")"
 	if [[ "${malformed_code}" -lt 400 ]]; then
+		trap - RETURN
+		rm -f "${malformed_output}" "${dup_output_1}" "${dup_output_2}"
 		log_err "malformed payload did not return an error (HTTP ${malformed_code})"
 		return 1
 	fi
@@ -373,6 +375,8 @@ preflight_local_memory_gold() {
 		log_warn "daemon log not found at ${daemon_log}"
 	fi
 
+	trap - RETURN
+	rm -f "${malformed_output}" "${dup_output_1}" "${dup_output_2}"
 	log_ok 'local-memory preflight passed'
 }
 
@@ -387,7 +391,7 @@ main() {
 		if (( $# > 3 )); then
 			log_err "legacy positional mode accepts at most 3 arguments"
 			usage >&2
-			exit 2
+			return 2
 		fi
 		expected_repo="${1:-}"
 		bins_csv="${2:-}"
@@ -420,19 +424,19 @@ main() {
 				;;
 			-h|--help)
 				usage
-				exit 0
+				return 0
 				;;
 			*)
 				log_err "unknown argument: $1"
 				usage >&2
-				exit 2
+				return 2
 				;;
 		esac
 	done
 
 	case "${local_memory_mode}" in
 		off|optional|required) ;;
-		*) log_err "invalid --mode: ${local_memory_mode}"; exit 2 ;;
+		*) log_err "invalid --mode: ${local_memory_mode}"; return 2 ;;
 	esac
 
 	log_section 'Codex Preflight'
@@ -440,17 +444,17 @@ main() {
 
 	if ! command -v git >/dev/null 2>&1; then
 		log_err 'missing binary: git'
-		exit 2
+		return 2
 	fi
 
 	local git_root
 	if ! git_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
 		log_err 'not inside a git repo (git rev-parse failed)'
-		exit 2
+		return 2
 	fi
 	if [[ -z "${git_root}" ]]; then
 		log_err 'git rev-parse returned empty root'
-		exit 2
+		return 2
 	fi
 	git_root="$(cd -- "${git_root}" && pwd -P)"
 	echo "git root: ${git_root}"
@@ -458,11 +462,11 @@ main() {
 
 	if [[ "${WORKSPACE_ROOT}" != "${git_root}" && "${WORKSPACE_ROOT}" != "${git_root}"/* ]]; then
 		log_err "script workspace mismatch: ${WORKSPACE_ROOT} is not inside git root ${git_root}"
-		exit 2
+		return 2
 	fi
 	if [[ -n "${expected_repo}" && "${WORKSPACE_ROOT}" != *"${expected_repo}"* ]]; then
 		log_err "repo mismatch: expected fragment '${expected_repo}' in '${WORKSPACE_ROOT}'"
-		exit 2
+		return 2
 	fi
 
 	cd "${WORKSPACE_ROOT}"
@@ -489,7 +493,7 @@ main() {
 		if ! preflight_local_memory_gold; then
 			if [[ "${local_memory_mode}" == 'required' ]]; then
 				log_err 'local-memory preflight failed (required mode)'
-				exit 2
+				return 2
 			fi
 			log_warn 'local-memory preflight failed (optional mode)'
 		fi
@@ -498,4 +502,22 @@ main() {
 	log_ok 'preflight passed'
 }
 
-main "$@"
+preflight_repo() {
+	main --stack repo --mode off "$@"
+}
+
+preflight_js() {
+	main --stack js --mode off "$@"
+}
+
+preflight_py() {
+	main --stack py --mode off "$@"
+}
+
+preflight_rust() {
+	main --stack rust --mode off "$@"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+	main "$@"
+fi
