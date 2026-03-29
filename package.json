@@ -47,7 +47,7 @@
     "tauri:build": "tauri build --bundles app --no-sign",
     "tauri:build:full": "tauri build",
     "docs:lint": "pnpm docs:lint:vale && pnpm docs:lint:markdown",
-    "docs:lint:markdown": "npx -y markdownlint-cli2 README.md docs/README.md docs/agents/*.md brand/README.md",
+    "docs:lint:markdown": "pnpm dlx markdownlint-cli2 README.md docs/README.md docs/agents/*.md brand/README.md",
     "docs:lint:vale": "bash -lc \"if command -v vale >/dev/null 2>&1; then vale --minAlertLevel=error README.md docs/README.md docs/agents/*.md; else echo 'vale not found; skipping Vale error check'; fi\"",
     "docs:lint:warn": "bash -lc \"if command -v vale >/dev/null 2>&1; then vale --minAlertLevel=warning README.md docs/README.md docs/agents/*.md; else echo 'vale not found; skipping Vale warning check'; fi\"",
     "docs:api": "typedoc",
