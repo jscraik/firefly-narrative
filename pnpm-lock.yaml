@@ -28,8 +28,8 @@ importers:
   .:
     dependencies:
       '@brainwav/coding-harness':
-        specifier: ^0.8.2
-        version: 0.8.2(@octokit/core@7.0.6)(@types/node@25.1.0)
+        specifier: ^0.11.12
+        version: 0.11.12(@octokit/core@7.0.6)(@types/node@25.1.0)
       '@design-studio/runtime':
         specifier: file:vendor/design-studio/design-studio-runtime-2.0.0.tgz
         version: file:vendor/design-studio/design-studio-runtime-2.0.0.tgz(react@19.2.4)
@@ -369,8 +369,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@brainwav/coding-harness@0.8.2':
-    resolution: {integrity: sha512-OvkzoAjKuep2W5whXQGNXyAT/Y1OYd4DrCZ/3kyE4ciUe2D96SlqGDxT6IoPRw9veHpEqj4+a5Hm4li7+ygjEw==}
+  '@brainwav/coding-harness@0.11.12':
+    resolution: {integrity: sha512-gS7/8/0LoidMcZikd36X5wJ1ra+DdfnexCzzXS9Gvsq+u8brhFsWlzzGuOJv1+JMpqd2sBktHr075JsfJwL6ug==}
     engines: {node: '>=24.0.0'}
     hasBin: true
 
@@ -5303,7 +5303,7 @@ snapshots:
   '@biomejs/cli-win32-x64@2.3.13':
     optional: true
 
-  '@brainwav/coding-harness@0.8.2(@octokit/core@7.0.6)(@types/node@25.1.0)':
+  '@brainwav/coding-harness@0.11.12(@octokit/core@7.0.6)(@types/node@25.1.0)':
     dependencies:
       '@inquirer/prompts': 8.3.2(@types/node@25.1.0)
       '@octokit/plugin-retry': 7.2.1(@octokit/core@7.0.6)

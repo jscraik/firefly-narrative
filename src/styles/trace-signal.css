@@ -5,16 +5,44 @@
 	--color-trace-glow: oklch(0.85 0.15 85);
 	--color-trace-dim: oklch(0.6 0.05 85);
 	--color-trace-insight: oklch(0.88 0.2 92);
-	--color-trace-amber: rgb(251 191 36);
-	--color-trace-amber-soft: rgb(255 235 130);
-	--color-trace-amber-bright: rgb(255 210 90);
-	--color-trace-success: rgb(16 185 129);
-	--color-trace-error: rgb(239 68 68);
-	--color-trace-analyzing: rgb(252 211 77);
-	--color-trace-brand-light: rgb(192 94 10);
-	--color-trace-brand-dark: rgb(254 243 199);
-	--color-trace-brand-shadow-deep: rgb(180 80 0);
-	--color-trace-brand-shadow-warm: rgb(245 158 11);
+	--color-trace-amber: var(--accent-amber);
+	--color-trace-amber-soft: color-mix(
+		in oklab,
+		var(--accent-amber) 55%,
+		var(--background) 45%
+	);
+	--color-trace-amber-bright: color-mix(
+		in oklab,
+		var(--accent-amber) 78%,
+		var(--accent-foreground) 22%
+	);
+	--color-trace-success: var(--accent-green);
+	--color-trace-error: var(--accent-red);
+	--color-trace-analyzing: color-mix(
+		in oklab,
+		var(--accent-amber) 84%,
+		var(--background) 16%
+	);
+	--color-trace-brand-light: color-mix(
+		in oklab,
+		var(--accent-amber) 70%,
+		var(--foreground) 30%
+	);
+	--color-trace-brand-dark: color-mix(
+		in oklab,
+		var(--accent-amber-light) 72%,
+		var(--background) 28%
+	);
+	--color-trace-brand-shadow-deep: color-mix(
+		in oklab,
+		var(--accent-amber) 82%,
+		var(--foreground) 18%
+	);
+	--color-trace-brand-shadow-warm: color-mix(
+		in oklab,
+		var(--accent-amber) 88%,
+		var(--accent-foreground) 12%
+	);
 
 	/* Sizes */
 	--size-trace-dot: 0.625rem;

@@ -25,14 +25,14 @@
 	);
 	/* dark amber pad instead of pure black    */
 	--hero-orb-core:
-		0 0 12px color-mix(in oklab, var(--foreground) 78%, transparent),
-		0 0 28px color-mix(in srgb, var(--accent-orange) 70%, transparent),
-		0 0 60px color-mix(in srgb, var(--accent-orange) 30%, transparent),
-		0 0 110px color-mix(in srgb, var(--accent-orange) 12%, transparent);
+		0 0 0.75rem color-mix(in oklab, var(--foreground) 78%, transparent),
+		0 0 1.75rem color-mix(in srgb, var(--accent-orange) 70%, transparent),
+		0 0 3.75rem color-mix(in srgb, var(--accent-orange) 30%, transparent),
+		0 0 6.875rem color-mix(in srgb, var(--accent-orange) 12%, transparent);
 	/* tighter on light — doesn't bleed        */
 	--hero-grid-warmth: color-mix(in oklab, var(--accent-orange) 8%, transparent);
 	/* slightly stronger warmth in light       */
-	--hero-hud-shadow: 0 6px 20px
+	--hero-hud-shadow: 0 0.375rem 1.25rem
 		color-mix(in oklab, var(--foreground) 12%, transparent);
 }
 
@@ -46,15 +46,15 @@
 	--hero-node-pad: color-mix(in oklab, var(--background) 70%, transparent);
 	/* original black pad on dark              */
 	--hero-orb-core:
-		0 0 15px color-mix(in oklab, var(--foreground) 88%, transparent),
-		0 0 35px color-mix(in srgb, var(--accent-orange) 80%, transparent),
-		0 0 80px color-mix(in srgb, var(--accent-orange) 40%, transparent),
-		0 0 160px color-mix(in srgb, var(--accent-orange) 20%, transparent),
-		0 0 300px color-mix(in srgb, var(--accent-orange) 10%, transparent);
+		0 0 0.9375rem color-mix(in oklab, var(--foreground) 88%, transparent),
+		0 0 2.1875rem color-mix(in srgb, var(--accent-orange) 80%, transparent),
+		0 0 5rem color-mix(in srgb, var(--accent-orange) 40%, transparent),
+		0 0 10rem color-mix(in srgb, var(--accent-orange) 20%, transparent),
+		0 0 18.75rem color-mix(in srgb, var(--accent-orange) 10%, transparent);
 	/* original wide atmospheric spill         */
 	--hero-grid-warmth: color-mix(in oklab, var(--accent-orange) 5%, transparent);
 	/* original subtle warmth                  */
-	--hero-hud-shadow: 0 10px 30px
+	--hero-hud-shadow: 0 0.625rem 1.875rem
 		color-mix(in oklab, var(--foreground) 40%, transparent);
 }
 
@@ -63,11 +63,11 @@
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	perspective: 1200px;
+	perspective: 75rem;
 	position: relative;
 	z-index: 10;
 	width: 100%;
-	height: 500px;
+	height: 31.25rem;
 }
 
 .grid-bg {
@@ -80,18 +80,18 @@
 			transparent 70%
 		),
 		linear-gradient(
-			color-mix(in oklab, var(--foreground) 7%, transparent) 1px,
-			transparent 1px
+			color-mix(in oklab, var(--foreground) 7%, transparent) 0.0625rem,
+			transparent 0.0625rem
 		),
 		linear-gradient(
 			90deg,
-			color-mix(in oklab, var(--foreground) 7%, transparent) 1px,
-			transparent 1px
+			color-mix(in oklab, var(--foreground) 7%, transparent) 0.0625rem,
+			transparent 0.0625rem
 		);
 	background-size:
 		100% 100%,
-		60px 60px,
-		60px 60px;
+		3.75rem 3.75rem,
+		3.75rem 3.75rem;
 	z-index: -1;
 	opacity: 0.6;
 }
@@ -102,8 +102,8 @@
 	top: 40%;
 	left: 50%;
 	transform: translate(-50%, -50%);
-	width: 800px;
-	height: 800px;
+	width: 50rem;
+	height: 50rem;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -197,7 +197,7 @@
 	stroke-linecap: round;
 	stroke-dasharray: 1, 1000;
 	opacity: 0;
-	filter: drop-shadow(0 0 8px var(--accent-orange));
+	filter: drop-shadow(0 0 0.5rem var(--accent-orange));
 }
 
 .packet-active {
@@ -225,8 +225,8 @@
 
 /* Core Assembly */
 .core-assembly {
-	width: 80px;
-	height: 80px;
+	width: 5rem;
+	height: 5rem;
 	position: relative;
 	transform-style: preserve-3d;
 	will-change: transform;
@@ -245,14 +245,14 @@
 .shard {
 	position: absolute;
 	inset: 0;
-	border: 2px solid var(--accent-orange);
+	border: 0.125rem solid var(--accent-orange);
 	border-radius: 50%;
 	opacity: 0.45;
 	pointer-events: none;
 }
 
 .shard-inner {
-	inset: 8px;
+	inset: 0.5rem;
 	border-style: dashed;
 	animation:
 		rotate-shard 16s linear infinite,
@@ -260,8 +260,8 @@
 }
 
 .shard-outer {
-	inset: -20px;
-	border-width: 1px;
+	inset: -1.25rem;
+	border-width: 0.0625rem;
 	border-top-color: transparent;
 	border-bottom-color: transparent;
 	animation: rotate-shard 12s linear infinite reverse;
@@ -285,17 +285,17 @@
 	}
 
 	4% {
-		transform: rotate(3deg) translate(2px, -1px);
+		transform: rotate(3deg) translate(0.125rem, -0.0625rem);
 	}
 
 	8% {
-		transform: rotate(-2deg) translate(-1px, 1px);
+		transform: rotate(-2deg) translate(-0.0625rem, 0.0625rem);
 	}
 }
 
 .core-orb {
 	position: absolute;
-	inset: 12px;
+	inset: 0.75rem;
 	background: color-mix(
 		in oklab,
 		var(--accent-amber) 24%,
@@ -314,32 +314,33 @@
 }
 
 .core-orb:focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 4px;
+	outline: 0.125rem solid var(--ring);
+	outline-offset: 0.25rem;
 }
 
 .core-orb:hover,
 .core-orb:focus-visible {
 	transform: scale(1.04);
 	box-shadow:
-		0 0 20px color-mix(in oklab, var(--accent-orange) 85%, transparent),
-		0 0 50px color-mix(in oklab, var(--accent-orange) 45%, transparent),
-		0 0 120px color-mix(in oklab, var(--accent-orange) 24%, transparent);
+		0 0 1.25rem color-mix(in oklab, var(--accent-orange) 85%, transparent),
+		0 0 3.125rem color-mix(in oklab, var(--accent-orange) 45%, transparent),
+		0 0 7.5rem color-mix(in oklab, var(--accent-orange) 24%, transparent);
 }
 
 .core-orb:active {
 	transform: scale(0.98);
 	box-shadow:
-		0 0 12px color-mix(in oklab, var(--accent-orange) 80%, transparent),
-		0 0 28px color-mix(in oklab, var(--accent-orange) 30%, transparent),
-		0 0 80px color-mix(in oklab, var(--accent-orange) 14%, transparent);
+		0 0 0.75rem color-mix(in oklab, var(--accent-orange) 80%, transparent),
+		0 0 1.75rem color-mix(in oklab, var(--accent-orange) 30%, transparent),
+		0 0 5rem color-mix(in oklab, var(--accent-orange) 14%, transparent);
 }
 
 /* Orbital Ring */
 .orbital-ring {
 	position: absolute;
-	inset: -60px;
-	border: 1px solid color-mix(in srgb, var(--accent-orange) 15%, transparent);
+	inset: -3.75rem;
+	border: 0.0625rem solid
+		color-mix(in srgb, var(--accent-orange) 15%, transparent);
 	border-radius: 50%;
 	transform: rotateX(72deg) rotateY(15deg);
 	animation: rotate-ring 15s linear infinite;
@@ -360,16 +361,17 @@
 .hud-tag {
 	position: absolute;
 	font-family: var(--font-mono);
-	font-size: 10px;
+	font-size: 0.625rem;
 	color: var(--accent-orange);
 	white-space: nowrap;
 	box-shadow: var(--hero-hud-shadow);
 	font-variant-numeric: tabular-nums;
 	letter-spacing: 0.1em;
 	background: color-mix(in oklab, var(--background) 78%, transparent);
-	backdrop-filter: blur(12px);
-	border: 1px solid color-mix(in srgb, var(--accent-orange) 30%, transparent);
-	padding: 6px 14px;
+	backdrop-filter: blur(0.75rem);
+	border: 0.0625rem solid
+		color-mix(in srgb, var(--accent-orange) 30%, transparent);
+	padding: 0.375rem 0.875rem;
 	pointer-events: none;
 }
 
@@ -382,8 +384,8 @@
 /* Particles */
 .ember {
 	position: absolute;
-	width: 2.5px;
-	height: 2.5px;
+	width: 0.15625rem;
+	height: 0.15625rem;
 	border-radius: 50%;
 	pointer-events: none;
 }
@@ -431,8 +433,8 @@
 	}
 
 	10% {
-		filter: drop-shadow(-2px 0 var(--accent-red))
-			drop-shadow(2px 0 var(--accent-blue)) brightness(2);
+		filter: drop-shadow(-0.125rem 0 var(--accent-red))
+			drop-shadow(0.125rem 0 var(--accent-blue)) brightness(2);
 	}
 
 	20% {
@@ -440,8 +442,8 @@
 	}
 
 	30% {
-		filter: drop-shadow(3px 0 var(--accent-red))
-			drop-shadow(-3px 0 var(--accent-blue)) brightness(1.5);
+		filter: drop-shadow(0.1875rem 0 var(--accent-red))
+			drop-shadow(-0.1875rem 0 var(--accent-blue)) brightness(1.5);
 	}
 
 	40% {
@@ -454,38 +456,38 @@
 /* -------------------------------------------------- */
 
 /* Tablet and below */
-@media (max-width: 768px) {
+@media (max-width: 48rem) {
 	.firefly-stage {
-		width: 600px;
-		height: 600px;
+		width: 37.5rem;
+		height: 37.5rem;
 	}
 
 	.firefly-hero-container {
-		height: 400px;
+		height: 25rem;
 	}
 }
 
 /* Mobile — HUD tags clip off-screen, hide them */
-@media (max-width: 640px) {
+@media (max-width: 40rem) {
 	.hud-tag {
 		display: none;
 	}
 
 	.firefly-stage {
-		width: 400px;
-		height: 400px;
+		width: 25rem;
+		height: 25rem;
 	}
 
 	.firefly-hero-container {
-		height: 320px;
+		height: 20rem;
 	}
 
 	/* Tame the orb glow on mobile so it doesn't wash out the subtitle */
 	.core-orb {
 		--hero-orb-core:
-			0 0 10px color-mix(in oklab, var(--foreground) 88%, transparent),
-			0 0 25px color-mix(in srgb, var(--accent-orange) 70%, transparent),
-			0 0 50px color-mix(in srgb, var(--accent-orange) 30%, transparent);
+			0 0 0.625rem color-mix(in oklab, var(--foreground) 88%, transparent),
+			0 0 1.5625rem color-mix(in srgb, var(--accent-orange) 70%, transparent),
+			0 0 3.125rem color-mix(in srgb, var(--accent-orange) 30%, transparent);
 	}
 }
 
@@ -521,7 +523,7 @@
 
 	.core-orb {
 		box-shadow:
-			0 0 15px color-mix(in oklab, var(--foreground) 92%, transparent),
-			0 0 35px color-mix(in srgb, var(--accent-orange) 80%, transparent);
+			0 0 0.9375rem color-mix(in oklab, var(--foreground) 92%, transparent),
+			0 0 2.1875rem color-mix(in srgb, var(--accent-orange) 80%, transparent);
 	}
 }

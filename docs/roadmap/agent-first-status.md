@@ -16,7 +16,7 @@ Tracks the operational readiness of agent-first workflows in `trace-narrative`.
 | PR governance gates | `harness-gates.yml` (GHA) | ✅ Active |
 | Code review | Greptile | ✅ Active |
 | Branch protection | GitHub Rulesets | ✅ Active |
-| Harness version | `@brainwav/coding-harness@0.8.2` | ✅ Current |
+| Harness version | `@brainwav/coding-harness@0.11.12` | ✅ Current |
 
 ## Pilot Authz
 

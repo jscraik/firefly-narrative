@@ -23,6 +23,9 @@ The package gives us one repeatable place to enforce:
 
 - Jamie's enforced package is `@brainwav/design-system-guidance`.
 - The CLI may be installed globally for workstation use, but this repo also keeps it in `devDependencies` so local setup, CI, and Codex runs stay reproducible.
+- CI must provide npm auth before any `npm` or `pnpm` install that resolves `@brainwav/*` packages. In this repo's GitHub Actions workflows that is done by appending `NPM_TOKEN` from GitHub Secrets to `~/.npmrc`.
+- Local shells may authenticate either through a valid user-level `~/.npmrc` entry (for example after `npm login`) or through a valid `NPM_TOKEN` export sourced from 1Password.
+- Repo-local [`.npmrc`](/Users/jamiecraik/dev/trace-narrative/.npmrc) should define the `@brainwav` registry only. It must not override auth tokens, because that can break a working user-level `npm login`.
 - `pnpm check` includes the CI-mode design guidance gate.
 
 ## Local Commands
@@ -46,6 +49,7 @@ Phase 1 is intentionally narrow so the package is useful immediately instead of 
   - [docs/design-system-guidance.md](/Users/jamiecraik/dev/trace-narrative/docs/design-system-guidance.md)
   - [docs/design-system-local-tarball-workflow.md](/Users/jamiecraik/dev/trace-narrative/docs/design-system-local-tarball-workflow.md)
 - Source scan:
+  - `landing`
   - `src/ui/views`
   - `src/ui/components`
   - `src/App.tsx`
@@ -58,7 +62,7 @@ Phase 1 is intentionally narrow so the package is useful immediately instead of 
     - `src/assets/icons/gemini-color.svg`
     - `src/assets/icons/kimi-color.svg`
 
-This scope protects the narrative-facing shell copy, screen composition work, the full `src/ui/components` surface, the app-shell entrypoints that mount and route the live experience, the shared stylesheet layer that supports the shell identity, and the token-friendly SVG icon lane under `src/assets/icons`. That includes the dashboard evidence widgets, story anchors, right-panel workflows, session excerpt support components, auto-ingest setup, repo evidence panels, docs overview rendering, Atlas search inspection, attribution badges, transcript rendering, trust-state recovery affordances, the live motion, pill, glass, and trace-signal treatments, plus monochrome icons that already follow `currentColor`-based theming without needing a brittle file-by-file allowlist.
+This scope protects the standalone landing experience, the narrative-facing shell copy, screen composition work, the full `src/ui/components` surface, the app-shell entrypoints that mount and route the live experience, the shared stylesheet layer that supports the shell identity, and the token-friendly SVG icon lane under `src/assets/icons`. That includes the landing hero and CTA shell, dashboard evidence widgets, story anchors, right-panel workflows, session excerpt support components, auto-ingest setup, repo evidence panels, docs overview rendering, Atlas search inspection, attribution badges, transcript rendering, trust-state recovery affordances, the live motion, pill, glass, and trace-signal treatments, plus monochrome icons that already follow `currentColor`-based theming without needing a brittle file-by-file allowlist.
 
 The remaining provider brand marks in `src/assets/icons` are intentionally out of scope for now. `claude-color.svg`, `gemini-color.svg`, and `kimi-color.svg` carry vendor-owned fills, gradients, and brand-color decisions, so we treat them as a brand-governance lane rather than forcing them through the generic raw-literal checker. By contrast, `ollama.svg` and `openai.svg` inherit `currentColor`, which matches current CSS theming guidance and makes them safe to enforce as part of the shared UI surface.
 

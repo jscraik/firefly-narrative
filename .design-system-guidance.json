@@ -6,6 +6,7 @@
 		"docs/design-system-local-tarball-workflow.md"
 	],
 	"include": [
+		"landing",
 		"src/ui/views",
 		"src/ui/components",
 		"src/App.tsx",

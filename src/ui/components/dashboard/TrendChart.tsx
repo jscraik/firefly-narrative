@@ -2,6 +2,7 @@ import { useTheme } from "@design-studio/tokens";
 import * as echarts from "echarts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TrendPoint } from "../../../core/types";
+import { resolveChartPalette } from "../charts/chartUtils";
 
 interface TrendChartProps {
 	trend: TrendPoint[];
@@ -11,61 +12,6 @@ type RenderStrategy =
 	| "svg_low_density"
 	| "canvas_high_density"
 	| "table_accessible_fallback";
-
-function resolveChartColor(variableName: string, fallback: string) {
-	if (typeof window === "undefined") return fallback;
-	const value = window
-		.getComputedStyle(document.documentElement)
-		.getPropertyValue(variableName)
-		.trim();
-	return value || fallback;
-}
-
-function resolveChartPalette(theme: string) {
-	const isLightTheme = theme === "light";
-
-	return {
-		border: resolveChartColor(
-			"--border-light",
-			isLightTheme ? "rgba(13, 13, 13, 0.18)" : "rgba(86, 96, 122, 0.72)",
-		),
-		grid: resolveChartColor(
-			"--border-subtle",
-			isLightTheme ? "rgba(13, 13, 13, 0.1)" : "rgba(76, 86, 110, 0.4)",
-		),
-		textPrimary: resolveChartColor(
-			"--text-primary",
-			isLightTheme ? "rgba(13, 13, 13, 1)" : "rgba(224, 224, 224, 1)",
-		),
-		textMuted: resolveChartColor(
-			"--text-muted",
-			isLightTheme ? "rgba(93, 93, 93, 1)" : "rgba(160, 160, 176, 1)",
-		),
-		accentViolet: resolveChartColor(
-			"--accent-violet",
-			isLightTheme ? "rgba(146, 79, 247, 1)" : "rgba(139, 92, 246, 1)",
-		),
-		accentGreen: resolveChartColor(
-			"--accent-green",
-			isLightTheme ? "rgba(0, 134, 53, 1)" : "rgba(16, 185, 129, 1)",
-		),
-		tooltipBackground: isLightTheme
-			? "rgba(255, 255, 255, 0.96)"
-			: "rgba(13, 13, 18, 0.92)",
-		tooltipShadow: isLightTheme
-			? "rgba(13, 13, 13, 0.14)"
-			: "rgba(0, 0, 0, 0.5)",
-		accentVioletShadow: isLightTheme
-			? "rgba(146, 79, 247, 0.18)"
-			: "rgba(139, 92, 246, 0.3)",
-		accentVioletAreaStart: isLightTheme
-			? "rgba(146, 79, 247, 0.22)"
-			: "rgba(139, 92, 246, 0.4)",
-		accentVioletAreaEnd: isLightTheme
-			? "rgba(146, 79, 247, 0)"
-			: "rgba(139, 92, 246, 0)",
-	};
-}
 
 export function TrendChart({ trend }: TrendChartProps) {
 	const { theme } = useTheme();

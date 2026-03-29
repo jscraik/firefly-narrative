@@ -36,59 +36,46 @@ export interface ChartPalette {
 	accentRed: string;
 	tooltipBackground: string;
 	tooltipShadow: string;
+	accentVioletShadow: string;
+	accentVioletAreaStart: string;
+	accentVioletAreaEnd: string;
 	bgPrimary: string;
 	bgSecondary: string;
 }
 
-export function resolveChartPalette(theme: string): ChartPalette {
-	const light = theme === "light";
+export function resolveChartPalette(_theme: string): ChartPalette {
 	return {
-		border: resolveChartColor(
-			"--border-light",
-			light ? "rgba(13,13,13,0.18)" : "rgba(86,96,122,0.72)",
+		border: resolveChartColor("--chart-border", "oklch(0.56 0.02 260 / 0.18)"),
+		grid: resolveChartColor("--chart-grid", "oklch(0.48 0.02 260 / 0.1)"),
+		textPrimary: resolveChartColor("--text-primary", "oklch(0.2 0.02 260)"),
+		textMuted: resolveChartColor("--text-muted", "oklch(0.55 0.03 260)"),
+		accentViolet: resolveChartColor("--accent-violet", "oklch(0.6 0.2 310)"),
+		accentGreen: resolveChartColor("--accent-green", "oklch(0.55 0.2 150)"),
+		accentBlue: resolveChartColor("--accent-blue", "oklch(0.6 0.18 255)"),
+		accentAmber: resolveChartColor("--accent-amber", "oklch(0.62 0.22 48)"),
+		accentRed: resolveChartColor("--accent-red", "oklch(0.58 0.22 28)"),
+		tooltipBackground: resolveChartColor(
+			"--chart-tooltip-bg",
+			"oklch(0.98 0.005 260 / 0.96)",
 		),
-		grid: resolveChartColor(
-			"--border-subtle",
-			light ? "rgba(13,13,13,0.1)" : "rgba(76,86,110,0.4)",
+		tooltipShadow: resolveChartColor(
+			"--chart-tooltip-shadow",
+			"oklch(0.2 0.02 260 / 0.14)",
 		),
-		textPrimary: resolveChartColor(
-			"--text-primary",
-			light ? "rgba(13,13,13,1)" : "rgba(224,224,224,1)",
+		accentVioletShadow: resolveChartColor(
+			"--chart-accent-violet-shadow",
+			"oklch(0.6 0.2 310 / 0.26)",
 		),
-		textMuted: resolveChartColor(
-			"--text-muted",
-			light ? "rgba(93,93,93,1)" : "rgba(160,160,176,1)",
+		accentVioletAreaStart: resolveChartColor(
+			"--chart-accent-violet-area-start",
+			"oklch(0.6 0.2 310 / 0.24)",
 		),
-		accentViolet: resolveChartColor(
-			"--accent-violet",
-			light ? "rgba(146,79,247,1)" : "rgba(139,92,246,1)",
+		accentVioletAreaEnd: resolveChartColor(
+			"--chart-accent-violet-area-end",
+			"oklch(0.6 0.2 310 / 0)",
 		),
-		accentGreen: resolveChartColor(
-			"--accent-green",
-			light ? "rgba(0,134,53,1)" : "rgba(16,185,129,1)",
-		),
-		accentBlue: resolveChartColor(
-			"--accent-blue",
-			light ? "rgba(37,99,235,1)" : "rgba(59,130,246,1)",
-		),
-		accentAmber: resolveChartColor(
-			"--accent-amber",
-			light ? "rgba(217,119,6,1)" : "rgba(245,158,11,1)",
-		),
-		accentRed: resolveChartColor(
-			"--accent-red",
-			light ? "rgba(220,38,38,1)" : "rgba(239,68,68,1)",
-		),
-		tooltipBackground: light ? "rgba(255,255,255,0.96)" : "rgba(13,13,18,0.92)",
-		tooltipShadow: light ? "rgba(13,13,13,0.14)" : "rgba(0,0,0,0.5)",
-		bgPrimary: resolveChartColor(
-			"--bg-primary",
-			light ? "rgba(255,255,255,1)" : "rgba(13,13,18,1)",
-		),
-		bgSecondary: resolveChartColor(
-			"--bg-secondary",
-			light ? "rgba(245,245,247,1)" : "rgba(20,20,28,1)",
-		),
+		bgPrimary: resolveChartColor("--bg-primary", "oklch(0.98 0.005 260)"),
+		bgSecondary: resolveChartColor("--bg-secondary", "oklch(0.95 0.01 260)"),
 	};
 }
 

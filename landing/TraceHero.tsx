@@ -97,7 +97,7 @@ export const TraceHero: React.FC<TraceHeroProps> = ({
 							if (node && ripple) {
 								node.style.fill = "var(--firefly-signal)";
 								node.style.filter =
-									"drop-shadow(0 0 12px var(--firefly-signal))";
+									"drop-shadow(0 0 0.75rem var(--firefly-signal))";
 								ripple.style.animation =
 									"ripple-out 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards";
 
@@ -348,7 +348,7 @@ export const TraceHero: React.FC<TraceHeroProps> = ({
 					<div
 						className="hud-tag oled-hud"
 						style={{
-							transform: "translate3d(-200px, -180px, 80px)",
+							transform: "translate3d(-12.5rem, -11.25rem, 5rem)",
 							marginLeft: jitterX,
 							marginTop: jitterY,
 						}}
@@ -358,7 +358,7 @@ export const TraceHero: React.FC<TraceHeroProps> = ({
 					<div
 						className="hud-tag oled-hud"
 						style={{
-							transform: "translate3d(180px, 200px, 100px)",
+							transform: "translate3d(11.25rem, 12.5rem, 6.25rem)",
 							marginLeft: -jitterX,
 							marginTop: -jitterY,
 						}}

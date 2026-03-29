@@ -8,7 +8,7 @@ const meta: Meta<typeof TraceHero> = {
 		layout: "fullscreen",
 		backgrounds: {
 			default: "dark",
-			values: [{ name: "dark", value: "rgb(11 17 30)" }],
+			values: [{ name: "dark", value: "oklch(0.16 0.02 255)" }],
 		},
 	},
 	tags: ["autodocs"],

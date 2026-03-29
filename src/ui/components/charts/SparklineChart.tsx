@@ -15,19 +15,36 @@
  */
 
 import { useMemo } from "react";
-import { usePrefersReducedMotion } from "./chartUtils";
+import { resolveChartColor, usePrefersReducedMotion } from "./chartUtils";
 
-// tone → stroke + fill colours (hardcoded for SVG — no CSS var access in SVG attributes)
-const TONE_COLORS: Record<string, { stroke: string; fill: string }> = {
-	violet: { stroke: "rgba(139,92,246,0.9)", fill: "rgba(139,92,246,0.15)" },
-	green: { stroke: "rgba(16,185,129,0.9)", fill: "rgba(16,185,129,0.12)" },
-	blue: { stroke: "rgba(59,130,246,0.9)", fill: "rgba(59,130,246,0.12)" },
-	amber: { stroke: "rgba(245,158,11,0.9)", fill: "rgba(245,158,11,0.12)" },
-	red: { stroke: "rgba(239,68,68,0.9)", fill: "rgba(239,68,68,0.12)" },
-	slate: { stroke: "rgba(160,160,176,0.6)", fill: "rgba(160,160,176,0.08)" },
-};
+const TONE_COLOR_VARS = {
+	violet: {
+		stroke: "--chart-sparkline-violet-stroke",
+		fill: "--chart-sparkline-violet-fill",
+	},
+	green: {
+		stroke: "--chart-sparkline-green-stroke",
+		fill: "--chart-sparkline-green-fill",
+	},
+	blue: {
+		stroke: "--chart-sparkline-blue-stroke",
+		fill: "--chart-sparkline-blue-fill",
+	},
+	amber: {
+		stroke: "--chart-sparkline-amber-stroke",
+		fill: "--chart-sparkline-amber-fill",
+	},
+	red: {
+		stroke: "--chart-sparkline-red-stroke",
+		fill: "--chart-sparkline-red-fill",
+	},
+	slate: {
+		stroke: "--chart-sparkline-slate-stroke",
+		fill: "--chart-sparkline-slate-fill",
+	},
+} as const;
 
-export type SparklineTone = keyof typeof TONE_COLORS;
+export type SparklineTone = keyof typeof TONE_COLOR_VARS;
 
 interface SparklineChartProps {
 	data: number[];
@@ -87,7 +104,11 @@ export function SparklineChart({
 	filled = true,
 }: SparklineChartProps) {
 	const reduced = usePrefersReducedMotion();
-	const colors = TONE_COLORS[tone] ?? TONE_COLORS.violet;
+	const colorVars = TONE_COLOR_VARS[tone] ?? TONE_COLOR_VARS.violet;
+	const colors = {
+		stroke: resolveChartColor(colorVars.stroke, "oklch(0.6 0.2 310 / 0.9)"),
+		fill: resolveChartColor(colorVars.fill, "oklch(0.6 0.2 310 / 0.15)"),
+	};
 
 	const { line, area } = useMemo(
 		() =>

@@ -18,8 +18,9 @@
 	);
 	--landing-shell-border: var(--surface-shell-border);
 	--landing-shell-float-shadow:
-		0 20px 48px color-mix(in oklab, var(--foreground) 12%, transparent),
-		0 10px 22px color-mix(in oklab, var(--accent-orange) 20%, transparent);
+		0 1.25rem 3rem color-mix(in oklab, var(--foreground) 12%, transparent),
+		0 0.625rem 1.375rem
+		color-mix(in oklab, var(--accent-orange) 20%, transparent);
 	--landing-z-content: 20;
 	--landing-z-footer: 15;
 	--landing-overlay-color: color-mix(
@@ -31,7 +32,7 @@
 	isolation: isolate;
 	min-height: min(100%, 100dvh);
 	height: auto;
-	min-width: 320px;
+	min-width: 20rem;
 	font-family: var(
 		--font-sans,
 		ui-sans-serif,
@@ -91,19 +92,19 @@
 .landing-landing::after {
 	z-index: 2;
 	background-image:
-		radial-gradient(currentColor 1px, transparent 1px),
+		radial-gradient(currentColor 0.0625rem, transparent 0.0625rem),
 		linear-gradient(
 			to top,
 			color-mix(in oklab, var(--foreground) 20%, transparent),
 			transparent 55%
 		);
 	background-size:
-		4px 4px,
+		0.25rem 0.25rem,
 		100% 100%;
 	color: color-mix(in oklab, var(--landing-overlay-color) 72%, transparent);
 	opacity: 0.2;
 	mix-blend-mode: multiply;
-	mask-image: radial-gradient(circle at center, #000 20%, transparent 88%);
+	mask-image: radial-gradient(circle at center, black 20%, transparent 88%);
 }
 
 :root[data-theme="dark"] .landing-landing::after {
@@ -125,7 +126,8 @@
 }
 
 .landing-subtitle {
-	text-shadow: 0 2px 8px color-mix(in oklab, var(--foreground) 26%, transparent);
+	text-shadow: 0 0.125rem 0.5rem
+		color-mix(in oklab, var(--foreground) 26%, transparent);
 	line-height: 1.75;
 	margin: 0;
 	max-width: min(var(--landing-subtitle-maxw), 55ch);
@@ -153,22 +155,22 @@
 	z-index: calc(var(--landing-z-footer) + 1);
 	flex: 0 0 auto;
 	margin-top: auto;
-	border-top: 1px solid
+	border-top: 0.0625rem solid
 		color-mix(in oklab, var(--border-subtle) 60%, transparent);
 	padding-block: var(--landing-spacing-5) var(--landing-spacing-3);
 	padding-bottom: calc(
 		var(--landing-spacing-3) +
-		env(safe-area-inset-bottom, 0px)
+		env(safe-area-inset-bottom, 0rem)
 	);
-	box-shadow: inset 0 1px 0
+	box-shadow: inset 0 0.0625rem 0
 		color-mix(in oklab, var(--foreground) 10%, transparent);
 	background: linear-gradient(
 		to top,
 		color-mix(in oklab, var(--bg-page) 88%, transparent),
 		color-mix(in oklab, var(--bg-page) 92%, transparent) 65%
 	);
-	backdrop-filter: blur(6px);
-	-webkit-backdrop-filter: blur(6px);
+	backdrop-filter: blur(0.375rem);
+	-webkit-backdrop-filter: blur(0.375rem);
 }
 
 .landing-footer-inner {
@@ -192,8 +194,11 @@
 	pointer-events: none;
 	color: var(--text-tertiary);
 	opacity: 0.15;
-	background-image: radial-gradient(currentColor 1px, transparent 1px);
-	background-size: 24px 24px;
+	background-image: radial-gradient(
+		currentColor 0.0625rem,
+		transparent 0.0625rem
+	);
+	background-size: 1.5rem 1.5rem;
 	z-index: 1;
 }
 
@@ -224,17 +229,17 @@
 	margin-inline: auto;
 	width: min(52rem, 100%);
 	border-radius: 1.35rem;
-	border: 1px solid var(--landing-shell-border);
+	border: 0.0625rem solid var(--landing-shell-border);
 	background: linear-gradient(
 		150deg,
 		color-mix(in oklab, var(--landing-shell-bg) 92%, transparent),
 		color-mix(in oklab, var(--landing-shell-bg) 96%, var(--accent-orange) 8%)
 	);
-	backdrop-filter: blur(18px) saturate(115%);
-	-webkit-backdrop-filter: blur(18px) saturate(115%);
+	backdrop-filter: blur(1.125rem) saturate(115%);
+	-webkit-backdrop-filter: blur(1.125rem) saturate(115%);
 	padding: clamp(1.25rem, 3vw, 2rem);
 	box-shadow:
-		inset 0 1px 0 color-mix(in oklab, #fff 22%, transparent),
+		inset 0 0.0625rem 0 color-mix(in oklab, white 22%, transparent),
 		var(--landing-shell-float-shadow);
 	overflow: hidden;
 }
@@ -258,7 +263,7 @@
 		),
 		linear-gradient(
 			170deg,
-			color-mix(in oklab, #fff 15%, transparent),
+			color-mix(in oklab, white 15%, transparent),
 			transparent 55%,
 			color-mix(in oklab, var(--foreground) 6%, transparent)
 		);
@@ -275,10 +280,10 @@
 	pointer-events: none;
 	background: radial-gradient(
 		circle at center,
-		color-mix(in oklab, var(--foreground) 24%, transparent) 0.4px,
-		transparent 0.4px
+		color-mix(in oklab, var(--foreground) 24%, transparent) 0.025rem,
+		transparent 0.025rem
 	);
-	background-size: 3px 3px;
+	background-size: 0.1875rem 0.1875rem;
 	opacity: 0.22;
 	z-index: 0;
 }
@@ -317,7 +322,7 @@
 	margin-right: 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 48rem) {
 	.landing-title {
 		display: block;
 		flex-direction: row;
@@ -338,7 +343,7 @@
 	align-items: center;
 	justify-content: center;
 	gap: 0.5rem;
-	border-radius: 9999px;
+	border-radius: 999rem;
 	padding-inline: var(--landing-cta-padding-inline);
 	padding-block: var(--landing-cta-padding-block);
 	color: var(--text-inverted);
@@ -352,11 +357,12 @@
 	letter-spacing: -0.01em;
 	font-weight: 500;
 	position: relative;
-	border: 1px solid color-mix(in oklab, var(--foreground) 24%, transparent);
-	box-shadow: 0 14px 36px
+	border: 0.0625rem solid
+		color-mix(in oklab, var(--foreground) 24%, transparent);
+	box-shadow: 0 0.875rem 2.25rem
 		color-mix(in oklab, var(--foreground) 13%, transparent);
 	text-decoration: none;
-	min-height: 44px;
+	min-height: 2.75rem;
 	transition:
 		transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
 		opacity 160ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -366,32 +372,32 @@
 .landing-cta::after {
 	content: "";
 	position: absolute;
-	inset: 1px;
+	inset: 0.0625rem;
 	border-radius: inherit;
-	border: 1px solid color-mix(in oklab, #fff 24%, transparent);
+	border: 0.0625rem solid color-mix(in oklab, white 24%, transparent);
 	opacity: 0.38;
 	pointer-events: none;
 }
 
 .landing-cta:hover:not(:disabled) {
-	transform: translateY(-1px) scale(1.02);
-	box-shadow: 0 16px 28px
+	transform: translateY(-0.0625rem) scale(1.02);
+	box-shadow: 0 1rem 1.75rem
 		color-mix(in oklab, var(--foreground) 16%, transparent);
 }
 
 .landing-cta:active:not(:disabled) {
 	transform: translateY(0) scale(0.98);
 	opacity: 0.96;
-	box-shadow: 0 10px 18px
+	box-shadow: 0 0.625rem 1.125rem
 		color-mix(in oklab, var(--foreground) 10%, transparent);
 }
 
 .landing-cta:focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 3px;
+	outline: 0.125rem solid var(--ring);
+	outline-offset: 0.1875rem;
 	box-shadow:
-		0 16px 28px color-mix(in oklab, var(--foreground) 18%, transparent),
-		0 0 0 4px color-mix(in oklab, var(--ring) 34%, transparent);
+		0 1rem 1.75rem color-mix(in oklab, var(--foreground) 18%, transparent),
+		0 0 0 0.25rem color-mix(in oklab, var(--ring) 34%, transparent);
 }
 
 .landing-cta:disabled {
@@ -400,7 +406,7 @@
 }
 
 .landing-brand-list {
-	perspective: 1000px;
+	perspective: 62.5rem;
 	opacity: 0.9;
 	display: flex;
 	flex-wrap: wrap;
@@ -417,9 +423,9 @@
 	display: inline-flex;
 	align-items: center;
 	gap: var(--landing-chip-gap);
-	min-height: 44px;
+	min-height: 2.75rem;
 	min-width: 11ch;
-	border-radius: 9999px;
+	border-radius: 999rem;
 	padding: var(--landing-chip-pad-block) var(--landing-chip-pad-inline);
 	background-color: color-mix(
 		in oklab,
@@ -439,7 +445,8 @@
 	position: absolute;
 	inset: 0;
 	border-radius: inherit;
-	border: 1px solid color-mix(in oklab, var(--accent-orange) 24%, transparent);
+	border: 0.0625rem solid
+		color-mix(in oklab, var(--accent-orange) 24%, transparent);
 	opacity: 0.25;
 	pointer-events: none;
 	z-index: 0;
@@ -472,7 +479,7 @@
 	opacity: 0.8;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 48rem) {
 	.landing-brand-list {
 		gap: var(--landing-spacing-4);
 	}
@@ -500,7 +507,7 @@
 	}
 }
 
-@media (max-width: 520px) {
+@media (max-width: 32.5rem) {
 	.landing-hero-copy-shell {
 		width: min(32rem, 100%);
 		padding: 1.125rem;

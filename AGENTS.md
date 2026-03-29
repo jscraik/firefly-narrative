@@ -62,6 +62,7 @@ Narrative is a Tauri + React desktop app for AI session narratives on git histor
 - project structure and ownership checks: `docs/agents/repo-structure.md`
 - landing-page workflows: `docs/agents/landing-page-separation.md`, `docs/agents/frontend-website-rules.md`
 - agentation payload and webhook workflows: `docs/agents/agentation-schema.md`
+- harness init, update, migrate, and CI contract failures: `docs/agents/harness.md`
 - repair and operations playbooks: `docs/agents/repair-agent.md`
 - rollout and hybrid-capture runbooks: `docs/agents/hybrid-capture-rollout-runbook.md`
 - instruction cleanup and contradictions: `docs/agents/instruction-governance.md`

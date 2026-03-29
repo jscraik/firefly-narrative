@@ -142,7 +142,7 @@ export function RepoEvidenceOverview({
 	];
 
 	return (
-		<section className="rounded-2xl border border-border-subtle bg-bg-subtle p-4 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.8)]">
+		<section className="rounded-2xl border border-border-subtle bg-bg-subtle p-4 shadow-[var(--shadow-panel)]">
 			<div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr] xl:items-start">
 				<div className="max-w-4xl">
 					<div className="flex flex-wrap items-center gap-3">

@@ -78,7 +78,7 @@ export function DashboardHeader({
 						</span>
 					</>
 				)}
-				<div className="w-1.5 h-1.5 rounded-full bg-accent-green shadow-[0_0_6px_var(--accent-green)]" />
+				<div className="w-1.5 h-1.5 rounded-full bg-accent-green shadow-[var(--shadow-status-success-glow)]" />
 			</div>
 		</div>
 	);

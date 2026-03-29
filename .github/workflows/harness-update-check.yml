@@ -22,6 +22,11 @@ jobs:
 
       - uses: pnpm/action-setup@v5
 
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: '[ -n "$NPM_TOKEN" ] && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc || true'
+
       - name: Install dependencies
         run: pnpm install
 

@@ -251,7 +251,7 @@ function ImportMenu(props: {
 				<DropdownMenu.Content
 					sideOffset={8}
 					align="end"
-					className="z-50 min-w-[14rem] rounded-2xl border border-border-light bg-bg-primary p-2 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.7)]"
+					className="z-50 min-w-[14rem] rounded-2xl border border-border-light bg-bg-primary p-2 shadow-[var(--shadow-popover)]"
 				>
 					{onImportSession ? (
 						<DropdownMenu.Item

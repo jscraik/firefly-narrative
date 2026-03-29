@@ -13,28 +13,26 @@
 			"!**/node_modules",
 			"!**/dist",
 			"!**/coverage",
-			"!**/artifacts",
-			"!src/styles.css"
+			"!**/artifacts"
 		]
-	},
-	"css": {
-		"parser": {
-			"cssModules": true,
-			"allowWrongLineComments": true
-		},
-		"linter": {
-			"enabled": true
-		}
 	},
 	"overrides": [
 		{
 			"includes": [
 				"**/*.config.ts",
 				"**/vite.config.ts",
-				"**/vitest.config.ts",
-				"**/*.stories.tsx",
-				"**/*.stories.ts"
+				"**/vitest.config.ts"
 			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noDefaultExport": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/*.stories.tsx"],
 			"linter": {
 				"rules": {
 					"style": {
@@ -44,6 +42,11 @@
 			}
 		}
 	],
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
+	},
 	"linter": {
 		"enabled": true,
 		"rules": {

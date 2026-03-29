@@ -147,12 +147,12 @@ function WhenYouWorkChart() {
 											style={{
 												backgroundColor:
 													intensity > 0.8
-														? "var(--blue-500, rgba(59,130,246,1))"
+														? "var(--accent-blue)"
 														: intensity > 0.5
-															? "var(--blue-500, rgba(59,130,246,1))"
+															? "var(--accent-blue)"
 															: intensity > 0.2
-																? "var(--blue-500, rgba(59,130,246,1))"
-																: "var(--bg-primary, rgba(255,255,255,1))",
+																? "var(--accent-blue)"
+																: "var(--bg-primary)",
 												opacity:
 													intensity > 0.8
 														? 1
