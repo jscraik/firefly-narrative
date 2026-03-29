@@ -56,7 +56,8 @@ export function StoryMapView({
 	);
 	const _repoPath = getRepoPath(repoState);
 	const trustDescriptor = describeSurfaceTrust(captureReliabilityStatus);
-	const nextMode = trustDescriptor.trustState === "healthy" ? "repo" : "status";
+	const nextMode =
+		trustDescriptor.trustState === "healthy" ? "repo" : "hygiene";
 	const nextLabel =
 		trustDescriptor.trustState === "healthy"
 			? "Inspect repo evidence"

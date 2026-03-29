@@ -36,6 +36,21 @@ function calculateDeterministicCost(session: SessionExcerpt): string {
 // Re-export so existing consumers (tests, views) can still import from this module
 export type { SurfaceMode } from "../../core/types";
 
+type LegacySurfaceMode =
+	| "live"
+	| "transcripts"
+	| "costs"
+	| "setup"
+	| "work-graph"
+	| "repo-pulse"
+	| "timeline"
+	| "diffs"
+	| "worktrees"
+	| "env"
+	| "status";
+
+type NarrativeSurfaceRegistryMode = SurfaceMode | LegacySurfaceMode;
+
 export type SurfaceTone =
 	| "blue"
 	| "violet"
@@ -128,7 +143,7 @@ export interface SurfaceProvenancePanel {
 }
 
 export interface NarrativeSurfaceViewModel {
-	mode: SurfaceMode;
+	mode: NarrativeSurfaceRegistryMode;
 	section: string;
 	title: string;
 	subtitle: string;
@@ -483,7 +498,10 @@ function buildContext(
 	};
 }
 
-const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
+const surfaceDefinitions: Record<
+	NarrativeSurfaceRegistryMode,
+	SurfaceDefinition
+> = {
 	"work-graph": {
 		section: "Narrative",
 		title: "Story Map",
@@ -688,7 +706,7 @@ const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
 						context.trustState === "healthy" ? "Repo ready" : "Gate active",
 					action: {
 						type: "navigate",
-						mode: context.trustState === "healthy" ? "repo" : "status",
+						mode: context.trustState === "healthy" ? "repo" : "hygiene",
 					},
 				},
 			],
@@ -1480,7 +1498,7 @@ const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
 						context.trustState === "healthy" ? "Derived" : "Trust warning",
 					action: {
 						type: "navigate",
-						mode: context.trustState === "healthy" ? "repo" : "status",
+						mode: context.trustState === "healthy" ? "repo" : "hygiene",
 					},
 				},
 			],
@@ -1847,6 +1865,134 @@ const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
 		],
 		footerNote: () =>
 			"Worktrees page should be operationally conservative: more guardrails, fewer tempting destructive actions.",
+	},
+	hygiene: {
+		section: "Health",
+		title: "Hygiene",
+		subtitle: () =>
+			"Trust, environment, setup, and live capture follow-through in one lane.",
+		heroTitle: () => "Keep the operational cleanup path in one place.",
+		heroBody: (context) =>
+			`Hygiene is the merged review lane for ${context.repoName}: trust posture, env drift, setup readiness, and live capture all stay reachable without turning each check into a separate top-level destination.`,
+		metrics: (context) => [
+			{
+				label: "Trust posture",
+				value: context.trustState === "healthy" ? "Ready" : "Review",
+				detail: context.trustLabel,
+				tone: context.trustState === "healthy" ? "green" : "amber",
+			},
+			{
+				label: "Env coverage",
+				value: "Mostly safe",
+				detail: "Gitignore and template posture stay in view",
+				tone: "blue",
+			},
+			{
+				label: "Setup readiness",
+				value: "Tracked",
+				detail: "Imports and capture setup remain one click away",
+				tone: "violet",
+			},
+			{
+				label: "Live capture",
+				value:
+					context.captureReliabilityMode === "HYBRID_ACTIVE"
+						? "Healthy"
+						: context.captureReliabilityMode === "OTEL_ONLY"
+							? "Baseline"
+							: "Degraded",
+				detail: "Keep capture posture visible before cleanup or handoff",
+				tone: context.trustState === "healthy" ? "green" : "amber",
+			},
+		],
+		highlightsTitle: "Hygiene checks",
+		highlights: () => [
+			{
+				eyebrow: "Trust",
+				title: "Start with what is safe to believe",
+				body: "Trust review stays first because every other operational cleanup depends on narrative confidence.",
+				tone: "amber",
+			},
+			{
+				eyebrow: "Environment",
+				title: "Keep config drift bounded",
+				body: "Env review belongs here so sensitive hygiene stays visible without becoming a separate shell destination.",
+				tone: "blue",
+			},
+			{
+				eyebrow: "Capture",
+				title: "Live posture still matters",
+				body: "A healthy cleanup lane should make it obvious when capture must be repaired before anything is declared stable.",
+				tone: "violet",
+			},
+		],
+		activityTitle: "Hygiene overview",
+		activity: (context) => [
+			{
+				title: "Trust Center",
+				meta: context.trustState === "healthy" ? "ready" : "review",
+				detail:
+					context.trustState === "healthy"
+						? "Capture posture is good enough for normal evidence review"
+						: "Resolve trust posture before cleanup or handoff",
+				status: context.trustState === "healthy" ? "ok" : "warn",
+			},
+			{
+				title: "Env hygiene",
+				meta: "steady",
+				detail: "Config coverage stays bounded without exposing raw values",
+				status: "info",
+			},
+			{
+				title: "Setup review",
+				meta: "available",
+				detail:
+					"Import and capture readiness remain accessible when onboarding drifts",
+				status: "ok",
+			},
+			{
+				title: "Live capture",
+				meta:
+					context.captureReliabilityMode === "HYBRID_ACTIVE"
+						? "healthy"
+						: "watch",
+				detail: "Use Live Capture when the trust lane needs corroboration",
+				status: context.trustState === "healthy" ? "info" : "warn",
+			},
+		],
+		tableTitle: "Operational lanes",
+		tableColumns: ["Surface", "Current posture", "Next move"],
+		tableRows: (context) => [
+			{
+				primary: "Trust Center",
+				secondary: context.trustState === "healthy" ? "Ready" : "Review",
+				tertiary:
+					context.trustState === "healthy"
+						? "Open trust details only when posture changes"
+						: "Review trust signals before cleanup or promotion",
+			},
+			{
+				primary: "Env hygiene",
+				secondary: "Bounded",
+				tertiary: "Inspect config drift and example coverage in this lane",
+			},
+			{
+				primary: "Setup",
+				secondary: "Available",
+				tertiary:
+					"Revisit onboarding and capture readiness without leaving the lane",
+			},
+			{
+				primary: "Live capture",
+				secondary:
+					context.captureReliabilityMode === "HYBRID_ACTIVE"
+						? "Healthy"
+						: "Needs review",
+				tertiary: "Keep capture posture visible here before handoff or cleanup",
+			},
+		],
+		footerNote: () =>
+			"Hygiene should feel like one operational lane with four focused subpanels, not four competing shell destinations.",
 	},
 	env: {
 		section: "Health",
@@ -2267,7 +2413,7 @@ const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
 						context.trustState === "healthy" ? "Evidence ready" : "Gate active",
 					action: {
 						type: "navigate",
-						mode: context.trustState === "healthy" ? "repo" : "live",
+						mode: context.trustState === "healthy" ? "repo" : "hygiene",
 					},
 				},
 			],
@@ -2278,7 +2424,7 @@ const surfaceDefinitions: Record<SurfaceMode, SurfaceDefinition> = {
 };
 
 export function buildNarrativeSurfaceViewModel(
-	mode: SurfaceMode,
+	mode: NarrativeSurfaceRegistryMode,
 	repoState: RepoState,
 	captureReliabilityStatus?: CaptureReliabilityStatus | null,
 	autoIngestEnabled?: boolean,

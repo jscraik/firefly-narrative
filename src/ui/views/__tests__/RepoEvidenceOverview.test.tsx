@@ -118,14 +118,18 @@ describe("RepoEvidenceOverview", () => {
 				"Verify feature/evidence-shell through commits, files, sessions, and snapshots.",
 			),
 		).toBeInTheDocument();
-		expect(screen.getByText("Workspace continues below")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				"Read the signal strip, then move straight into the branch workspace below.",
+			),
+		).toBeInTheDocument();
 		expect(screen.getByText("Claim support")).toBeInTheDocument();
 		expect(screen.getByText("2 links")).toBeInTheDocument();
 		expect(screen.getByText("1 linked")).toBeInTheDocument();
 		expect(screen.getByText("2/3")).toBeInTheDocument();
 	});
 
-	it("routes action cards into supporting verification lanes", () => {
+	it("routes action cards into the surviving verification lanes", () => {
 		const onModeChange = vi.fn();
 		render(
 			<RepoEvidenceOverview
@@ -142,8 +146,8 @@ describe("RepoEvidenceOverview", () => {
 		);
 		fireEvent.click(screen.getByRole("button", { name: /compare snapshots/i }));
 
-		expect(onModeChange).toHaveBeenNthCalledWith(1, "status");
+		expect(onModeChange).toHaveBeenNthCalledWith(1, "hygiene");
 		expect(onModeChange).toHaveBeenNthCalledWith(2, "sessions");
-		expect(onModeChange).toHaveBeenNthCalledWith(3, "diffs");
+		expect(onModeChange).toHaveBeenNthCalledWith(3, "repo");
 	});
 });

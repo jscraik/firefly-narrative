@@ -2,51 +2,47 @@
 
 ## Table of Contents
 
+- [Current Contract](#current-contract)
 - [Mode Map](#mode-map)
 - [Contract Status](#contract-status)
 - [Current Product Posture](#current-product-posture)
 
+## Current Contract
+
+This registry tracks the active shell contract after the IA cleanup.
+
+The visible primary navigation is a flat six-item list:
+
+- `dashboard` -> `Narrative Brief`
+- `repo` -> `Repo Evidence`
+- `sessions` -> `Sessions`
+- `tools` -> `Tools`
+- `hygiene` -> `Hygiene`
+- `settings` -> `Settings`
+
+`ViewSection` remains internal metadata for framing and grouping decisions inside the shell, but it is not a visible sidebar-grouping contract.
+
+`Settings` now owns both operator configuration and repository docs access. `DocsView` and the hidden legacy shell routes are no longer part of the canonical runtime contract.
+
 ## Mode Map
 
-This registry tracks the mapping between `Mode` values and their view family and section in the redesigned Trace Narrative shell.
-
-| Mode | Family | Section | Current label |
-| :--- | :--- | :--- | :--- |
-| `dashboard` | Anchor | Narrative | Narrative Brief |
-| `work-graph` | Surface | Narrative | Story Map |
-| `assistant` | Surface | Narrative | Codex Copilot |
-| `live` | Surface | Evidence | Live Capture |
-| `sessions` | Surface | Evidence | Sessions |
-| `transcripts` | Surface | Evidence | Transcript Lens |
-| `tools` | Surface | Evidence | Tool Pulse |
-| `costs` | Surface | Evidence | Cost Watch |
-| `timeline` | Surface | Evidence | Causal Timeline |
-| `repo` | Anchor | Workspace | `Repo Evidence` |
-| `repo-pulse` | Surface | Workspace | Workspace Pulse |
-| `diffs` | Surface | Workspace | Diff Review |
-| `snapshots` | Surface | Workspace | Checkpoints |
-| `worktrees` | Surface | Workspace | `Worktrees` |
-| `attribution` | Surface | Workspace | Attribution Lens |
-| `skills` | Surface | Integrations | Codex Skills |
-| `agents` | Surface | Integrations | Agent Roles |
-| `memory` | Surface | Integrations | Memory Graph |
-| `hooks` | Surface | Integrations | Hooks |
-| `setup` | Surface | Integrations | Setup |
-| `ports` | Surface | Integrations | Ports |
-| `hygiene` | Surface | Health | Hygiene |
-| `deps` | Surface | Health | Dependency Watch |
-| `env` | Surface | Health | `Env Hygiene` |
-| `status` | Surface | Health | Trust Center |
-| `docs` | Anchor | Configure | Docs |
-| `settings` | Surface | Configure | Settings |
+| Mode | Family | Primary nav visibility | Metadata section | Current label |
+| :--- | :--- | :--- | :--- | :--- |
+| `dashboard` | Anchor | Visible | Narrative | `Narrative Brief` |
+| `repo` | Anchor | Visible | Workspace | `Repo Evidence` |
+| `sessions` | Surface | Visible | Evidence | `Sessions` |
+| `tools` | Surface | Visible | Integrations | `Tools` |
+| `hygiene` | Surface | Visible | Health | `Hygiene` |
+| `settings` | Surface | Visible | Configure | `Settings` |
 
 ## Contract Status
 
-- [x] Anchor-mode shell preserved
-- [x] Section taxonomy updated to narrative-first labels
-- [x] Hygiene and Settings retained as first-class views
-- [x] Signature provenance visualization added to shared narrative surfaces
-- [ ] Multi-provider shell expansion after Codex-first stabilization
+- [x] Flat six-item primary navigation is the shell contract
+- [x] `Mode` is reduced to the six canonical lanes
+- [x] `AnchorMode` is reduced to `dashboard | repo`
+- [x] `SurfaceMode` is reduced to `sessions | tools | hygiene | settings`
+- [x] Docs access lives inside `settings`
+- [x] Legacy shell-route ownership maps are removed from runtime navigation
 
 ## Current Product Posture
 
@@ -54,6 +50,6 @@ The shell is currently Codex-first.
 
 That means:
 
-- the dashboard and assistant copy should privilege Codex workflows
-- other providers may still exist in the system, but they are not the primary shell story yet
-- future provider expansion should happen after the Codex narrative flow is clearly trustworthy
+- the dashboard and repo lanes should privilege Codex narrative evidence workflows
+- hygiene should frame trust, environment, setup, and capture review as operational follow-through inside one lane
+- settings should remain a narrow configuration and docs access lane, not a second broad shell taxonomy

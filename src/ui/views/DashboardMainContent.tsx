@@ -53,7 +53,7 @@ interface DashboardMainContentProps {
 	hasActiveQuery: boolean;
 	onTimeRangeChange: (timeRange: TimeRange) => void;
 	onImportSession: () => void;
-	onModeChange: (mode: "repo" | "env" | "status" | "sessions") => void;
+	onModeChange: (mode: "repo" | "hygiene" | "sessions") => void;
 	onFileClick: (filter: DashboardFilter) => void;
 	onLoadMore: () => void;
 }
@@ -171,7 +171,7 @@ export function DashboardMainContent({
 			detail: trustIsHealthy
 				? "Trust Center stays green, but stay here if capture drifts."
 				: "Trust Center should decide what is still provisional before cleanup.",
-			action: () => onModeChange("status"),
+			action: () => onModeChange("hygiene"),
 			icon: ShieldCheck,
 		},
 		{
@@ -185,7 +185,7 @@ export function DashboardMainContent({
 			title: "Triage hygiene",
 			detail:
 				"Only clean aggressively once the branch story is stable enough to survive replay.",
-			action: () => onModeChange("env"),
+			action: () => onModeChange("hygiene"),
 			icon: AlertTriangle,
 		},
 	];

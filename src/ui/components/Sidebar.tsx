@@ -1,29 +1,17 @@
 import clsx from "clsx";
 import {
-	Activity,
-	BarChart3,
-	BookOpen,
-	Clock,
 	Database,
-	DollarSign,
-	FileCode,
-	FileSearch,
-	FolderGit2,
 	GitBranch,
-	History,
-	KeyRound,
+	LayoutDashboard,
+	MessagesSquare,
 	Search,
 	Settings,
 	ShieldCheck,
 	Sparkles,
-	TerminalSquare,
-	Workflow,
 	Zap,
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
-import { useMemo } from "react";
 import type { Mode } from "../../core/types";
-import { SparklineChart } from "./charts";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -40,26 +28,16 @@ interface NavEntry {
 	icon: ComponentType<{ className?: string }>;
 	badge?: ReactNode;
 	status?: string;
-	sparkline?: number[];
 }
 
-interface NavSection {
-	label: string;
-	items: NavEntry[];
-}
-
-// ─── Sub-components (module-level — NOT inside Sidebar) ─────────────────────
-// IMPORTANT: defining these inside Sidebar would make React create a new
-// component type on every render, causing remounts that swallow click events
-// in Tauri's WKWebView renderer.
-
-function SectionLabel({ children }: { children: ReactNode }) {
-	return (
-		<div className="mb-2 px-3 text-[0.625rem] font-bold uppercase tracking-wider text-text-muted opacity-60">
-			{children}
-		</div>
-	);
-}
+const VISIBLE_NAV_ITEMS: NavEntry[] = [
+	{ id: "dashboard", label: "Narrative Brief", icon: LayoutDashboard },
+	{ id: "repo", label: "Repo Evidence", icon: GitBranch },
+	{ id: "sessions", label: "Sessions", icon: MessagesSquare },
+	{ id: "tools", label: "Tools", icon: Sparkles },
+	{ id: "hygiene", label: "Hygiene", icon: ShieldCheck },
+	{ id: "settings", label: "Settings", icon: Settings },
+];
 
 function NavItem({
 	id,
@@ -67,7 +45,6 @@ function NavItem({
 	icon: Icon,
 	badge,
 	status,
-	sparkline,
 	activeMode,
 	onModeChange,
 }: NavEntry & { activeMode: Mode; onModeChange: (mode: Mode) => void }) {
@@ -88,16 +65,6 @@ function NavItem({
 		>
 			<Icon className="w-4 h-4 shrink-0" />
 			<span className="flex-1 text-left truncate">{label}</span>
-			{sparkline && (
-				<div className="w-8 flex items-center opacity-50 shrink-0 mix-blend-plus-lighter pointer-events-none">
-					<SparklineChart
-						data={sparkline}
-						width={32}
-						height={14}
-						tone="violet"
-					/>
-				</div>
-			)}
 			{badge !== undefined && (
 				<span
 					className={clsx(
@@ -127,76 +94,6 @@ export function Sidebar({
 	onOpenRepo,
 	onImportSession,
 }: SidebarProps) {
-	const sections = useMemo<NavSection[]>(
-		() => [
-			{
-				label: "Narrative",
-				items: [
-					{ id: "dashboard", label: "Narrative Brief", icon: BarChart3 },
-					{ id: "work-graph", label: "Story Map", icon: Activity },
-				],
-			},
-			{
-				label: "Evidence",
-				items: [
-					{
-						id: "live",
-						label: "Live Capture",
-						icon: Zap,
-						sparkline: [2, 4, 3, 8, 5, 9, 12, 10, 8, 4],
-					},
-					{ id: "timeline", label: "Causal Timeline", icon: History },
-					{ id: "sessions", label: "Sessions", icon: Clock, badge: 12 },
-					{ id: "transcripts", label: "Transcript Lens", icon: FileSearch },
-					{ id: "tools", label: "Tool Pulse", icon: Sparkles },
-					{ id: "costs", label: "Cost Watch", icon: DollarSign },
-				],
-			},
-			{
-				label: "Workspace",
-				items: [
-					{
-						id: "repo",
-						label: "Repo Evidence",
-						icon: GitBranch,
-					},
-					{
-						id: "repo-pulse",
-						label: "Workspace Pulse",
-						icon: FolderGit2,
-						sparkline: [1, 1, 2, 1, 3, 2, 4, 3, 5, 2],
-					},
-					{ id: "diffs", label: "Diff Review", icon: FileCode },
-					{ id: "worktrees", label: "Worktrees", icon: Workflow },
-				],
-			},
-			{
-				label: "Integrations",
-				items: [{ id: "setup", label: "Setup", icon: TerminalSquare }],
-			},
-			{
-				label: "Health",
-				items: [
-					{
-						id: "status",
-						label: "Trust Center",
-						icon: ShieldCheck,
-						status: "OK",
-					},
-					{ id: "env", label: "Env Hygiene", icon: KeyRound },
-				],
-			},
-			{
-				label: "Configure",
-				items: [
-					{ id: "settings", label: "Settings", icon: Settings },
-					{ id: "docs", label: "Docs", icon: BookOpen },
-				],
-			},
-		],
-		[],
-	);
-
 	return (
 		<aside className="w-56 flex-shrink-0 flex flex-col border-r border-border-subtle bg-bg-subtle h-screen sticky top-0">
 			{/* Brand */}
@@ -214,27 +111,20 @@ export function Sidebar({
 				<div
 					role="tablist"
 					aria-label="Sidebar mode navigation"
-					className="absolute inset-0 py-4 px-3 space-y-6 overflow-y-auto"
+					className="absolute inset-0 overflow-y-auto px-3 py-4"
 				>
-					{sections.map((section) => (
-						<div key={section.label}>
-							<SectionLabel>{section.label}</SectionLabel>
-							<div className="space-y-1">
-								{section.items.map((item) => (
-									<NavItem
-										key={item.id}
-										{...item}
-										activeMode={mode}
-										onModeChange={onModeChange}
-									/>
-								))}
-							</div>
-						</div>
-					))}
+					<div className="space-y-1">
+						{VISIBLE_NAV_ITEMS.map((item) => (
+							<NavItem
+								key={item.id}
+								{...item}
+								activeMode={mode}
+								onModeChange={onModeChange}
+							/>
+						))}
+					</div>
 
-					{/* Actions */}
-					<div>
-						<SectionLabel>Actions</SectionLabel>
+					<div className="mt-6 border-t border-border-subtle pt-4">
 						<div className="space-y-1">
 							<button
 								type="button"

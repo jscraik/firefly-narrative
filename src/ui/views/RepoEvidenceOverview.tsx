@@ -127,7 +127,7 @@ export function RepoEvidenceOverview({
 		{
 			title: "Review trust posture",
 			body: "Open Trust Center before accepting any branch conclusion that depends on degraded capture.",
-			mode: "status",
+			mode: "hygiene",
 		},
 		{
 			title: "Resolve session joins",
@@ -137,7 +137,7 @@ export function RepoEvidenceOverview({
 		{
 			title: "Compare snapshots",
 			body: "Check whether the current branch story still matches the latest saved state and rollback markers.",
-			mode: "diffs",
+			mode: "repo",
 		},
 	];
 

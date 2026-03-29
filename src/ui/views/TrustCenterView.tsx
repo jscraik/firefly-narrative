@@ -61,7 +61,7 @@ export function TrustCenterView({
 		autoIngestEnabled,
 	);
 	const _repoPath = getRepoPath(repoState);
-	const nextMode = viewModel.trustState === "healthy" ? "repo" : "live";
+	const nextMode = viewModel.trustState === "healthy" ? "repo" : "hygiene";
 	const nextLabel =
 		viewModel.trustState === "healthy"
 			? "Inspect repo evidence"

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { TopNav } from "../TopNav";
 
 describe("TopNav", () => {
-	it("renders a calmer shell header with current section and contextual quick routes", () => {
+	it("renders the dashboard under the Narrative Brief lane", () => {
 		render(
 			<TopNav
 				mode="dashboard"
@@ -21,38 +21,42 @@ describe("TopNav", () => {
 		expect(
 			screen.getByText("/Users/jamiecraik/dev/trace-narrative"),
 		).toBeInTheDocument();
-		expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
-		expect(screen.queryByText("Codex Copilot")).not.toBeInTheDocument();
 	});
 
-	it("routes through contextual quick actions instead of tab keyboard handling", () => {
+	it("frames hygiene as the health lane and offers core jumps", () => {
 		const onModeChange = vi.fn();
 		render(
-			<TopNav mode="live" onModeChange={onModeChange} onOpenRepo={vi.fn()} />,
+			<TopNav
+				mode="hygiene"
+				onModeChange={onModeChange}
+				onOpenRepo={vi.fn()}
+			/>,
 		);
 
+		expect(screen.getByText("Health")).toBeInTheDocument();
+		expect(screen.getAllByText("Hygiene").length).toBeGreaterThan(0);
+
 		fireEvent.click(screen.getByRole("button", { name: "Repo Evidence" }));
-		expect(onModeChange).toHaveBeenCalledWith("repo");
 		fireEvent.click(screen.getByRole("button", { name: "Narrative Brief" }));
-		expect(onModeChange).toHaveBeenCalledWith("dashboard");
+
+		expect(onModeChange).toHaveBeenNthCalledWith(1, "repo");
+		expect(onModeChange).toHaveBeenNthCalledWith(2, "dashboard");
 	});
 
-	it("uses a single back-to-brief shortcut on the secondary docs lane", () => {
+	it("frames settings as the docs-and-config lane", () => {
 		const onModeChange = vi.fn();
 		render(
-			<TopNav mode="docs" onModeChange={onModeChange} onOpenRepo={vi.fn()} />,
+			<TopNav
+				mode="settings"
+				onModeChange={onModeChange}
+				onOpenRepo={vi.fn()}
+			/>,
 		);
 
 		expect(screen.getByText("Configure")).toBeInTheDocument();
-		expect(screen.getByText("Docs")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: "Back to Brief" }),
-		).toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: "Repo Evidence" }),
-		).not.toBeInTheDocument();
+		expect(screen.getAllByText("Settings").length).toBeGreaterThan(0);
 
-		fireEvent.click(screen.getByRole("button", { name: "Back to Brief" }));
-		expect(onModeChange).toHaveBeenCalledWith("dashboard");
+		fireEvent.click(screen.getByRole("button", { name: "Repo Evidence" }));
+		expect(onModeChange).toHaveBeenCalledWith("repo");
 	});
 });
