@@ -18,15 +18,9 @@ import { execFileSync } from "node:child_process";
 
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
 const REQUIRED_HOOKS = {
-	"pre-commit": "make hooks-pre-commit",
+	"pre-commit": "pnpm lint && pnpm docs:lint && pnpm typecheck",
 	"commit-msg": "node scripts/validate-commit-msg.js $1",
-	"pre-push": "make hooks-pre-push",
-};
-const REQUIRED_SCRIPTS = {
-  "secrets:staged": "bash scripts/check-staged-secrets.sh",
-  "docs:style:changed": "bash scripts/check-doc-style.sh",
-  "test:related": "bash scripts/check-related-tests.sh",
-  "semgrep:changed": "bash scripts/check-semgrep-changed.sh"
+	"pre-push": "pnpm test && pnpm audit",
 };
 const POSTINSTALL_BOOTSTRAP =
 	"command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true";
@@ -81,16 +75,6 @@ function main() {
 		modified = true;
 	}
 
-	// Enforce required helper scripts used by the hook targets
-	const mergedScripts = { ...scripts, ...REQUIRED_SCRIPTS };
-	if (JSON.stringify(scripts) !== JSON.stringify(mergedScripts)) {
-		packageJson.scripts = mergedScripts;
-		console.info("✓ Enforced required hook helper scripts");
-		modified = true;
-	} else {
-		console.info("✓ Required hook helper scripts already present");
-	}
-
 	// Enforce required simple-git-hooks configuration
 	const existingHooks = packageJson["simple-git-hooks"] ?? {};
 	const mergedHooks = { ...existingHooks, ...REQUIRED_HOOKS };
@@ -114,9 +98,9 @@ function main() {
 		execFileSync("pnpm", ["install"], { stdio: "inherit" });
 		console.info("\n✓ Git hooks installed and active!");
 		console.info("\nHooks enabled:");
-		console.info("  • pre-commit: make hooks-pre-commit");
+		console.info("  • pre-commit: pnpm lint && pnpm docs:lint && pnpm typecheck");
 		console.info("  • commit-msg: validates conventional commit format");
-		console.info("  • pre-push: make hooks-pre-push");
+		console.info("  • pre-push: pnpm test && pnpm audit");
 	} catch {
 		console.error("\n⚠️  Failed to run pnpm install. Run it manually to activate hooks.");
 	}

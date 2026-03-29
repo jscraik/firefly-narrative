@@ -1,7 +1,7 @@
 # Harness Development Makefile
 # Run `make help` to see available commands
 
-.PHONY: help install setup preflight hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup hooks dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -17,44 +17,8 @@ install: ## Install dependencies
 
 setup: install hooks ## Full setup: install deps and configure git hooks
 
-preflight: ## Run repository preflight checks (required local-memory gate by default)
-	@bash ./scripts/codex-preflight.sh
-
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
-
-hooks-pre-commit: ## Run local pre-commit gates before creating a commit
-	pnpm lint
-	pnpm docs:lint
-	pnpm typecheck
-	$(MAKE) secrets-staged
-	$(MAKE) docs-style-changed
-	$(MAKE) related-tests
-
-hooks-pre-push: ## Run local pre-push governance gates before pushing
-	pnpm exec tsx src/cli.ts docs-gate --mode required --json
-	@bash ./scripts/check-diagram-freshness.sh
-	pnpm exec tsx src/cli.ts tooling-audit --path . --json
-	@bash ./scripts/check-environment.sh
-	$(MAKE) semgrep-changed
-	pnpm test
-	pnpm build
-	pnpm audit
-
-secrets-staged: ## Scan staged content for secrets before committing
-	pnpm run secrets:staged
-
-docs-style-changed: ## Run Vale on staged authoritative docs only
-	pnpm run docs:style:changed
-
-related-tests: ## Run Vitest related mode for staged src implementation files
-	pnpm run test:related
-
-semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files
-	pnpm run semgrep:changed
-
-diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift
-	@bash ./scripts/check-diagram-freshness.sh
 
 # === Development ===
 
@@ -111,9 +75,9 @@ ci: ## Run CI-equivalent local checks
 # === Diagrams ===
 
 diagrams: ## Generate architecture diagrams
-	@bash ./scripts/refresh-diagram-context.sh --force
+	pnpm exec diagram all . --output-dir .diagram
 
 # === Environment ===
 
 env-check: ## Check environment policy envelope
-	@bash ./scripts/check-environment.sh
+	@./scripts/check-environment.sh

@@ -3,5 +3,4 @@
 /harness.contract.json @jscraik
 /CONTRIBUTING.md @jscraik
 /AGENTS.md @jscraik
-/scripts/codex-preflight.sh @jscraik
 /scripts/check-environment.sh @jscraik

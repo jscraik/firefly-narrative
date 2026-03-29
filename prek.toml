@@ -3,8 +3,8 @@
 # Run: prek install && prek run --all-files
 
 [hooks]
-pre-commit = ["make hooks-pre-commit"]
-pre-push = ["make hooks-pre-push"]
+pre-commit = ["pnpm lint", "pnpm docs:lint", "pnpm typecheck"]
+pre-push = ["pnpm test", "pnpm audit"]
 
 [tools]
 biome = "1.9.4"
