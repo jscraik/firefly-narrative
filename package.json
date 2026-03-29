@@ -64,7 +64,7 @@
     "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e"
   },
   "dependencies": {
-    "@brainwav/coding-harness": "file:vendor/brainwav/brainwav-coding-harness-0.7.1.tgz",
+    "@brainwav/coding-harness": "^0.8.2",
     "@design-studio/runtime": "file:vendor/design-studio/design-studio-runtime-2.0.0.tgz",
     "@design-studio/tokens": "file:vendor/design-studio/design-studio-tokens-2.0.0.tgz",
     "@design-studio/ui": "file:vendor/design-studio/design-studio-ui-0.0.1.tgz",
@@ -98,7 +98,7 @@
   "devDependencies": {
     "@axe-core/react": "^4.11.1",
     "@biomejs/biome": "^2.3.13",
-    "@brainwav/design-system-guidance": "file:vendor/brainwav/brainwav-design-system-guidance-0.0.2.tgz",
+    "@brainwav/design-system-guidance": "^0.0.2",
     "@lhci/cli": "^0.15.1",
     "@openai/codex": "0.107.0",
     "@playwright/test": "^1.58.2",
