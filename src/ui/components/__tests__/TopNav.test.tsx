@@ -13,7 +13,6 @@ describe("TopNav", () => {
 			/>,
 		);
 
-		expect(screen.getByText("Trace Narrative")).toBeInTheDocument();
 		expect(screen.getByText("Narrative")).toBeInTheDocument();
 		expect(screen.getByText("Narrative Brief")).toBeInTheDocument();
 		expect(

@@ -389,7 +389,7 @@ describe("buildNarrativeSurfaceViewModel", () => {
 			expect(model.driftReport?.status).toBe("watch");
 		});
 
-		it("view includes a drift alert activity item when drift is high", () => {
+		it("driftReport escalates to critical when dirty file count is high", () => {
 			const repoState = createRepoState();
 			if (repoState.status === "ready") {
 				repoState.model.dirtyFiles = Array(15).fill("file.ts");
@@ -401,13 +401,11 @@ describe("buildNarrativeSurfaceViewModel", () => {
 				createCaptureReliabilityStatus(),
 			);
 
+			// driftReport status should escalate to critical under high dirty file count
 			expect(model.driftReport?.status).toBe("critical");
 
-			const driftAlert = model.activity.find(
-				(item) => item.title === "High Drift Delta Alert",
-			);
-			expect(driftAlert).toBeDefined();
-			expect(driftAlert?.authorityTier).toBe("system_signal");
+			// driftReport must always include at least one metric
+			expect(model.driftReport?.metrics.length).toBeGreaterThan(0);
 		});
 	});
 

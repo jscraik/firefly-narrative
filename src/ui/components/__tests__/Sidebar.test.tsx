@@ -11,7 +11,7 @@
  * - Section group labels match the ViewSection contract.
  */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Mode } from "../../../core/types";
 import { Sidebar } from "../Sidebar";
@@ -80,11 +80,6 @@ function renderSidebar(activeMode: Mode = "dashboard") {
 	);
 }
 
-function toggleFullMap() {
-	const toggle = screen.getByRole("button", { name: /show full map/i });
-	fireEvent.click(toggle);
-}
-
 /**
  * Returns all nav buttons inside the <aside> element.
  * Using closest('aside') anchors queries to the sidebar and avoids
@@ -145,9 +140,8 @@ describe("Sidebar", () => {
 	});
 
 	describe("routing completeness", () => {
-		it("every non-demoted mode label appears once full map is enabled", () => {
+		it("every non-anchor mode label appears as a nav button", () => {
 			renderSidebar("dashboard");
-			toggleFullMap();
 			const buttons = navButtonLabels();
 			const allExpectedLabels = [
 				...ANCHOR_MODES_TO_LABELS.filter(([mode]) => mode !== "docs").map(
@@ -174,18 +168,9 @@ describe("Sidebar", () => {
 		});
 	});
 
-	describe("primary-first sidebar behavior", () => {
-		it("hides non-primary labels until full map is enabled", () => {
+	describe("sidebar visibility behavior", () => {
+		it("shows all surface mode labels as nav buttons", () => {
 			renderSidebar("dashboard");
-			expect(screen.queryByRole("tab", { name: /story map/i })).toBeNull();
-			expect(screen.queryByRole("tab", { name: /sessions/i })).toBeNull();
-			expect(screen.queryByRole("tab", { name: /tool pulse/i })).toBeNull();
-			expect(screen.queryByRole("tab", { name: /^docs$/i })).toBeNull();
-		});
-
-		it("reveals non-primary labels after enabling full map", () => {
-			renderSidebar("dashboard");
-			toggleFullMap();
 			expect(
 				screen.getByRole("tab", { name: /story map/i }),
 			).toBeInTheDocument();
@@ -195,19 +180,10 @@ describe("Sidebar", () => {
 			expect(
 				screen.getByRole("tab", { name: /tool pulse/i }),
 			).toBeInTheDocument();
-			expect(screen.queryByRole("tab", { name: /^docs$/i })).toBeNull();
 		});
 
-		it("keeps docs hidden from the map until docs is the active mode", () => {
+		it("always shows docs in the Configure section", () => {
 			renderSidebar("dashboard");
-			toggleFullMap();
-			expect(screen.queryByRole("tab", { name: /^docs$/i })).toBeNull();
-		});
-
-		it("still shows docs when the docs route is already active", () => {
-			renderSidebar("docs");
-			expect(screen.getByRole("tab", { name: /^docs$/i })).toBeInTheDocument();
-			toggleFullMap();
 			expect(screen.getByRole("tab", { name: /^docs$/i })).toBeInTheDocument();
 		});
 	});
