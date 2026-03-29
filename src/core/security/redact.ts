@@ -35,9 +35,6 @@ const MAX_REDACT_INPUT_BYTES = 2 * 1024 * 1024; // 2 MB
 
 export function redactSecrets(input: string): RedactionResult {
 	if (input.length > MAX_REDACT_INPUT_BYTES) {
-		console.warn(
-			`[redact] Input exceeds ${MAX_REDACT_INPUT_BYTES} bytes; skipping redaction to avoid ReDoS.`,
-		);
 		return { redacted: input, hits: [] };
 	}
 

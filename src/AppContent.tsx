@@ -75,7 +75,7 @@ export function AppContent({
 	surfaceAction,
 	setSurfaceAction,
 }: AppContentProps) {
-	if (mode === "dashboard" || mode === "assistant") {
+	if (mode === "dashboard") {
 		return (
 			<DashboardView
 				repoState={repoState}

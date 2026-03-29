@@ -327,10 +327,6 @@ export function DocsOverviewPanel({
 											await refreshDocs();
 										} catch (_e) {
 											const _msg = String(_e);
-											console.warn(
-												"[DocsOverviewPanel] doc creation failed (non-fatal):",
-												_msg,
-											);
 										}
 									}}
 								>

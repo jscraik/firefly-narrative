@@ -9,6 +9,9 @@ default-run = "narrative-desktop-mvp"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+[features]
+mcp = ["tauri-plugin-mcp-bridge"]
+
 [dev-dependencies]
 tempfile = "3.8"
 
@@ -45,3 +48,7 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 
 # File watching for auto-import
 notify = "6.1"
+
+# MCP Bridge — dev-only, enables AI assistant IPC/DOM inspection via mcp-server-tauri
+# See: https://github.com/hypothesi/mcp-server-tauri
+tauri-plugin-mcp-bridge = { version = "0.10", optional = true }

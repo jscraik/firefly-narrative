@@ -53,7 +53,7 @@ interface DashboardMainContentProps {
 	hasActiveQuery: boolean;
 	onTimeRangeChange: (timeRange: TimeRange) => void;
 	onImportSession: () => void;
-	onModeChange: (mode: "repo" | "hygiene" | "status" | "sessions") => void;
+	onModeChange: (mode: "repo" | "env" | "status" | "sessions") => void;
 	onFileClick: (filter: DashboardFilter) => void;
 	onLoadMore: () => void;
 }
@@ -185,7 +185,7 @@ export function DashboardMainContent({
 			title: "Triage hygiene",
 			detail:
 				"Only clean aggressively once the branch story is stable enough to survive replay.",
-			action: () => onModeChange("hygiene"),
+			action: () => onModeChange("env"),
 			icon: AlertTriangle,
 		},
 	];

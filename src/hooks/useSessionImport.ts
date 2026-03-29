@@ -216,10 +216,6 @@ export function useSessionImport({
 				if (isStaleRequest()) return;
 			} catch (e) {
 				const _msg = String(e);
-				console.warn(
-					"[SessionImport] exportSessionLinkNote failed (best-effort):",
-					_msg,
-				);
 				if (isStaleRequest()) return;
 			}
 
@@ -328,10 +324,6 @@ export function useSessionImport({
 				if (isStaleRequest()) return;
 			} catch (e) {
 				const _msg = String(e);
-				console.warn(
-					"[SessionImport] exportSessionLinkNote failed (best-effort):",
-					_msg,
-				);
 				if (isStaleRequest()) return;
 			}
 

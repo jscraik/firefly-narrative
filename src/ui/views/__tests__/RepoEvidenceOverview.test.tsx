@@ -144,6 +144,6 @@ describe("RepoEvidenceOverview", () => {
 
 		expect(onModeChange).toHaveBeenNthCalledWith(1, "status");
 		expect(onModeChange).toHaveBeenNthCalledWith(2, "sessions");
-		expect(onModeChange).toHaveBeenNthCalledWith(3, "snapshots");
+		expect(onModeChange).toHaveBeenNthCalledWith(3, "diffs");
 	});
 });

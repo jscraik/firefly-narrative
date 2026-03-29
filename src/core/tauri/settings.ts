@@ -78,10 +78,6 @@ export async function getTraceSettings(): Promise<TraceSettings> {
 			const enabled = stored === null ? true : stored === "true";
 			return { enabled };
 		} catch (_error) {
-			console.debug(
-				"[settings] localStorage read failed, using default:",
-				_error,
-			);
 			return { enabled: true }; // Default on error
 		}
 	}

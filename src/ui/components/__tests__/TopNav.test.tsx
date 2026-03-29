@@ -13,7 +13,6 @@ describe("TopNav", () => {
 			/>,
 		);
 
-		expect(screen.getByText("Trace Narrative")).toBeInTheDocument();
 		expect(screen.getByText("Narrative")).toBeInTheDocument();
 		expect(screen.getByText("Narrative Brief")).toBeInTheDocument();
 		expect(
@@ -55,20 +54,5 @@ describe("TopNav", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "Back to Brief" }));
 		expect(onModeChange).toHaveBeenCalledWith("dashboard");
-	});
-
-	it("keeps assistant compatibility paths folded into the Narrative Brief label", () => {
-		render(
-			<TopNav mode="assistant" onModeChange={vi.fn()} onOpenRepo={vi.fn()} />,
-		);
-
-		expect(screen.getAllByText("Narrative Brief")).toHaveLength(2);
-		expect(screen.getByText("Narrative")).toBeInTheDocument();
-		expect(
-			screen.getByText(
-				"Codex-guided asks now live inside stronger evidence views.",
-			),
-		).toBeInTheDocument();
-		expect(screen.queryByText("Codex Copilot")).not.toBeInTheDocument();
 	});
 });

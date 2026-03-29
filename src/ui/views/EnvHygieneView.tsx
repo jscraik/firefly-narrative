@@ -171,7 +171,7 @@ export function EnvHygieneView({
 	onImportSession: _onImportSession,
 }: EnvHygieneViewProps) {
 	const viewModel = buildNarrativeSurfaceViewModel(
-		"hygiene",
+		"env",
 		repoState,
 		captureReliabilityStatus,
 		autoIngestEnabled,

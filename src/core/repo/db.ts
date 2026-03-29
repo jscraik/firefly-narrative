@@ -23,7 +23,6 @@ async function applyDbPragmas(db: Database): Promise<void> {
 			await db.execute(pragma);
 		} catch (_error) {
 			const _msg = String(_error);
-			console.warn("[db] pragma not supported (best-effort):", _msg);
 		}
 	}
 

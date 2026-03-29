@@ -71,11 +71,6 @@ const MODE_LABELS: Record<Mode, ModeMeta> = {
 		note: "Configure imports, capture, and Codex-first operator readiness.",
 		section: "Integrations",
 	},
-	ports: {
-		label: "Ports",
-		note: "Watch runtime surfaces and connection points.",
-		section: "Integrations",
-	},
 	"work-graph": {
 		label: "Story Map",
 		note: "Topology and prioritization view for pressure points, weak joins, and next inspection.",
@@ -96,41 +91,6 @@ const MODE_LABELS: Record<Mode, ModeMeta> = {
 		note: "Inspect raw file deltas and branch-level evidence changes.",
 		section: "Workspace",
 	},
-	snapshots: {
-		label: "Snapshots",
-		note: "Compare branch state against saved snapshots and rollback markers.",
-		section: "Workspace",
-	},
-	skills: {
-		label: "Codex Skills",
-		note: "Skill and tool-chain surfaces connected to the repo workflow.",
-		section: "Integrations",
-	},
-	agents: {
-		label: "Agent Roles",
-		note: "Role surfaces and operator lanes for agent execution.",
-		section: "Integrations",
-	},
-	memory: {
-		label: "Memory Graph",
-		note: "Persistent memory links that support repo narrative context.",
-		section: "Integrations",
-	},
-	hooks: {
-		label: "Hooks",
-		note: "Observe and refine shell-level automation touchpoints.",
-		section: "Integrations",
-	},
-	hygiene: {
-		label: "Hygiene",
-		note: "Cleanup, stale-state checks, and safe maintenance work.",
-		section: "Health",
-	},
-	deps: {
-		label: "Dependency Watch",
-		note: "Track dependency risk without overselling it as a primary workflow.",
-		section: "Health",
-	},
 	worktrees: {
 		label: "Worktrees",
 		note: "Compare parallel lanes and branch isolation state.",
@@ -145,16 +105,6 @@ const MODE_LABELS: Record<Mode, ModeMeta> = {
 		label: "Settings",
 		note: "Operator contract for capture, trust, scope, and Codex-first defaults.",
 		section: "Configure",
-	},
-	assistant: {
-		label: "Narrative Brief",
-		note: "Codex-guided asks now live inside stronger evidence views.",
-		section: "Narrative",
-	},
-	attribution: {
-		label: "Attribution Lens",
-		note: "Inspect contributor and provenance metadata behind branch claims.",
-		section: "Workspace",
 	},
 	status: {
 		label: "Trust Center",
@@ -210,8 +160,6 @@ export function TopNav(props: {
 			<div className="flex min-w-0 items-center gap-4">
 				<div className="min-w-0">
 					<div className="flex items-center gap-2 text-[0.625rem] font-medium uppercase tracking-[0.15em] text-text-muted">
-						<span>Trace Narrative</span>
-						<span className="text-border-light">/</span>
 						<span className="inline-flex items-center gap-1.5 rounded-full border border-border-light bg-bg-primary px-2 py-0.5 text-text-secondary">
 							<CurrentSectionIcon className="h-3 w-3" />
 							{currentModeMeta.section}

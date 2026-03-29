@@ -14,7 +14,6 @@ import { DashboardErrorState } from "../components/dashboard/DashboardErrorState
 import { DashboardHeader } from "../components/dashboard/DashboardHeader";
 import { DashboardLoadingState } from "../components/dashboard/DashboardLoadingState";
 import { DashboardMainContent } from "./DashboardMainContent";
-import { MOCK_DASHBOARD_STATS } from "./dashboardMockStats";
 import { useDashboardViewState } from "./useDashboardViewState";
 
 interface DashboardViewProps {
@@ -41,7 +40,7 @@ export function DashboardView({
 	const {
 		timeRange,
 		stats,
-		setStats,
+		setStats: _setStats,
 		visibleFiles,
 		hasActiveQuery,
 		dashboardState,
@@ -81,9 +80,25 @@ export function DashboardView({
 		[activeRepoId, onDrillDown, timeRange],
 	);
 
-	if (repoState.status !== "ready") {
-		if (!stats) setStats(MOCK_DASHBOARD_STATS);
-	} else if (
+	// Show loading skeleton while repo is still indexing
+	if (repoState.status === "loading" || repoState.status === "idle") {
+		return <DashboardLoadingState />;
+	}
+
+	if (repoState.status === "error") {
+		return (
+			<DashboardErrorState
+				state="error"
+				error={repoState.message ?? "Failed to load repository"}
+				onRetry={() => void fetchStats()}
+				onBackToRepo={() => onModeChange("repo")}
+				canRetry={true}
+			/>
+		);
+	}
+
+	// repoState.status === "ready" from here
+	if (
 		dashboardState === "error" ||
 		dashboardState === "offline" ||
 		dashboardState === "permission_denied"

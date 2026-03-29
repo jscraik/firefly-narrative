@@ -31,9 +31,7 @@ function getErrorHelp(error: string): {
 				{
 					label: "Try importing as Generic JSON",
 					action: () => {
-						// This would trigger the generic JSON import flow
-						// For now, we just log - the user can manually retry
-						console.log("User chose to retry as generic JSON");
+						/* noop */
 					},
 				},
 			],

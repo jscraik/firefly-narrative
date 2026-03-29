@@ -233,7 +233,11 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         },
     ];
 
-    tauri::Builder::default()
+    // MCP Bridge: loaded only when compiled with `--features mcp`
+    // This keeps the plugin entirely out of production/release builds.
+    // Usage: `cargo tauri dev -- --features mcp`
+    #[allow(unused_mut)]
+    let mut builder = tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             activity::get_ingest_activity,
             activity::get_commit_capture_bundle,
@@ -409,7 +413,13 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             app.manage(codex_app_server_state);
 
             Ok(())
-        })
+        });
+
+    // Conditionally attach the MCP bridge plugin — only when `--features mcp` is passed
+    #[cfg(feature = "mcp")]
+    let builder = builder.plugin(tauri_plugin_mcp_bridge::init());
+
+    builder
         .run(tauri::generate_context!())
         .map_err(|e| {
             eprintln!("Narrative: Failed to run Tauri application: {}", e);

@@ -19,7 +19,9 @@ type Story = StoryObj<typeof TraceHero>;
 
 export const Default: Story = {
 	args: {
-		onExitComplete: () => console.log("Trace transition complete"),
+		onExitComplete: () => {
+			/* noop */
+		},
 	},
 };
 
