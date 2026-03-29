@@ -130,14 +130,16 @@ export async function indexRepo(
 		importAttributionNotesBatch(
 			repoId,
 			commits.map((c) => c.sha),
-		).catch((_e) => {
-			/* noop */
+		).catch((error) => {
+			// biome-ignore lint/suspicious/noConsole: best-effort note import failures must be surfaced for operators and tests.
+			console.error("[Indexer] Attribution notes import failed:", error);
 		}),
 		importSessionLinkNotesBatch(
 			repoId,
 			commits.map((c) => c.sha),
-		).catch((_e) => {
-			/* noop */
+		).catch((error) => {
+			// biome-ignore lint/suspicious/noConsole: best-effort note import failures must be surfaced for operators and tests.
+			console.error("[Indexer] Session link notes import failed:", error);
 		}),
 	]);
 
@@ -340,7 +342,8 @@ export async function indexRepo(
 			}
 		}
 	} catch (e) {
-		const _msg = String(e);
+		// biome-ignore lint/suspicious/noConsole: metadata write failures are intentionally visible during indexing.
+		console.warn("[Indexer] Metadata write failed (repo may be read-only):", e);
 	}
 
 	const modelBase: BranchViewModel = {
@@ -383,7 +386,8 @@ export async function getOrLoadCommitFiles(repo: RepoIndex, sha: string) {
 	try {
 		await writeCommitFilesMeta(repo.root, sha, details.fileChanges);
 	} catch (e) {
-		const _msg = String(e);
+		// biome-ignore lint/suspicious/noConsole: metadata write failures are intentionally visible during indexing.
+		console.warn("[Indexer] Metadata write failed (repo may be read-only):", e);
 	}
 
 	return details.fileChanges;

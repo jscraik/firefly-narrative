@@ -215,7 +215,8 @@ export function useSessionImport({
 				await exportSessionLinkNote(expectedRepoId, link.commitSha);
 				if (isStaleRequest()) return;
 			} catch (e) {
-				const _msg = String(e);
+				// biome-ignore lint/suspicious/noConsole: best-effort export failures should stay visible without failing the import.
+				console.warn("[session.import.export_note_failed]", e);
 				if (isStaleRequest()) return;
 			}
 
@@ -323,7 +324,8 @@ export function useSessionImport({
 				await exportSessionLinkNote(expectedRepoId, link.commitSha);
 				if (isStaleRequest()) return;
 			} catch (e) {
-				const _msg = String(e);
+				// biome-ignore lint/suspicious/noConsole: best-effort export failures should stay visible without failing the import.
+				console.warn("[session.import.export_note_failed]", e);
 				if (isStaleRequest()) return;
 			}
 
@@ -402,7 +404,9 @@ export function useSessionImport({
 					try {
 						await exportSessionLinkNote(expectedRepoId, commitSha);
 						if (isStaleRequest()) return;
-					} catch (_e) {
+					} catch (error) {
+						// biome-ignore lint/suspicious/noConsole: best-effort export failures should stay visible without failing unlink.
+						console.warn("[session.unlink.export_note_failed]", error);
 						if (isStaleRequest()) return;
 					}
 				}

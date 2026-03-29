@@ -302,6 +302,8 @@ export function useTraceSignal(
 				const message = getErrorMessage(error);
 				setEnabled(currentEnabled);
 				enabledRef.current = currentEnabled;
+				// biome-ignore lint/suspicious/noConsole: persistence failures need an operator-visible trace and are asserted in tests.
+				console.error("[trace.toggle.persist_failed]", error);
 				options.onPersistenceError?.(
 					`Unable to persist Trace setting: ${message}`,
 				);
