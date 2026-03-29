@@ -130,14 +130,14 @@ export async function indexRepo(
 		importAttributionNotesBatch(
 			repoId,
 			commits.map((c) => c.sha),
-		).catch((e) => {
-			console.error("[Indexer] Attribution notes import failed:", e);
+		).catch((_e) => {
+			/* noop */
 		}),
 		importSessionLinkNotesBatch(
 			repoId,
 			commits.map((c) => c.sha),
-		).catch((e) => {
-			console.error("[Indexer] Session link notes import failed:", e);
+		).catch((_e) => {
+			/* noop */
 		}),
 	]);
 
@@ -341,7 +341,6 @@ export async function indexRepo(
 		}
 	} catch (e) {
 		const _msg = String(e);
-		console.warn("[Indexer] Metadata write failed (repo may be read-only):", e);
 	}
 
 	const modelBase: BranchViewModel = {
@@ -385,7 +384,6 @@ export async function getOrLoadCommitFiles(repo: RepoIndex, sha: string) {
 		await writeCommitFilesMeta(repo.root, sha, details.fileChanges);
 	} catch (e) {
 		const _msg = String(e);
-		console.warn("[Indexer] Commit files metadata write failed:", e);
 	}
 
 	return details.fileChanges;

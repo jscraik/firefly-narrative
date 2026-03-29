@@ -539,7 +539,7 @@ Interfaces requiring update parity:
 - ✅ `pnpm test`
 - ✅ `pnpm typecheck`
 - ✅ `npm test`
-- ⚠️ `npm run test:deep` (script missing in package.json; no `test:deep` command exists)
+- ⚠️ `npm run test:deep` (historical note: this script was missing on 2026-02-25; it now exists in `package.json` as `test:deep`)
 - ✅ `pnpm tauri:generate-release-artifacts`
 - ✅ `pnpm tauri:verify-release-artifacts`
 - ✅ `jq -e '.window_hours >= 168 and .handshake_p99_ms <= 5000 and .pending_timeout_rate <= 0.005 and .parser_error_rate <= 0.001 and .event_lag_p95_ms <= 250' artifacts/release/codex-app-server/soak-100p.json`

@@ -10,23 +10,13 @@ export type Mode =
 	| "tools"
 	| "costs"
 	| "setup"
-	| "ports"
 	| "work-graph"
 	| "repo-pulse"
 	| "timeline"
 	| "diffs"
-	| "snapshots"
-	| "skills"
-	| "agents"
-	| "memory"
-	| "hooks"
-	| "hygiene"
-	| "deps"
 	| "worktrees"
 	| "env"
 	| "settings"
-	| "assistant"
-	| "attribution"
 	| "status";
 
 /**

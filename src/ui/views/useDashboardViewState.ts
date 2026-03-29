@@ -96,6 +96,12 @@ export function useDashboardViewState({
 		DashboardDroppedRequestDiagnostic[]
 	>([]);
 	const hasPaintedRef = useRef(false);
+	// Tracks latest stats without adding to fetchStats dependency array
+	const statsRef = useRef<DashboardStats | null>(null);
+
+	useEffect(() => {
+		statsRef.current = stats;
+	}, [stats]);
 
 	useEffect(() => {
 		if (!performance.getEntriesByName("dashboard_route_activation").length) {
@@ -138,10 +144,7 @@ export function useDashboardViewState({
 						/* slow TTI threshold exceeded — metrics available via performance API */
 					}
 				} catch (_error) {
-					console.debug(
-						"[dashboard] performance measurement error (non-fatal):",
-						_error,
-					);
+					/* noop */
 				}
 			});
 		}
@@ -165,10 +168,7 @@ export function useDashboardViewState({
 						/* slow interaction threshold exceeded — metrics available via performance API */
 					}
 				} catch (_error) {
-					console.debug(
-						"[dashboard] performance measurement error (non-fatal):",
-						_error,
-					);
+					/* noop */
 				}
 				performance.clearMarks("dashboard_filter_start");
 				performance.clearMarks("dashboard_filter_end");
@@ -291,7 +291,12 @@ export function useDashboardViewState({
 			activeRequestRef.current = requestMeta;
 
 			if (!isLoadMore) {
-				setDashboardState("loading");
+				// Only show the full loading skeleton on the very first fetch
+				// (when we have no prior data). On refetches (time-range change,
+				// new repo selection) keep stale data visible to prevent flicker.
+				if (statsRef.current === null) {
+					setDashboardState("loading");
+				}
 			}
 			setLoadingMore(true);
 			setError(null);

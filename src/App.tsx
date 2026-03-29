@@ -346,8 +346,8 @@ export function App() {
 						<AgentationComponent
 							endpoint={normalizedAgentationEndpoint}
 							webhookUrl={agentationWebhookUrl}
-							onSessionCreated={(sessionId) => {
-								console.log("Session started:", sessionId);
+							onSessionCreated={(_sessionId) => {
+								/* noop */
 							}}
 						/>
 					)}

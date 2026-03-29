@@ -137,7 +137,7 @@ export function RepoEvidenceOverview({
 		{
 			title: "Compare snapshots",
 			body: "Check whether the current branch story still matches the latest saved state and rollback markers.",
-			mode: "snapshots",
+			mode: "diffs",
 		},
 	];
 

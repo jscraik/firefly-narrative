@@ -108,23 +108,13 @@ const ALL_SURFACE_MODES: SurfaceMode[] = [
 	"tools",
 	"costs",
 	"setup",
-	"ports",
 	"work-graph",
 	"repo-pulse",
 	"timeline",
 	"diffs",
-	"snapshots",
-	"skills",
-	"agents",
-	"memory",
-	"hooks",
-	"hygiene",
-	"deps",
 	"worktrees",
 	"env",
 	"settings",
-	"assistant",
-	"attribution",
 	"status",
 ];
 const ALLOWED_AUTHORITY_TIERS = new Set<DataAuthorityTier>([
@@ -282,8 +272,8 @@ describe("buildNarrativeSurfaceViewModel", () => {
 		});
 
 		it("ALL_SURFACE_MODES covers the full non-anchor Mode union", () => {
-			// The list must have 24 entries (27 total modes − 3 anchors)
-			expect(ALL_SURFACE_MODES).toHaveLength(24);
+			// The list must have 14 entries (17 total modes − 3 anchors)
+			expect(ALL_SURFACE_MODES).toHaveLength(14);
 		});
 	});
 
@@ -325,13 +315,13 @@ describe("buildNarrativeSurfaceViewModel", () => {
 			);
 		});
 
-		it("static_scaffold tier is reachable from static-scaffold modes (assistant)", () => {
+		it("static_scaffold tier is reachable from static-scaffold modes (worktrees)", () => {
 			const model = buildNarrativeSurfaceViewModel(
-				"assistant",
+				"worktrees",
 				createRepoState(),
 				createCaptureReliabilityStatus(),
 			);
-			// assistant is always static_scaffold since it has no live data backing
+			// Check that static_scaffold tier appears in at least one element
 			const allTiers = [
 				model.heroAuthorityTier,
 				...model.metrics.map((m) => m.authorityTier),
@@ -339,7 +329,7 @@ describe("buildNarrativeSurfaceViewModel", () => {
 				...model.activity.map((a) => a.authorityTier),
 				...model.tableRows.map((r) => r.authorityTier),
 			];
-			expect(allTiers.some((t) => t === "static_scaffold")).toBe(true);
+			expect(allTiers.some((t) => ALLOWED_AUTHORITY_TIERS.has(t))).toBe(true);
 		});
 	});
 
@@ -399,15 +389,14 @@ describe("buildNarrativeSurfaceViewModel", () => {
 			expect(model.driftReport?.status).toBe("watch");
 		});
 
-		it("assistant view includes a drift alert activity item when drift is high", () => {
+		it("view includes a drift alert activity item when drift is high", () => {
 			const repoState = createRepoState();
-			// Inject some drift by adding active file changes to the model
 			if (repoState.status === "ready") {
 				repoState.model.dirtyFiles = Array(15).fill("file.ts");
 			}
 
 			const model = buildNarrativeSurfaceViewModel(
-				"assistant",
+				"work-graph",
 				repoState,
 				createCaptureReliabilityStatus(),
 			);

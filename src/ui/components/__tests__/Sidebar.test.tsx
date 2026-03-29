@@ -49,17 +49,8 @@ const SURFACE_MODES_TO_LABELS: Array<[Mode, string]> = [
 	["repo-pulse", "Workspace Pulse"],
 	["work-graph", "Story Map"],
 	["diffs", "Diff Review"],
-	["snapshots", "Snapshots"],
 	["worktrees", "Worktrees"],
-	["attribution", "Attribution Lens"],
-	["skills", "Codex Skills"],
-	["agents", "Agent Roles"],
-	["memory", "Memory Graph"],
-	["hooks", "Hooks"],
 	["setup", "Setup"],
-	["ports", "Ports"],
-	["hygiene", "Hygiene"],
-	["deps", "Dependency Watch"],
 	["env", "Env Hygiene"],
 	["status", "Trust Center"],
 	["settings", "Settings"],
@@ -189,9 +180,6 @@ describe("Sidebar", () => {
 			expect(screen.queryByRole("tab", { name: /story map/i })).toBeNull();
 			expect(screen.queryByRole("tab", { name: /sessions/i })).toBeNull();
 			expect(screen.queryByRole("tab", { name: /tool pulse/i })).toBeNull();
-			expect(
-				screen.queryByRole("tab", { name: /dependency watch/i }),
-			).toBeNull();
 			expect(screen.queryByRole("tab", { name: /^docs$/i })).toBeNull();
 		});
 
@@ -206,9 +194,6 @@ describe("Sidebar", () => {
 			).toBeInTheDocument();
 			expect(
 				screen.getByRole("tab", { name: /tool pulse/i }),
-			).toBeInTheDocument();
-			expect(
-				screen.getByRole("tab", { name: /dependency watch/i }),
 			).toBeInTheDocument();
 			expect(screen.queryByRole("tab", { name: /^docs$/i })).toBeNull();
 		});

@@ -300,8 +300,6 @@ export function useTraceSignal(
 				await setTraceEnabled(targetEnabled);
 			} catch (error) {
 				const message = getErrorMessage(error);
-
-				console.error("[trace.toggle.persist_failed]", error);
 				setEnabled(currentEnabled);
 				enabledRef.current = currentEnabled;
 				options.onPersistenceError?.(
