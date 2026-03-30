@@ -130,14 +130,16 @@ export async function indexRepo(
 		importAttributionNotesBatch(
 			repoId,
 			commits.map((c) => c.sha),
-		).catch((_e) => {
-			/* noop */
+		).catch((error) => {
+			// biome-ignore lint/suspicious/noConsole: Best-effort note import failures must remain observable.
+			console.error("[Indexer] Attribution notes import failed:", error);
 		}),
 		importSessionLinkNotesBatch(
 			repoId,
 			commits.map((c) => c.sha),
-		).catch((_e) => {
-			/* noop */
+		).catch((error) => {
+			// biome-ignore lint/suspicious/noConsole: Best-effort note import failures must remain observable.
+			console.error("[Indexer] Session link notes import failed:", error);
 		}),
 	]);
 
@@ -175,7 +177,9 @@ export async function indexRepo(
 			commits.map((c) => c.sha),
 		)
 			.then((rows) => Object.fromEntries(rows.map((r) => [r.commitSha, r])))
-			.catch((_e) => {
+			.catch((error) => {
+				// biome-ignore lint/suspicious/noConsole: Hydration failures are non-fatal but intentionally surfaced.
+				console.warn("[Indexer] Story anchor status hydration failed:", error);
 				return {};
 			}) as Promise<Record<string, StoryAnchorCommitStatus>>,
 		loadSessionExcerpts(root, repoId, 1).catch((_e) => {
@@ -222,8 +226,9 @@ export async function indexRepo(
 			repoId,
 			commits.map((c) => c.sha),
 		);
-	} catch (_e) {
-		/* best-effort — non-fatal */
+	} catch (error) {
+		// biome-ignore lint/suspicious/noConsole: Trace ingestion/scan failures are non-fatal but intentionally surfaced.
+		console.error("[Indexer] Trace scan failed:", error);
 	}
 
 	const timeline: TimelineNode[] = commits
@@ -339,8 +344,12 @@ export async function indexRepo(
 				await yieldToMain();
 			}
 		}
-	} catch (e) {
-		const _msg = String(e);
+	} catch (error) {
+		// biome-ignore lint/suspicious/noConsole: Metadata snapshot failures should be visible without aborting load.
+		console.warn(
+			"[Indexer] Metadata write failed (repo may be read-only):",
+			error,
+		);
 	}
 
 	const modelBase: BranchViewModel = {
@@ -382,8 +391,9 @@ export async function getOrLoadCommitFiles(repo: RepoIndex, sha: string) {
 	// Best-effort: write committable metadata for this commit's file list.
 	try {
 		await writeCommitFilesMeta(repo.root, sha, details.fileChanges);
-	} catch (e) {
-		const _msg = String(e);
+	} catch (error) {
+		// biome-ignore lint/suspicious/noConsole: Commit file snapshot failures should be visible without aborting load.
+		console.warn("[Indexer] Commit files metadata write failed:", error);
 	}
 
 	return details.fileChanges;

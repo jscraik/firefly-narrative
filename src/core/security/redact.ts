@@ -35,6 +35,10 @@ const MAX_REDACT_INPUT_BYTES = 2 * 1024 * 1024; // 2 MB
 
 export function redactSecrets(input: string): RedactionResult {
 	if (input.length > MAX_REDACT_INPUT_BYTES) {
+		// biome-ignore lint/suspicious/noConsole: Oversized redaction skips are part of the tested safety contract.
+		console.warn(
+			`[redact] skipping redaction for oversized input (${input.length} bytes)`,
+		);
 		return { redacted: input, hits: [] };
 	}
 
