@@ -1051,6 +1051,11 @@ fn detect_sidecar_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
                 path.display()
             ));
         }
+        verify_sidecar_manifest_for_path(&path).map_err(|error| {
+            format!(
+                "{SIDECAR_OVERRIDE_ENV} override failed sidecar trust policy: {error}"
+            )
+        })?;
         return Ok(path);
     }
 
@@ -1102,19 +1107,6 @@ fn detect_sidecar_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
             candidates.push(bin_dir.join(format!("codex-app-server{}", target_suffix)));
             candidates.push(bin_dir.join(format!("codex-app-server{}.exe", target_suffix)));
         }
-    }
-
-    if let Ok(cwd) = std::env::current_dir() {
-        candidates.push(cwd.join("src-tauri/bin/codex-app-server"));
-        candidates.push(cwd.join("src-tauri/bin/codex-app-server.exe"));
-        candidates.push(cwd.join("bin/codex-app-server"));
-        // Target-suffixed for cwd variants
-        candidates.push(cwd.join(format!("src-tauri/bin/codex-app-server{}", target_suffix)));
-        candidates.push(cwd.join(format!(
-            "src-tauri/bin/codex-app-server{}.exe",
-            target_suffix
-        )));
-        candidates.push(cwd.join(format!("bin/codex-app-server{}", target_suffix)));
     }
 
     let mut trust_errors = Vec::new();
