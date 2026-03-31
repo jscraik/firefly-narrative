@@ -38,8 +38,10 @@ function nowIso() {
 function safeJsonParse(text) {
   try {
     return { ok: true, value: JSON.parse(text) };
-  } catch (error) {
-    return { ok: false, error };
+  } catch (err) {
+    // biome-ignore lint/suspicious/noConsole: Parse failures are intentionally surfaced for debugging.
+    console.warn('[agentation-autopilot] JSON parse failed:', err);
+    return { ok: false, error: err };
   }
 }
 

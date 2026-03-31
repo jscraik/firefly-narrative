@@ -182,21 +182,29 @@ export async function indexRepo(
 				console.warn("[Indexer] Story anchor status hydration failed:", error);
 				return {};
 			}) as Promise<Record<string, StoryAnchorCommitStatus>>,
-		loadSessionExcerpts(root, repoId, 1).catch((_e) => {
+		loadSessionExcerpts(root, repoId, 1).catch((err) => {
+			// biome-ignore lint/suspicious/noConsole: Best-effort loading failures must remain observable.
+			console.warn("[Indexer] Session excerpts load failed:", err);
 			return [];
 		}),
 		loadTraceConfig(root),
-		getDirtyFiles(root).catch((_e) => {
+		getDirtyFiles(root).catch((err) => {
+			// biome-ignore lint/suspicious/noConsole: Best-effort loading failures must remain observable.
+			console.warn("[Indexer] Dirty files load failed:", err);
 			return [];
 		}),
-		getWorkingTreeChurn(root).catch((_e) => {
+		getWorkingTreeChurn(root).catch((err) => {
+			// biome-ignore lint/suspicious/noConsole: Best-effort loading failures must remain observable.
+			console.warn("[Indexer] Working tree churn load failed:", err);
 			return 0;
 		}),
 		listSnapshots(root).catch(() => []),
 		getLatestTestRunSummaryByCommit(
 			repoId,
 			commits.map((c) => c.sha),
-		).catch((_e) => {
+		).catch((err) => {
+			// biome-ignore lint/suspicious/noConsole: Best-effort loading failures must remain observable.
+			console.warn("[Indexer] Test run summary load failed:", err);
 			return {};
 		}),
 	] as const);
