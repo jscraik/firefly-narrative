@@ -16,22 +16,22 @@ export function DashboardLoadingState() {
 				{/* Row 1: 4 Stat Cards */}
 				<div className="grid grid-cols-2 gap-4 md:grid-cols-4">
 					<div
-						className="h-[104px] rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
+						className="h-24 rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
 						aria-hidden="true"
 						style={{ animationDelay: "0ms" }}
 					/>
 					<div
-						className="h-[104px] rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
+						className="h-24 rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
 						aria-hidden="true"
 						style={{ animationDelay: "75ms" }}
 					/>
 					<div
-						className="h-[104px] rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
+						className="h-24 rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
 						aria-hidden="true"
 						style={{ animationDelay: "150ms" }}
 					/>
 					<div
-						className="h-[104px] rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
+						className="h-24 rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
 						aria-hidden="true"
 						style={{ animationDelay: "225ms" }}
 					/>
@@ -40,12 +40,12 @@ export function DashboardLoadingState() {
 				{/* Row 2: Charts */}
 				<div className="grid gap-4 xl:grid-cols-2">
 					<div
-						className="h-[212px] rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
+						className="h-52 rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
 						aria-hidden="true"
 						style={{ animationDelay: "150ms" }}
 					/>
 					<div
-						className="h-[212px] rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
+						className="h-52 rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
 						aria-hidden="true"
 						style={{ animationDelay: "225ms" }}
 					/>
@@ -54,12 +54,12 @@ export function DashboardLoadingState() {
 				{/* Row 3: Next lanes + Pressure watch */}
 				<div className="grid gap-4 xl:grid-cols-2">
 					<div
-						className="h-[238px] rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
+						className="h-60 rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
 						aria-hidden="true"
 						style={{ animationDelay: "225ms" }}
 					/>
 					<div
-						className="h-[238px] rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
+						className="h-60 rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
 						aria-hidden="true"
 						style={{ animationDelay: "300ms" }}
 					/>
@@ -67,7 +67,7 @@ export function DashboardLoadingState() {
 
 				{/* Row 4: Top files */}
 				<div
-					className="h-[250px] rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
+					className="h-60 rounded-2xl bg-bg-tertiary shadow-sm skeleton-shimmer"
 					aria-hidden="true"
 					style={{ animationDelay: "375ms" }}
 				/>

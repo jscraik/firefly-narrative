@@ -135,7 +135,7 @@ function ToolMixChart({
 	return (
 		<div className="glass-panel rounded-3xl p-5">
 			<div className="flex items-center gap-2 mb-4">
-				<Bot className="h-[14px] w-[14px] text-accent-blue" />
+				<Bot className="h-3.5 w-3.5 text-accent-blue" />
 				<h2 className="text-sm font-semibold text-text-primary">
 					Agent Tool Mix
 				</h2>
@@ -149,7 +149,7 @@ function ToolMixChart({
 						key={tool}
 						className="group flex items-center gap-3 h-8 hover:bg-bg-subtle rounded px-2 -mx-2"
 					>
-						<span className="w-28 text-[13px] font-medium text-text-primary truncate capitalize">
+						<span className="w-28 text-sm font-medium text-text-primary truncate capitalize">
 							{tool.replace("-", " ")}
 						</span>
 						<div className="flex-1 overflow-hidden">
@@ -158,7 +158,7 @@ function ToolMixChart({
 								style={{ width: `${(count / max) * 100}%` }}
 							/>
 						</div>
-						<span className="text-[13px] text-text-muted w-8 text-right tabular-nums">
+						<span className="text-sm text-text-muted w-8 text-right tabular-nums">
 							{count}
 						</span>
 					</div>
@@ -196,11 +196,11 @@ function SessionCadenceChart({
 	return (
 		<div className="glass-panel rounded-3xl p-5">
 			<div className="flex items-center gap-2 mb-4">
-				<CalendarDays className="h-[14px] w-[14px] text-accent-green" />
+				<CalendarDays className="h-3.5 w-3.5 text-accent-green" />
 				<h2 className="text-sm font-semibold text-text-primary">
 					Capture Cadence
 				</h2>
-				<span className="inline-flex items-center gap-1 rounded-md bg-accent-violet/10 px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-widest text-accent-violet border border-accent-violet/20">
+				<span className="inline-flex items-center gap-1 rounded-md bg-accent-violet/10 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-accent-violet border border-accent-violet/20">
 					By Day
 				</span>
 			</div>
@@ -211,13 +211,13 @@ function SessionCadenceChart({
 						className="flex-1 flex flex-col items-center justify-end h-full gap-1"
 					>
 						<div
-							className="w-full rounded-[3px] bg-accent-green transition-opacity hover:opacity-80"
+							className="w-full rounded-sm bg-accent-green transition-opacity hover:opacity-80"
 							style={{ height: `${Math.max(bar.pct, 4)}%` }}
 						/>
 					</div>
 				))}
 			</div>
-			<div className="flex justify-between text-[11px] font-medium text-text-muted mt-2 px-1">
+			<div className="flex justify-between text-xs font-medium text-text-muted mt-2 px-1">
 				{bars.map((bar) => (
 					<span key={bar.label}>{bar.label}</span>
 				))}
@@ -256,7 +256,7 @@ function LinkConfidencePanel({
 	return (
 		<div className="glass-panel rounded-3xl p-5">
 			<div className="flex items-center gap-2 mb-4">
-				<Link2 className="h-[14px] w-[14px] text-accent-violet" />
+				<Link2 className="h-3.5 w-3.5 text-accent-violet" />
 				<h2 className="text-sm font-semibold text-text-primary">
 					Link Confidence
 				</h2>
@@ -361,7 +361,7 @@ function SessionEvidenceList({
 											{conf.label}
 										</span>
 										{session.linkedCommitSha && (
-											<span className="text-accent-blue font-mono text-[11px]">
+											<span className="text-accent-blue font-mono text-xs">
 												{session.linkedCommitSha.slice(0, 7)}
 											</span>
 										)}
