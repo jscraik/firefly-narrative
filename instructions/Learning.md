@@ -35,6 +35,7 @@ Agent knowledge base for trace-narrative. Append-only.
 - Best-effort file loading failures
 
 **Files fixed in PR #97 (2026-03-31):**
+- `src/App.tsx`
 - `src/ui/components/DocsOverviewPanel.tsx`
 - `src/ui/components/MermaidDiagram.tsx`
 - `src/core/repo/indexer.ts` (4 catch blocks)
