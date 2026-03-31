@@ -33,3 +33,17 @@ Agent knowledge base for trace-narrative. Append-only.
 - Promise `.catch()` blocks in indexer.ts
 - JSON parse error handling in agentation scripts
 - Best-effort file loading failures
+
+**Files fixed in PR #97 (2026-03-31):**
+- `src/ui/components/DocsOverviewPanel.tsx`
+- `src/ui/components/MermaidDiagram.tsx`
+- `src/core/repo/indexer.ts` (4 catch blocks)
+- `scripts/agentation-autopilot.mjs`
+- `scripts/agentation-webhook-listener.mjs`
+- `src/hooks/useSnapshots.ts`
+- `src/core/repo/snapshots.ts` (2 catch blocks)
+- `src/core/repo/sessions.ts` (2 catch blocks)
+- `src/core/repo/narrativeFeedback.ts`
+- `src/core/repo/db.ts`
+- `src/core/tauri/settings.ts`
+- `src/ui/views/useDashboardViewState.ts` (2 catch blocks)
