@@ -25,7 +25,7 @@ const IMPLEMENT_COMMAND = (process.env.AGENTATION_IMPLEMENT_COMMAND ?? '').trim(
 const REVIEW_COMMAND = (process.env.AGENTATION_REVIEW_COMMAND ?? '').trim();
 const CRITIQUE_COMMAND = (process.env.AGENTATION_CRITIQUE_COMMAND ?? '').trim();
 const AUTH_TOKEN = (process.env.AGENTATION_AUTH_TOKEN ?? '').trim();
-const MAX_BODY_BYTES = Number(process.env.AGENTATION_MAX_BODY_BYTES ?? 1_048_576); // 1 MiB
+const MAX_BODY_BYTES = Number(process.env.AGENTATION_MAX_BODY_BYTES || 1_048_576); // 1 MiB
 const IMPLEMENT_TIMEOUT_MS = Number(process.env.CODEX_IMPLEMENTATION_TIMEOUT_MS ?? 300000);
 const REVIEW_TIMEOUT_MS = Number(process.env.CODEX_REVIEW_TIMEOUT_MS ?? 180000);
 
