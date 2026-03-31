@@ -3,100 +3,73 @@
 ## Table of Contents
 
 - [Summary](#summary)
-- [File Audit](#file-audit)
-- [Priority Order](#priority-order)
+- [Delivered Contract](#delivered-contract)
+- [Remaining Follow-Through](#remaining-follow-through)
 
 ## Summary
 
-The current shell has solid structure, but its labels and dashboard framing drift toward a generic reference dashboard. The immediate correction is to preserve layout while changing taxonomy, copy, and first-impression screens to emphasize narrative evidence.
+The shell now matches the intended information architecture more closely than the earlier route-first taxonomy. The visible product posture is a flat six-lane navigation model:
 
-## File Audit
+- `Narrative Brief`
+- `Repo Evidence`
+- `Sessions`
+- `Tools`
+- `Hygiene`
+- `Settings`
 
-### /Users/jamiecraik/dev/trace-narrative/src/ui/components/Sidebar.tsx
+The earlier hidden-route ownership layer has been removed from primary shell behavior. Docs access now lives inside Settings instead of surviving as a dedicated top-level route.
 
-Change first:
-
-- rename section headers from `Overview/Monitor/Ecosystem/Config` to `Narrative/Evidence/Integrations/Configure`
-- rename primary entries to `Narrative Brief`, `Story Map`, `Codex Copilot`, `Live Capture`, `Causal Timeline`, `Repo Evidence`, and `Hygiene`
-- keep the physical layout unchanged
-
-### /Users/jamiecraik/dev/trace-narrative/src/ui/components/TopNav.tsx
-
-Change first:
-
-- keep the three-tab anchor model
-- rename `Cockpit` to `Narrative`
-- replace duplicate product branding with lightweight surface context copy
-
-### /Users/jamiecraik/dev/trace-narrative/src/ui/views/DashboardView.tsx
-
-Change first:
-
-- replace the generic greeting with a narrative brief
-- add a real evidence summary using repo stats
-- point the user toward repo evidence, Codex session import, and hygiene review
-
-### /Users/jamiecraik/dev/trace-narrative/src/ui/components/dashboard/MetricsGrid.tsx
-
-Change first:
-
-- remove fake `Linked Sessions` and `System Health`
-- use real metrics only
-- replace reference-app comments with Trace-specific language
-
-### /Users/jamiecraik/dev/trace-narrative/src/ui/components/dashboard/QuickActions.tsx
-
-Change first:
-
-- remove generic AI-dashboard actions
-- use `Open Repo Evidence`, `Import Codex Session`, and `Review Hygiene`
-
-### /Users/jamiecraik/dev/trace-narrative/src/ui/components/dashboard/RecentActivity.tsx
-
-Change first:
-
-- rename to `Evidence Trail`
-- make the CTA open repo trail rather than generic activity
-
-### /Users/jamiecraik/dev/trace-narrative/src/ui/components/dashboard/TopFilesTable.tsx
-
-Change first:
-
-- reposition as evidence-ranked files rather than generic AI leaderboard
-
-### /Users/jamiecraik/dev/trace-narrative/src/ui/views/DocsView.tsx
-
-Change first:
-
-- remove stale `Firefly Narrative` copy
-- keep docs aligned with Trace Narrative naming
-
-### /Users/jamiecraik/dev/trace-narrative/src/ui/views/cockpitViewData.ts
-
-Change first:
-
-- align section labels with the new IA
-- make assistant copy explicitly Codex-first
-- update settings copy to avoid provider sprawl
-- keep Hygiene and Settings behaviorally intact
+## Delivered Contract
 
 ### /Users/jamiecraik/dev/trace-narrative/src/core/types.ts
 
-Change first:
+Delivered:
 
-- update `ViewSection` to the new taxonomy so UI and tests share one contract
+- `Mode` is reduced to six canonical lanes
+- `AnchorMode` is reduced to `dashboard | repo`
+- `SurfaceMode` is reduced to `sessions | tools | hygiene | settings`
+- `ViewSection` remains metadata only
 
-### /Users/jamiecraik/dev/trace-narrative/src/ui/components/__tests__/Sidebar.test.tsx
-### /Users/jamiecraik/dev/trace-narrative/src/ui/components/__tests__/TopNav.test.tsx
+### /Users/jamiecraik/dev/trace-narrative/src/ui/components/Sidebar.tsx
 
-Change first:
+Delivered:
 
-- update expected labels and section headers to match the shell redesign
-- preserve the anchor-mode navigation contract
+- primary navigation is a flat six-item list
+- active state is direct, not legacy-owner mapped
+- sidebar section headers are no longer part of the visible shell
 
-## Priority Order
+### /Users/jamiecraik/dev/trace-narrative/src/ui/components/TopNav.tsx
 
-1. Shell taxonomy and dashboard framing
-2. Codex-first copy in assistant/settings/dashboard empty states
-3. Test updates for the new contract
-4. Deeper provider-expansion and signature visualization work
+Delivered:
+
+- top-nav framing only understands the canonical six modes
+- direct legacy-route remapping logic is removed
+- quick-jump routes stay focused on core evidence return paths
+
+### /Users/jamiecraik/dev/trace-narrative/src/AppContent.tsx
+
+Delivered:
+
+- standalone `docs` anchor routing is removed
+- `settings` now flows through the shared surface contract
+
+### /Users/jamiecraik/dev/trace-narrative/src/ui/views/SettingsView.tsx
+
+Delivered:
+
+- settings owns repository docs access directly
+- docs are embedded through `DocsOverviewPanel` instead of a separate shell destination
+
+### /Users/jamiecraik/dev/trace-narrative/src/ui/views/narrativeSurfaceData.ts
+
+Delivered:
+
+- active shared-surface contract is centered on `sessions`, `tools`, `hygiene`, and `settings`
+- hygiene actions no longer route to deleted shell modes
+- repo and hygiene remain the two main evidence-return lanes from shared surfaces
+
+## Remaining Follow-Through
+
+1. Delete the dormant legacy view files once the team no longer needs them for historical reference or incremental extraction work.
+2. Continue tightening view-specific copy so older labels such as `Trust Center` and `Live capture` read more like subpanels than retired routes.
+3. Keep future shell additions constrained to the six-lane model unless a new spec explicitly expands the top-level IA.

@@ -35,6 +35,7 @@ const mockCreateTelemetryBranchScope = vi.hoisted(() =>
 const mockGetLatestTestRunForCommit = vi.hoisted(() =>
 	vi.fn().mockResolvedValue(null),
 );
+const mockUseReducedMotion = vi.hoisted(() => vi.fn(() => false));
 let capturedOpenEvidenceHandler:
 	| ((link: {
 			id: string;
@@ -159,6 +160,15 @@ vi.mock("../../../hooks/useTestImport", () => ({
 	})),
 }));
 
+vi.mock("framer-motion", async () => {
+	const actual =
+		await vi.importActual<typeof import("framer-motion")>("framer-motion");
+	return {
+		...actual,
+		useReducedMotion: mockUseReducedMotion,
+	};
+});
+
 vi.mock("../../components/BranchNarrativePanel", () => ({
 	BranchNarrativePanel: ({
 		onSubmitFeedback,
@@ -166,6 +176,8 @@ vi.mock("../../components/BranchNarrativePanel", () => ({
 		onOpenRawDiff,
 		onSubmitAskWhy,
 		onOpenAskWhyCitation,
+		onAdvancedAnalysisToggle,
+		onAdvancedControlUsed,
 	}: {
 		onSubmitFeedback: (feedback: {
 			actorRole: "developer" | "reviewer";
@@ -203,6 +215,8 @@ vi.mock("../../components/BranchNarrativePanel", () => ({
 			type: string;
 			label: string;
 		}) => void;
+		onAdvancedAnalysisToggle?: (open: boolean) => void;
+		onAdvancedControlUsed?: (control: string) => void;
 	}) => {
 		capturedOpenEvidenceHandler = onOpenEvidence;
 		capturedOpenRawDiffHandler = onOpenRawDiff;
@@ -257,6 +271,15 @@ vi.mock("../../components/BranchNarrativePanel", () => ({
 					}
 				>
 					open-ask-why-citation
+				</button>
+				<button type="button" onClick={() => onAdvancedAnalysisToggle?.(true)}>
+					open-advanced-analysis
+				</button>
+				<button
+					type="button"
+					onClick={() => onAdvancedControlUsed?.("audience-lens")}
+				>
+					use-advanced-control
 				</button>
 			</>
 		);
@@ -315,6 +338,7 @@ vi.mock("../../components/RightPanelTabs", () => ({
 		loadingTests,
 		loadingDiff,
 		githubConnectorState,
+		verificationMode,
 	}: {
 		diffText: string | null;
 		traceRanges: TraceRange[];
@@ -322,18 +346,20 @@ vi.mock("../../components/RightPanelTabs", () => ({
 		loadingTests?: boolean;
 		loadingDiff?: boolean;
 		githubConnectorState?: { status?: string; error?: string };
+		verificationMode?: string;
 	}) => (
-		<>
+		<section id="verification-rail">
 			<div data-testid="diff-panel">{diffText ?? "(none)"}</div>
 			<div data-testid="diff-loading">{loadingDiff ? "loading" : "idle"}</div>
 			<div data-testid="trace-panel">{traceRanges.length}</div>
 			<div data-testid="test-run-id">{testRun?.id ?? "none"}</div>
 			<div data-testid="tests-loading">{loadingTests ? "loading" : "idle"}</div>
+			<div data-testid="verification-mode">{verificationMode ?? "none"}</div>
 			<div data-testid="github-status">
 				{githubConnectorState?.status ?? "none"}
 			</div>
 			<div data-testid="github-error">{githubConnectorState?.error ?? ""}</div>
-		</>
+		</section>
 	),
 }));
 
@@ -463,6 +489,7 @@ function buildProps(
 describe("BranchView transition and integration coverage", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockUseReducedMotion.mockReturnValue(false);
 		mockFileSelectionState.selectedFile = "preselected.ts";
 		capturedOpenEvidenceHandler = null;
 		capturedOpenRawDiffHandler = null;
@@ -764,6 +791,232 @@ describe("BranchView transition and integration coverage", () => {
 				attemptId: expect.any(String),
 			});
 		});
+	});
+
+	it("resolves verification posture in the controller and emits telemetry", async () => {
+		const props = buildProps();
+		render(<BranchView {...props} />);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("verification-mode")).toHaveTextContent(
+				"evidence-first",
+			);
+		});
+
+		await waitFor(() => {
+			expect(mockTrackNarrativeEvent).toHaveBeenCalledWith(
+				"branch_verification_mode_selected",
+				expect.objectContaining({
+					branchScopeKey: "scope:feature/race-tests",
+					verificationMode: "evidence-first",
+					reason: "validation",
+				}),
+			);
+		});
+	});
+
+	it("tracks branch-scope resets when the branch changes", async () => {
+		const initialProps = buildProps();
+		const { rerender } = render(<BranchView {...initialProps} />);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("verification-mode")).toHaveTextContent(
+				"evidence-first",
+			);
+		});
+
+		const updatedModel = createModel({
+			meta: {
+				...initialProps.model.meta,
+				branchName: "feature/reset-proof",
+			},
+		});
+		rerender(<BranchView {...buildProps({ model: updatedModel })} />);
+
+		await waitFor(() => {
+			expect(mockTrackNarrativeEvent).toHaveBeenCalledWith(
+				"branch_scope_reset_occurred",
+				expect.objectContaining({
+					oldBranchScopeKey: "scope:feature/race-tests",
+					newBranchScopeKey: "scope:feature/reset-proof",
+					staleAsyncDropped: expect.any(Boolean),
+					clearedStateKeys: expect.arrayContaining([
+						"detailLevel",
+						"askWhyState",
+						"verificationPosture",
+					]),
+				}),
+			);
+		});
+	});
+
+	it("tracks advanced analysis open and control usage through the controller", async () => {
+		const props = buildProps();
+		render(<BranchView {...props} />);
+
+		fireEvent.click(
+			await screen.findByRole("button", { name: "open-advanced-analysis" }),
+		);
+		fireEvent.click(
+			screen.getByRole("button", { name: "use-advanced-control" }),
+		);
+
+		await waitFor(() => {
+			expect(mockTrackNarrativeEvent).toHaveBeenCalledWith(
+				"branch_advanced_analysis_opened",
+				expect.objectContaining({
+					branchScopeKey: "scope:feature/race-tests",
+					workspaceState: "ready",
+					verificationMode: "evidence-first",
+					initialOpen: true,
+				}),
+			);
+			expect(mockTrackNarrativeEvent).toHaveBeenCalledWith(
+				"branch_advanced_control_used",
+				expect.objectContaining({
+					branchScopeKey: "scope:feature/race-tests",
+					control: "audience-lens",
+					workspaceState: "ready",
+					verificationMode: "evidence-first",
+				}),
+			);
+		});
+	});
+
+	it("keeps advanced workspace detail collapsed by default and resets it on branch change", async () => {
+		const initialProps = buildProps();
+		const { rerender } = render(<BranchView {...initialProps} />);
+
+		const workspaceToggle = await screen.findByRole("button", {
+			name: /Advanced workspace detail/i,
+		});
+		expect(workspaceToggle).toHaveAttribute("aria-expanded", "false");
+
+		fireEvent.click(workspaceToggle);
+		expect(workspaceToggle).toHaveAttribute("aria-expanded", "true");
+
+		const updatedModel = createModel({
+			meta: {
+				...initialProps.model.meta,
+				branchName: "feature/workspace-reset",
+			},
+		});
+		rerender(<BranchView {...buildProps({ model: updatedModel })} />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByRole("button", {
+					name: /Advanced workspace detail/i,
+				}),
+			).toHaveAttribute("aria-expanded", "false");
+		});
+	});
+
+	it("tracks header CTA usage separately from raw-diff fallback behavior", async () => {
+		const props = buildProps();
+		render(<BranchView {...props} />);
+
+		const openRawDiffButton = await screen.findByRole("button", {
+			name: "Open raw diff",
+		});
+		fireEvent.click(openRawDiffButton);
+
+		await waitFor(() => {
+			expect(mockTrackNarrativeEvent).toHaveBeenCalledWith(
+				"branch_primary_cta_used",
+				expect.objectContaining({
+					branchScopeKey: "scope:feature/race-tests",
+					cta: "open-raw-diff",
+					verificationMode: "evidence-first",
+				}),
+			);
+			expect(mockTrackNarrativeEvent).toHaveBeenCalledWith(
+				"branch_story_to_diff_time_ms",
+				expect.objectContaining({
+					branchScopeKey: "scope:feature/race-tests",
+					workspaceState: "ready",
+				}),
+			);
+		});
+	});
+
+	it("scrolls to the verification rail smoothly by default", async () => {
+		const props = buildProps();
+		render(<BranchView {...props} />);
+
+		const verificationRail = document.getElementById("verification-rail");
+		expect(verificationRail).not.toBeNull();
+		const scrollIntoView = vi.fn();
+		Object.defineProperty(verificationRail, "scrollIntoView", {
+			value: scrollIntoView,
+			writable: true,
+		});
+
+		fireEvent.click(
+			await screen.findByRole("button", { name: "Inspect evidence" }),
+		);
+
+		expect(scrollIntoView).toHaveBeenCalledWith({
+			behavior: "smooth",
+			block: "start",
+		});
+	});
+
+	it("uses a non-animated verification jump when reduced motion is enabled", async () => {
+		mockUseReducedMotion.mockReturnValue(true);
+		const props = buildProps();
+		render(<BranchView {...props} />);
+
+		const verificationRail = document.getElementById("verification-rail");
+		expect(verificationRail).not.toBeNull();
+		const scrollIntoView = vi.fn();
+		Object.defineProperty(verificationRail, "scrollIntoView", {
+			value: scrollIntoView,
+			writable: true,
+		});
+
+		fireEvent.click(
+			await screen.findByRole("button", { name: "Inspect evidence" }),
+		);
+
+		expect(scrollIntoView).toHaveBeenCalledWith({
+			behavior: "auto",
+			block: "start",
+		});
+	});
+
+	it("keeps primary header actions ahead of advanced-analysis controls in the workspace order", async () => {
+		const props = buildProps();
+		render(<BranchView {...props} />);
+
+		const branchWorkspace = document.getElementById("branch-workspace");
+		expect(branchWorkspace).not.toBeNull();
+
+		const inspectEvidence = await screen.findByRole("button", {
+			name: "Inspect evidence",
+		});
+		const openRawDiff = screen.getByRole("button", {
+			name: "Open raw diff",
+		});
+		const openAdvancedAnalysis = screen.getByRole("button", {
+			name: "open-advanced-analysis",
+		});
+
+		const workspaceButtons = Array.from(
+			branchWorkspace?.querySelectorAll("button") ?? [],
+		);
+
+		expect(workspaceButtons.indexOf(inspectEvidence)).toBeGreaterThanOrEqual(0);
+		expect(workspaceButtons.indexOf(openRawDiff)).toBeGreaterThanOrEqual(0);
+		expect(
+			workspaceButtons.indexOf(openAdvancedAnalysis),
+		).toBeGreaterThanOrEqual(0);
+		expect(workspaceButtons.indexOf(inspectEvidence)).toBeLessThan(
+			workspaceButtons.indexOf(openAdvancedAnalysis),
+		);
+		expect(workspaceButtons.indexOf(openRawDiff)).toBeLessThan(
+			workspaceButtons.indexOf(openAdvancedAnalysis),
+		);
 	});
 
 	it("emits first_win_completed once for a fallback completion path", async () => {

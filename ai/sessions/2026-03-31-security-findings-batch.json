@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-03-31",
+  "slug": "security-findings-batch",
+  "model": "claude-sonnet-4-6",
+  "session_type": "security-remediation",
+  "prompt_file": "ai/prompts/2026-03-31-security-findings-batch.yaml",
+  "findings_count": 13,
+  "files_modified": [
+    ".gitleaks.toml",
+    "scripts/agentation-autopilot.mjs",
+    "scripts/agentation-webhook-listener.mjs",
+    "scripts/repair-agent.mjs",
+    "scripts/verify-codex-sidecar-manifest.mjs",
+    "serve.mjs",
+    "src-tauri/src/codex_app_server.rs",
+    "src-tauri/src/import/codex_sessions_parser.rs",
+    "src-tauri/src/import/commands.rs",
+    "src-tauri/src/import/redactor.rs",
+    "src-tauri/src/ingest_config.rs",
+    "src-tauri/src/story_anchors/hooks.rs",
+    "src-tauri/tests/codex_app_server_trust.rs",
+    "src/main.tsx",
+    "scripts/__tests__/repair-agent.test.mjs"
+  ],
+  "tests_added": [
+    "scripts/__tests__/repair-agent.test.mjs (17 tests)",
+    "src-tauri/src/import/commands.rs: store_codex_app_server_completed_session_redacts_summary_payload",
+    "src-tauri/src/import/commands.rs: post_rewrite_hook_uses_mktemp_and_trap_cleanup",
+    "src-tauri/src/import/codex_sessions_parser.rs: walk_find_first_skips_symlinked_files",
+    "src-tauri/src/import/codex_sessions_parser.rs: walk_find_first_skips_symlinked_directories",
+    "src-tauri/src/import/commands.rs: collect_recent_files_skips_symlinked_directories",
+    "src-tauri/src/import/redactor.rs: test_redact_password_assignment_case_insensitive",
+    "src-tauri/src/ingest_config.rs: build_codex_otel_block_uses_env_placeholder_not_plaintext_secret"
+  ],
+  "verification": {
+    "pnpm_lint": "pass",
+    "pnpm_typecheck": "pass",
+    "pnpm_test": "520/520 pass",
+    "cargo_test_affected": "pass"
+  }
+}

@@ -88,172 +88,83 @@ function createCaptureReliabilityStatus(
 	};
 }
 
+function renderSurface(
+	mode: "sessions" | "tools" | "hygiene" | "settings",
+	captureReliabilityStatus = createCaptureReliabilityStatus(),
+	repoRoot = "",
+) {
+	return render(
+		<NarrativeSurfaceView
+			mode={mode}
+			repoState={createRepoState()}
+			captureReliabilityStatus={captureReliabilityStatus}
+			onModeChange={vi.fn()}
+			onOpenRepo={vi.fn()}
+			onImportSession={vi.fn()}
+			repoRoot={repoRoot}
+		/>,
+	);
+}
+
 describe("NarrativeSurfaceView", () => {
-	it("renders a Trace Narrative-native live operations view", () => {
-		render(
-			<NarrativeSurfaceView
-				mode="live"
-				repoState={createRepoState()}
-				captureReliabilityStatus={createCaptureReliabilityStatus()}
-				onModeChange={vi.fn()}
-				onOpenRepo={vi.fn()}
-				onImportSession={vi.fn()}
-			/>,
-		);
+	it("renders Hygiene as the merged operational lane", () => {
+		renderSurface("hygiene");
 
 		expect(
-			screen.getAllByRole("heading", { name: "Live" }).length,
+			screen.getAllByRole("heading", { name: "Hygiene" }).length,
 		).toBeGreaterThan(0);
-		expect(screen.getByText("Live capture surface")).toBeInTheDocument();
-		expect(screen.getByText("Active sessions")).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Live monitors" }),
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Current stream" }),
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Live lanes" }),
-		).toBeInTheDocument();
-		expect(screen.getByText("Capture posture")).toBeInTheDocument();
-	});
-
-	it("surfaces the degraded trust badge when capture is not healthy", () => {
-		render(
-			<NarrativeSurfaceView
-				mode="status"
-				repoState={createRepoState()}
-				captureReliabilityStatus={createCaptureReliabilityStatus({
-					mode: "DEGRADED_STREAMING",
-				})}
-				onModeChange={vi.fn()}
-				onOpenRepo={vi.fn()}
-				onImportSession={vi.fn()}
-			/>,
-		);
-
-		expect(
-			screen.getByLabelText("Capture reliability degraded"),
-		).toBeInTheDocument();
-		expect(screen.getByText("Trust Center")).toBeInTheDocument();
-		expect(screen.getByText("Recent trust events")).toBeInTheDocument();
-		expect(screen.getByText("Trust decision surface")).toBeInTheDocument();
-	});
-
-	it("renders the provenance lane on Story Map surfaces", () => {
-		render(
-			<NarrativeSurfaceView
-				mode="work-graph"
-				repoState={createRepoState()}
-				captureReliabilityStatus={createCaptureReliabilityStatus()}
-				onModeChange={vi.fn()}
-				onOpenRepo={vi.fn()}
-				onImportSession={vi.fn()}
-			/>,
-		);
-
-		expect(
-			screen.getByText(
-				"Topology and prioritization view for pressure points, weak joins, and next inspection.",
-			),
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Narrative pressure map" }),
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "What should move first" }),
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Trace provenance lane" }),
-		).toBeInTheDocument();
-		expect(screen.getByText("Observed")).toBeInTheDocument();
-		expect(screen.getByText("Joined")).toBeInTheDocument();
-		expect(screen.getByText("Derived")).toBeInTheDocument();
+		expect(screen.getByText("Hygiene overview")).toBeInTheDocument();
+		expect(screen.getByText("Operational lanes")).toBeInTheDocument();
+		expect(screen.getAllByText("Trust Center").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("Env hygiene").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("Setup").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("Live capture").length).toBeGreaterThan(0);
 	});
 
 	it("renders Sessions as a dedicated evidence review surface", () => {
-		render(
-			<NarrativeSurfaceView
-				mode="sessions"
-				repoState={createRepoState()}
-				captureReliabilityStatus={createCaptureReliabilityStatus()}
-				onModeChange={vi.fn()}
-				onOpenRepo={vi.fn()}
-				onImportSession={vi.fn()}
-			/>,
-		);
+		renderSurface("sessions");
 
 		expect(
 			screen.getAllByRole("heading", { name: "Sessions" }).length,
 		).toBeGreaterThan(0);
 		expect(
+			screen.getByText("History of interactive traces and captures"),
+		).toBeInTheDocument();
+		expect(
 			screen.getByRole("heading", { name: "Recent Sessions" }),
 		).toBeInTheDocument();
 		expect(screen.getByText("Review Window")).toBeInTheDocument();
+		expect(screen.queryByText("{viewModel.subtitle}")).not.toBeInTheDocument();
 	});
 
-	it("renders Transcript Lens as a dedicated search-and-verification surface", () => {
-		render(
-			<NarrativeSurfaceView
-				mode="transcripts"
-				repoState={createRepoState()}
-				captureReliabilityStatus={createCaptureReliabilityStatus()}
-				onModeChange={vi.fn()}
-				onOpenRepo={vi.fn()}
-				onImportSession={vi.fn()}
-			/>,
-		);
+	it("renders Tools as a dedicated integrations surface", () => {
+		renderSurface("tools");
 
 		expect(
-			screen.getAllByRole("heading", { name: "Transcripts" }).length,
-		).toBeGreaterThan(0);
-		expect(screen.getByText("Transcript query surface")).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Ask transcript-first questions" }),
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Quoted snippets and source joins" }),
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Sources and follow-through" }),
-		).toBeInTheDocument();
-	});
-
-	it("renders Causal Timeline as a dedicated causal-analysis surface", () => {
-		render(
-			<NarrativeSurfaceView
-				mode="timeline"
-				repoState={createRepoState()}
-				captureReliabilityStatus={createCaptureReliabilityStatus()}
-				onModeChange={vi.fn()}
-				onOpenRepo={vi.fn()}
-				onImportSession={vi.fn()}
-			/>,
-		);
-
-		expect(
-			screen.getAllByRole("heading", { name: "Timeline" }).length,
+			screen.getAllByRole("heading", { name: "Tools" }).length,
 		).toBeGreaterThan(0);
 		expect(
 			screen.getByText(
-				"Causal Timeline earns its place when the chronology dominates the page and the review gates sit alongside it instead of competing with it.",
+				"Usage mix, failure hotspots, and most-edited files across sessions.",
 			),
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", {
-				name: "Ordered commit and milestone sequence",
-			}),
+			screen.getByRole("heading", { name: "Tool Distribution" }),
 		).toBeInTheDocument();
+		expect(screen.queryByText("{viewModel.subtitle}")).not.toBeInTheDocument();
+	});
+
+	it("renders Settings with embedded docs access", () => {
+		renderSurface("settings", createCaptureReliabilityStatus(), "");
+
 		expect(
-			screen.getByRole("heading", {
-				name: "What makes the sequence safe to repeat",
-			}),
+			screen.getByRole("heading", { name: "Settings" }),
 		).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Docs" })).toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", { name: "Session joins and trust posture" }),
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Causal chain rail" }),
+			screen.getByText(
+				"Repository guides and generated narrative docs now live directly inside Settings.",
+			),
 		).toBeInTheDocument();
 	});
 
@@ -263,122 +174,26 @@ describe("NarrativeSurfaceView", () => {
 			mode: "NONSENSE_MODE",
 		} as unknown as CaptureReliabilityStatus;
 
-		render(
-			<NarrativeSurfaceView
-				mode="live"
-				repoState={createRepoState()}
-				captureReliabilityStatus={unknownModeReliabilityStatus}
-				onModeChange={vi.fn()}
-				onOpenRepo={vi.fn()}
-				onImportSession={vi.fn()}
-			/>,
-		);
+		renderSurface("hygiene", unknownModeReliabilityStatus);
 
 		expect(
 			screen.getByLabelText("Capture reliability degraded"),
 		).toBeInTheDocument();
-		expect(screen.getAllByText("Capture degraded").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("Degraded capture").length).toBeGreaterThan(0);
 	});
 
 	it("renders derived-summary authority cues for OTEL_ONLY capture reliability", () => {
-		render(
-			<NarrativeSurfaceView
-				mode="live"
-				repoState={createRepoState()}
-				captureReliabilityStatus={createCaptureReliabilityStatus({
-					mode: "OTEL_ONLY",
-					otelBaselineHealthy: true,
-				})}
-				onModeChange={vi.fn()}
-				onOpenRepo={vi.fn()}
-				onImportSession={vi.fn()}
-			/>,
+		renderSurface(
+			"hygiene",
+			createCaptureReliabilityStatus({
+				mode: "OTEL_ONLY",
+				otelBaselineHealthy: true,
+			}),
 		);
 
 		const derivedCues = document.querySelectorAll(
 			'[data-authority-tier="derived_summary"]',
 		);
 		expect(derivedCues.length).toBeGreaterThan(0);
-
-		const captureModeMetric = screen.getByText("Capture mode");
-		const captureModeCard = captureModeMetric.closest("article");
-		expect(captureModeCard).toBeInstanceOf(HTMLElement);
-		if (!(captureModeCard instanceof HTMLElement)) {
-			throw new Error(
-				"Expected capture mode metric container to be an HTMLElement",
-			);
-		}
-		expect(captureModeCard).toHaveAttribute(
-			"data-authority-tier",
-			"derived_summary",
-		);
-		expect(captureModeCard).toHaveAttribute("data-authority-label", "OTEL");
-
-		const derivedLabelElements = captureModeCard.querySelectorAll(
-			'[data-authority-short-label="Derived"]',
-		);
-		expect(derivedLabelElements.length).toBeGreaterThan(0);
-	});
-
-	it("includes per-element authority cues on surface sections", () => {
-		render(
-			<NarrativeSurfaceView
-				mode="live"
-				repoState={createRepoState()}
-				captureReliabilityStatus={createCaptureReliabilityStatus()}
-				onModeChange={vi.fn()}
-				onOpenRepo={vi.fn()}
-				onImportSession={vi.fn()}
-			/>,
-		);
-
-		const cueElements = document.querySelectorAll(
-			"[data-authority-tier][data-authority-label]",
-		);
-		expect(cueElements.length).toBeGreaterThan(0);
-
-		const cueBadges = document.querySelectorAll("[data-authority-short-label]");
-		expect(cueBadges.length).toBe(cueElements.length);
-
-		const allowed = new Set([
-			"live_repo",
-			"live_capture",
-			"derived_summary",
-			"static_scaffold",
-			"system_signal",
-		]);
-		const shortLabelByTier: Record<string, string> = {
-			live_repo: "Repo",
-			live_capture: "Live",
-			derived_summary: "Derived",
-			static_scaffold: "Mock",
-			system_signal: "Signal",
-		};
-
-		cueElements.forEach((el) => {
-			const tier = el.getAttribute("data-authority-tier");
-			const label = el.getAttribute("data-authority-label");
-
-			expect(tier).toBeTruthy();
-			expect(label).toBeTruthy();
-			expect(allowed.has(tier as string)).toBe(true);
-			if (label === null) {
-				throw new Error(
-					"Expected data-authority-label attribute to be present",
-				);
-			}
-			const expectedShortLabel =
-				shortLabelByTier[tier as keyof typeof shortLabelByTier];
-			if (expectedShortLabel === undefined) {
-				throw new Error(`Unknown authority tier: ${tier}`);
-			}
-			const cue = el.querySelector("[data-authority-short-label]");
-			expect(cue).toBeTruthy();
-			if (label && label.length > 0) {
-				expect(cue).toHaveTextContent(label);
-			} else {
-				expect(cue).toHaveTextContent(expectedShortLabel);
-			}
-		});
 	});
 });

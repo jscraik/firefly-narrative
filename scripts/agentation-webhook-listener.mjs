@@ -5,9 +5,17 @@ import { appendFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 const port = Number(process.env.PORT || 8787);
+const host = process.env.HOST || '127.0.0.1';
+const webhookSecret = process.env.WEBHOOK_SECRET;
+const maxBodyBytes = Number(process.env.MAX_BODY_BYTES || 1024 * 1024);
 const outputPath = process.env.OUTPUT_FILE
   ? resolve(process.cwd(), process.env.OUTPUT_FILE)
   : resolve(process.cwd(), 'tmp/agentation-webhooks.ndjson');
+
+if (!webhookSecret) {
+  console.error('Missing WEBHOOK_SECRET. Refusing to start unauthenticated webhook listener.');
+  process.exit(1);
+}
 
 mkdirSync(dirname(outputPath), { recursive: true });
 
@@ -37,12 +45,34 @@ const server = createServer((req, res) => {
     return;
   }
 
+  const requestSecret = req.headers['x-webhook-secret'];
+  if (requestSecret !== webhookSecret) {
+    sendJson(res, 401, { ok: false, error: 'Unauthorized.' });
+    return;
+  }
+
   let raw = '';
+  let requestSize = 0;
+  let bodyTooLarge = false;
+
   req.on('data', (chunk) => {
+    if (bodyTooLarge) return;
+    requestSize += chunk.length;
+    if (requestSize > maxBodyBytes) {
+      bodyTooLarge = true;
+      sendJson(res, 413, {
+        ok: false,
+        error: `Payload too large. Max size is ${maxBodyBytes} bytes.`
+      });
+      req.destroy();
+      return;
+    }
     raw += chunk.toString();
   });
 
   req.on('end', () => {
+    if (bodyTooLarge) return;
+
     try {
       const parsed = raw ? JSON.parse(raw) : {};
       const row = {
@@ -64,16 +94,19 @@ const server = createServer((req, res) => {
       );
 
       sendJson(res, 200, { ok: true });
-    } catch (error) {
+    } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: Webhook processing failures are intentionally surfaced.
+      console.error('[agentation-webhook-listener] Request processing failed:', err);
       sendJson(res, 400, {
         ok: false,
-        error: `Invalid JSON: ${error instanceof Error ? error.message : String(error)}`
+        error: `Invalid JSON: ${err instanceof Error ? err.message : String(err)}`
       });
     }
   });
 });
 
-server.listen(port, () => {
-  console.log(`Agentation webhook listener running on http://localhost:${port}`);
+server.listen(port, host, () => {
+  console.log(`Agentation webhook listener running on http://${host}:${port}`);
   console.log(`Writing events to ${outputPath}`);
+  console.log(`Max payload size ${maxBodyBytes} bytes`);
 });

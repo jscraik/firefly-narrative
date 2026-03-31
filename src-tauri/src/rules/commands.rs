@@ -7,6 +7,23 @@ use std::{
     path::{Path, PathBuf},
 };
 
+const SOURCE_EXTENSIONS: &[&str] = &[
+    "rs", "ts", "tsx", "js", "jsx", "py", "go", "java", "c", "cpp", "h", "hpp", "cs", "swift",
+    "kt", "rb", "php", "sh", "sql", "md", "json", "yaml", "yml", "toml",
+];
+
+/// Canonicalize `path` and return it only if it is inside `repo_root`.
+/// Returns `None` if the path is a symlink escaping the repo, cannot be
+/// canonicalized, or resolves to a location outside the canonical repo root.
+fn canonicalize_in_repo(path: &Path, repo_root: &Path) -> Option<PathBuf> {
+    let canonical_path = path.canonicalize().ok()?;
+    if canonical_path.starts_with(repo_root) {
+        Some(canonical_path)
+    } else {
+        None
+    }
+}
+
 /// Load rules from a rule set JSON file
 fn load_rules_from_json(path: &Path) -> Result<RuleSet, String> {
     let content = fs::read_to_string(path)
@@ -114,14 +131,19 @@ fn scan_file_for_violations(
 ) -> Vec<super::RuleViolation> {
     let mut violations = vec![];
 
-    let relative_path = file_path
+    let canonical_path = match canonicalize_in_repo(file_path, repo_root) {
+        Some(path) => path,
+        None => return violations,
+    };
+
+    let relative_path = canonical_path
         .strip_prefix(repo_root)
         .ok()
         .and_then(|p| p.to_str())
-        .unwrap_or(file_path.to_str().unwrap_or(""))
+        .unwrap_or(canonical_path.to_str().unwrap_or(""))
         .replace('\\', "/");
 
-    let content = match fs::read_to_string(file_path) {
+    let content = match fs::read_to_string(&canonical_path) {
         Ok(c) => c,
         Err(_) => return violations, // Skip files we can't read
     };
@@ -164,10 +186,21 @@ fn scan_file_for_violations(
 fn find_source_files(repo_root: &Path) -> Vec<PathBuf> {
     let mut files = vec![];
 
-    fn visit_dir(dir: &Path, files: &mut Vec<PathBuf>) {
+    fn visit_dir(dir: &Path, repo_root: &Path, files: &mut Vec<PathBuf>) {
         if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.filter_map(|e| e.ok()) {
                 let path = entry.path();
+
+                // Use lstat so we never follow symlinks.
+                let metadata = match fs::symlink_metadata(&path) {
+                    Ok(m) => m,
+                    Err(_) => continue,
+                };
+
+                // Reject symlinks unconditionally — they can escape the repo boundary.
+                if metadata.file_type().is_symlink() {
+                    continue;
+                }
 
                 // Skip .narrative, .git, node_modules, target, etc.
                 if path
@@ -186,18 +219,19 @@ fn find_source_files(repo_root: &Path) -> Vec<PathBuf> {
                     continue;
                 }
 
-                if path.is_dir() {
-                    visit_dir(&path, files);
-                } else if path.is_file() {
-                    // Only include source files with common extensions
-                    if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
-                        const SOURCE_EXTENSIONS: &[&str] = &[
-                            "rs", "ts", "tsx", "js", "jsx", "py", "go", "java", "c", "cpp", "h",
-                            "hpp", "cs", "swift", "kt", "rb", "php", "sh", "sql", "md", "json",
-                            "yaml", "yml", "toml",
-                        ];
-                        if SOURCE_EXTENSIONS.contains(&ext) {
-                            files.push(path);
+                if metadata.is_dir() {
+                    if let Some(canonical_dir) = canonicalize_in_repo(&path, repo_root) {
+                        visit_dir(&canonical_dir, repo_root, files);
+                    }
+                } else if metadata.is_file() {
+                    if path
+                        .extension()
+                        .and_then(|s| s.to_str())
+                        .map(|ext| SOURCE_EXTENSIONS.contains(&ext))
+                        .unwrap_or(false)
+                    {
+                        if let Some(canonical_file) = canonicalize_in_repo(&path, repo_root) {
+                            files.push(canonical_file);
                         }
                     }
                 }
@@ -205,7 +239,7 @@ fn find_source_files(repo_root: &Path) -> Vec<PathBuf> {
         }
     }
 
-    visit_dir(repo_root, &mut files);
+    visit_dir(repo_root, repo_root, &mut files);
     files
 }
 
@@ -217,6 +251,15 @@ pub async fn review_repo(repo_root: String) -> Result<ReviewResult, String> {
     if !repo_path.exists() {
         return Err(format!("Repository path does not exist: {}", repo_root));
     }
+
+    // Canonicalize the repo root so all downstream boundary checks use
+    // a resolved path with no symlink components.
+    let repo_path = repo_path.canonicalize().map_err(|e| {
+        format!(
+            "Failed to canonicalize repository path {}: {}",
+            repo_root, e
+        )
+    })?;
 
     // Load all rules
     let rules = load_all_rules(&repo_path)?;
@@ -399,4 +442,90 @@ pub async fn create_default_rules(repo_root: String) -> Result<String, String> {
         "Created default rules at {}",
         default_rules_path.display()
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{canonicalize_in_repo, find_source_files};
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn canonicalize_in_repo_accepts_paths_inside_repo() {
+        let temp = tempdir().unwrap();
+        let repo_root = temp.path().join("repo");
+        fs::create_dir_all(&repo_root).unwrap();
+
+        let repo_file = repo_root.join("main.rs");
+        fs::write(&repo_file, "fn main() {}\n").unwrap();
+
+        let canonical_repo = repo_root.canonicalize().unwrap();
+        assert_eq!(
+            canonicalize_in_repo(&repo_file, &canonical_repo),
+            Some(repo_file.canonicalize().unwrap())
+        );
+    }
+
+    #[test]
+    fn canonicalize_in_repo_rejects_paths_outside_repo() {
+        let temp = tempdir().unwrap();
+        let repo_root = temp.path().join("repo");
+        let outside_root = temp.path().join("outside");
+        fs::create_dir_all(&repo_root).unwrap();
+        fs::create_dir_all(&outside_root).unwrap();
+
+        let outside_file = outside_root.join("secret.md");
+        fs::write(&outside_file, "super secret\n").unwrap();
+
+        let canonical_repo = repo_root.canonicalize().unwrap();
+        assert_eq!(canonicalize_in_repo(&outside_file, &canonical_repo), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn find_source_files_skips_symlinked_files() {
+        use std::os::unix::fs::symlink;
+
+        let temp = tempdir().unwrap();
+        let repo_root = temp.path().join("repo");
+        let outside_root = temp.path().join("outside");
+        fs::create_dir_all(&repo_root).unwrap();
+        fs::create_dir_all(&outside_root).unwrap();
+
+        let repo_file = repo_root.join("main.rs");
+        fs::write(&repo_file, "fn main() {}\n").unwrap();
+
+        let outside_file = outside_root.join("secret.md");
+        fs::write(&outside_file, "super secret\n").unwrap();
+        symlink(&outside_file, repo_root.join("linked-secret.md")).unwrap();
+
+        let canonical_repo = repo_root.canonicalize().unwrap();
+        let files = find_source_files(&canonical_repo);
+
+        assert_eq!(files, vec![repo_file.canonicalize().unwrap()]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn find_source_files_skips_symlinked_directories() {
+        use std::os::unix::fs::symlink;
+
+        let temp = tempdir().unwrap();
+        let repo_root = temp.path().join("repo");
+        let outside_root = temp.path().join("outside");
+        fs::create_dir_all(&repo_root).unwrap();
+        fs::create_dir_all(&outside_root).unwrap();
+
+        let repo_file = repo_root.join("main.rs");
+        fs::write(&repo_file, "fn main() {}\n").unwrap();
+
+        let outside_file = outside_root.join("secret.md");
+        fs::write(&outside_file, "super secret\n").unwrap();
+        symlink(&outside_root, repo_root.join("linked-dir")).unwrap();
+
+        let canonical_repo = repo_root.canonicalize().unwrap();
+        let files = find_source_files(&canonical_repo);
+
+        assert_eq!(files, vec![repo_file.canonicalize().unwrap()]);
+    }
 }

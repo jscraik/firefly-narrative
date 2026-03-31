@@ -85,8 +85,9 @@ export function App() {
 					setAgentationComponent(() => mod.Agentation);
 				}
 			})
-			.catch((_error) => {
-				/* agentation module unavailable in this environment */
+			.catch((err) => {
+				// biome-ignore lint/suspicious/noConsole: Module load failures must remain observable for debugging.
+				console.error("[App] Agentation module unavailable:", err);
 			});
 
 		return () => {

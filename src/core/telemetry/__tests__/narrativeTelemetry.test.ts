@@ -146,6 +146,31 @@ describe("narrativeTelemetry", () => {
 		dispatchSpy.mockRestore();
 	});
 
+	it("dispatches branch-scope reset telemetry with structured reset keys", () => {
+		const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+
+		trackNarrativeEvent("branch_scope_reset_occurred", {
+			branchScope: "r1:b123",
+			oldBranchScopeKey: "r1:bold",
+			newBranchScopeKey: "r1:bnew",
+			clearedStateKeys: ["detailLevel", "askWhyState"],
+			staleAsyncDropped: true,
+		});
+
+		expect(dispatchSpy).toHaveBeenCalledTimes(1);
+		const event = dispatchSpy.mock.calls[0]?.[0] as CustomEvent;
+		expect(event.detail.event).toBe("branch_scope_reset_occurred");
+		expect(event.detail.payload.oldBranchScopeKey).toBe("r1:bold");
+		expect(event.detail.payload.newBranchScopeKey).toBe("r1:bnew");
+		expect(event.detail.payload.clearedStateKeys).toEqual([
+			"detailLevel",
+			"askWhyState",
+		]);
+		expect(event.detail.payload.staleAsyncDropped).toBe(true);
+
+		dispatchSpy.mockRestore();
+	});
+
 	it("drops first-win flow events that omit attemptId", () => {
 		const dispatchSpy = vi.spyOn(window, "dispatchEvent");
 

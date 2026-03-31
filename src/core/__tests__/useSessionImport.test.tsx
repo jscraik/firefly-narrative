@@ -450,7 +450,7 @@ describe("useSessionImport", () => {
 			mockExportSessionLinkNote.mockRejectedValue(new Error("Export failed"));
 			mockRefreshSessionBadges.mockResolvedValue(undefined);
 
-			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+			const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
 				/* suppress console output in test */
 			});
 
@@ -867,7 +867,7 @@ describe("useSessionImport", () => {
 			mockExportSessionLinkNote.mockRejectedValue(new Error("Export failed"));
 			mockRefreshSessionBadges.mockResolvedValue(undefined);
 
-			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+			const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
 				/* suppress console output in test */
 			});
 

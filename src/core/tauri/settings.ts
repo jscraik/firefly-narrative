@@ -77,7 +77,12 @@ export async function getTraceSettings(): Promise<TraceSettings> {
 			const stored = storage.getItem(TRACE_SIGNAL_ENABLED_KEY);
 			const enabled = stored === null ? true : stored === "true";
 			return { enabled };
-		} catch (_error) {
+		} catch (err) {
+			// biome-ignore lint/suspicious/noConsole: Settings read failures must be observable for debugging.
+			console.error(
+				"[settings] Failed to get trace settings from localStorage:",
+				err,
+			);
 			return { enabled: true }; // Default on error
 		}
 	}

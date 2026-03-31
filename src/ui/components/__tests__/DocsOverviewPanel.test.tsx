@@ -43,12 +43,19 @@ vi.mock("lucide-react", () => {
 	};
 });
 
-vi.mock("react-markdown", () => ({
-	default: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
-}));
+const reactMarkdownSpy = vi.hoisted(() => vi.fn());
 
-vi.mock("rehype-raw", () => ({
-	default: () => null,
+vi.mock("react-markdown", () => ({
+	default: ({
+		children,
+		rehypePlugins,
+	}: {
+		children?: ReactNode;
+		rehypePlugins?: unknown;
+	}) => {
+		reactMarkdownSpy(rehypePlugins);
+		return <div>{children}</div>;
+	},
 }));
 
 vi.mock("../MermaidDiagram", () => ({
@@ -252,6 +259,32 @@ describe("DocsOverviewPanel", () => {
 
 		expect(screen.queryByText(/Old content/)).not.toBeInTheDocument();
 		expect(screen.queryByText("a.md")).not.toBeInTheDocument();
+	});
+
+	it("does not enable raw HTML processing for repo-provided markdown", async () => {
+		mockListNarrativeFiles.mockResolvedValue(["unsafe.md"]);
+		mockReadNarrativeFile.mockImplementation(
+			async (_root: string, path: string) => {
+				if (path === "unsafe.md")
+					return `# Unsafe\n\n<div onclick="alert(1)">x</div>`;
+				return "";
+			},
+		);
+
+		render(<DocsOverviewPanel repoRoot="/repo" />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Unsafe")).toBeInTheDocument();
+		});
+
+		fireEvent.click(screen.getByText("Unsafe"));
+
+		await waitFor(() => {
+			expect(mockReadNarrativeFile).toHaveBeenCalledWith("/repo", "unsafe.md");
+		});
+
+		// rehypePlugins must be undefined — raw HTML must not be enabled
+		expect(reactMarkdownSpy).toHaveBeenLastCalledWith(undefined);
 	});
 
 	it("writes starter doc with real newlines (not escaped literal sequences)", async () => {

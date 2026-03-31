@@ -63,7 +63,7 @@ export function TranscriptLensView({
 	const _repoPath = getRepoPath(repoState);
 	const trustDescriptor = describeSurfaceTrust(captureReliabilityStatus);
 	const _nextMode =
-		trustDescriptor.trustState === "healthy" ? "repo" : "status";
+		trustDescriptor.trustState === "healthy" ? "repo" : "hygiene";
 	const _nextLabel =
 		trustDescriptor.trustState === "healthy"
 			? "Verify in repo evidence"
@@ -129,7 +129,7 @@ export function TranscriptLensView({
 				<div className="mx-auto grid max-w-[100rem] gap-5 xl:grid-cols-[0.8fr_1.22fr_0.72fr]">
 					<SectionHeader
 						title={viewModel.title}
-						description="{viewModel.subtitle}"
+						description={viewModel.subtitle}
 						badge={<DashboardTrustBadge trustState={viewModel.trustState} />}
 					/>
 
