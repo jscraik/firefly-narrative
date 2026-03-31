@@ -22,8 +22,8 @@
     "timeoutAction": "fail",
     "requiredChecks": [
       "security-scan",
-      "dependency-review",
-      "actions-pinning"
+      "dependency-scan",
+      "orb-pinning"
     ],
     "enforceReviewerIndependence": true
   },
@@ -32,8 +32,8 @@
       "pr-template",
       "linear-gate",
       "risk-policy-gate",
-      "dependency-review",
-      "actions-pinning",
+      "dependency-scan",
+      "orb-pinning",
       "consistency-drift-health",
       "docs-gate",
       "lint",
@@ -627,8 +627,17 @@
       "contents:read",
       "issues:write"
     ],
-    "repoAllowlist": [],
-    "branchAllowlist": [],
+    "repoAllowlist": [
+      "jscraik/trace-narrative"
+    ],
+    "branchAllowlist": [
+      "feature/*",
+      "fix/*",
+      "chore/*",
+      "refactor/*",
+      "codex/*",
+      "release-please--**"
+    ],
     "protectedBranchDenylist": [
       "main",
       "master",
@@ -653,9 +662,9 @@
     }
   },
   "ciProviderPolicy": {
-    "activeProvider": "github-actions",
-    "mode": "shadow",
-    "migrationStage": "dual-provider",
+    "activeProvider": "circleci",
+    "mode": "required",
+    "migrationStage": "circleci-only",
     "transitionStatusArtifactPath": ".harness/ci-provider-transition-status.json",
     "authorityConfigPath": "harness.contract.json",
     "requiredCheckManifestPath": ".harness/ci-required-checks.json",

@@ -1,7 +1,7 @@
 {
   "name": "trace-narrative",
   "private": true,
-  "version": "0.19.1",
+  "version": "0.19.4",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -64,7 +64,7 @@
     "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e"
   },
   "dependencies": {
-    "@brainwav/coding-harness": "^0.7.1",
+    "@brainwav/coding-harness": "^0.8.2",
     "@design-studio/runtime": "file:vendor/design-studio/design-studio-runtime-2.0.0.tgz",
     "@design-studio/tokens": "file:vendor/design-studio/design-studio-tokens-2.0.0.tgz",
     "@design-studio/ui": "file:vendor/design-studio/design-studio-ui-0.0.1.tgz",
@@ -134,14 +134,19 @@
       "@design-studio/runtime": "file:vendor/design-studio/design-studio-runtime-2.0.0.tgz",
       "@design-studio/tokens": "file:vendor/design-studio/design-studio-tokens-2.0.0.tgz",
       "basic-ftp": "^5.2.0",
+      "brace-expansion": "^5.0.5",
       "@hono/node-server": "1.19.11",
       "hono": "4.12.7",
       "express-rate-limit": "^8.2.2",
+      "express@4.22.1>path-to-regexp": "0.1.13",
       "minimatch": "^10.2.3",
+      "path-to-regexp@8.3.0": "^8.4.0",
+      "picomatch": "^4.0.4",
       "rollup": "^4.59.0",
       "lodash": "^4.17.23",
       "tmp": "^0.2.4",
       "undici": ">=7.24.0",
+      "yaml": "^2.8.3",
       "yauzl": ">=3.2.1"
     }
   }

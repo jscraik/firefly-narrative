@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.19.4](https://github.com/jscraik/trace-narrative/compare/trace-narrative-v0.19.3...trace-narrative-v0.19.4) (2026-03-28)
+
+
+### Bug Fixes
+
+* **preflight:** modernize codex preflight workflow ([#94](https://github.com/jscraik/trace-narrative/issues/94)) ([1d8272e](https://github.com/jscraik/trace-narrative/commit/1d8272e5b7dbafaa05fe8a44435bf18e0ee0489b))
+
+## [0.19.3](https://github.com/jscraik/trace-narrative/compare/trace-narrative-v0.19.2...trace-narrative-v0.19.3) (2026-03-23)
+
+
+### Bug Fixes
+
+* **ci:** correct circleci schema — executors not defaults anchor ([9311a90](https://github.com/jscraik/trace-narrative/commit/9311a9069a8022bfa3a1fd5bc7780107cd3e2571))
+
+## [0.19.2](https://github.com/jscraik/trace-narrative/compare/trace-narrative-v0.19.1...trace-narrative-v0.19.2) (2026-03-19)
+
+
+### Bug Fixes
+
+* resolve Biome warnings, contract parity failures, and test timeouts ([#85](https://github.com/jscraik/trace-narrative/issues/85)) ([55d1cf6](https://github.com/jscraik/trace-narrative/commit/55d1cf6c32955f42556c860d5c35023790da5e99))
+
 ## [0.19.1](https://github.com/jscraik/trace-narrative/compare/trace-narrative-v0.19.0...trace-narrative-v0.19.1) (2026-03-13)
 
 

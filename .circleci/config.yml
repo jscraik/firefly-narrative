@@ -1,0 +1,126 @@
+version: 2.1
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Executors
+# ─────────────────────────────────────────────────────────────────────────────
+executors:
+  node:
+    docker:
+      - image: cimg/node:24.13
+    resource_class: medium
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Reusable commands
+# ─────────────────────────────────────────────────────────────────────────────
+commands:
+  setup-node:
+    description: "Checkout, verify pnpm, restore cache, install deps"
+    steps:
+      - checkout
+      - run:
+          name: Ensure pnpm available
+          command: |
+            if ! command -v pnpm > /dev/null 2>&1; then
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              npm install --global pnpm@10.0.0
+            fi
+            echo "pnpm $(pnpm --version)"
+      - run:
+          name: Configure private registry auth
+          command: |
+            [ -n "${BRAINWAV_NPM_TOKEN:-}" ] && \
+              echo "//registry.brainwav.io/:_authToken=${BRAINWAV_NPM_TOKEN}" >> ~/.npmrc || true
+            [ -n "${NPM_TOKEN:-}" ] && \
+              echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc || true
+      - restore_cache:
+          keys:
+            - pnpm-store-v1-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-store-v1-
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile
+      - save_cache:
+          key: pnpm-store-v1-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.local/share/pnpm/store
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Jobs — each job name maps to a GitHub check run name
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  # Required check: "lint"
+  lint:
+    executor: node
+    steps:
+      - setup-node
+      - run:
+          name: Lint
+          command: pnpm lint
+
+  # Required check: "typecheck"
+  typecheck:
+    executor: node
+    steps:
+      - setup-node
+      - run:
+          name: Typecheck
+          command: pnpm typecheck
+
+  # Required check: "test"
+  test:
+    executor: node
+    steps:
+      - setup-node
+      - run:
+          name: Test
+          command: pnpm test
+
+  # Required check: "audit"
+  audit:
+    executor: node
+    steps:
+      - setup-node
+      - run:
+          name: Audit
+          command: pnpm audit
+
+  # Required check: "check" — policy bundle (design-guidance + docs-lint)
+  check:
+    executor: node
+    steps:
+      - setup-node
+      - run:
+          name: Policy bundle check
+          command: pnpm check
+
+  # Required check: "memory" — harness memory-gate validation
+  memory:
+    executor: node
+    steps:
+      - setup-node
+      - run:
+          name: Memory gate
+          command: |
+            bash scripts/harness-cli.sh memory-gate \
+              --memory memory.json \
+              --forjamie README.md \
+              --metrics /tmp/harness-memory-metrics.json || true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Workflows
+# ─────────────────────────────────────────────────────────────────────────────
+workflows:
+  pr-pipeline:
+    jobs:
+      - lint
+      - typecheck
+      - test
+      - audit
+      - memory
+      - check:
+          requires:
+            - lint
+            - typecheck
+            - test
+            - audit
