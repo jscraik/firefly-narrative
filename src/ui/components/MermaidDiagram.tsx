@@ -72,6 +72,8 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
 				containerRef.current.appendChild(sanitized);
 				setError("");
 			} catch (_err) {
+				// biome-ignore lint/suspicious/noConsole: Diagram render failures are intentionally surfaced.
+				console.warn("[MermaidDiagram] Failed to render diagram:", _err);
 				setError("Failed to render diagram");
 				if (containerRef.current) {
 					containerRef.current.replaceChildren();
