@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.20.0](https://github.com/jscraik/trace-narrative/compare/trace-narrative-v0.19.4...trace-narrative-v0.20.0) (2026-03-31)
+
+
+### Features
+
+* finalize six-lane shell navigation ([#97](https://github.com/jscraik/trace-narrative/issues/97)) ([a9f1d26](https://github.com/jscraik/trace-narrative/commit/a9f1d26a858d325dc7a5e70947092175de2256bd))
+
+
+### Bug Fixes
+
+* **security:** restrict sidecar lookup to trusted locations ([#98](https://github.com/jscraik/trace-narrative/issues/98)) ([76c9471](https://github.com/jscraik/trace-narrative/commit/76c94714fa4aee249afdfdcc2379bb127ec8e29a))
+
 ## [0.19.4](https://github.com/jscraik/trace-narrative/compare/trace-narrative-v0.19.3...trace-narrative-v0.19.4) (2026-03-28)
 
 
