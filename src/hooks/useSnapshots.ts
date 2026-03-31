@@ -72,7 +72,7 @@ export function useSnapshots(params: {
 			});
 		} catch (err) {
 			// biome-ignore lint/suspicious/noConsole: Background snapshot refresh failures are intentionally surfaced.
-			console.warn("[useSnapshots] Failed to refresh snapshots:", err);
+			console.error("[useSnapshots] Failed to refresh snapshots:", err);
 		}
 	}, [repoRoot, setRepoState]);
 

@@ -487,7 +487,8 @@ function startWebhookServer({ repoUrl, branch, verifyCmd, port = 7331, host = DE
       res.writeHead(200);
       res.end('ok');
     } catch (error) {
-      log(`Webhook error: ${error.message}`);
+      // biome-ignore lint/suspicious/noConsole: Intentionally surfacing webhook errors for observability.
+      console.error(`Webhook error: ${error.message}`);
       res.writeHead(400);
       res.end(`invalid payload: ${error.message}`);
     }

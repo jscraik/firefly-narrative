@@ -216,7 +216,7 @@ export function useSessionImport({
 				if (isStaleRequest()) return;
 			} catch (e) {
 				// biome-ignore lint/suspicious/noConsole: Best-effort export failures are intentionally surfaced.
-				console.warn("[session.import.export_link_note_failed]", e);
+				console.error("[session.import.export_link_note_failed]", e);
 				if (isStaleRequest()) return;
 			}
 
@@ -325,7 +325,7 @@ export function useSessionImport({
 				if (isStaleRequest()) return;
 			} catch (e) {
 				// biome-ignore lint/suspicious/noConsole: Best-effort export failures are intentionally surfaced.
-				console.warn("[session.import.export_link_note_failed]", e);
+				console.error("[session.import.export_link_note_failed]", e);
 				if (isStaleRequest()) return;
 			}
 
@@ -406,7 +406,7 @@ export function useSessionImport({
 						if (isStaleRequest()) return;
 					} catch (error) {
 						// biome-ignore lint/suspicious/noConsole: Best-effort export failures are intentionally surfaced.
-						console.warn("[session.unlink.export_link_note_failed]", error);
+						console.error("[session.unlink.export_link_note_failed]", error);
 						if (isStaleRequest()) return;
 					}
 				}

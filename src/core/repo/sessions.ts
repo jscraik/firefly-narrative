@@ -140,7 +140,7 @@ async function loadSessionExcerptsFromDisk(
 		return excerpts;
 	} catch (err) {
 		// biome-ignore lint/suspicious/noConsole: Best-effort session loading failures must remain observable.
-		console.warn("[sessions] Failed to load sessions from disk:", err);
+		console.error("[sessions] Failed to load sessions from disk:", err);
 		return [];
 	}
 }
@@ -159,7 +159,7 @@ async function loadSessionExcerptsFromDb(
 		);
 	} catch (err) {
 		// biome-ignore lint/suspicious/noConsole: Best-effort session loading failures must remain observable.
-		console.warn("[sessions] Failed to load sessions from DB:", err);
+		console.error("[sessions] Failed to load sessions from DB:", err);
 		return [];
 	}
 }

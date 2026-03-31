@@ -236,7 +236,7 @@ async function appendNarrativeAuditEvent(args: {
 		);
 	} catch (err) {
 		// biome-ignore lint/suspicious/noConsole: Best-effort audit event logging is non-fatal but must remain observable.
-		console.warn("[narrativeFeedback] Failed to append audit event:", err);
+		console.error("[narrativeFeedback] Failed to append audit event:", err);
 	}
 }
 
