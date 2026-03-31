@@ -56,7 +56,11 @@ const MAX_FULL_REDACT_BYTES = 2 * 1024 * 1024; // 2 MB
 
 /**
  * Linear O(n) scanner for PEM private key blocks. Replaces the potentially
- * catastrophic `[\s\S]*?` regex with plain `indexOf` traversal.
+ * catastrophic `^[\s\S]*?$` regex with plain `indexOf` traversal and builds
+ * the result using an array of segments joined once at the end.
+ *
+ * Optimized for large inputs: uses a segment buffer and final join to avoid
+ * repeated string concatenation that would make this O(n²).
  */
 function redactPrivateKeyBlocksLinear(input: string): {
 	redacted: string;
@@ -97,14 +101,21 @@ function redactPrivateKeyBlocksLinear(input: string): {
 		}
 
 		const blockEnd = endSuffixIdx + PRIVATE_SUFFIX.length;
-		segments.push(input.slice(cursor, beginIdx), replacement);
+		// Add segment before the block
+		if (beginIdx > cursor) {
+			segments.push(input.slice(cursor, beginIdx));
+		}
+		segments.push(replacement);
 		count += 1;
 		cursor = blockEnd;
 	}
 
 	if (count === 0) return { redacted: input, count: 0 };
 
-	segments.push(input.slice(cursor));
+	// Add remaining segment after last block
+	if (cursor < input.length) {
+		segments.push(input.slice(cursor));
+	}
 	return { redacted: segments.join(""), count };
 }
 

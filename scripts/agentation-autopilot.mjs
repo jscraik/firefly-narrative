@@ -25,7 +25,7 @@ const IMPLEMENT_COMMAND = (process.env.AGENTATION_IMPLEMENT_COMMAND ?? '').trim(
 const REVIEW_COMMAND = (process.env.AGENTATION_REVIEW_COMMAND ?? '').trim();
 const CRITIQUE_COMMAND = (process.env.AGENTATION_CRITIQUE_COMMAND ?? '').trim();
 const AUTH_TOKEN = (process.env.AGENTATION_AUTH_TOKEN ?? '').trim();
-const MAX_BODY_BYTES = Number(process.env.AGENTATION_MAX_BODY_BYTES ?? 1_048_576); // 1 MiB
+const MAX_BODY_BYTES = Number(process.env.AGENTATION_MAX_BODY_BYTES || 1_048_576); // 1 MiB
 const IMPLEMENT_TIMEOUT_MS = Number(process.env.CODEX_IMPLEMENTATION_TIMEOUT_MS ?? 300000);
 const REVIEW_TIMEOUT_MS = Number(process.env.CODEX_REVIEW_TIMEOUT_MS ?? 180000);
 
@@ -350,9 +350,17 @@ if (!AUTH_TOKEN) {
   process.exit(1);
 }
 
-if (!Number.isFinite(MAX_BODY_BYTES) || MAX_BODY_BYTES <= 0) {
-  console.error('[agentation-autopilot] AGENTATION_MAX_BODY_BYTES must be a positive number');
-  process.exit(1);
+// Validate MAX_BODY_BYTES early to prevent NaN bypass of payload limits
+const rawMaxBodyBytes = process.env.AGENTATION_MAX_BODY_BYTES;
+if (rawMaxBodyBytes !== undefined && rawMaxBodyBytes !== '') {
+  const parsed = Number(rawMaxBodyBytes);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    // biome-ignore lint/suspicious/noConsole: Startup validation error must be surfaced.
+    console.error(
+      `[agentation-autopilot] AGENTATION_MAX_BODY_BYTES must be a positive finite number (got: ${rawMaxBodyBytes})`
+    );
+    process.exit(1);
+  }
 }
 
 const server = http.createServer(async (req, res) => {
