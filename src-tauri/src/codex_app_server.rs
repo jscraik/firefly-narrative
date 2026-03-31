@@ -4,6 +4,7 @@ use crate::recovery_checkpoint::{
     upsert_recovery_checkpoint, RecoveryCheckpoint, TRUST_PAUSE_REASON_HYDRATE_FAILED,
     TRUST_PAUSE_REASON_SNAPSHOT_TIMEOUT, TRUST_PAUSE_REASON_THREAD_MISMATCH,
 };
+use crate::secret_store;
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -1374,6 +1375,21 @@ fn spawn_sidecar_process(path: &Path) -> Result<SidecarProcess, String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
+    // Inject OTLP API key from keychain so the placeholder in config resolves.
+    match secret_store::get_otlp_api_key() {
+        Ok(Some(key)) => {
+            command.env("NARRATIVE_OTEL_API_KEY", key);
+        }
+        Ok(None) => {
+            // No key configured; Codex may fail OTLP auth if the placeholder is used.
+            // This is non-fatal here to allow local-only usage.
+        }
+        Err(err) => {
+            // Log but don't block startup; keychain errors shouldn't crash the sidecar.
+            eprintln!("[codex_app_server] Failed to retrieve OTLP API key: {err}");
+        }
+    }
+
     let child = command
         .spawn()
         .map_err(|e| format!("Failed to spawn Codex App Server sidecar: {e}"))?;
@@ -2712,16 +2728,14 @@ fn spawn_monitor_thread(
                 }
 
                 if let Some(path) = restart_path {
-                    if sidecar_is_production_mode() || !sidecar_override_matches(&path) {
-                        if let Err(error) = verify_sidecar_manifest_for_path(&path) {
-                            let mut runtime = match state.lock() {
-                                Ok(guard) => guard,
-                                Err(_) => break,
-                            };
-                            register_start_failure(&mut runtime, error, "restart_path_untrusted");
-                            emit_status(&app_handle, &runtime.status);
-                            continue;
-                        }
+                    if let Err(error) = verify_sidecar_manifest_for_path(&path) {
+                        let mut runtime = match state.lock() {
+                            Ok(guard) => guard,
+                            Err(_) => break,
+                        };
+                        register_start_failure(&mut runtime, error, "restart_path_untrusted");
+                        emit_status(&app_handle, &runtime.status);
+                        continue;
                     }
                     match spawn_sidecar_process(&path) {
                         Ok(mut sidecar) => {
