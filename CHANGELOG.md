@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.1](https://github.com/jscraik/trace-narrative/compare/trace-narrative-v0.20.0...trace-narrative-v0.20.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* **security:** trust bypass, OTLP key handling, silent error fixes ([#100](https://github.com/jscraik/trace-narrative/issues/100)) ([1d71d7b](https://github.com/jscraik/trace-narrative/commit/1d71d7bda26c5d6953f795ea7a10945b9d491e3e))
+
 ## [0.20.0](https://github.com/jscraik/trace-narrative/compare/trace-narrative-v0.19.4...trace-narrative-v0.20.0) (2026-03-31)
 
 
