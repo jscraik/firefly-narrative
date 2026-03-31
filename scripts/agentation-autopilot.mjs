@@ -92,7 +92,9 @@ async function readStatus() {
     const raw = await readFile(STATUS_FILE, 'utf8');
     const parsed = safeJsonParse(raw);
     return parsed.ok && parsed.value && typeof parsed.value === 'object' ? parsed.value : {};
-  } catch {
+  } catch (err) {
+    // biome-ignore lint/suspicious/noConsole: Status file read failures are intentionally surfaced for observability.
+    console.error('[agentation-autopilot] Failed to read status file:', err);
     return {};
   }
 }
