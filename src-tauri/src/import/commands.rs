@@ -565,9 +565,16 @@ fn collect_recent_files(
                 return;
             }
             let path = entry.path();
-            if path.is_dir() {
+            let Ok(file_type) = entry.file_type() else {
+                continue;
+            };
+            // Skip symlinks to prevent loops and traversal outside the watched tree.
+            if file_type.is_symlink() {
+                continue;
+            }
+            if file_type.is_dir() {
                 walk(&path, predicate, out, max_scan);
-            } else if predicate(&path) {
+            } else if file_type.is_file() && predicate(&path) {
                 if let Ok(meta) = std::fs::metadata(&path) {
                     if let Ok(mtime) = meta.modified() {
                         out.push((path, mtime));
@@ -962,6 +969,8 @@ pub(crate) async fn store_codex_app_server_completed_session(
         files_touched,
     };
 
+    let (session, redaction) = redact_session(session);
+
     let dedupe_key = format!(
         "live|{}|{}|{}|{}",
         thread_id.trim(),
@@ -969,11 +978,6 @@ pub(crate) async fn store_codex_app_server_completed_session(
         item_id.trim(),
         event_type.trim().to_lowercase(),
     );
-
-    let redaction = RedactionSummary {
-        total: 0,
-        hits: vec![],
-    };
 
     match store_session_with_meta(
         db,
@@ -1344,6 +1348,38 @@ mod tests {
     use super::*;
     use sqlx::sqlite::SqlitePoolOptions;
 
+    #[cfg(unix)]
+    #[test]
+    fn collect_recent_files_skips_symlinked_directories() {
+        use std::fs;
+        use std::os::unix::fs::symlink;
+
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let root = tmp.path().join("root");
+        fs::create_dir(&root).expect("create root");
+
+        let nested = root.join("nested");
+        fs::create_dir(&nested).expect("create nested");
+        let wanted = nested.join("session.jsonl");
+        fs::write(&wanted, b"{}").expect("write session");
+
+        // Create a symlink loop: root/loop -> root
+        let loop_link = root.join("loop");
+        symlink(&root, &loop_link).expect("create symlink loop");
+
+        let results = collect_recent_files(
+            &[root.to_string_lossy().to_string()],
+            |path| path.extension().map(|ext| ext == "jsonl").unwrap_or(false),
+            100,
+        );
+
+        assert!(results.iter().any(|(path, _)| path == &wanted), "real file must be found");
+        assert!(
+            results.iter().all(|(path, _)| !path.starts_with(&loop_link)),
+            "symlinked directory must not be traversed"
+        );
+    }
+
     #[test]
     fn test_generate_session_id_deterministic() {
         let origin = super::super::parser::SessionOrigin {
@@ -1380,6 +1416,80 @@ mod tests {
         let id2 = generate_session_id(&origin2);
 
         assert_ne!(id1, id2);
+    }
+
+    #[test]
+    fn store_codex_app_server_completed_session_redacts_summary_payload() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("tokio runtime");
+
+        runtime.block_on(async {
+            let pool = SqlitePoolOptions::new()
+                .max_connections(1)
+                .connect("sqlite::memory:")
+                .await
+                .expect("memory sqlite");
+
+            sqlx::query(include_str!("../../migrations/001_init.sql"))
+                .execute(&pool)
+                .await
+                .expect("migration 001");
+            sqlx::query(include_str!("../../migrations/004_session_attribution.sql"))
+                .execute(&pool)
+                .await
+                .expect("migration 004");
+            sqlx::query(include_str!("../../migrations/005_attribution_notes.sql"))
+                .execute(&pool)
+                .await
+                .expect("migration 005");
+            sqlx::query(include_str!("../../migrations/009_auto_ingest.sql"))
+                .execute(&pool)
+                .await
+                .expect("migration 009");
+            sqlx::query(include_str!("../../migrations/012_atlas.sql"))
+                .execute(&pool)
+                .await
+                .expect("migration 012");
+
+            sqlx::query("INSERT INTO repos (id, path) VALUES (1, '/tmp/repo')")
+                .execute(&pool)
+                .await
+                .expect("insert repo");
+
+            let payload = serde_json::json!({
+                "summary": "Authorization: token ghp_abcdefghijklmnopqrstuvwxyz12", // gitleaks:allow
+                "model": "gpt-5"
+            });
+
+            let session_id = store_codex_app_server_completed_session(
+                &pool,
+                1,
+                "thread-1",
+                "turn-1",
+                "item-1",
+                "item/completed",
+                "app_server_stream",
+                &payload,
+                "2026-02-24T00:00:00.000Z",
+            )
+            .await
+            .expect("completed payload persists");
+
+            let stored = sqlx::query_as::<_, (String, i64, String)>(
+                "SELECT raw_json, redaction_count, redaction_types FROM sessions WHERE id = ?",
+            )
+            .bind(&session_id)
+            .fetch_one(&pool)
+            .await
+            .expect("stored session row");
+
+            assert!(stored.0.contains("⟦REDACTED:GITHUB_TOKEN⟧"));
+            assert!(!stored.0.contains("ghp_abcdefghijklmnopqrstuvwxyz12"));
+            assert!(stored.1 > 0);
+            assert!(stored.2.contains("GITHUB_TOKEN"));
+        });
     }
 
     #[test]

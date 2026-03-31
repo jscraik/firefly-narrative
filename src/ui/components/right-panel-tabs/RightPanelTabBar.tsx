@@ -5,7 +5,7 @@ import {
 	Settings,
 	TestTube,
 } from "lucide-react";
-import { Fragment, type KeyboardEvent } from "react";
+import { Fragment, type KeyboardEvent, useEffect, useRef } from "react";
 import { TAB_ACTIVE_STYLES, TABS, type TabId } from "./types";
 
 interface RightPanelTabBarProps {
@@ -34,6 +34,28 @@ export function RightPanelTabBar({
 	hasTestContent,
 }: RightPanelTabBarProps) {
 	const tabIds = TABS.map((tab) => tab.id);
+	const tabRefs = useRef<Record<TabId, HTMLButtonElement | null>>({
+		session: null,
+		attribution: null,
+		atlas: null,
+		tests: null,
+		settings: null,
+	});
+	const pendingFocusTabRef = useRef<TabId | null>(null);
+
+	useEffect(() => {
+		if (pendingFocusTabRef.current !== activeTab) {
+			return;
+		}
+
+		tabRefs.current[activeTab]?.focus();
+		pendingFocusTabRef.current = null;
+	}, [activeTab]);
+
+	const handleRovingFocus = (tabId: TabId) => {
+		pendingFocusTabRef.current = tabId;
+		onChangeTab(tabId);
+	};
 
 	const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
 		const currentIndex = tabIds.indexOf(activeTab);
@@ -44,23 +66,23 @@ export function RightPanelTabBar({
 			case "ArrowDown": {
 				event.preventDefault();
 				const nextIndex = (currentIndex + 1) % tabIds.length;
-				onChangeTab(tabIds[nextIndex]);
+				handleRovingFocus(tabIds[nextIndex]);
 				break;
 			}
 			case "ArrowLeft":
 			case "ArrowUp": {
 				event.preventDefault();
 				const nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length;
-				onChangeTab(tabIds[nextIndex]);
+				handleRovingFocus(tabIds[nextIndex]);
 				break;
 			}
 			case "Home":
 				event.preventDefault();
-				onChangeTab(tabIds[0]);
+				handleRovingFocus(tabIds[0]);
 				break;
 			case "End":
 				event.preventDefault();
-				onChangeTab(tabIds[tabIds.length - 1]);
+				handleRovingFocus(tabIds[tabIds.length - 1]);
 				break;
 			default:
 				break;
@@ -68,11 +90,12 @@ export function RightPanelTabBar({
 	};
 
 	return (
-		<div className="card p-2">
+		<div className="rounded-[1.05rem] border border-border-light bg-bg-primary/72 p-1.5">
 			<div
-				className="flex items-center gap-1"
+				className="flex flex-wrap items-center gap-1"
 				role="tablist"
 				aria-label="Right panel tabs"
+				aria-orientation="horizontal"
 				onKeyDown={handleTabKeyDown}
 			>
 				{TABS.map((tab, index) => {
@@ -98,11 +121,14 @@ export function RightPanelTabBar({
 							<button
 								id={`tab-${tab.id}`}
 								type="button"
+								ref={(node) => {
+									tabRefs.current[tab.id] = node;
+								}}
 								onClick={() => onChangeTab(tab.id)}
 								className={`
-                  min-w-0 flex-1 inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2 border
+                  min-w-0 basis-[calc(50%-0.125rem)] sm:basis-0 sm:flex-1 inline-flex items-center justify-center gap-1 rounded-full px-2.5 py-2 border
                   text-[0.625rem] leading-4 font-medium whitespace-nowrap
-                  transition duration-200 ease-out active:duration-75 active:scale-[0.98] hover:scale-105
+                  transition duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue-light focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary motion-reduce:transition-none active:duration-75 active:scale-[0.98]
                   ${
 										isActive
 											? TAB_ACTIVE_STYLES[tab.id]

@@ -6,6 +6,7 @@ import { extname, join, normalize, resolve, sep } from "node:path";
 import { URL } from "node:url";
 
 const PORT = 2000;
+const HOST = "127.0.0.1";
 const ROOT = process.cwd();
 const DIST_ROOT = resolve(ROOT, "dist");
 const BLOCKED_SOURCE_EXTS = new Set([".ts", ".tsx", ".jsx", ".mjs"]);
@@ -48,7 +49,7 @@ async function resolveStaticTarget(relativePath) {
     ? "src-asset"
     : "root";
 
-  const candidateRoots = [DIST_ROOT, ROOT];
+  const candidateRoots = [DIST_ROOT];
 
   if (
     BLOCKED_SOURCE_EXTS.has(extension) &&
@@ -79,7 +80,7 @@ async function resolveStaticTarget(relativePath) {
     return { path: candidatePath, reason: "static-file", missing: false };
   }
 
-  const spaFallback = [join(DIST_ROOT, "index.html"), join(ROOT, "index.html")];
+  const spaFallback = [join(DIST_ROOT, "index.html")];
   for (const path of spaFallback) {
     if (await pathExists(path)) {
       return { path, reason: "spa-fallback", missing: false };
@@ -97,6 +98,14 @@ function sanitizePath(rawPath = "/") {
   const decoded = decodeURIComponent(rawPath);
   const normalized = normalize(decoded).replace(/^\/+/, "");
   if (normalized.startsWith("..") || normalized.includes(`..${sep}`)) {
+    return "index.html";
+  }
+  // Block dotfiles (.env, .git, .ssh, etc.) and Windows drive paths (C:)
+  if (normalized.includes(":")) {
+    return "index.html";
+  }
+  const segments = normalized.split(/[/\\]/);
+  if (segments.some((segment) => segment.startsWith("."))) {
     return "index.html";
   }
   return normalized || "index.html";
@@ -140,8 +149,8 @@ server.on("error", (error) => {
   throw error;
 });
 
-server.listen(PORT, () => {
-  process.stdout.write(`Serving ${ROOT} at http://localhost:${PORT}\n`);
+server.listen(PORT, HOST, () => {
+  process.stdout.write(`Serving ${DIST_ROOT} at http://${HOST}:${PORT}\n`);
 });
 
 const shutdown = () => {

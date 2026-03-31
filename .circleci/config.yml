@@ -105,7 +105,7 @@ jobs:
             bash scripts/harness-cli.sh memory-gate \
               --memory memory.json \
               --forjamie README.md \
-              --metrics /tmp/harness-memory-metrics.json || true
+              --metrics /tmp/harness-memory-metrics.json
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Workflows

@@ -3,7 +3,6 @@ import { BookOpen, ChevronRight, FileText, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
 import {
 	ensureNarrativeDirs,
 	listNarrativeFiles,
@@ -241,10 +240,7 @@ export function DocsOverviewPanel({
 									</div>
 								) : (
 									<div className="prose prose-sm max-w-none">
-										<ReactMarkdown
-											rehypePlugins={[rehypeRaw]}
-											components={components}
-										>
+										<ReactMarkdown components={components}>
 											{content}
 										</ReactMarkdown>
 									</div>

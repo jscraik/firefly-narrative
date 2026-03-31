@@ -60,6 +60,42 @@ describe("BranchHeader", () => {
 		expect(onClearFilter).toHaveBeenCalledTimes(1);
 	});
 
+	it("groups first-pass actions semantically when evidence CTAs are available", () => {
+		const vm: BranchHeaderViewModel = {
+			kind: "full",
+			title: "feature/header-cta-group",
+			status: "open",
+			description: "Action order should stay obvious.",
+			isFilteredView: false,
+			metrics: {
+				added: { kind: "known", value: 12 },
+				removed: { kind: "known", value: 3 },
+				files: { kind: "known", value: 2 },
+				commits: { kind: "known", value: 1 },
+				prompts: { kind: "known", value: 4 },
+				responses: { kind: "known", value: 8 },
+			},
+		};
+
+		render(
+			<BranchHeader
+				viewModel={vm}
+				onInspectEvidence={vi.fn()}
+				onOpenRawDiff={vi.fn()}
+			/>,
+		);
+
+		expect(
+			screen.getByRole("group", { name: "First-pass actions" }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Inspect evidence" }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Open raw diff" }),
+		).toBeInTheDocument();
+	});
+
 	it("supports keyboard activation for filtered clear action", async () => {
 		const user = userEvent.setup();
 		const onClearFilter = vi.fn();

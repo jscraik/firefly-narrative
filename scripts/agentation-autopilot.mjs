@@ -6,6 +6,7 @@ import process from 'node:process';
 import http from 'node:http';
 
 const ROOT = process.cwd();
+const HOST = (process.env.HOST ?? '127.0.0.1').trim() || '127.0.0.1';
 const PORT = Number(process.env.PORT ?? 8787);
 const MODE = (process.env.AGENTATION_MODE ?? 'autopilot').trim().toLowerCase();
 const TRIGGER_EVENTS = new Set(
@@ -23,6 +24,8 @@ const STATUS_FILE = path.resolve(
 const IMPLEMENT_COMMAND = (process.env.AGENTATION_IMPLEMENT_COMMAND ?? '').trim();
 const REVIEW_COMMAND = (process.env.AGENTATION_REVIEW_COMMAND ?? '').trim();
 const CRITIQUE_COMMAND = (process.env.AGENTATION_CRITIQUE_COMMAND ?? '').trim();
+const AUTH_TOKEN = (process.env.AGENTATION_AUTH_TOKEN ?? '').trim();
+const MAX_BODY_BYTES = Number(process.env.AGENTATION_MAX_BODY_BYTES ?? 1_048_576); // 1 MiB
 const IMPLEMENT_TIMEOUT_MS = Number(process.env.CODEX_IMPLEMENTATION_TIMEOUT_MS ?? 300000);
 const REVIEW_TIMEOUT_MS = Number(process.env.CODEX_REVIEW_TIMEOUT_MS ?? 180000);
 
@@ -45,6 +48,41 @@ function eventName(body) {
   if (typeof body.event === 'string') return body.event;
   if (typeof body.type === 'string') return body.type;
   return 'unknown';
+}
+
+function isTrustedBrowserOrigin(origin) {
+  if (!origin || origin === 'null') return false;
+  try {
+    const parsed = new URL(origin);
+    return (
+      parsed.protocol === 'http:' &&
+      (parsed.hostname === 'localhost' ||
+        parsed.hostname === '127.0.0.1' ||
+        parsed.hostname === '::1')
+    );
+  } catch {
+    return false;
+  }
+}
+
+function readAuthToken(req) {
+  const authorization = req.headers.authorization;
+  if (typeof authorization === 'string' && authorization.startsWith('Bearer ')) {
+    return authorization.slice('Bearer '.length).trim();
+  }
+  const headerToken = req.headers['x-agentation-token'];
+  if (typeof headerToken === 'string') return headerToken.trim();
+  if (Array.isArray(headerToken) && headerToken.length > 0) return headerToken[0].trim();
+  try {
+    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+    return url.searchParams.get('token')?.trim() ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function isAuthorized(req) {
+  return AUTH_TOKEN.length > 0 && readAuthToken(req) === AUTH_TOKEN;
 }
 
 async function readStatus() {
@@ -303,32 +341,60 @@ async function processJob(body) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+if (!AUTH_TOKEN) {
+  console.error('[agentation-autopilot] AGENTATION_AUTH_TOKEN must be set');
+  process.exit(1);
+}
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
+if (!Number.isFinite(MAX_BODY_BYTES) || MAX_BODY_BYTES <= 0) {
+  console.error('[agentation-autopilot] AGENTATION_MAX_BODY_BYTES must be a positive number');
+  process.exit(1);
+}
+
+const server = http.createServer(async (req, res) => {
+  const requestOrigin = req.headers.origin;
+  if (typeof requestOrigin === 'string' && !isTrustedBrowserOrigin(requestOrigin)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'forbidden_origin' }));
+    return;
+  }
+
+  if (!isAuthorized(req)) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
     return;
   }
 
   if (req.method !== 'POST') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, service: 'agentation-autopilot', method: req.method }));
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'use_post' }));
     return;
   }
 
   let raw = '';
+  let bytesRead = 0;
+  let bodyTooLarge = false;
+
   req.on('data', (chunk) => {
+    if (bodyTooLarge) return;
+    bytesRead += chunk.length;
+    if (bytesRead > MAX_BODY_BYTES) {
+      bodyTooLarge = true;
+      req.pause();
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'payload_too_large', max_body_bytes: MAX_BODY_BYTES }));
+      req.resume();
+      return;
+    }
     raw += chunk.toString();
   });
 
   req.on('end', async () => {
+    if (bodyTooLarge || res.writableEnded) return;
+
     const parsed = safeJsonParse(raw || '{}');
     if (!parsed.ok) {
-      res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: 'invalid_json' }));
       return;
     }
@@ -337,7 +403,7 @@ const server = http.createServer(async (req, res) => {
     const event = eventName(payload);
 
     if (!TRIGGER_EVENTS.has(event)) {
-      res.writeHead(202, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.writeHead(202, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, ignored: true, event, trigger_events: [...TRIGGER_EVENTS] }));
       return;
     }
@@ -350,19 +416,21 @@ const server = http.createServer(async (req, res) => {
       });
     });
 
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, accepted: true, event, mode: MODE }));
   });
 });
 
-server.listen(PORT, async () => {
+server.listen(PORT, HOST, async () => {
   await writeStatus({
     state: 'ready',
     mode: MODE,
-    listening: `http://localhost:${PORT}`,
-    trigger_events: [...TRIGGER_EVENTS]
+    listening: `http://${HOST}:${PORT}`,
+    trigger_events: [...TRIGGER_EVENTS],
+    max_body_bytes: MAX_BODY_BYTES,
   });
-  console.log(`[agentation-autopilot] listening on http://localhost:${PORT}`);
+  console.log(`[agentation-autopilot] listening on http://${HOST}:${PORT}`);
   console.log(`[agentation-autopilot] mode: ${MODE}`);
   console.log(`[agentation-autopilot] trigger events: ${[...TRIGGER_EVENTS].join(', ')}`);
+  console.log(`[agentation-autopilot] max body bytes: ${MAX_BODY_BYTES}`);
 });

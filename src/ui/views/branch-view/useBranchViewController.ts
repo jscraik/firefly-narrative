@@ -23,6 +23,7 @@ import {
 	deriveLegacyBranchHeaderViewModel,
 } from "../../components/branchHeaderMapper";
 import type { RightPanelTabs } from "../../components/RightPanelTabs";
+import { resolveVerificationModeState } from "../../components/right-panel-tabs/types";
 import type {
 	Timeline,
 	TraceSignalTrackingSettlePayload,
@@ -70,6 +71,26 @@ function deriveTrustStateFromCaptureStatus(
 	}
 
 	return "none";
+}
+
+type BranchWorkspaceState =
+	| "loading"
+	| "error"
+	| "empty"
+	| "kill_switch"
+	| "degraded"
+	| "ready-low-confidence"
+	| "ready";
+
+type BranchFixtureClass =
+	| "high-confidence"
+	| "low-confidence"
+	| "degraded"
+	| "kill-switch"
+	| "default";
+
+function nowMs(): number {
+	return typeof performance !== "undefined" ? performance.now() : Date.now();
 }
 
 export function useBranchViewController(
@@ -138,22 +159,6 @@ export function useBranchViewController(
 	);
 	const [stage, setStage] = useState(0);
 
-	useEffect(() => {
-		setStage(0);
-		const timers: NodeJS.Timeout[] = [];
-
-		timers.push(setTimeout(() => setStage(1), TIMING.summary));
-		timers.push(setTimeout(() => setStage(2), TIMING.header));
-		timers.push(setTimeout(() => setStage(3), TIMING.narrative));
-		timers.push(setTimeout(() => setStage(4), TIMING.details));
-		timers.push(setTimeout(() => setStage(5), TIMING.intents));
-		timers.push(setTimeout(() => setStage(6), TIMING.files));
-		timers.push(setTimeout(() => setStage(7), TIMING.rightPanel));
-		timers.push(setTimeout(() => setStage(8), TIMING.timeline));
-
-		return () => timers.forEach(clearTimeout);
-	}, []);
-
 	const [trackingSettledNodeId, setTrackingSettledNodeId] = useState<
 		string | null
 	>(null);
@@ -163,6 +168,14 @@ export function useBranchViewController(
 	const isMountedRef = useRef(true);
 	const activeBranchScopeRef = useRef<string | null>(null);
 	const feedbackContextRef = useRef<string>("");
+	const fastPathStartedAtRef = useRef(nowMs());
+	const fastPathLoadedScopeRef = useRef<string | null>(null);
+	const verificationTelemetryKeyRef = useRef<string | null>(null);
+	const previousTelemetryScopeRef = useRef<string | null>(null);
+	const firstEvidenceTimingScopeRef = useRef<string | null>(null);
+	const firstDiffTimingScopeRef = useRef<string | null>(null);
+	const advancedAnalysisOpenedScopeRef = useRef<string | null>(null);
+	const branchAsyncGuardArmedRef = useRef(false);
 	const firstWinAttemptSequenceRef = useRef(0);
 	const firstWinAttemptContextRef = useRef<string>("");
 	const firstWinAttemptIdRef = useRef<string>("attempt:0");
@@ -180,6 +193,57 @@ export function useBranchViewController(
 		[model.meta?.branchName, model.meta?.repoId],
 	);
 	activeBranchScopeRef.current = branchScopeKey;
+
+	useEffect(() => {
+		const previousTelemetryScope = previousTelemetryScopeRef.current;
+		if (
+			previousTelemetryScope &&
+			previousTelemetryScope !== telemetryBranchScope
+		) {
+			trackNarrativeEvent("branch_scope_reset_occurred", {
+				branchScope: telemetryBranchScope,
+				oldBranchScopeKey: previousTelemetryScope,
+				newBranchScopeKey: telemetryBranchScope,
+				clearedStateKeys: [
+					"stagedRevealStep",
+					"stagedRevealTimers",
+					"stagedRevealAnimationState",
+					"detailLevel",
+					"audience",
+					"feedbackActorRole",
+					"askWhyState",
+					"verificationPosture",
+					"evidenceRailTab",
+					"selectedSessionId",
+					"diffExpanded",
+					"diffPip",
+					"trackingSettledNodeId",
+				],
+				staleAsyncDropped: branchAsyncGuardArmedRef.current,
+			});
+		}
+		previousTelemetryScopeRef.current = telemetryBranchScope;
+		branchAsyncGuardArmedRef.current = false;
+		fastPathStartedAtRef.current = nowMs();
+		fastPathLoadedScopeRef.current = null;
+		verificationTelemetryKeyRef.current = null;
+		firstEvidenceTimingScopeRef.current = null;
+		firstDiffTimingScopeRef.current = null;
+		advancedAnalysisOpenedScopeRef.current = null;
+		setStage(0);
+		const timers: NodeJS.Timeout[] = [];
+
+		timers.push(setTimeout(() => setStage(1), TIMING.summary));
+		timers.push(setTimeout(() => setStage(2), TIMING.header));
+		timers.push(setTimeout(() => setStage(3), TIMING.narrative));
+		timers.push(setTimeout(() => setStage(4), TIMING.details));
+		timers.push(setTimeout(() => setStage(5), TIMING.intents));
+		timers.push(setTimeout(() => setStage(6), TIMING.files));
+		timers.push(setTimeout(() => setStage(7), TIMING.rightPanel));
+		timers.push(setTimeout(() => setStage(8), TIMING.timeline));
+
+		return () => timers.forEach(clearTimeout);
+	}, [telemetryBranchScope]);
 
 	const requestIdentityKey = useMemo(
 		() =>
@@ -311,6 +375,7 @@ export function useBranchViewController(
 		() => model.timeline.find((node) => node.id === selectedNodeId) ?? null,
 		[model.timeline, selectedNodeId],
 	);
+	const selectedNodeExists = Boolean(selectedNodeId && selectedNode);
 
 	const selectedCommitSha = useMemo(() => {
 		if (!selectedNode || selectedNode.type !== "commit") return null;
@@ -387,6 +452,7 @@ export function useBranchViewController(
 			setLoadingTests(false);
 			return;
 		}
+		branchAsyncGuardArmedRef.current = true;
 		setLoadingTests(true);
 		try {
 			const run = await getLatestTestRunForCommit(repoId, selectedCommitSha);
@@ -398,6 +464,7 @@ export function useBranchViewController(
 		} finally {
 			if (testRunRequestVersionRef.current === requestVersion) {
 				setLoadingTests(false);
+				branchAsyncGuardArmedRef.current = false;
 			}
 		}
 	}, [model.source, repoId, selectedCommitSha]);
@@ -408,6 +475,69 @@ export function useBranchViewController(
 
 	const testRun =
 		model.source === "demo" ? demoTestRun : (repoTestRun ?? undefined);
+
+	const trustPosture = useMemo(
+		() => deriveTrustStateFromCaptureStatus(captureReliabilityStatus),
+		[captureReliabilityStatus],
+	);
+	const lowConfidence = narrative.confidence < 0.55;
+	const selectedTraceSummary = useMemo(
+		() =>
+			selectedNodeId
+				? model.traceSummaries?.byCommit[selectedNodeId]
+				: undefined,
+		[model.traceSummaries?.byCommit, selectedNodeId],
+	);
+	const verificationResolution = useMemo(
+		() =>
+			resolveVerificationModeState({
+				hasSessionContent: Boolean(model.sessionExcerpts?.length),
+				hasEvidenceContent: Boolean(selectedTraceSummary || model.traceStatus),
+				hasValidationContent: Boolean(testRun) || Boolean(selectedCommitSha),
+				killSwitchActive,
+				lowConfidence,
+			}),
+		[
+			killSwitchActive,
+			lowConfidence,
+			model.sessionExcerpts,
+			model.traceStatus,
+			selectedCommitSha,
+			selectedTraceSummary,
+			testRun,
+		],
+	);
+	const workspaceState: BranchWorkspaceState = useMemo(() => {
+		if (headerViewModel.kind === "hidden") return "loading";
+		if (headerViewModel.kind === "shell") {
+			return headerViewModel.state === "loading" ? "loading" : "error";
+		}
+		if (!selectedNodeExists) return "loading";
+		if (killSwitchActive) return "kill_switch";
+		if (trustPosture === "hydrating" || trustPosture === "trust_paused") {
+			return "degraded";
+		}
+		if (model.timeline.length === 0) return "empty";
+		if (lowConfidence) return "ready-low-confidence";
+		return "ready";
+	}, [
+		headerViewModel,
+		killSwitchActive,
+		lowConfidence,
+		model.timeline.length,
+		selectedNodeExists,
+		trustPosture,
+	]);
+	const fixtureClass: BranchFixtureClass =
+		workspaceState === "kill_switch"
+			? "kill-switch"
+			: workspaceState === "degraded"
+				? "degraded"
+				: workspaceState === "ready-low-confidence"
+					? "low-confidence"
+					: workspaceState === "ready"
+						? "high-confidence"
+						: "default";
 
 	useEffect(() => {
 		setSelectedNodeId((prev) => {
@@ -434,9 +564,7 @@ export function useBranchViewController(
 		headerDerivationDurationMs: headerDerivationDurationMsRef.current,
 		repoId,
 		selectedNodeId,
-		selectedNodeExists: selectedNodeId
-			? model.timeline.some((node) => node.id === selectedNodeId)
-			: false,
+		selectedNodeExists,
 		selectedFile,
 		effectiveDetailLevel,
 		narrative,
@@ -446,6 +574,150 @@ export function useBranchViewController(
 		bumpObservability,
 		narrativeViewInstanceIdRef,
 	});
+
+	useEffect(() => {
+		if (workspaceState === "loading" || workspaceState === "error") {
+			return;
+		}
+		if (!selectedNodeExists) {
+			return;
+		}
+		if (fastPathLoadedScopeRef.current === telemetryBranchScope) {
+			return;
+		}
+		fastPathLoadedScopeRef.current = telemetryBranchScope;
+
+		trackNarrativeEvent("branch_fast_path_loaded", {
+			branchScope: telemetryBranchScope,
+			branchScopeKey: telemetryBranchScope,
+			workspaceState,
+			trustPosture,
+			verificationMode: verificationResolution.mode,
+			hasAdvancedAnalysis: false,
+			fixtureClass,
+		});
+	}, [
+		fixtureClass,
+		selectedNodeExists,
+		telemetryBranchScope,
+		trustPosture,
+		verificationResolution.mode,
+		workspaceState,
+	]);
+
+	useEffect(() => {
+		if (workspaceState === "loading" || workspaceState === "error") {
+			return;
+		}
+		const telemetryKey = `${telemetryBranchScope}:${verificationResolution.mode}:${verificationResolution.reason}:${workspaceState}`;
+		if (verificationTelemetryKeyRef.current === telemetryKey) {
+			return;
+		}
+		verificationTelemetryKeyRef.current = telemetryKey;
+
+		trackNarrativeEvent("branch_verification_mode_selected", {
+			branchScope: telemetryBranchScope,
+			branchScopeKey: telemetryBranchScope,
+			verificationMode: verificationResolution.mode,
+			workspaceState,
+			reason: verificationResolution.reason,
+		});
+	}, [
+		telemetryBranchScope,
+		verificationResolution.mode,
+		verificationResolution.reason,
+		workspaceState,
+	]);
+
+	const trackEvidenceTiming = useCallback(
+		(source: "evidence_link") => {
+			if (firstEvidenceTimingScopeRef.current === telemetryBranchScope) {
+				return;
+			}
+			firstEvidenceTimingScopeRef.current = telemetryBranchScope;
+			trackNarrativeEvent("branch_evidence_open_time_ms", {
+				branchScope: telemetryBranchScope,
+				branchScopeKey: telemetryBranchScope,
+				verificationMode: verificationResolution.mode,
+				elapsedMs: Math.max(0, nowMs() - fastPathStartedAtRef.current),
+				source,
+			});
+		},
+		[telemetryBranchScope, verificationResolution.mode],
+	);
+
+	const trackDiffTiming = useCallback(
+		(source: "header_cta" | "raw_diff" | "recall_lane") => {
+			if (firstDiffTimingScopeRef.current !== telemetryBranchScope) {
+				firstDiffTimingScopeRef.current = telemetryBranchScope;
+				trackNarrativeEvent("branch_story_to_diff_time_ms", {
+					branchScope: telemetryBranchScope,
+					branchScopeKey: telemetryBranchScope,
+					workspaceState,
+					elapsedMs: Math.max(0, nowMs() - fastPathStartedAtRef.current),
+					source,
+				});
+			}
+
+			if (
+				workspaceState === "ready-low-confidence" ||
+				workspaceState === "degraded" ||
+				workspaceState === "kill_switch"
+			) {
+				trackNarrativeEvent("branch_low_confidence_fallback_used", {
+					branchScope: telemetryBranchScope,
+					branchScopeKey: telemetryBranchScope,
+					workspaceState,
+					trustPosture,
+					target: "raw-diff",
+				});
+			}
+		},
+		[telemetryBranchScope, trustPosture, workspaceState],
+	);
+
+	const handleInspectEvidenceCta = useCallback(() => {
+		trackNarrativeEvent("branch_primary_cta_used", {
+			branchScope: telemetryBranchScope,
+			branchScopeKey: telemetryBranchScope,
+			cta: "inspect-evidence",
+			workspaceState,
+			verificationMode: verificationResolution.mode,
+		});
+	}, [telemetryBranchScope, verificationResolution.mode, workspaceState]);
+
+	const handleAdvancedAnalysisToggle = useCallback(
+		(open: boolean) => {
+			if (!open) return;
+			const initialOpen =
+				advancedAnalysisOpenedScopeRef.current !== telemetryBranchScope;
+			if (initialOpen) {
+				advancedAnalysisOpenedScopeRef.current = telemetryBranchScope;
+			}
+			trackNarrativeEvent("branch_advanced_analysis_opened", {
+				branchScope: telemetryBranchScope,
+				branchScopeKey: telemetryBranchScope,
+				workspaceState,
+				verificationMode: verificationResolution.mode,
+				initialOpen,
+			});
+		},
+		[telemetryBranchScope, verificationResolution.mode, workspaceState],
+	);
+
+	const handleAdvancedControlUsed = useCallback(
+		(control: string) => {
+			trackNarrativeEvent("branch_advanced_control_used", {
+				branchScope: telemetryBranchScope,
+				branchScopeKey: telemetryBranchScope,
+				control,
+				workspaceState,
+				verificationMode: verificationResolution.mode,
+			});
+		},
+		[telemetryBranchScope, verificationResolution.mode, workspaceState],
+	);
+
 	const emitFirstWinCompleted = useCallback(
 		(
 			eventOutcome: "success" | "fallback" | "failed" | "stale_ignored",
@@ -542,6 +814,9 @@ export function useBranchViewController(
 				targetCommitSha && targetCommitSha !== selectedNodeId,
 			);
 			const activeCommitSha = targetCommitSha ?? selectedNodeId ?? undefined;
+			trackDiffTiming(
+				laneContext?.source === "recall_lane" ? "recall_lane" : "raw_diff",
+			);
 
 			setDetailLevel("diff");
 			if (switchedCommit && targetCommitSha) {
@@ -591,6 +866,7 @@ export function useBranchViewController(
 			selectedNodeId,
 			branchScopeKey,
 			setDetailLevel,
+			trackDiffTiming,
 			telemetryBranchScope,
 		],
 	);
@@ -612,6 +888,7 @@ export function useBranchViewController(
 				setTrackingSettledNodeId(null);
 				setSelectedNodeId(link.commitSha);
 			}
+			trackEvidenceTiming("evidence_link");
 			const routedToRawDiff = shouldRouteEvidenceToRawDiff(link);
 			if (routedToRawDiff) {
 				handleOpenRawDiff({
@@ -657,9 +934,28 @@ export function useBranchViewController(
 			narrative.confidence,
 			selectFile,
 			selectedNodeId,
+			trackEvidenceTiming,
 			telemetryBranchScope,
 		],
 	);
+
+	const handleHeaderOpenRawDiff = useCallback(() => {
+		trackNarrativeEvent("branch_primary_cta_used", {
+			branchScope: telemetryBranchScope,
+			branchScopeKey: telemetryBranchScope,
+			cta: "open-raw-diff",
+			workspaceState,
+			verificationMode: verificationResolution.mode,
+		});
+		trackDiffTiming("header_cta");
+		handleOpenRawDiff();
+	}, [
+		handleOpenRawDiff,
+		telemetryBranchScope,
+		trackDiffTiming,
+		verificationResolution.mode,
+		workspaceState,
+	]);
 
 	const handleExportAgentTrace = useCallback(() => {
 		if (!selectedNodeId) return;
@@ -775,6 +1071,8 @@ export function useBranchViewController(
 			: null;
 
 	const rightPanelProps: ComponentProps<typeof RightPanelTabs> = {
+		branchScopeKey,
+		verificationMode: verificationResolution.mode,
 		sessionExcerpts: model.sessionExcerpts,
 		selectedFile,
 		onFileClick: handleFileClickFromSession,
@@ -850,6 +1148,8 @@ export function useBranchViewController(
 		model,
 		headerViewModel,
 		onClearFilter,
+		onInspectEvidenceCta: handleInspectEvidenceCta,
+		onHeaderOpenRawDiff: handleHeaderOpenRawDiff,
 		narrativePanelProps: {
 			narrative,
 			projections,
@@ -858,6 +1158,7 @@ export function useBranchViewController(
 			feedbackActorRole,
 			killSwitchActive,
 			killSwitchReason: criticalRule?.rationale,
+			branchScopeKey,
 			recallLaneItems,
 			askWhyState,
 			onAudienceChange: handleAudienceChange,
@@ -868,6 +1169,8 @@ export function useBranchViewController(
 			onOpenRawDiff: handleOpenRawDiff,
 			onSubmitAskWhy: handleSubmitAskWhy,
 			onOpenAskWhyCitation: handleOpenAskWhyCitation,
+			onAdvancedAnalysisToggle: handleAdvancedAnalysisToggle,
+			onAdvancedControlUsed: handleAdvancedControlUsed,
 			// Phase 4: Trust-state props for recovery UI
 			trustState: captureReliabilityStatus?.appServer
 				? deriveTrustStateFromCaptureStatus(captureReliabilityStatus)

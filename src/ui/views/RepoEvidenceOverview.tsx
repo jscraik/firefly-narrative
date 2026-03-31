@@ -122,7 +122,8 @@ export function RepoEvidenceOverview({
 	const actionCards: Array<{
 		title: string;
 		body: string;
-		mode: Mode;
+		mode?: Mode;
+		scrollTargetId?: string;
 	}> = [
 		{
 			title: "Review trust posture",
@@ -137,7 +138,7 @@ export function RepoEvidenceOverview({
 		{
 			title: "Compare snapshots",
 			body: "Check whether the current branch story still matches the latest saved state and rollback markers.",
-			mode: "repo",
+			scrollTargetId: "branch-workspace",
 		},
 	];
 
@@ -158,12 +159,13 @@ export function RepoEvidenceOverview({
 
 					<div className="mt-3">
 						<h1 className="text-[1.75rem] font-semibold tracking-tight text-text-primary">
-							Verify {branchLabel} through commits, files, sessions, and
+							Prove {branchLabel} through files, commits, sessions, and
 							snapshots.
 						</h1>
 						<p className="mt-1.5 max-w-3xl text-sm leading-6 text-text-secondary">
-							Read the signal strip, then move straight into the branch
-							workspace below.
+							This workspace should help you walk every branch claim back to raw
+							evidence. If a conclusion cannot survive that walk, keep it
+							provisional.
 						</p>
 					</div>
 				</div>
@@ -183,7 +185,19 @@ export function RepoEvidenceOverview({
 								key={action.title}
 								type="button"
 								disabled={!onModeChange}
-								onClick={() => onModeChange?.(action.mode)}
+								onClick={() => {
+									if (!onModeChange) return;
+
+									if (action.mode) {
+										onModeChange(action.mode);
+										return;
+									}
+
+									if (!action.scrollTargetId) return;
+									document
+										.getElementById(action.scrollTargetId)
+										?.scrollIntoView({ behavior: "smooth", block: "start" });
+								}}
 								className="group rounded-xl border border-border-light bg-bg-primary p-3 text-left transition-all duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.98] active:duration-75 hover:border-accent-blue-light hover:bg-bg-primary disabled:cursor-default disabled:hover:translate-y-0"
 							>
 								<div className="flex items-start justify-between gap-2">

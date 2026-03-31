@@ -5,6 +5,54 @@ interface MermaidDiagramProps {
 	chart: string;
 }
 
+const BLOCKED_TAGS = new Set(["script", "foreignobject"]);
+
+function sanitizeMermaidSvg(markup: string): SVGSVGElement {
+	const parser = new DOMParser();
+	const doc = parser.parseFromString(markup, "image/svg+xml");
+	const svg = doc.documentElement;
+
+	if (svg.nodeName.toLowerCase() !== "svg") {
+		throw new Error("Invalid Mermaid SVG output");
+	}
+
+	const walker = doc.createTreeWalker(svg, NodeFilter.SHOW_ELEMENT);
+	const toRemove: Element[] = [];
+
+	while (walker.nextNode()) {
+		const el = walker.currentNode as Element;
+		const tag = el.tagName.toLowerCase();
+
+		if (BLOCKED_TAGS.has(tag)) {
+			toRemove.push(el);
+			continue;
+		}
+
+		for (const attr of Array.from(el.attributes)) {
+			const name = attr.name.toLowerCase();
+			const value = attr.value.trim().toLowerCase();
+			if (name.startsWith("on")) {
+				el.removeAttribute(attr.name);
+			} else if (
+				(name === "href" || name === "xlink:href") &&
+				value.startsWith("javascript:")
+			) {
+				el.removeAttribute(attr.name);
+			}
+		}
+	}
+
+	for (const el of toRemove) {
+		el.remove();
+	}
+
+	const imported = document.importNode(svg, true);
+	if (!(imported instanceof SVGSVGElement)) {
+		throw new Error("Invalid Mermaid SVG output");
+	}
+	return imported;
+}
+
 /**
  * Renders a Mermaid diagram using beautiful-mermaid.
  * Creates beautiful, themeable SVG diagrams.
@@ -19,19 +67,19 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
 			try {
 				const renderedSvg = await renderMermaid(chart);
-				// Safely inject SVG into the container using DOM manipulation
-				// This is safe because renderMermaid returns trusted SVG content
-				containerRef.current.innerHTML = renderedSvg;
+				const sanitized = sanitizeMermaidSvg(renderedSvg);
+				containerRef.current.replaceChildren();
+				containerRef.current.appendChild(sanitized);
 				setError("");
 			} catch (_err) {
 				setError("Failed to render diagram");
 				if (containerRef.current) {
-					containerRef.current.innerHTML = "";
+					containerRef.current.replaceChildren();
 				}
 			}
 		};
 
-		renderDiagram();
+		void renderDiagram();
 	}, [chart]);
 
 	if (error) {

@@ -21,6 +21,52 @@ import type {
 
 export type TabId = "session" | "attribution" | "atlas" | "settings" | "tests";
 export type TabCategory = "analyze" | "tools" | "config";
+export type VerificationMode =
+	| "evidence-first"
+	| "session-first"
+	| "diff-first";
+export type VerificationModeReason =
+	| "attribution"
+	| "validation"
+	| "session"
+	| "fallback"
+	| "kill-switch"
+	| "low-confidence";
+
+export type VerificationModeInput = {
+	hasSessionContent: boolean;
+	hasEvidenceContent: boolean;
+	hasValidationContent: boolean;
+	killSwitchActive?: boolean;
+	lowConfidence?: boolean;
+};
+
+export function resolveVerificationModeState(input: VerificationModeInput): {
+	mode: VerificationMode;
+	reason: VerificationModeReason;
+} {
+	if (input.killSwitchActive) {
+		return { mode: "diff-first", reason: "kill-switch" };
+	}
+
+	if (input.hasEvidenceContent) {
+		return { mode: "evidence-first", reason: "attribution" };
+	}
+
+	if (input.hasValidationContent) {
+		return { mode: "evidence-first", reason: "validation" };
+	}
+
+	if (input.hasSessionContent) {
+		return { mode: "session-first", reason: "session" };
+	}
+
+	if (input.lowConfidence) {
+		return { mode: "diff-first", reason: "low-confidence" };
+	}
+
+	return { mode: "diff-first", reason: "fallback" };
+}
 
 export interface TabConfig {
 	id: TabId;
@@ -77,6 +123,8 @@ export const TAB_ACTIVE_STYLES: Record<TabId, string> = {
 };
 
 export interface RightPanelTabsProps {
+	branchScopeKey?: string;
+	verificationMode?: VerificationMode;
 	sessionExcerpts?: SessionExcerpt[];
 	selectedFile: string | null;
 	onFileClick: (path: string) => void;

@@ -114,36 +114,28 @@ export function TopNav(props: {
 	const secondaryRoutes = buildSecondaryRoutes(mode);
 
 	return (
-		<header className="grid h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center border-b border-border-light bg-bg-secondary px-4 ">
-			<div className="flex min-w-0 items-center gap-4">
-				<div className="min-w-0">
-					<div className="flex items-center gap-2 text-[0.625rem] font-medium uppercase tracking-[0.15em] text-text-muted">
-						<span className="inline-flex items-center gap-1.5 rounded-full border border-border-light bg-bg-primary px-2 py-0.5 text-text-secondary">
-							<CurrentSectionIcon className="h-3 w-3" />
-							{currentModeMeta.section}
-						</span>
-					</div>
-					<div className="mt-1.5 flex flex-wrap items-center gap-3">
-						<span className="truncate text-[0.9375rem] font-semibold text-text-primary">
-							{currentModeMeta.label}
-						</span>
-						<span className="hidden truncate text-xs text-text-muted xl:block">
-							{currentModeMeta.note}
-						</span>
+		<header className="flex h-14 w-full items-center justify-between border-b border-border-light bg-bg-secondary px-4">
+			<div className="flex min-w-0 items-center gap-3">
+				<span className="inline-flex items-center gap-1.5 rounded-full border border-border-light bg-bg-primary px-2 py-0.5 text-[0.625rem] font-medium uppercase tracking-[0.15em] text-text-secondary shrink-0">
+					<CurrentSectionIcon className="h-3 w-3" />
+					{currentModeMeta.section}
+				</span>
 
-						<div className="hidden items-center gap-2 lg:flex ml-2">
-							{secondaryRoutes.map((route) => (
-								<button
-									key={route.mode}
-									type="button"
-									onClick={() => onModeChange(route.mode)}
-									className="inline-flex items-center gap-2 rounded-full border border-border-light bg-bg-primary px-3 py-1 text-[0.6875rem] font-medium text-text-secondary transition hover:border-accent-blue-light hover:text-text-primary shadow-sm"
-								>
-									{route.label}
-								</button>
-							))}
-						</div>
-					</div>
+				<span className="truncate text-sm font-semibold text-text-primary shrink-0">
+					{currentModeMeta.label}
+				</span>
+
+				<div className="hidden items-center gap-2 lg:flex mx-2 shrink-0">
+					{secondaryRoutes.map((route) => (
+						<button
+							key={route.mode}
+							type="button"
+							onClick={() => onModeChange(route.mode)}
+							className="inline-flex items-center gap-2 rounded-full border border-border-light bg-bg-primary px-3 py-1 text-[0.6875rem] font-medium text-text-secondary transition hover:border-accent-blue-light hover:text-text-primary shadow-sm"
+						>
+							{route.label}
+						</button>
+					))}
 				</div>
 			</div>
 

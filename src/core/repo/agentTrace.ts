@@ -67,6 +67,27 @@ function safeString(value: unknown): string | undefined {
 	return typeof value === "string" ? value : undefined;
 }
 
+const MAX_TRACE_RANGE_LINES = 10_000;
+
+function toPositiveLineNumber(value: unknown, fallback: number): number {
+	if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+	const n = Math.trunc(value);
+	return n >= 1 ? n : fallback;
+}
+
+function normalizeTraceRange(
+	startLine: unknown,
+	endLine: unknown,
+): Pick<TraceRange, "startLine" | "endLine"> {
+	const start = toPositiveLineNumber(startLine, 1);
+	const end = toPositiveLineNumber(endLine, start);
+	const clampedEnd = Math.min(
+		Math.max(end, start),
+		start + MAX_TRACE_RANGE_LINES - 1,
+	);
+	return { startLine: start, endLine: clampedEnd };
+}
+
 function parseTraceRecord(raw: string): TraceRecord | null {
 	let parsed: unknown;
 	try {
@@ -126,8 +147,10 @@ function parseTraceRecord(raw: string): TraceRecord | null {
 						}
 					: undefined,
 				ranges: (conversation.ranges ?? []).map((range) => ({
-					startLine: range.start_line ?? 1,
-					endLine: range.end_line ?? range.start_line ?? 1,
+					...normalizeTraceRange(
+						range.start_line,
+						range.end_line ?? range.start_line,
+					),
 					contentHash: range.content_hash,
 					contributor: range.contributor
 						? {
@@ -586,8 +609,10 @@ export async function getTraceRangesForCommitFile(
 	}>;
 
 	return ranges.map((row) => ({
-		startLine: row.startLine ?? row.start_line ?? 1,
-		endLine: row.endLine ?? row.end_line ?? 1,
+		...normalizeTraceRange(
+			row.startLine ?? row.start_line,
+			row.endLine ?? row.end_line ?? row.startLine ?? row.start_line,
+		),
 		contentHash: row.contentHash ?? row.content_hash ?? undefined,
 		contributor: {
 			type: normalizeContributorType(

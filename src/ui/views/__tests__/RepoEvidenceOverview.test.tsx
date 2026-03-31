@@ -115,12 +115,12 @@ describe("RepoEvidenceOverview", () => {
 
 		expect(
 			screen.getByText(
-				"Verify feature/evidence-shell through commits, files, sessions, and snapshots.",
+				"Prove feature/evidence-shell through files, commits, sessions, and snapshots.",
 			),
 		).toBeInTheDocument();
 		expect(
 			screen.getByText(
-				"Read the signal strip, then move straight into the branch workspace below.",
+				"This workspace should help you walk every branch claim back to raw evidence. If a conclusion cannot survive that walk, keep it provisional.",
 			),
 		).toBeInTheDocument();
 		expect(screen.getByText("Claim support")).toBeInTheDocument();
@@ -129,8 +129,14 @@ describe("RepoEvidenceOverview", () => {
 		expect(screen.getByText("2/3")).toBeInTheDocument();
 	});
 
-	it("routes action cards into the surviving verification lanes", () => {
+	it("routes cross-lane actions and scrolls to repo workspace for snapshots", () => {
 		const onModeChange = vi.fn();
+		const scrollIntoView = vi.fn();
+		const target = document.createElement("div");
+		target.id = "branch-workspace";
+		target.scrollIntoView = scrollIntoView;
+		document.body.appendChild(target);
+
 		render(
 			<RepoEvidenceOverview
 				model={createModel()}
@@ -148,6 +154,12 @@ describe("RepoEvidenceOverview", () => {
 
 		expect(onModeChange).toHaveBeenNthCalledWith(1, "hygiene");
 		expect(onModeChange).toHaveBeenNthCalledWith(2, "sessions");
-		expect(onModeChange).toHaveBeenNthCalledWith(3, "repo");
+		expect(onModeChange).toHaveBeenCalledTimes(2);
+		expect(scrollIntoView).toHaveBeenCalledWith({
+			behavior: "smooth",
+			block: "start",
+		});
+
+		target.remove();
 	});
 });

@@ -98,6 +98,8 @@ export function useBranchNarrativeState(
 	// Reset state on branch change
 	useEffect(() => {
 		void branchScopeKey;
+		setDetailLevel("summary");
+		setAudience("manager");
 		setFeedbackActorRole("developer");
 		setObservability({
 			layerSwitchedCount: 0,

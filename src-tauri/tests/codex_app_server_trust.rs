@@ -3,6 +3,8 @@ use std::fs;
 use std::path::PathBuf;
 
 const MANIFEST_SIGNATURE_SALT: &str = "narrative-codex-sidecar-signature-v1";
+const MANIFEST_FILE_SHA256: &str =
+    "8ec2075e5807a875cdf4979d8621f03090178997af55f7f87f955db3777b017a";
 const MANIFEST_SCHEMA_VERSION: u64 = 1;
 const MANIFEST_MIN_VERSION_FLOOR: u64 = 2026022501;
 const MINIMUM_SIDECAR_VERSION_FLOOR: &str = "0.97.0";
@@ -118,6 +120,13 @@ fn manifest_path() -> PathBuf {
 #[test]
 fn codex_app_server_trust_manifest_is_integrity_validated() {
     let manifest_raw = fs::read_to_string(manifest_path()).expect("manifest should be readable");
+
+    let manifest_file_digest = sha256_hex(manifest_raw.as_bytes());
+    assert_eq!(
+        manifest_file_digest, MANIFEST_FILE_SHA256,
+        "manifest file digest mismatch — update MANIFEST_FILE_SHA256 and SIDECAR_MANIFEST_FILE_SHA256 after any manifest change"
+    );
+
     let manifest: SidecarBinaryManifest =
         serde_json::from_str(&manifest_raw).expect("manifest should parse");
 

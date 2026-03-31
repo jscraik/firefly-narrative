@@ -442,15 +442,12 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
         fs::write(&backup_path, &existing).map_err(|e| e.to_string())?;
     }
 
-    // Ensure a local receiver key exists (stored in keychain).
-    let api_key = secret_store::ensure_otlp_api_key()?;
+    // Ensure a local receiver key exists (stored in keychain) without persisting it.
+    let _ = secret_store::ensure_otlp_api_key()?;
 
-    // Narrative receiver expects this header.
-    let header_name = "x-narrative-api-key";
-    let otel_block = format!(
-        "[otel]\nexporter = {{ otlp-http = {{ endpoint = \"{}\", protocol = \"json\", headers = {{ \"{}\" = \"{}\" }} }} }}\nlog_user_prompt = false\n",
-        endpoint, header_name, api_key
-    );
+    // Narrative receiver expects this header. Reference the env placeholder instead of
+    // embedding the resolved key so the secret stays in keychain/env-backed storage.
+    let otel_block = build_codex_otel_block(&endpoint, "NARRATIVE_OTEL_API_KEY");
 
     let updated = upsert_otel_block(&existing, &otel_block);
     fs::write(&config_path, updated).map_err(|e| e.to_string())?;
@@ -511,7 +508,7 @@ pub fn configure_codex_otel(endpoint: String) -> Result<(), String> {
     let state_payload = serde_json::json!({
         "configuredAtISO": iso_now(),
         "endpoint": endpoint,
-        "header": header_name,
+        "header": "x-narrative-api-key",
     });
     fs::write(
         state_file,
@@ -1084,6 +1081,19 @@ fn is_otel_table(section: &str) -> bool {
     section == "otel" || section.starts_with("otel.")
 }
 
+fn otel_header_env_placeholder(env_key: &str) -> String {
+    format!("${{{env_key}}}")
+}
+
+fn build_codex_otel_block(endpoint: &str, env_key: &str) -> String {
+    let header_name = "x-narrative-api-key";
+    let header_value = otel_header_env_placeholder(env_key);
+    format!(
+        "[otel]\nexporter = {{ otlp-http = {{ endpoint = \"{}\", protocol = \"json\", headers = {{ \"{}\" = \"{}\" }} }} }}\nlog_user_prompt = false\n",
+        endpoint, header_name, header_value
+    )
+}
+
 fn upsert_otel_block(existing: &str, block: &str) -> String {
     if existing.trim().is_empty() {
         return format!("{block}\n");
@@ -1121,9 +1131,10 @@ fn upsert_otel_block(existing: &str, block: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        canonical_is_stub_or_empty, copy_dir_recursive, enforce_collector_roots,
-        normalize_codex_mode, normalize_codex_watch_paths, parse_toml_table_header,
-        upsert_otel_block, validate_otel_endpoint, CodexConfig, CollectorConfig, WatchPaths,
+        build_codex_otel_block, canonical_is_stub_or_empty, copy_dir_recursive,
+        enforce_collector_roots, normalize_codex_mode, normalize_codex_watch_paths,
+        parse_toml_table_header, upsert_otel_block, validate_otel_endpoint, CodexConfig,
+        CollectorConfig, WatchPaths,
     };
     use std::fs;
 
@@ -1226,6 +1237,13 @@ mod tests {
     fn validate_otel_endpoint_rejects_toml_injection_chars() {
         assert!(validate_otel_endpoint("https://localhost:4318/v1/logs").is_ok());
         assert!(validate_otel_endpoint("https://localhost:4318/v1/logs\"\n[evil]").is_err());
+    }
+
+    #[test]
+    fn build_codex_otel_block_uses_env_placeholder_not_plaintext_secret() {
+        let block = build_codex_otel_block("http://127.0.0.1:4318/v1/logs", "NARRATIVE_OTEL_API_KEY");
+        assert!(block.contains(r#""x-narrative-api-key" = "${NARRATIVE_OTEL_API_KEY}""#));
+        assert!(!block.contains("narrative-otel-dev-key-change-in-production"));
     }
 
     #[test]

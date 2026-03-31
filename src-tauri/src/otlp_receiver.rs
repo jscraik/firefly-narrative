@@ -287,20 +287,12 @@ pub fn run_otlp_smoke_test(
 pub fn start_otlp_receiver(app_handle: AppHandle, state: OtelReceiverState) -> Result<(), String> {
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
 
-    // Atomically swap the runtime, handling any existing one
-    // This fixes the race condition where concurrent calls could both pass is_some() check
-    let old_runtime = {
-        let mut guard = state.runtime.lock().map_err(|e| e.to_string())?;
-        guard.replace(OtelReceiverRuntime {
-            shutdown: Some(shutdown_tx),
-        })
-    };
-
-    // Gracefully shut down any existing runtime
-    if let Some(old_runtime) = old_runtime {
-        if let Some(shutdown) = old_runtime.shutdown {
-            let _ = shutdown.send(());
-        }
+    // Reserve the runtime slot atomically. Returns Ok(false) when a receiver is
+    // already running — in that case we treat the call as a no-op to avoid the
+    // port-bind race where the old listener still holds the port while the new
+    // bind fires, which would clear the runtime and leave no receiver running.
+    if !reserve_receiver_runtime(&state, shutdown_tx)? {
+        return Ok(());
     }
 
     let context = ReceiverContext {
@@ -1332,6 +1324,23 @@ fn is_receiver_running(state: &OtelReceiverState) -> bool {
         .unwrap_or(false)
 }
 
+/// Attempt to set a new runtime in `state` if none is currently running.
+/// Returns `Ok(true)` on success (slot was empty, now reserved).
+/// Returns `Ok(false)` if a runtime is already present (idempotent no-op).
+fn reserve_receiver_runtime(
+    state: &OtelReceiverState,
+    shutdown_tx: oneshot::Sender<()>,
+) -> Result<bool, String> {
+    let mut guard = state.runtime.lock().map_err(|e| e.to_string())?;
+    if guard.is_some() {
+        return Ok(false);
+    }
+    *guard = Some(OtelReceiverRuntime {
+        shutdown: Some(shutdown_tx),
+    });
+    Ok(true)
+}
+
 fn clear_receiver_runtime(state: &OtelReceiverState) {
     match state.runtime.lock() {
         Ok(mut guard) => {
@@ -1373,4 +1382,29 @@ fn smoke_test_attributes(commit_sha: &str, file_paths: &[String]) -> HashMap<Str
     }
     attrs.insert("model_id".to_string(), vec!["smoke-test".to_string()]);
     attrs
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reserve_receiver_runtime_is_noop_when_already_running() {
+        let state = OtelReceiverState::default();
+        let (first_tx, _first_rx) = oneshot::channel::<()>();
+        let (second_tx, _second_rx) = oneshot::channel::<()>();
+
+        assert!(
+            reserve_receiver_runtime(&state, first_tx).expect("first reservation"),
+            "first call should succeed"
+        );
+        assert!(
+            !reserve_receiver_runtime(&state, second_tx).expect("second reservation"),
+            "second call should be a no-op"
+        );
+        assert!(
+            state.runtime.lock().expect("runtime lock").is_some(),
+            "runtime should still be set after the no-op"
+        );
+    }
 }

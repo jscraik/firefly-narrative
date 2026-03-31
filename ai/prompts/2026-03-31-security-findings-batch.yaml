@@ -1,0 +1,50 @@
+schema_version: "1.0"
+created_at: "2026-03-31"
+slug: security-findings-batch
+model: claude-sonnet-4-6
+session_type: security-remediation
+
+summary: |
+  Applied security findings from automated analysis across Rust Tauri backend,
+  TypeScript/React frontend, shell scripts, and Node.js developer tooling.
+
+findings_addressed:
+  - id: webhook-rce
+    description: scripts/repair-agent.mjs — webhook RCE via shell string interpolation
+    fix: shell=false argv arrays, HMAC-SHA256 request authentication, input validators
+  - id: otlp-key-plaintext
+    description: src-tauri/src/ingest_config.rs — OTLP API key written to disk in plaintext
+    fix: env-var placeholder indirection instead of resolved secret
+  - id: symlink-loop
+    description: src-tauri/src/import/commands.rs — symlink traversal in collect_recent_files
+    fix: entry.file_type() lstat instead of path.is_dir() stat
+  - id: post-rewrite-tmp
+    description: src-tauri/src/story_anchors/hooks.rs — predictable PID-based temp file
+    fix: mktemp with XXXXXX template and EXIT trap cleanup
+  - id: external-font-fetch
+    description: src/main.tsx — CDN font import leaking user IP
+    fix: removed @design-studio/ui/styles.css import
+  - id: password-redaction-case
+    description: src-tauri/src/import/redactor.rs — case-insensitive flag ignored
+    fix: RegexBuilder to apply flags field
+  - id: codex-history-symlink
+    description: src-tauri/src/import/codex_sessions_parser.rs — path validation bypass via history pointer
+    fix: re-validate resolved session path, lstat-based symlink skipping
+  - id: autopilot-unauthenticated
+    description: scripts/agentation-autopilot.mjs — unauthenticated HTTP server
+    fix: AUTH_TOKEN required, localhost binding, body size limits
+  - id: webhook-listener-unauthenticated
+    description: scripts/agentation-webhook-listener.mjs — unauthenticated webhook listener
+    fix: WEBHOOK_SECRET required, localhost binding, body size limits
+  - id: gitleaks-allowlist
+    description: .gitleaks.toml — overly broad directory allowlist
+    fix: removed broad test/docs/examples path allowlists
+  - id: serve-mjs-network
+    description: serve.mjs — binds all interfaces, serves repo root including dotfiles
+    fix: localhost binding, dist-only candidate roots, dotfile segment blocking
+  - id: completed-session-redaction-bypass
+    description: src-tauri/src/import/commands.rs — completed-session persistence bypasses redaction
+    fix: call redact_session before store_session_with_meta
+  - id: manifest-signature-forgeable
+    description: Static-salt SHA-256 manifest signature forgeable without secret key
+    fix: already applied on branch (manifest file hash pinned in binary)

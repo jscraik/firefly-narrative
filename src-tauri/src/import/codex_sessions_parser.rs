@@ -20,6 +20,13 @@ use std::collections::VecDeque;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
+fn permission_denied_error(message: String) -> ParseResult<ParsedSession> {
+    ParseResult::Failure(ParseError::Io(std::io::Error::new(
+        std::io::ErrorKind::PermissionDenied,
+        message,
+    )))
+}
+
 pub struct CodexSessionJsonlParser;
 
 fn normalize_path_slashes(path: &Path) -> String {
@@ -52,10 +59,7 @@ impl SessionParser for CodexSessionJsonlParser {
     fn parse(&self, path: &Path) -> ParseResult<ParsedSession> {
         // Security: Validate path
         if let Err(e) = PathValidator::validate(path) {
-            return ParseResult::Failure(ParseError::Io(std::io::Error::new(
-                std::io::ErrorKind::PermissionDenied,
-                e.to_string(),
-            )));
+            return permission_denied_error(e.to_string());
         }
 
         let s = normalize_path_slashes(path);
@@ -113,7 +117,11 @@ impl CodexSessionJsonlParser {
             return ParseResult::Failure(ParseError::UnsupportedFormat);
         };
 
-        // Note: PathValidator allows ~/.codex, so parsing the resolved file is still safe.
+        // Re-validate the resolved session file — it may differ from the initial path.
+        if let Err(e) = PathValidator::validate(&session_file) {
+            return permission_denied_error(e.to_string());
+        }
+
         self.parse_session_file(&session_file)
     }
 
@@ -340,7 +348,11 @@ fn resolve_codex_session_file(session_id: &str) -> Option<PathBuf> {
     ];
 
     for base in candidates {
-        if !base.exists() {
+        // Use symlink_metadata so a symlinked base dir is detected and skipped.
+        let Ok(meta) = std::fs::symlink_metadata(&base) else {
+            continue;
+        };
+        if meta.file_type().is_symlink() || !meta.is_dir() {
             continue;
         }
         // Apply a per-root scan budget so a large `sessions/` directory does not prevent searching
@@ -370,13 +382,20 @@ fn walk_find_first(
         }
         *budget -= 1;
         let p = entry.path();
-        if p.is_dir() {
+        // Use entry.file_type() (lstat) so symlinks are never followed.
+        let Ok(ft) = entry.file_type() else {
+            continue;
+        };
+        if ft.is_symlink() {
+            continue;
+        }
+        if ft.is_dir() {
             if let Some(found) = walk_find_first(&p, needle, depth + 1, max_depth, budget) {
                 return Some(found);
             }
             continue;
         }
-        if p.is_file() {
+        if ft.is_file() {
             if let Some(name) = p.file_name().and_then(|s| s.to_str()) {
                 if name.contains(needle) && name.ends_with(".jsonl") {
                     return Some(p);
@@ -385,4 +404,57 @@ fn walk_find_first(
         }
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn walk_find_first_skips_symlinked_files() {
+        use std::fs;
+        use std::os::unix::fs::symlink;
+        use tempfile::tempdir;
+
+        let tmp = tempdir().unwrap();
+        let external = tmp.path().join("outside.jsonl");
+        fs::write(&external, "{}\n").unwrap();
+
+        let sessions = tmp.path().join("sessions");
+        fs::create_dir(&sessions).unwrap();
+        symlink(&external, sessions.join("session-abc123.jsonl")).unwrap();
+
+        let mut budget = 100;
+        assert_eq!(
+            walk_find_first(&sessions, "session-abc123", 0, 2, &mut budget),
+            None,
+            "symlinked JSONL file must not be returned"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn walk_find_first_skips_symlinked_directories() {
+        use std::fs;
+        use std::os::unix::fs::symlink;
+        use tempfile::tempdir;
+
+        let tmp = tempdir().unwrap();
+        let sessions = tmp.path().join("sessions");
+        fs::create_dir(&sessions).unwrap();
+
+        let real_dir = tmp.path().join("real");
+        fs::create_dir(&real_dir).unwrap();
+        fs::write(real_dir.join("session-xyz999.jsonl"), "{}\n").unwrap();
+
+        symlink(&real_dir, sessions.join("loop")).unwrap();
+
+        let mut budget = 100;
+        assert_eq!(
+            walk_find_first(&sessions, "session-xyz999", 0, 2, &mut budget),
+            None,
+            "symlinked directory must not be traversed"
+        );
+    }
 }
