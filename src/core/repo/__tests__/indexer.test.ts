@@ -286,7 +286,7 @@ describe("indexer", () => {
 		it("should handle story anchor status failure gracefully", async () => {
 			mockGetStoryAnchorStatus.mockRejectedValue(new Error("DB error"));
 
-			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+			const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
 				/* suppress console output in test */
 			});
 
@@ -319,7 +319,7 @@ describe("indexer", () => {
 				new Error("Table missing"),
 			);
 
-			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+			const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
 				/* suppress console output in test */
 			});
 
@@ -333,7 +333,7 @@ describe("indexer", () => {
 		it("should handle metadata write failure gracefully", async () => {
 			mockWriteRepoMeta.mockRejectedValue(new Error("Read-only filesystem"));
 
-			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+			const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
 				/* suppress console output in test */
 			});
 
@@ -604,7 +604,7 @@ describe("indexer", () => {
 				new Error("Write failed"),
 			);
 
-			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+			const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
 				/* suppress console output in test */
 			});
 

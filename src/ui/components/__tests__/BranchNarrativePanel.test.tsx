@@ -82,7 +82,164 @@ const projections: StakeholderProjections = {
 	},
 };
 
+function openAdvancedAnalysis() {
+	fireEvent.click(screen.getByText("Advanced analysis"));
+}
+
 describe("BranchNarrativePanel", () => {
+	it("keeps advanced analysis collapsed by default and toggles disclosure semantics", () => {
+		render(
+			<BranchNarrativePanel
+				narrative={narrative}
+				projections={projections}
+				audience="manager"
+				detailLevel="summary"
+				feedbackActorRole="developer"
+				recallLaneItems={recallLaneItems}
+				onAudienceChange={vi.fn()}
+				onFeedbackActorRoleChange={vi.fn()}
+				onDetailLevelChange={vi.fn()}
+				onSubmitFeedback={vi.fn()}
+				onOpenEvidence={vi.fn()}
+				onOpenRawDiff={vi.fn()}
+				askWhyState={{ kind: "idle" }}
+				onSubmitAskWhy={vi.fn()}
+				onOpenAskWhyCitation={vi.fn()}
+			/>,
+		);
+
+		const toggle = screen.getByRole("button", { name: /Advanced analysis/i });
+		const region = document.getElementById(
+			toggle.getAttribute("aria-controls") ?? "",
+		);
+
+		expect(toggle).toHaveAttribute("aria-expanded", "false");
+		expect(region).not.toBeNull();
+		expect(region).toHaveClass("hidden");
+
+		fireEvent.click(toggle);
+
+		expect(toggle).toHaveAttribute("aria-expanded", "true");
+		expect(region).toHaveClass("block");
+	});
+
+	it("resets advanced analysis disclosure when branch scope changes", () => {
+		const { rerender } = render(
+			<BranchNarrativePanel
+				narrative={narrative}
+				projections={projections}
+				audience="manager"
+				detailLevel="summary"
+				feedbackActorRole="developer"
+				branchScopeKey="repo-a:branch-one"
+				recallLaneItems={recallLaneItems}
+				onAudienceChange={vi.fn()}
+				onFeedbackActorRoleChange={vi.fn()}
+				onDetailLevelChange={vi.fn()}
+				onSubmitFeedback={vi.fn()}
+				onOpenEvidence={vi.fn()}
+				onOpenRawDiff={vi.fn()}
+				askWhyState={{ kind: "idle" }}
+				onSubmitAskWhy={vi.fn()}
+				onOpenAskWhyCitation={vi.fn()}
+			/>,
+		);
+
+		const toggle = screen.getByRole("button", { name: /Advanced analysis/i });
+		fireEvent.click(toggle);
+		expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+		rerender(
+			<BranchNarrativePanel
+				narrative={narrative}
+				projections={projections}
+				audience="manager"
+				detailLevel="summary"
+				feedbackActorRole="developer"
+				branchScopeKey="repo-a:branch-two"
+				recallLaneItems={recallLaneItems}
+				onAudienceChange={vi.fn()}
+				onFeedbackActorRoleChange={vi.fn()}
+				onDetailLevelChange={vi.fn()}
+				onSubmitFeedback={vi.fn()}
+				onOpenEvidence={vi.fn()}
+				onOpenRawDiff={vi.fn()}
+				askWhyState={{ kind: "idle" }}
+				onSubmitAskWhy={vi.fn()}
+				onOpenAskWhyCitation={vi.fn()}
+			/>,
+		);
+
+		expect(
+			screen.getByRole("button", { name: /Advanced analysis/i }),
+		).toHaveAttribute("aria-expanded", "false");
+	});
+
+	it("reports advanced analysis open and advanced control usage", () => {
+		const onAdvancedAnalysisToggle = vi.fn();
+		const onAdvancedControlUsed = vi.fn();
+		const onOpenAskWhyCitation = vi.fn();
+
+		render(
+			<BranchNarrativePanel
+				narrative={narrative}
+				projections={projections}
+				audience="manager"
+				detailLevel="summary"
+				feedbackActorRole="developer"
+				recallLaneItems={recallLaneItems}
+				onAudienceChange={vi.fn()}
+				onFeedbackActorRoleChange={vi.fn()}
+				onDetailLevelChange={vi.fn()}
+				onSubmitFeedback={vi.fn()}
+				onOpenEvidence={vi.fn()}
+				onOpenRawDiff={vi.fn()}
+				askWhyState={{
+					kind: "ready",
+					answer: {
+						queryId: "abc12345",
+						questionHash: "deadbeef",
+						answerParagraph: "Answer text.",
+						confidenceBand: "high",
+						confidence: 0.88,
+						citations: [
+							{
+								id: "commit:abc123",
+								type: "commit",
+								label: "Commit abc123",
+								commitSha: "abc123",
+							},
+						],
+						sentenceCitationMap: [
+							{ sentenceIndex: 0, citationIds: ["commit:abc123"] },
+						],
+						fallbackUsed: false,
+						generatedAtISO: "2026-03-02T00:00:00.000Z",
+					},
+				}}
+				onSubmitAskWhy={vi.fn()}
+				onOpenAskWhyCitation={onOpenAskWhyCitation}
+				onAdvancedAnalysisToggle={onAdvancedAnalysisToggle}
+				onAdvancedControlUsed={onAdvancedControlUsed}
+			/>,
+		);
+
+		openAdvancedAnalysis();
+		expect(onAdvancedAnalysisToggle).toHaveBeenCalledWith(true);
+
+		fireEvent.click(screen.getByRole("button", { name: /engineer/i }));
+		expect(onAdvancedControlUsed).toHaveBeenCalledWith("audience-lens");
+
+		fireEvent.click(screen.getByRole("button", { name: /Commit abc123/i }));
+		expect(onAdvancedControlUsed).toHaveBeenCalledWith("ask-why-citation");
+		expect(onOpenAskWhyCitation).toHaveBeenCalledWith({
+			id: "commit:abc123",
+			type: "commit",
+			label: "Commit abc123",
+			commitSha: "abc123",
+		});
+	});
+
 	it("renders summary view and allows switching detail levels", () => {
 		const onDetailLevelChange = vi.fn();
 		render(
@@ -106,13 +263,64 @@ describe("BranchNarrativePanel", () => {
 		);
 
 		expect(screen.getByText("Summary text")).toBeInTheDocument();
-		expect(screen.getByText("Recall lane")).toBeInTheDocument();
+		expect(screen.getByText("Causal sequence")).toBeInTheDocument();
+		expect(screen.getByText("Why we believe this")).toBeInTheDocument();
+		expect(
+			screen.getByRole("group", { name: "Story detail level" }),
+		).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: "Evidence" }),
 		).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", { name: "Evidence" }));
 		expect(onDetailLevelChange).toHaveBeenCalledWith("evidence");
+	});
+
+	it("preserves the canonical summary reading order before advanced analysis", () => {
+		render(
+			<BranchNarrativePanel
+				narrative={narrative}
+				projections={projections}
+				audience="manager"
+				detailLevel="summary"
+				feedbackActorRole="developer"
+				recallLaneItems={recallLaneItems}
+				onAudienceChange={vi.fn()}
+				onFeedbackActorRoleChange={vi.fn()}
+				onDetailLevelChange={vi.fn()}
+				onSubmitFeedback={vi.fn()}
+				onOpenEvidence={vi.fn()}
+				onOpenRawDiff={vi.fn()}
+				askWhyState={{ kind: "idle" }}
+				onSubmitAskWhy={vi.fn()}
+				onOpenAskWhyCitation={vi.fn()}
+			/>,
+		);
+
+		const branchThesis = screen.getByText("Branch thesis");
+		const whyWeBelieveThis = screen.getByText("Why we believe this");
+		const causalSequence = screen.getByText("Causal sequence");
+		const rawDiffAccess = screen.getByText("Raw diff access");
+		const advancedAnalysis = screen.getByRole("button", {
+			name: /Advanced analysis/i,
+		});
+
+		expect(
+			branchThesis.compareDocumentPosition(whyWeBelieveThis) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy();
+		expect(
+			whyWeBelieveThis.compareDocumentPosition(causalSequence) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy();
+		expect(
+			causalSequence.compareDocumentPosition(rawDiffAccess) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy();
+		expect(
+			rawDiffAccess.compareDocumentPosition(advancedAnalysis) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy();
 	});
 
 	it("calls evidence callback in evidence view", () => {
@@ -205,7 +413,9 @@ describe("BranchNarrativePanel", () => {
 			/>,
 		);
 
-		fireEvent.click(screen.getByRole("button", { name: "Open raw diff" }));
+		fireEvent.click(
+			screen.getAllByRole("button", { name: "Open raw diff" })[0],
+		);
 		expect(onOpenRawDiff).toHaveBeenCalledWith(
 			expect.objectContaining({
 				source: "recall_lane",
@@ -235,6 +445,8 @@ describe("BranchNarrativePanel", () => {
 				onOpenAskWhyCitation={vi.fn()}
 			/>,
 		);
+
+		openAdvancedAnalysis();
 
 		fireEvent.click(screen.getByRole("button", { name: "This is key" }));
 		expect(onSubmitFeedback).toHaveBeenCalledWith(
@@ -323,6 +535,8 @@ describe("BranchNarrativePanel", () => {
 			/>,
 		);
 
+		openAdvancedAnalysis();
+
 		expect(screen.getByText("Ask Why")).toBeInTheDocument();
 		expect(
 			screen.getByPlaceholderText("Why was this branch created?"),
@@ -350,6 +564,8 @@ describe("BranchNarrativePanel", () => {
 				onOpenAskWhyCitation={vi.fn()}
 			/>,
 		);
+
+		openAdvancedAnalysis();
 
 		const input = screen.getByPlaceholderText("Why was this branch created?");
 		fireEvent.change(input, {
@@ -381,6 +597,8 @@ describe("BranchNarrativePanel", () => {
 			/>,
 		);
 
+		openAdvancedAnalysis();
+
 		fireEvent.click(screen.getByRole("button", { name: "Ask" }));
 		expect(onSubmitAskWhy).not.toHaveBeenCalled();
 	});
@@ -404,6 +622,8 @@ describe("BranchNarrativePanel", () => {
 				onOpenAskWhyCitation={vi.fn()}
 			/>,
 		);
+
+		openAdvancedAnalysis();
 
 		expect(screen.getByText("Analyzing branch context...")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Asking..." })).toBeDisabled();
@@ -451,6 +671,8 @@ describe("BranchNarrativePanel", () => {
 				onOpenAskWhyCitation={vi.fn()}
 			/>,
 		);
+
+		openAdvancedAnalysis();
 
 		expect(
 			screen.getByText(
@@ -507,6 +729,8 @@ describe("BranchNarrativePanel", () => {
 			/>,
 		);
 
+		openAdvancedAnalysis();
+
 		fireEvent.click(screen.getByRole("button", { name: /Commit abc123/i }));
 		expect(onOpenAskWhyCitation).toHaveBeenCalledWith({
 			id: "commit:abc123",
@@ -553,10 +777,14 @@ describe("BranchNarrativePanel", () => {
 			/>,
 		);
 
+		openAdvancedAnalysis();
+
 		expect(
 			screen.getByText(/Low confidence in this answer/),
 		).toBeInTheDocument();
-		fireEvent.click(screen.getByText("Open raw diff"));
+		fireEvent.click(
+			screen.getAllByRole("button", { name: "Open raw diff" })[1],
+		);
 		expect(onOpenRawDiff).toHaveBeenCalled();
 	});
 
@@ -584,6 +812,8 @@ describe("BranchNarrativePanel", () => {
 				onOpenAskWhyCitation={vi.fn()}
 			/>,
 		);
+
+		openAdvancedAnalysis();
 
 		// When message is provided, it's shown directly (not error type)
 		expect(
@@ -614,6 +844,8 @@ describe("BranchNarrativePanel", () => {
 				onOpenAskWhyCitation={vi.fn()}
 			/>,
 		);
+
+		openAdvancedAnalysis();
 
 		// When no message, error type is shown
 		expect(screen.getByText("Error: no_evidence")).toBeInTheDocument();

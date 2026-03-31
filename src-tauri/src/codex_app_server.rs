@@ -65,6 +65,12 @@ const BLOCKED_SIDECAR_ENV_OVERRIDES: &[&str] = &[
 ];
 const SIDECAR_MANIFEST_FILE: &str = "codex-app-server-manifest.json";
 const SIDECAR_MANIFEST_SIGNATURE_SALT: &str = "narrative-codex-sidecar-signature-v1";
+// SHA-256 of the canonical manifest file, baked into the binary so that
+// an attacker who can modify the manifest file (but not the code-signed binary)
+// cannot forge a trusted signature by recomputing payloadHash + signature.
+// Update this constant (and the matching JS constant) when the manifest changes.
+const SIDECAR_MANIFEST_FILE_SHA256: &str =
+    "8ec2075e5807a875cdf4979d8621f03090178997af55f7f87f955db3777b017a";
 const SIDECAR_MANIFEST_SCHEMA_VERSION: u64 = 1;
 const SIDECAR_MANIFEST_MIN_VERSION_FLOOR: u64 = 2026022501;
 const SIDECAR_MINIMUM_VERSION_FLOOR: &str = "0.97.0";
@@ -884,6 +890,14 @@ fn verify_sidecar_manifest_for_path(sidecar_path: &Path) -> Result<(), String> {
             manifest_path.display()
         )
     })?;
+
+    let manifest_file_hash = sha256_hex(raw_manifest.as_bytes());
+    if manifest_file_hash != SIDECAR_MANIFEST_FILE_SHA256 {
+        return Err(format!(
+            "Sidecar manifest file digest mismatch (expected {}, got {})",
+            SIDECAR_MANIFEST_FILE_SHA256, manifest_file_hash
+        ));
+    }
 
     let manifest: SidecarBinaryManifest = serde_json::from_str(&raw_manifest).map_err(|error| {
         format!(
@@ -4087,7 +4101,8 @@ pub fn codex_app_server_load_thread_recovery_checkpoint(
         }
         Some(checkpoint) => {
             // Check if checkpoint is compatible or requires fresh retry
-            let needs_fresh_retry = requires_fresh_retry(&checkpoint, None);
+            let needs_fresh_retry =
+                requires_fresh_retry(&checkpoint, checkpoint.trust_pause_reason.as_deref());
 
             if needs_fresh_retry {
                 // Checkpoint exists but is incompatible/corrupted - recommend trust_paused

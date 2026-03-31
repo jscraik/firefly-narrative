@@ -34,4 +34,4 @@ Repo-specific agent knowledge base. Append-only.
 
 - **2026-03-12 [Codex]:** In browser-side UI review, persistent `js_repl` Playwright can fail early when the repo `.mise.toml` is untrusted, and the left navigation exposes routes as `role="tab"` rather than generic buttons; fall back to one-shot Node + `@playwright/test` capture scripts and target sidebar tabs by role for reliable screenshot automation.
 
-- **2026-03-12 [Codex]:** In dedicated evidence screens, fallback mock entries can widen inferred array unions and break TypeScript when later grouped or reduced; add an explicit local item type (for example `TranscriptResult[]`) before mixing real session data with fallback placeholders.
+- **2026-03-31 [Claude]:** Harness-gates silent-error detection requires `console.error` (not `console.warn`) in catch blocks. Underscore-prefixed variables like `_err` trigger ERROR-level findings vs WARNINGS for `err`. When fixing: rename variable, add `// biome-ignore lint/suspicious/noConsole: <reason>` comment, and use `console.error()`. See PR #97 for the 10-file remediation pattern.

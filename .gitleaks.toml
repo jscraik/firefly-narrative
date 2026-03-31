@@ -4,16 +4,9 @@ title = "Project gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "Allowlist for test fixtures and examples."
+description = "Allowlist for explicit placeholder values only."
 paths = [
-  "(^|/)docs?/",
-  "(^|/)examples?/",
-  "(^|/)test/",
-  "(^|/)tests?/",
-  "(^|/)spec/",
-  "(^|/)__tests__/",
   "(^|/)test-data/",
-  "(^|/)[^.]+\\.(test|spec)\\.[^.]+$",
 ]
 regexes = [
   "\\[REDACTED\\]",

@@ -115,18 +115,28 @@ describe("RepoEvidenceOverview", () => {
 
 		expect(
 			screen.getByText(
-				"Verify feature/evidence-shell through commits, files, sessions, and snapshots.",
+				"Prove feature/evidence-shell through files, commits, sessions, and snapshots.",
 			),
 		).toBeInTheDocument();
-		expect(screen.getByText("Workspace continues below")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				"This workspace should help you walk every branch claim back to raw evidence. If a conclusion cannot survive that walk, keep it provisional.",
+			),
+		).toBeInTheDocument();
 		expect(screen.getByText("Claim support")).toBeInTheDocument();
 		expect(screen.getByText("2 links")).toBeInTheDocument();
 		expect(screen.getByText("1 linked")).toBeInTheDocument();
 		expect(screen.getByText("2/3")).toBeInTheDocument();
 	});
 
-	it("routes action cards into supporting verification lanes", () => {
+	it("routes cross-lane actions and scrolls to repo workspace for snapshots", () => {
 		const onModeChange = vi.fn();
+		const scrollIntoView = vi.fn();
+		const target = document.createElement("div");
+		target.id = "branch-workspace";
+		target.scrollIntoView = scrollIntoView;
+		document.body.appendChild(target);
+
 		render(
 			<RepoEvidenceOverview
 				model={createModel()}
@@ -142,8 +152,14 @@ describe("RepoEvidenceOverview", () => {
 		);
 		fireEvent.click(screen.getByRole("button", { name: /compare snapshots/i }));
 
-		expect(onModeChange).toHaveBeenNthCalledWith(1, "status");
+		expect(onModeChange).toHaveBeenNthCalledWith(1, "hygiene");
 		expect(onModeChange).toHaveBeenNthCalledWith(2, "sessions");
-		expect(onModeChange).toHaveBeenNthCalledWith(3, "diffs");
+		expect(onModeChange).toHaveBeenCalledTimes(2);
+		expect(scrollIntoView).toHaveBeenCalledWith({
+			behavior: "smooth",
+			block: "start",
+		});
+
+		target.remove();
 	});
 });

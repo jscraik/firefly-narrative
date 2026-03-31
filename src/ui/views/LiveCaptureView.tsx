@@ -79,7 +79,8 @@ export function LiveCaptureView({
 	const activeSessionsMetric =
 		viewModel.metrics.find((metric) => metric.label === "Active sessions") ??
 		viewModel.metrics[0];
-	const nextMode = trustDescriptor.trustState === "healthy" ? "repo" : "status";
+	const nextMode =
+		trustDescriptor.trustState === "healthy" ? "repo" : "hygiene";
 	const nextLabel =
 		trustDescriptor.trustState === "healthy"
 			? "Inspect repo evidence"
@@ -93,7 +94,7 @@ export function LiveCaptureView({
 				<div className="mx-auto flex max-w-6xl flex-col gap-6">
 					<SectionHeader
 						title={viewModel.title}
-						description="{viewModel.subtitle}"
+						description={viewModel.subtitle}
 						badge={
 							<DashboardTrustBadge trustState={trustDescriptor.trustState} />
 						}

@@ -11,7 +11,6 @@ import { RepoEmptyState } from "./ui/components/RepoEmptyState";
 import { SkeletonIntent, SkeletonTimeline } from "./ui/components/Skeleton";
 import { BranchView } from "./ui/views/BranchView";
 import { DashboardView } from "./ui/views/DashboardView";
-import { DocsView } from "./ui/views/DocsView";
 import { NarrativeSurfaceView } from "./ui/views/NarrativeSurfaceView";
 
 type AppContentProps = {
@@ -84,16 +83,6 @@ export function AppContent({
 				onDrillDown={onDrillDown}
 				onModeChange={onModeChange}
 				captureReliabilityStatus={autoIngest.captureReliabilityStatus}
-			/>
-		);
-	}
-
-	if (mode === "docs") {
-		return (
-			<DocsView
-				repoState={repoState}
-				setRepoState={setRepoState}
-				onClose={() => onModeChange("repo")}
 			/>
 		);
 	}
@@ -227,6 +216,7 @@ export function AppContent({
 			onModeChange={onModeChange}
 			onOpenRepo={openRepo}
 			onImportSession={sessionImportHandlers.importSession}
+			repoRoot={repoState.status === "ready" ? repoState.repo.root : ""}
 			onAction={(action) => {
 				if (action.type === "navigate") {
 					onModeChange(action.mode);

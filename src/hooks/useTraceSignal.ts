@@ -299,6 +299,8 @@ export function useTraceSignal(
 				// Uses localStorage fallback when not in Tauri (e.g., browser/Playwright)
 				await setTraceEnabled(targetEnabled);
 			} catch (error) {
+				// biome-ignore lint/suspicious/noConsole: Toggle persistence failures are part of the tested user-facing contract.
+				console.error("[trace.toggle.persist_failed]", error);
 				const message = getErrorMessage(error);
 				setEnabled(currentEnabled);
 				enabledRef.current = currentEnabled;

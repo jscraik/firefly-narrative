@@ -233,6 +233,10 @@ preflight_local_memory_gold() {
 	local rest_host
 	rest_host="$(extract_local_memory_rest_value "${lm_config_path}" host)"
 	rest_host="${rest_host:-127.0.0.1}"
+	if [[ "${rest_host}" != '127.0.0.1' ]]; then
+		log_err "local-memory rest_api.host must be 127.0.0.1, got: ${rest_host}"
+		return 1
+	fi
 
 	local rest_port
 	rest_port="$(extract_local_memory_rest_value "${lm_config_path}" port)"

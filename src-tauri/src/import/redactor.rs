@@ -3,7 +3,7 @@
 //! Uses lightweight regex patterns to replace likely secrets with safe tokens.
 
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -28,12 +28,30 @@ lazy_static! {
         patterns
             .into_iter()
             .map(|pattern| {
-                let regex = Regex::new(&pattern.pattern)
+                let regex = build_redaction_regex(&pattern)
                     .unwrap_or_else(|_| panic!("valid redaction regex: {}", pattern.kind));
                 (regex, pattern.kind)
             })
             .collect()
     };
+}
+
+fn build_redaction_regex(pattern: &RedactionPatternConfig) -> Result<Regex, regex::Error> {
+    let mut builder = RegexBuilder::new(&pattern.pattern);
+    if let Some(flags) = pattern.flags.as_deref() {
+        for flag in flags.chars() {
+            match flag {
+                'i' => { builder.case_insensitive(true); }
+                'm' => { builder.multi_line(true); }
+                's' => { builder.dot_matches_new_line(true); }
+                'x' => { builder.ignore_whitespace(true); }
+                'U' => { builder.swap_greed(true); }
+                // 'g' is a JS-only global flag; Rust replaces all by default via replace_all.
+                _ => {}
+            }
+        }
+    }
+    builder.build()
 }
 
 const REDACTION_TOKEN_PREFIX: &str = "⟦REDACTED:";
@@ -121,7 +139,6 @@ fn merge_hits(target: &mut Vec<RedactionHit>, incoming: Vec<RedactionHit>) {
 struct RedactionPatternConfig {
     kind: String,
     pattern: String,
-    #[allow(dead_code)]
     flags: Option<String>,
 }
 
@@ -341,6 +358,20 @@ mod tests {
         assert!(redacted.contains("⟦REDACTED:PASSWORD_ASSIGNMENT⟧"));
         assert!(!redacted.contains("my_private_api_key_xyz789"));
         assert_eq!(summary.total, 1);
+    }
+
+    #[test]
+    fn test_redact_password_assignment_case_insensitive() {
+        // Mixed-case keywords must be caught by the Rust redactor (regression guard).
+        let input = "PASSWORD = 'super_secret_password_123'\nApiKey: \"my_private_api_key_xyz789\""; // gitleaks:allow
+        let (redacted, summary) = redact_text(input);
+
+        assert_eq!(summary.total, 2, "both mixed-case assignments must be redacted");
+        let hit = summary.hits.iter().find(|h| h.kind == "PASSWORD_ASSIGNMENT");
+        assert_eq!(hit.map(|h| h.count), Some(2));
+        assert!(redacted.matches("⟦REDACTED:PASSWORD_ASSIGNMENT⟧").count() >= 2);
+        assert!(!redacted.contains("super_secret_password_123"));
+        assert!(!redacted.contains("my_private_api_key_xyz789"));
     }
 
     #[test]

@@ -21,6 +21,37 @@ fn narrative_base(repo_root: &str) -> Result<PathBuf, String> {
     Ok(root.join(".narrative"))
 }
 
+fn reject_symlink(path: &Path) -> Result<(), String> {
+    let metadata = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
+    if metadata.file_type().is_symlink() {
+        return Err(format!(
+            "symlinks are not allowed under .narrative: {}",
+            path.display()
+        ));
+    }
+    Ok(())
+}
+
+/// Walk every component of `rel` under `base`, rejecting symlinks at each step.
+fn checked_narrative_path(base: &Path, rel: &Path) -> Result<PathBuf, String> {
+    let mut current = base.to_path_buf();
+    if current.exists() {
+        reject_symlink(&current)?;
+    }
+
+    for component in rel.components() {
+        let Component::Normal(part) = component else {
+            return Err("relative path contains invalid components".into());
+        };
+        current.push(part);
+        if current.exists() {
+            reject_symlink(&current)?;
+        }
+    }
+
+    Ok(current)
+}
+
 fn validate_rel(rel: &str) -> Result<PathBuf, String> {
     let p = PathBuf::from(rel);
     if p.is_absolute() {
@@ -38,13 +69,18 @@ fn validate_rel(rel: &str) -> Result<PathBuf, String> {
 #[tauri::command(rename_all = "camelCase")]
 pub fn ensure_narrative_dirs(repo_root: String) -> Result<(), String> {
     let base = narrative_base(&repo_root)?;
-    fs::create_dir_all(base.join("meta/commits")).map_err(|e| e.to_string())?;
-    fs::create_dir_all(base.join("meta/branches")).map_err(|e| e.to_string())?;
-    fs::create_dir_all(base.join("sessions/imported")).map_err(|e| e.to_string())?;
-    fs::create_dir_all(base.join("tests/imported")).map_err(|e| e.to_string())?;
-    fs::create_dir_all(base.join("trace")).map_err(|e| e.to_string())?;
-    fs::create_dir_all(base.join("trace/generated")).map_err(|e| e.to_string())?;
-    fs::create_dir_all(base.join("rules")).map_err(|e| e.to_string())?;
+    for rel in [
+        "meta/commits",
+        "meta/branches",
+        "sessions/imported",
+        "tests/imported",
+        "trace",
+        "trace/generated",
+        "rules",
+    ] {
+        let target = checked_narrative_path(&base, &validate_rel(rel)?)?;
+        fs::create_dir_all(target).map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 
@@ -72,7 +108,7 @@ pub fn write_narrative_file(
 ) -> Result<(), String> {
     let base = narrative_base(&repo_root)?;
     let rel = validate_rel(&relative_path)?;
-    let target = base.join(rel);
+    let target = checked_narrative_path(&base, &rel)?;
 
     if let Some(parent) = target.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -86,7 +122,7 @@ pub fn write_narrative_file(
 pub fn read_narrative_file(repo_root: String, relative_path: String) -> Result<String, String> {
     let base = narrative_base(&repo_root)?;
     let rel = validate_rel(&relative_path)?;
-    let target = base.join(rel);
+    let target = checked_narrative_path(&base, &rel)?;
 
     fs::read_to_string(&target).map_err(|e| format!("read failed: {e}"))
 }
@@ -95,9 +131,16 @@ fn walk_files(dir: &Path, base: &Path, out: &mut Vec<String>) -> Result<(), Stri
     for entry in fs::read_dir(dir).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         let p = entry.path();
-        if p.is_dir() {
+        let file_type = entry.file_type().map_err(|e| e.to_string())?;
+        if file_type.is_symlink() {
+            return Err(format!(
+                "symlinks are not allowed under .narrative: {}",
+                p.display()
+            ));
+        }
+        if file_type.is_dir() {
             walk_files(&p, base, out)?;
-        } else if p.is_file() {
+        } else if file_type.is_file() {
             let rel = p
                 .strip_prefix(base)
                 .map_err(|_| "strip_prefix failed".to_string())?
@@ -116,7 +159,7 @@ pub fn list_narrative_files(
 ) -> Result<Vec<String>, String> {
     let base = narrative_base(&repo_root)?;
     let rel = validate_rel(&relative_dir)?;
-    let dir = base.join(rel);
+    let dir = checked_narrative_path(&base, &rel)?;
 
     if !dir.exists() {
         return Ok(vec![]);
@@ -145,4 +188,91 @@ pub fn read_text_file(path: String) -> Result<String, String> {
     }
 
     fs::read_to_string(&p).map_err(|e| format!("read failed: {e}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[cfg(unix)]
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn write_and_read_narrative_file_with_normal_paths() {
+        let repo = tempdir().unwrap();
+        let repo_root = repo.path().to_string_lossy().to_string();
+
+        ensure_narrative_dirs(repo_root.clone()).unwrap();
+        write_narrative_file(repo_root.clone(), "meta/repo.json".into(), "hello".into()).unwrap();
+
+        let contents = read_narrative_file(repo_root.clone(), "meta/repo.json".into()).unwrap();
+        assert_eq!(contents, "hello");
+
+        let files = list_narrative_files(repo_root, "meta".into()).unwrap();
+        assert_eq!(files, vec!["meta/repo.json"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_narrative_file_rejects_symlinked_parent() {
+        let repo = tempdir().unwrap();
+        let outside = tempdir().unwrap();
+        let repo_root = repo.path().to_string_lossy().to_string();
+
+        fs::create_dir_all(repo.path().join(".narrative")).unwrap();
+        symlink(outside.path(), repo.path().join(".narrative/meta")).unwrap();
+
+        let err =
+            write_narrative_file(repo_root, "meta/repo.json".into(), "hello".into()).unwrap_err();
+        assert!(
+            err.contains("symlinks are not allowed"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn read_narrative_file_rejects_symlinked_file() {
+        let repo = tempdir().unwrap();
+        let outside = tempdir().unwrap();
+        let repo_root = repo.path().to_string_lossy().to_string();
+
+        fs::create_dir_all(repo.path().join(".narrative/meta")).unwrap();
+        fs::write(outside.path().join("secret.txt"), "secret").unwrap();
+        symlink(
+            outside.path().join("secret.txt"),
+            repo.path().join(".narrative/meta/repo.json"),
+        )
+        .unwrap();
+
+        let err = read_narrative_file(repo_root, "meta/repo.json".into()).unwrap_err();
+        assert!(
+            err.contains("symlinks are not allowed"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn list_narrative_files_rejects_symlink_entries() {
+        let repo = tempdir().unwrap();
+        let outside = tempdir().unwrap();
+        let repo_root = repo.path().to_string_lossy().to_string();
+
+        fs::create_dir_all(repo.path().join(".narrative/meta")).unwrap();
+        fs::write(outside.path().join("secret.txt"), "secret").unwrap();
+        symlink(
+            outside.path().join("secret.txt"),
+            repo.path().join(".narrative/meta/link.txt"),
+        )
+        .unwrap();
+
+        let err = list_narrative_files(repo_root, "meta".into()).unwrap_err();
+        assert!(
+            err.contains("symlinks are not allowed"),
+            "unexpected error: {err}"
+        );
+    }
 }

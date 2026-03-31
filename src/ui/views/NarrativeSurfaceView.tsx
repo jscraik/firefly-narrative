@@ -4,11 +4,6 @@ import type { RepoState } from "../../hooks/useRepoLoader";
 import { DashboardTrustBadge } from "../components/dashboard/DashboardTrustBadge";
 import { LedeBanner } from "../components/LedeBanner";
 import { SectionHeader } from "../components/SectionHeader";
-import { CausalTimelineView } from "./CausalTimelineView";
-import { CostsView } from "./CostsView";
-import { DiffReviewView } from "./DiffReviewView";
-import { EnvHygieneView } from "./EnvHygieneView";
-import { LiveCaptureView } from "./LiveCaptureView";
 import {
 	buildNarrativeSurfaceViewModel,
 	type SurfaceMode,
@@ -21,15 +16,9 @@ import {
 	HighlightsSection,
 	SummaryTable,
 } from "./narrativeSurfaceSections";
-import { RepoPulseView } from "./RepoPulseView";
 import { SessionsView } from "./SessionsView";
 import { SettingsView } from "./SettingsView";
-import { SetupView } from "./SetupView";
-import { StoryMapView } from "./StoryMapView";
 import { ToolsView } from "./ToolsView";
-import { TranscriptLensView } from "./TranscriptLensView";
-import { TrustCenterView } from "./TrustCenterView";
-import { WorktreesView } from "./WorktreesView";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -43,6 +32,7 @@ interface NarrativeSurfaceViewProps {
 	onModeChange: (mode: Mode) => void;
 	onOpenRepo: () => void;
 	onImportSession?: () => void;
+	repoRoot: string;
 	onAction?: (action: NonNullable<SurfaceTableRow["action"]>) => void;
 }
 
@@ -54,123 +44,12 @@ export function NarrativeSurfaceView({
 	onModeChange,
 	onOpenRepo,
 	onImportSession,
+	repoRoot,
 	onAction,
 }: NarrativeSurfaceViewProps) {
-	if (mode === "work-graph") {
-		return (
-			<StoryMapView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
-	if (mode === "live") {
-		return (
-			<LiveCaptureView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
 	if (mode === "sessions") {
 		return (
 			<SessionsView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
-	if (mode === "transcripts") {
-		return (
-			<TranscriptLensView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
-	if (mode === "status") {
-		return (
-			<TrustCenterView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
-	if (mode === "timeline") {
-		return (
-			<CausalTimelineView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
-	if (mode === "diffs") {
-		return (
-			<DiffReviewView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
-	if (mode === "worktrees") {
-		return (
-			<WorktreesView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
-	if (mode === "env") {
-		return (
-			<EnvHygieneView
 				repoState={repoState}
 				captureReliabilityStatus={captureReliabilityStatus}
 				autoIngestEnabled={autoIngestEnabled}
@@ -188,20 +67,7 @@ export function NarrativeSurfaceView({
 				onModeChange={onModeChange}
 				onOpenRepo={onOpenRepo}
 				onImportSession={onImportSession}
-			/>
-		);
-	}
-
-	if (mode === "setup") {
-		return (
-			<SetupView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
+				repoRoot={repoRoot}
 			/>
 		);
 	}
@@ -209,34 +75,6 @@ export function NarrativeSurfaceView({
 	if (mode === "tools") {
 		return (
 			<ToolsView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
-	if (mode === "costs") {
-		return (
-			<CostsView
-				repoState={repoState}
-				captureReliabilityStatus={captureReliabilityStatus}
-				autoIngestEnabled={autoIngestEnabled}
-				onModeChange={onModeChange}
-				onOpenRepo={onOpenRepo}
-				onImportSession={onImportSession}
-				onAction={onAction}
-			/>
-		);
-	}
-
-	if (mode === "repo-pulse") {
-		return (
-			<RepoPulseView
 				repoState={repoState}
 				captureReliabilityStatus={captureReliabilityStatus}
 				autoIngestEnabled={autoIngestEnabled}

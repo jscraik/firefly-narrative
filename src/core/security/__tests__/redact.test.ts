@@ -177,21 +177,38 @@ describe("redactSecrets — clean input", () => {
 // ---------------------------------------------------------------------------
 
 describe("redactSecrets — input length cap", () => {
-	it("returns unredacted + empty hits when input exceeds 2 MB", () => {
-		// Build a 3 MB string with a real secret inside it
+	it("uses safe mode and still redacts non-ReDoS patterns when input exceeds 2 MB", () => {
 		const secret = "sk-abcdefghijklmnopqrst12345";
-		const padding = "a".repeat(3 * 1024 * 1024);
-		const oversized = padding + secret;
+		// Separator ensures the \b word boundary fires around the token
+		const oversized = `${"a".repeat(3 * 1024 * 1024)}\nkey=${secret}`;
 
-		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
-			/* suppress console output in test */
-		});
+		const warnSpy = vi
+			.spyOn(console, "warn")
+			.mockImplementation(() => undefined);
 		const { redacted, hits } = redactSecrets(oversized);
 		warnSpy.mockRestore();
 
-		// Secret must NOT be redacted (we skipped the scan)
-		expect(redacted).toContain(secret);
-		expect(hits).toHaveLength(0);
+		expect(redacted).toContain("[REDACTED:OPENAI_KEY]");
+		expect(redacted).not.toContain(secret);
+		expect(hits).toContainEqual({ type: "OPENAI_KEY", count: 1 });
+	});
+
+	it("redacts private key blocks in oversized inputs without regex backtracking", () => {
+		const oversized = [
+			"x".repeat(3 * 1024 * 1024),
+			"-----BEGIN RSA PRIVATE KEY-----",
+			"MIIEowIBAAKCAQEA0Z3VS5JJcds3xHn/ygWep4",
+			"-----END RSA PRIVATE KEY-----",
+		].join("\n");
+
+		const warnSpy = vi
+			.spyOn(console, "warn")
+			.mockImplementation(() => undefined);
+		const { redacted, hits } = redactSecrets(oversized);
+		warnSpy.mockRestore();
+
+		expect(redacted).toContain("[REDACTED:PRIVATE_KEY_BLOCK]");
+		expect(hits).toContainEqual({ type: "PRIVATE_KEY_BLOCK", count: 1 });
 	});
 
 	it("emits a console.warn when input is too large", () => {

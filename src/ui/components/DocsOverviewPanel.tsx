@@ -3,7 +3,6 @@ import { BookOpen, ChevronRight, FileText, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
 import {
 	ensureNarrativeDirs,
 	listNarrativeFiles,
@@ -117,7 +116,9 @@ export function DocsOverviewPanel({
 			if (!isMountedRef.current) return;
 			setDocs(docList);
 			setError("");
-		} catch (_err) {
+		} catch (err) {
+			// biome-ignore lint/suspicious/noConsole: Best-effort doc loading failures are intentionally surfaced.
+			console.error("[DocsOverviewPanel] Failed to load docs:", err);
 			if (docsRequestVersionRef.current !== requestVersion) return;
 			if (!isMountedRef.current) return;
 			// Don't show error for empty/no directory - just empty list
@@ -241,10 +242,7 @@ export function DocsOverviewPanel({
 									</div>
 								) : (
 									<div className="prose prose-sm max-w-none">
-										<ReactMarkdown
-											rehypePlugins={[rehypeRaw]}
-											components={components}
-										>
+										<ReactMarkdown components={components}>
 											{content}
 										</ReactMarkdown>
 									</div>
@@ -325,8 +323,12 @@ export function DocsOverviewPanel({
 											].join("\n");
 											await writeNarrativeFile(repoRoot, rel, starter);
 											await refreshDocs();
-										} catch (_e) {
-											const _msg = String(_e);
+										} catch (e) {
+											// biome-ignore lint/suspicious/noConsole: Best-effort doc creation failures are intentionally surfaced.
+											console.error(
+												"[DocsOverviewPanel] Failed to create starter doc:",
+												e,
+											);
 										}
 									}}
 								>

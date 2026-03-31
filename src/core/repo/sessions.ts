@@ -138,7 +138,9 @@ async function loadSessionExcerptsFromDisk(
 		}
 
 		return excerpts;
-	} catch (_err) {
+	} catch (err) {
+		// biome-ignore lint/suspicious/noConsole: Best-effort session loading failures must remain observable.
+		console.error("[sessions] Failed to load sessions from disk:", err);
 		return [];
 	}
 }
@@ -155,7 +157,9 @@ async function loadSessionExcerptsFromDb(
 		return sessions.map((payload, idx) =>
 			normalizeExcerpt(payload.id ?? `session-${idx}`, payload),
 		);
-	} catch (_err) {
+	} catch (err) {
+		// biome-ignore lint/suspicious/noConsole: Best-effort session loading failures must remain observable.
+		console.error("[sessions] Failed to load sessions from DB:", err);
 		return [];
 	}
 }

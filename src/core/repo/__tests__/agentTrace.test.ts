@@ -124,6 +124,42 @@ describe("parseTraceRecord (via importAgentTraceFile)", () => {
 		expect(result.storedPath).toMatch(/^trace\//);
 	});
 
+	it("clamps imported trace ranges to a bounded positive window", async () => {
+		const maliciousTrace = makeValidTraceJson({
+			files: [
+				{
+					path: "src/index.ts",
+					conversations: [
+						{
+							ranges: [
+								{ start_line: -5, end_line: 50000, content_hash: "hash01" },
+							],
+						},
+					],
+				},
+			],
+		});
+
+		vi.mocked(readTextFile).mockResolvedValue(maliciousTrace);
+		vi.mocked(redactSecrets).mockReturnValue({
+			redacted: maliciousTrace,
+			hits: [],
+		});
+
+		await importAgentTraceFile("/repo", 1, "/path/malicious.json");
+
+		expect(writeNarrativeFile).toHaveBeenCalledWith(
+			"/repo",
+			expect.stringMatching(/^trace\//),
+			expect.stringContaining('"startLine": 1'),
+		);
+		expect(writeNarrativeFile).toHaveBeenCalledWith(
+			"/repo",
+			expect.stringMatching(/^trace\//),
+			expect.stringContaining('"endLine": 10000'),
+		);
+	});
+
 	it("throws on invalid JSON input", async () => {
 		vi.mocked(readTextFile).mockResolvedValue("not-json-at-all");
 		vi.mocked(redactSecrets).mockReturnValue({

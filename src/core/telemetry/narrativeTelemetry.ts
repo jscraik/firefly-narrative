@@ -5,6 +5,15 @@ export type NarrativeTelemetryEventName =
 	| "first_win_completed"
 	| "narrative_viewed"
 	| "layer_switched"
+	| "branch_fast_path_loaded"
+	| "branch_primary_cta_used"
+	| "branch_advanced_analysis_opened"
+	| "branch_low_confidence_fallback_used"
+	| "branch_evidence_open_time_ms"
+	| "branch_story_to_diff_time_ms"
+	| "branch_verification_mode_selected"
+	| "branch_scope_reset_occurred"
+	| "branch_advanced_control_used"
 	| "audience_switched"
 	| "evidence_opened"
 	| "fallback_used"
@@ -108,7 +117,13 @@ declare global {
 // Narrative Telemetry Types
 // ============================================================================
 
-type NarrativeEvidenceSource = "demo" | "git" | "recall_lane";
+type NarrativeEvidenceSource =
+	| "demo"
+	| "git"
+	| "recall_lane"
+	| "header_cta"
+	| "evidence_link"
+	| "raw_diff";
 
 export type NarrativeHeaderKind = "hidden" | "shell" | "full";
 export type NarrativeRepoStatus = "idle" | "loading" | "ready" | "error";
@@ -129,11 +144,43 @@ export type NarrativeTelemetryPayload = {
 	schemaVersion?: NarrativeTelemetrySchemaVersion;
 	attemptId?: string;
 	branch?: string;
+	branchScopeKey?: string;
+	oldBranchScopeKey?: string;
+	newBranchScopeKey?: string;
 	viewInstanceId?: string;
 	source?: NarrativeEvidenceSource;
 	detailLevel?: "summary" | "evidence" | "diff";
 	audience?: "executive" | "manager" | "engineer";
 	evidenceKind?: "commit" | "session" | "file" | "diff";
+	verificationMode?: "evidence-first" | "session-first" | "diff-first";
+	workspaceState?:
+		| "loading"
+		| "error"
+		| "empty"
+		| "kill_switch"
+		| "degraded"
+		| "ready-low-confidence"
+		| "ready";
+	trustPosture?:
+		| "none"
+		| "hydrating"
+		| "live_trusted"
+		| "replaying"
+		| "trust_paused";
+	fixtureClass?:
+		| "high-confidence"
+		| "low-confidence"
+		| "degraded"
+		| "kill-switch"
+		| "default";
+	hasAdvancedAnalysis?: boolean;
+	cta?: "inspect-evidence" | "open-raw-diff";
+	control?: string;
+	initialOpen?: boolean;
+	target?: "evidence" | "raw-diff";
+	elapsedMs?: number;
+	clearedStateKeys?: string[];
+	staleAsyncDropped?: boolean;
 	confidence?: number;
 	rolloutStatus?: "healthy" | "watch" | "rollback";
 	score?: number;

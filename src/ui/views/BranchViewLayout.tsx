@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
-import type { ComponentProps } from "react";
+import { type ComponentProps, useEffect, useId, useState } from "react";
 import type { CaptureReliabilityStatus } from "../../core/tauri/ingestConfig";
 import type {
 	BranchHeaderViewModel,
@@ -9,7 +9,6 @@ import type {
 } from "../../core/types";
 import { BranchHeader } from "../components/BranchHeader";
 import { BranchNarrativePanel } from "../components/BranchNarrativePanel";
-import { BranchSummaryBar } from "../components/BranchSummaryBar";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { CaptureActivityStrip } from "../components/CaptureActivityStrip";
 import { DecisionArchaeologyPanel } from "../components/DecisionArchaeologyPanel";
@@ -32,6 +31,8 @@ interface BranchViewLayoutProps {
 	model: BranchViewModel;
 	headerViewModel: BranchHeaderViewModel;
 	onClearFilter?: () => void;
+	onInspectEvidenceCta?: () => void;
+	onHeaderOpenRawDiff?: () => void;
 	narrativePanelProps: ComponentProps<typeof BranchNarrativePanel>;
 	governanceProps: ComponentProps<typeof NarrativeGovernancePanel>;
 	archaeologyProps: ComponentProps<typeof DecisionArchaeologyPanel>;
@@ -56,6 +57,8 @@ export function BranchViewLayout({
 	model,
 	headerViewModel,
 	onClearFilter,
+	onInspectEvidenceCta,
+	onHeaderOpenRawDiff,
 	narrativePanelProps,
 	governanceProps,
 	archaeologyProps,
@@ -75,6 +78,30 @@ export function BranchViewLayout({
 	const shouldReduceMotion = useReducedMotion();
 	const initialY = shouldReduceMotion ? 0 : PANEL.initialY;
 	const finalY = shouldReduceMotion ? 0 : PANEL.finalY;
+	const commitCount = model.timeline.filter(
+		(node) => node.type === "commit",
+	).length;
+	const workspaceHeadline =
+		model.narrative?.summary ||
+		model.title ||
+		(commitCount === 1 ? "1 commit" : `${commitCount} commits`) +
+			(model.stats.files ? ` across ${model.stats.files} files` : "");
+	const layoutScopeKey = `${model.meta?.repoPath ?? ""}:${model.meta?.branchName ?? ""}`;
+	const workspaceDetailId = useId();
+	const [workspaceDetailOpen, setWorkspaceDetailOpen] = useState(false);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset on scope key change
+	useEffect(() => {
+		setWorkspaceDetailOpen(false);
+	}, [layoutScopeKey]);
+
+	const handleInspectEvidence = () => {
+		onInspectEvidenceCta?.();
+		document.getElementById("verification-rail")?.scrollIntoView({
+			behavior: shouldReduceMotion ? "auto" : "smooth",
+			block: "start",
+		});
+	};
 
 	return (
 		<div
@@ -83,30 +110,48 @@ export function BranchViewLayout({
 			<IngestToast toast={ingestToast ?? null} />
 			<div className="flex-1 overflow-hidden bg-bg-secondary">
 				<div className="flex h-full flex-col overflow-y-auto bg-bg-tertiary">
-					<div className="mx-auto flex w-full max-w-[100rem] flex-col gap-5 p-6 lg:flex-1 lg:overflow-hidden lg:p-8">
+					<div className="mx-auto flex w-full max-w-[100rem] flex-col gap-5 p-4 sm:p-6 lg:flex-1 lg:overflow-hidden lg:p-8">
 						<RepoEvidenceOverview
 							model={model}
 							captureReliabilityStatus={captureReliabilityStatus}
 							onModeChange={onModeChange}
 						/>
 
-						<div className="flex flex-col gap-5 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-12 lg:overflow-hidden">
-							{/* Left column */}
-							<div className="flex flex-col gap-5 lg:col-span-7 lg:overflow-y-auto lg:pr-1">
-								<motion.div
-									initial={{ opacity: 0, y: initialY }}
-									animate={{
-										opacity: stage >= 1 ? 1 : 0,
-										y: stage >= 1 ? finalY : initialY,
+						<div
+							id="branch-workspace"
+							className="flex flex-col gap-5 xl:grid xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)] xl:overflow-hidden"
+						>
+							<motion.div
+								layout
+								layoutId="branch-header"
+								className="xl:col-span-2"
+								initial={{ opacity: 0, y: initialY }}
+								animate={{
+									opacity: stage >= 1 ? 1 : 0,
+									y: stage >= 1 ? finalY : initialY,
+								}}
+								transition={PANEL.spring}
+							>
+								<BranchHeader
+									viewModel={headerViewModel}
+									workspaceStrip={{
+										headline: workspaceHeadline,
+										commitCount,
+										fileCount: model.stats.files,
+										confidencePercent: model.narrative
+											? Math.round(model.narrative.confidence * 100)
+											: null,
 									}}
-									transition={PANEL.spring}
-								>
-									<BranchSummaryBar model={model} />
-								</motion.div>
+									onClearFilter={onClearFilter}
+									onInspectEvidence={handleInspectEvidence}
+									onOpenRawDiff={
+										onHeaderOpenRawDiff ?? narrativePanelProps.onOpenRawDiff
+									}
+								/>
+							</motion.div>
 
+							<div className="flex flex-col gap-5 xl:min-h-0 xl:overflow-y-auto xl:pr-1">
 								<motion.div
-									layout
-									layoutId="branch-header"
 									initial={{ opacity: 0, y: initialY }}
 									animate={{
 										opacity: stage >= 2 ? 1 : 0,
@@ -114,62 +159,62 @@ export function BranchViewLayout({
 									}}
 									transition={PANEL.spring}
 								>
-									<BranchHeader
-										viewModel={headerViewModel}
-										onClearFilter={onClearFilter}
-									/>
+									<BranchNarrativePanel {...narrativePanelProps} />
 								</motion.div>
 
-								<motion.div
+								<motion.section
+									className="group rounded-xl border border-border-subtle bg-bg-secondary px-4 py-3"
 									initial={{ opacity: 0, y: initialY }}
 									animate={{
 										opacity: stage >= 3 ? 1 : 0,
 										y: stage >= 3 ? finalY : initialY,
 									}}
 									transition={PANEL.spring}
+									aria-labelledby={`${workspaceDetailId}-toggle`}
 								>
-									<BranchNarrativePanel {...narrativePanelProps} />
-								</motion.div>
-
-								<motion.details
-									className="group"
-									initial={{ opacity: 0, y: initialY }}
-									animate={{
-										opacity: stage >= 4 ? 1 : 0,
-										y: stage >= 4 ? finalY : initialY,
-									}}
-									transition={PANEL.spring}
-								>
-									<summary className="cursor-pointer list-none select-none py-2 text-sm font-medium text-text-tertiary transition-colors hover:text-text-primary">
-										<span className="flex items-center gap-2">
-											<span className="flex h-4 w-4 items-center justify-center rounded-sm bg-bg-primary transition-colors group-open:bg-bg-hover">
-												<svg
-													className="h-3 w-3 transition-transform group-open:rotate-90"
-													viewBox="0 0 16 16"
-													fill="none"
-													xmlns="http://www.w3.org/2000/svg"
-												>
-													<title>Toggle details panel</title>
-													<path
-														d="M6 12L10 8L6 4"
-														stroke="currentColor"
-														strokeWidth="2"
-														strokeLinecap="round"
-														strokeLinejoin="round"
-													/>
-												</svg>
-											</span>
-											Show details
+									<button
+										id={`${workspaceDetailId}-toggle`}
+										type="button"
+										aria-expanded={workspaceDetailOpen}
+										aria-controls={workspaceDetailId}
+										onClick={() =>
+											setWorkspaceDetailOpen((current) => !current)
+										}
+										className="flex w-full items-center gap-2 py-1 text-left text-sm font-medium text-text-tertiary transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue-light focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary"
+									>
+										<span className="flex h-4 w-4 items-center justify-center rounded-sm bg-bg-primary transition-colors motion-reduce:transition-none">
+											<svg
+												className={`h-3 w-3 transition-transform motion-reduce:transition-none ${workspaceDetailOpen ? "rotate-90" : ""}`}
+												viewBox="0 0 16 16"
+												fill="none"
+												xmlns="http://www.w3.org/2000/svg"
+											>
+												<title>Toggle details panel</title>
+												<path
+													d="M6 12L10 8L6 4"
+													stroke="currentColor"
+													strokeWidth="2"
+													strokeLinecap="round"
+													strokeLinejoin="round"
+												/>
+											</svg>
 										</span>
-									</summary>
-									<div className="flex flex-col gap-5 pt-3">
+										Advanced workspace detail
+									</button>
+									{/* biome-ignore lint/a11y/useSemanticElements: collapsible region panel, not a standalone landmark */}
+									<div
+										id={workspaceDetailId}
+										role="region"
+										aria-labelledby={`${workspaceDetailId}-toggle`}
+										className={`${workspaceDetailOpen ? "flex" : "hidden"} flex-col gap-5 pt-4`}
+									>
 										<NarrativeGovernancePanel {...governanceProps} />
 										<DecisionArchaeologyPanel {...archaeologyProps} />
 										{captureActivityProps ? (
 											<CaptureActivityStrip {...captureActivityProps} />
 										) : null}
 									</div>
-								</motion.details>
+								</motion.section>
 
 								{ingestIssuesProps ? (
 									<NeedsAttentionList {...ingestIssuesProps} />
@@ -178,8 +223,8 @@ export function BranchViewLayout({
 								<motion.div
 									initial={{ opacity: 0, y: initialY }}
 									animate={{
-										opacity: stage >= 5 ? 1 : 0,
-										y: stage >= 5 ? finalY : initialY,
+										opacity: stage >= 4 ? 1 : 0,
+										y: stage >= 4 ? finalY : initialY,
 									}}
 									transition={PANEL.spring}
 								>
@@ -208,8 +253,8 @@ export function BranchViewLayout({
 								<motion.div
 									initial={{ opacity: 0, y: initialY }}
 									animate={{
-										opacity: stage >= 6 ? 1 : 0,
-										y: stage >= 6 ? finalY : initialY,
+										opacity: stage >= 5 ? 1 : 0,
+										y: stage >= 5 ? finalY : initialY,
 									}}
 									transition={PANEL.spring}
 								>
@@ -242,13 +287,12 @@ export function BranchViewLayout({
 								)}
 							</div>
 
-							{/* Right column - Tabbed interface */}
 							<motion.div
-								className="flex flex-col min-w-0 lg:col-span-5 lg:overflow-hidden"
+								className="flex min-w-0 flex-col xl:overflow-hidden"
 								initial={{ opacity: 0, y: initialY }}
 								animate={{
-									opacity: stage >= 7 ? 1 : 0,
-									y: stage >= 7 ? finalY : initialY,
+									opacity: stage >= 6 ? 1 : 0,
+									y: stage >= 6 ? finalY : initialY,
 								}}
 								transition={PANEL.spring}
 							>
@@ -264,8 +308,8 @@ export function BranchViewLayout({
 				layoutId="timeline-view"
 				initial={{ opacity: 0, y: initialY }}
 				animate={{
-					opacity: stage >= 8 ? 1 : 0,
-					y: stage >= 8 ? finalY : initialY,
+					opacity: stage >= 7 ? 1 : 0,
+					y: stage >= 7 ? finalY : initialY,
 				}}
 				transition={PANEL.spring}
 			>

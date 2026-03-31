@@ -25,6 +25,11 @@ type ModeMeta = {
 		| "Configure";
 };
 
+type QuickRoute = {
+	mode: Mode;
+	label: string;
+};
+
 const MODE_LABELS: Record<Mode, ModeMeta> = {
 	dashboard: {
 		label: "Narrative Brief",
@@ -36,80 +41,25 @@ const MODE_LABELS: Record<Mode, ModeMeta> = {
 		note: "Commit-linked files, diffs, sessions, and snapshots for branch verification.",
 		section: "Workspace",
 	},
-	docs: {
-		label: "Docs",
-		note: "Secondary reference lane for runbooks, guides, and repo-facing documentation.",
-		section: "Configure",
-	},
-	live: {
-		label: "Live Capture",
-		note: "Operator tape for active sessions, stream health, and capture posture.",
-		section: "Evidence",
-	},
 	sessions: {
 		label: "Sessions",
 		note: "Indexed session ledger with join confidence, follow-through, and next action.",
 		section: "Evidence",
 	},
-	transcripts: {
-		label: "Transcript Lens",
-		note: "Query-first search surface for transcript snippets and source coverage.",
-		section: "Evidence",
-	},
 	tools: {
-		label: "Tool Pulse",
-		note: "Secondary operator summary for tool usage and retry signals.",
-		section: "Evidence",
-	},
-	costs: {
-		label: "Cost Watch",
-		note: "Secondary operator summary for spend posture and burn signals.",
-		section: "Evidence",
-	},
-	setup: {
-		label: "Setup",
-		note: "Configure imports, capture, and Codex-first operator readiness.",
+		label: "Tools",
+		note: "Tool posture, usage, and follow-through stay grouped under the Tools lane.",
 		section: "Integrations",
 	},
-	"work-graph": {
-		label: "Story Map",
-		note: "Topology and prioritization view for pressure points, weak joins, and next inspection.",
-		section: "Narrative",
-	},
-	"repo-pulse": {
-		label: "Workspace Pulse",
-		note: "Secondary workspace summary around the active repo lane.",
-		section: "Workspace",
-	},
-	timeline: {
-		label: "Causal Timeline",
-		note: "Chronology-first review of change sequence, evidence joins, and trust handoffs.",
-		section: "Evidence",
-	},
-	diffs: {
-		label: "Diff Review",
-		note: "Inspect raw file deltas and branch-level evidence changes.",
-		section: "Workspace",
-	},
-	worktrees: {
-		label: "Worktrees",
-		note: "Compare parallel lanes and branch isolation state.",
-		section: "Workspace",
-	},
-	env: {
-		label: "Env Hygiene",
-		note: "Environment drift and credential posture checks.",
+	hygiene: {
+		label: "Hygiene",
+		note: "Trust, environment, setup, and capture follow-through in one operational lane.",
 		section: "Health",
 	},
 	settings: {
 		label: "Settings",
-		note: "Operator contract for capture, trust, scope, and Codex-first defaults.",
+		note: "Docs, scan roots, provider posture, and operator defaults in one configuration lane.",
 		section: "Configure",
-	},
-	status: {
-		label: "Trust Center",
-		note: "Decide what is safe to believe now and which verification lane opens next.",
-		section: "Health",
 	},
 };
 
@@ -121,6 +71,20 @@ const sectionIcon = {
 	Health: FileText,
 	Configure: BookOpen,
 } as const;
+
+function buildSecondaryRoutes(mode: Mode): QuickRoute[] {
+	const routes: QuickRoute[] = [];
+
+	if (mode !== "repo") {
+		routes.push({ mode: "repo", label: MODE_LABELS.repo.label });
+	}
+
+	if (mode !== "dashboard") {
+		routes.push({ mode: "dashboard", label: MODE_LABELS.dashboard.label });
+	}
+
+	return routes;
+}
 
 export function TopNav(props: {
 	mode: Mode;
@@ -147,45 +111,31 @@ export function TopNav(props: {
 
 	const currentModeMeta = MODE_LABELS[mode];
 	const CurrentSectionIcon = sectionIcon[currentModeMeta.section];
-	const secondaryRoutes =
-		mode === "docs"
-			? [{ mode: "dashboard" as const, label: "Back to Brief" }]
-			: [
-					{ mode: "repo" as const, label: "Repo Evidence" },
-					{ mode: "dashboard" as const, label: "Narrative Brief" },
-				].filter((route) => route.mode !== mode);
+	const secondaryRoutes = buildSecondaryRoutes(mode);
 
 	return (
-		<header className="grid h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center border-b border-border-light bg-bg-secondary px-4 ">
-			<div className="flex min-w-0 items-center gap-4">
-				<div className="min-w-0">
-					<div className="flex items-center gap-2 text-[0.625rem] font-medium uppercase tracking-[0.15em] text-text-muted">
-						<span className="inline-flex items-center gap-1.5 rounded-full border border-border-light bg-bg-primary px-2 py-0.5 text-text-secondary">
-							<CurrentSectionIcon className="h-3 w-3" />
-							{currentModeMeta.section}
-						</span>
-					</div>
-					<div className="mt-1.5 flex flex-wrap items-center gap-3">
-						<span className="truncate text-[0.9375rem] font-semibold text-text-primary">
-							{currentModeMeta.label}
-						</span>
-						<span className="hidden truncate text-xs text-text-muted xl:block">
-							{currentModeMeta.note}
-						</span>
+		<header className="flex h-14 w-full items-center justify-between border-b border-border-light bg-bg-secondary px-4">
+			<div className="flex min-w-0 items-center gap-3">
+				<span className="inline-flex items-center gap-1.5 rounded-full border border-border-light bg-bg-primary px-2 py-0.5 text-[0.625rem] font-medium uppercase tracking-[0.15em] text-text-secondary shrink-0">
+					<CurrentSectionIcon className="h-3 w-3" />
+					{currentModeMeta.section}
+				</span>
 
-						<div className="hidden items-center gap-2 lg:flex ml-2">
-							{secondaryRoutes.map((route) => (
-								<button
-									key={route.mode}
-									type="button"
-									onClick={() => onModeChange(route.mode)}
-									className="inline-flex items-center gap-2 rounded-full border border-border-light bg-bg-primary px-3 py-1 text-[0.6875rem] font-medium text-text-secondary transition hover:border-accent-blue-light hover:text-text-primary shadow-sm"
-								>
-									{route.label}
-								</button>
-							))}
-						</div>
-					</div>
+				<span className="truncate text-sm font-semibold text-text-primary shrink-0">
+					{currentModeMeta.label}
+				</span>
+
+				<div className="hidden items-center gap-2 lg:flex mx-2 shrink-0">
+					{secondaryRoutes.map((route) => (
+						<button
+							key={route.mode}
+							type="button"
+							onClick={() => onModeChange(route.mode)}
+							className="inline-flex items-center gap-2 rounded-full border border-border-light bg-bg-primary px-3 py-1 text-[0.6875rem] font-medium text-text-secondary transition hover:border-accent-blue-light hover:text-text-primary shadow-sm"
+						>
+							{route.label}
+						</button>
+					))}
 				</div>
 			</div>
 

@@ -3,38 +3,26 @@ export type BranchStatus = "open" | "merged";
 export type Mode =
 	| "dashboard"
 	| "repo"
-	| "docs"
-	| "live"
 	| "sessions"
-	| "transcripts"
 	| "tools"
-	| "costs"
-	| "setup"
-	| "work-graph"
-	| "repo-pulse"
-	| "timeline"
-	| "diffs"
-	| "worktrees"
-	| "env"
-	| "settings"
-	| "status";
+	| "hygiene"
+	| "settings";
 
 /**
- * AnchorMode — the three dedicated views with distinct behavior and richer interaction models.
+ * AnchorMode — dedicated views with distinct behavior and richer interaction models.
  * These bypass the shared narrative surface and must never be routed through NarrativeSurfaceView.
  */
-export type AnchorMode = "dashboard" | "repo" | "docs";
+export type AnchorMode = "dashboard" | "repo";
 
 /**
  * SurfaceMode — every Mode that is NOT an anchor.
- * All non-anchor modes enter NarrativeSurfaceView; some still use the shared surface contract,
- * while signature evidence screens can branch into dedicated layouts from there.
+ * All non-anchor modes enter NarrativeSurfaceView.
  */
 export type SurfaceMode = Exclude<Mode, AnchorMode>;
 
 /**
- * ViewSection — the sidebar grouping for each mode.
- * Determines section headers and framing in operator-facing copy.
+ * ViewSection — internal section metadata for each mode.
+ * This supports framing and metadata, not visible grouped sidebar headers.
  */
 export type ViewSection =
 	| "Narrative"

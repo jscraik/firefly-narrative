@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type {
 	CaptureReliabilityStatus,
 	CodexAppServerStatus,
@@ -42,6 +43,7 @@ type BranchNarrativePanelProps = {
 	feedbackActorRole: NarrativeFeedbackActorRole;
 	killSwitchActive?: boolean;
 	killSwitchReason?: string;
+	branchScopeKey?: string;
 	recallLaneItems?: NarrativeRecallLaneItem[];
 	askWhyState: AskWhyState;
 	// Phase 4: Trust-state UX
@@ -60,6 +62,8 @@ type BranchNarrativePanelProps = {
 	onOpenRawDiff: (laneContext?: RecallLaneEvidenceContext) => void;
 	onSubmitAskWhy: (question: string) => void;
 	onOpenAskWhyCitation: (citation: AskWhyCitation) => void;
+	onAdvancedAnalysisToggle?: (open: boolean) => void;
+	onAdvancedControlUsed?: (control: string) => void;
 };
 
 function projectionFallback(
@@ -84,6 +88,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
 		feedbackActorRole,
 		killSwitchActive = false,
 		killSwitchReason,
+		branchScopeKey,
 		recallLaneItems = [],
 		askWhyState,
 		onDetailLevelChange,
@@ -101,12 +106,20 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
 		onOpenRawDiff,
 		onSubmitAskWhy,
 		onOpenAskWhyCitation,
+		onAdvancedAnalysisToggle,
+		onAdvancedControlUsed,
 	} = props;
 	const projection =
 		projections[audience] ?? projectionFallback(audience, narrative);
 	const effectiveDetailLevel: NarrativeDetailLevel = killSwitchActive
 		? "diff"
 		: detailLevel;
+	const [advancedAnalysisOpen, setAdvancedAnalysisOpen] = useState(false);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset on scope key change
+	useEffect(() => {
+		setAdvancedAnalysisOpen(false);
+	}, [branchScopeKey]);
 
 	// Phase 4: Derive approval actionability from trust state
 	// Phase 4: Derive approval actionability from trust state
@@ -123,16 +136,25 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
 				: null;
 
 	return (
-		<div className="card p-5">
+		<div className="rounded-[1.6rem] border border-border-light bg-[linear-gradient(135deg,rgba(18,25,39,0.98),rgba(12,18,30,0.98))] p-5 shadow-[0_28px_90px_-52px_rgba(15,23,42,0.82)]">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
-					<div className="section-header">NARRATIVE</div>
-					<div className="section-subheader mt-0.5">
-						confidence {(narrative.confidence * 100).toFixed(0)}% · state{" "}
-						{narrative.state}
+					<div className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-text-muted">
+						Story rail
+					</div>
+					<div className="mt-1 text-xl font-semibold tracking-[-0.02em] text-text-primary">
+						Branch story
+					</div>
+					<div className="mt-1.5 text-sm leading-6 text-text-secondary">
+						Inferred from commits, linked sessions, and trace-backed evidence.
 					</div>
 				</div>
-				<div className="flex items-center gap-1">
+				{/* biome-ignore lint/a11y/useSemanticElements: button group container, fieldset would change layout */}
+				<div
+					className="flex flex-wrap items-center gap-1 rounded-[1rem] border border-border-light bg-bg-primary/75 p-1"
+					role="group"
+					aria-label="Story detail level"
+				>
 					<DetailButton
 						level="summary"
 						current={effectiveDetailLevel}
@@ -171,7 +193,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
 			)}
 
 			{killSwitchActive && (
-				<div className="mt-3 rounded-lg border border-accent-red-light bg-accent-red-bg px-3 py-2 text-xs text-accent-red">
+				<div className="mt-4 rounded-xl border border-accent-red-light bg-accent-red-bg px-3 py-2.5 text-xs text-accent-red">
 					Kill switch active. Narrative layers are read-only until quality
 					recovers.{" "}
 					<span className="text-text-secondary">
@@ -190,6 +212,11 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
 					killSwitchActive={killSwitchActive}
 					recallLaneItems={recallLaneItems}
 					askWhyState={askWhyState}
+					advancedAnalysisOpen={advancedAnalysisOpen}
+					onAdvancedAnalysisOpenChange={(open) => {
+						setAdvancedAnalysisOpen(open);
+						onAdvancedAnalysisToggle?.(open);
+					}}
 					onAudienceChange={onAudienceChange}
 					onFeedbackActorRoleChange={onFeedbackActorRoleChange}
 					onSubmitFeedback={onSubmitFeedback}
@@ -197,6 +224,7 @@ export function BranchNarrativePanel(props: BranchNarrativePanelProps) {
 					onOpenRawDiff={onOpenRawDiff}
 					onSubmitAskWhy={onSubmitAskWhy}
 					onOpenAskWhyCitation={onOpenAskWhyCitation}
+					onAdvancedControlUsed={onAdvancedControlUsed}
 				/>
 			)}
 

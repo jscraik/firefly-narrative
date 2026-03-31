@@ -1,20 +1,68 @@
 #!/usr/bin/env node
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import http from 'node:http';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const DEFAULT_VERIFY_CMD = process.env.REPAIR_VERIFY_CMD || 'pnpm test';
 const DEFAULT_MAX_ITERATIONS = Number.parseInt(process.env.REPAIR_MAX_ITERATIONS || '5', 10);
 const DEFAULT_POLL_INTERVAL_MS = Number.parseInt(process.env.REPAIR_POLL_INTERVAL_MS || '60000', 10);
+// Webhook server binds to localhost only to avoid exposing to the network.
+const DEFAULT_WEBHOOK_HOST = '127.0.0.1';
 
 function log(message) {
   const timestamp = new Date().toISOString();
   process.stdout.write(`[repair-agent ${timestamp}] ${message}\n`);
 }
 
-function runCommand(command, { cwd, input } = {}) {
+/**
+ * Runs a command safely using an argv array (shell: false).
+ * Each element is passed directly to execvp — no shell interpolation.
+ * @param {string[]} argv - [executable, ...args]
+ * @param {{ cwd?: string, input?: string }} options
+ */
+function runCommand(argv, { cwd, input } = {}) {
+  if (!Array.isArray(argv) || argv.length === 0) {
+    return Promise.reject(new Error('runCommand requires a non-empty argv array'));
+  }
+  const [cmd, ...args] = argv;
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, {
+      cwd,
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: process.env,
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      resolve({ code: code ?? 0, stdout, stderr });
+    });
+    if (input) {
+      child.stdin.write(input);
+    }
+    child.stdin.end();
+  });
+}
+
+/**
+ * Runs a shell command string for cases where shell features are genuinely
+ * required (e.g. env-var commands from operator config). Only used for
+ * fully-operator-controlled strings, never for webhook-derived input.
+ * @param {string} command
+ * @param {{ cwd?: string, input?: string }} options
+ */
+function runShellCommand(command, { cwd, input } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, {
       cwd,
@@ -41,6 +89,87 @@ function runCommand(command, { cwd, input } = {}) {
   });
 }
 
+// ─── Input validators ────────────────────────────────────────────────────────
+
+/** Accepts 40-hex full SHAs only. */
+function isValidSha(value) {
+  return typeof value === 'string' && /^[0-9a-f]{40}$/i.test(value);
+}
+
+/**
+ * GitHub Actions run IDs are positive integers up to 10 digits.
+ * Accept string or number representations.
+ */
+function isValidRunId(value) {
+  const s = String(value);
+  return /^\d{1,10}$/.test(s) && Number.parseInt(s, 10) > 0;
+}
+
+/** Normalises a run ID to a string of digits. */
+function normalizeRunId(value) {
+  return String(Number.parseInt(String(value), 10));
+}
+
+/**
+ * Accepts git branch / tag ref names.
+ * Rejects anything with shell metacharacters, path traversal, or
+ * characters disallowed by git-check-ref-format.
+ */
+function isValidGitRef(value) {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 256) return false;
+  // Disallow: space, control chars, shell metacharacters, and chars disallowed by git-check-ref-format
+  if (/[\x00-\x1f\x7f ~^:?*\[\\$`();|&!<>]/.test(value)) return false;
+  if (value.includes('..') || value.includes('@{')) return false;
+  if (value.startsWith('-')) return false;
+  if (value.endsWith('.lock') || value.endsWith('.')) return false;
+  return true;
+}
+
+// ─── HMAC webhook signature ───────────────────────────────────────────────────
+
+/**
+ * Computes the GitHub-style HMAC-SHA256 signature for a raw body string.
+ * Format: `sha256=<hex>`
+ */
+function computeWebhookSignature(secret, rawBody) {
+  const mac = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  return `sha256=${mac}`;
+}
+
+/**
+ * Constant-time comparison of two HMAC signatures.
+ * Returns true only when both are identical.
+ */
+function verifyWebhookSignature(secret, rawBody, signatureHeader) {
+  if (typeof signatureHeader !== 'string') return false;
+  const expected = computeWebhookSignature(secret, rawBody);
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(signatureHeader, 'utf8'));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validates webhook run payload fields and throws on invalid input.
+ * Returns { sha, runId } with safe, normalised values.
+ */
+function assertWebhookRunPayload(payload) {
+  const sha = payload?.workflow_run?.head_sha;
+  const runId = payload?.workflow_run?.id;
+
+  if (!isValidSha(sha)) {
+    throw new Error(`Invalid head_sha in webhook payload: ${JSON.stringify(sha)}`);
+  }
+  if (!isValidRunId(runId)) {
+    throw new Error(`Invalid run id in webhook payload: ${JSON.stringify(runId)}`);
+  }
+
+  return { sha: sha.toLowerCase(), runId: normalizeRunId(runId) };
+}
+
+// ─── Core repair logic ────────────────────────────────────────────────────────
+
 function globToRegex(pattern) {
   const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
   const regex = escaped
@@ -52,7 +181,7 @@ function globToRegex(pattern) {
 
 async function globFiles({ cwd, patterns }) {
   log(`Glob: ${patterns.join(', ')}`);
-  const { stdout } = await runCommand('git ls-files', { cwd });
+  const { stdout } = await runCommand(['git', 'ls-files'], { cwd });
   const files = stdout.split('\n').filter(Boolean);
   const regexes = patterns.map((pattern) => globToRegex(pattern));
   return files.filter((file) => regexes.some((regex) => regex.test(file)));
@@ -67,7 +196,7 @@ async function readFile({ cwd, filePath, maxChars = 4000 }) {
 
 async function applyPatch({ cwd, patch }) {
   log('Edit: applying patch');
-  const result = await runCommand('git apply --whitespace=fix -', { cwd, input: patch });
+  const result = await runCommand(['git', 'apply', '--whitespace=fix', '-'], { cwd, input: patch });
   if (result.code !== 0) {
     throw new Error(`git apply failed: ${result.stderr || result.stdout}`);
   }
@@ -112,9 +241,10 @@ async function buildContext({ cwd, logText }) {
 }
 
 async function runLintAutofix({ cwd }) {
+  // Operator-configured command — uses runShellCommand so pnpm globs work.
   const lintFixCommand = process.env.REPAIR_LINT_FIX_CMD || 'pnpm biome check src src-tauri/src --write';
   log(`Running lint autofix: ${lintFixCommand}`);
-  const result = await runCommand(lintFixCommand, { cwd });
+  const result = await runShellCommand(lintFixCommand, { cwd });
   if (result.code !== 0) {
     log(`Lint autofix failed: ${result.stderr || result.stdout}`);
     return false;
@@ -133,8 +263,9 @@ async function runLLMFix({ cwd, logText, failureType }) {
     files: context.files,
   });
 
+  // Operator-configured command — shell expansion intentional.
   log(`LLM: invoking command ${llmCommand}`);
-  const result = await runCommand(llmCommand, { cwd, input: payload });
+  const result = await runShellCommand(llmCommand, { cwd, input: payload });
   if (result.code !== 0) {
     throw new Error(`LLM command failed: ${result.stderr || result.stdout}`);
   }
@@ -169,14 +300,15 @@ async function attemptFix({ cwd, logText }) {
 }
 
 async function runVerifyCommand({ cwd, verifyCmd }) {
+  // Operator-configured shell command.
   log(`Running verify command: ${verifyCmd}`);
-  const result = await runCommand(verifyCmd, { cwd });
+  const result = await runShellCommand(verifyCmd, { cwd });
   return result;
 }
 
 async function runRepairLoop({ cwd, verifyCmd = DEFAULT_VERIFY_CMD, maxIterations = DEFAULT_MAX_ITERATIONS }) {
   for (let iteration = 1; iteration <= maxIterations; iteration += 1) {
-    const status = await runCommand('git status --porcelain', { cwd });
+    const status = await runCommand(['git', 'status', '--porcelain'], { cwd });
     const statusLine = status.stdout.trim() ? 'dirty' : 'clean';
     log(`Iteration ${iteration}/${maxIterations} - git status: ${statusLine}`);
 
@@ -205,46 +337,55 @@ async function cloneOrUpdateRepo({ repoUrl, workdir }) {
   try {
     await fs.access(targetDir);
     log(`Repo already cloned at ${targetDir}. Fetching updates...`);
-    await runCommand('git fetch --all', { cwd: targetDir });
+    await runCommand(['git', 'fetch', '--all'], { cwd: targetDir });
   } catch {
     log(`Cloning ${repoUrl} into ${targetDir}`);
-    await runCommand(`git clone ${repoUrl} ${targetDir}`, { cwd: workdir });
+    await runCommand(['git', 'clone', repoUrl, targetDir], { cwd: workdir });
   }
 
   return targetDir;
 }
 
 async function checkoutCommit({ cwd, sha, branch }) {
-  await runCommand(`git checkout ${branch}`, { cwd });
-  await runCommand('git pull', { cwd });
-  await runCommand(`git checkout ${sha}`, { cwd });
+  if (!isValidGitRef(branch)) throw new Error(`Invalid branch ref: ${JSON.stringify(branch)}`);
+  if (!isValidSha(sha)) throw new Error(`Invalid SHA: ${JSON.stringify(sha)}`);
+
+  await runCommand(['git', 'checkout', branch], { cwd });
+  await runCommand(['git', 'pull'], { cwd });
+  await runCommand(['git', 'checkout', sha], { cwd });
 }
 
 async function createRepairBranch({ cwd, sha }) {
+  if (!isValidSha(sha)) throw new Error(`Invalid SHA: ${JSON.stringify(sha)}`);
   const shortSha = sha.slice(0, 7);
   const branchName = `repair/${shortSha}`;
-  await runCommand(`git checkout -b ${branchName}`, { cwd });
+  await runCommand(['git', 'checkout', '-b', branchName], { cwd });
   return branchName;
 }
 
 async function commitAndOpenPr({ cwd, branchName, baseBranch, message }) {
-  const status = await runCommand('git status --porcelain', { cwd });
+  const status = await runCommand(['git', 'status', '--porcelain'], { cwd });
   if (!status.stdout.trim()) {
     log('No changes to commit.');
     return false;
   }
 
-  await runCommand(`git add .`, { cwd });
-  await runCommand(`git commit -m "${message}"`, { cwd });
-  await runCommand(`git push -u origin ${branchName}`, { cwd });
+  await runCommand(['git', 'add', '.'], { cwd });
+  await runCommand(['git', 'commit', '-m', message], { cwd });
+  await runCommand(['git', 'push', '-u', 'origin', branchName], { cwd });
 
-  const prTitle = message;
-  const prBody = `Automated fix from repair-agent.\n\nBase branch: ${baseBranch}`;
-  await runCommand(`gh pr create --title "${prTitle}" --body "${prBody}" --base ${baseBranch} --head ${branchName}`, { cwd });
+  await runCommand([
+    'gh', 'pr', 'create',
+    '--title', message,
+    '--body', `Automated fix from repair-agent.\n\nBase branch: ${baseBranch}`,
+    '--base', baseBranch,
+    '--head', branchName,
+  ], { cwd });
   return true;
 }
 
 async function handleFailingRun({ repoUrl, branch, sha, runId, verifyCmd }) {
+  // sha and runId are validated before this is called.
   const workdir = process.env.REPAIR_WORKDIR || path.join(os.tmpdir(), 'repair-agent');
   await fs.mkdir(workdir, { recursive: true });
 
@@ -252,7 +393,7 @@ async function handleFailingRun({ repoUrl, branch, sha, runId, verifyCmd }) {
   await checkoutCommit({ cwd: repoDir, sha, branch });
   const repairBranch = await createRepairBranch({ cwd: repoDir, sha });
 
-  const logResult = await runCommand(`gh run view ${runId} --log`, { cwd: repoDir });
+  const logResult = await runCommand(['gh', 'run', 'view', runId, '--log'], { cwd: repoDir });
   const logText = `${logResult.stdout}\n${logResult.stderr}`;
 
   const loopResult = await runRepairLoop({ cwd: repoDir, verifyCmd });
@@ -266,13 +407,18 @@ async function handleFailingRun({ repoUrl, branch, sha, runId, verifyCmd }) {
 }
 
 async function pollBranch({ repoUrl, branch, verifyCmd, intervalMs = DEFAULT_POLL_INTERVAL_MS }) {
+  if (!isValidGitRef(branch)) throw new Error(`Invalid branch ref: ${JSON.stringify(branch)}`);
   log(`Polling branch ${branch} every ${intervalMs}ms`);
   let lastSeenRun = null;
 
   while (true) {
-    const result = await runCommand(
-      `gh run list --branch ${branch} --status completed --limit 1 --json databaseId,conclusion,headSha`,
-    );
+    const result = await runCommand([
+      'gh', 'run', 'list',
+      '--branch', branch,
+      '--status', 'completed',
+      '--limit', '1',
+      '--json', 'databaseId,conclusion,headSha',
+    ]);
 
     if (result.code !== 0) {
       log(`gh run list failed: ${result.stderr || result.stdout}`);
@@ -280,15 +426,21 @@ async function pollBranch({ repoUrl, branch, verifyCmd, intervalMs = DEFAULT_POL
       const runs = JSON.parse(result.stdout || '[]');
       const run = runs[0];
       if (run && run.conclusion === 'failure' && run.databaseId !== lastSeenRun) {
-        lastSeenRun = run.databaseId;
-        log(`Detected failing run ${run.databaseId} for ${run.headSha}`);
-        await handleFailingRun({
-          repoUrl,
-          branch,
-          sha: run.headSha,
-          runId: run.databaseId,
-          verifyCmd,
-        });
+        const headSha = run.headSha;
+        const runId = String(run.databaseId);
+        if (!isValidSha(headSha) || !isValidRunId(runId)) {
+          log(`Skipping run with invalid sha/runId: ${headSha} / ${runId}`);
+        } else {
+          lastSeenRun = run.databaseId;
+          log(`Detected failing run ${runId} for ${headSha}`);
+          await handleFailingRun({
+            repoUrl,
+            branch,
+            sha: headSha.toLowerCase(),
+            runId: normalizeRunId(runId),
+            verifyCmd,
+          });
+        }
       }
     }
 
@@ -296,7 +448,12 @@ async function pollBranch({ repoUrl, branch, verifyCmd, intervalMs = DEFAULT_POL
   }
 }
 
-function startWebhookServer({ repoUrl, branch, verifyCmd, port = 7331 }) {
+function startWebhookServer({ repoUrl, branch, verifyCmd, port = 7331, host = DEFAULT_WEBHOOK_HOST }) {
+  const webhookSecret = process.env.REPAIR_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    throw new Error('REPAIR_WEBHOOK_SECRET must be set to start the webhook server');
+  }
+
   const server = http.createServer(async (req, res) => {
     if (req.method !== 'POST') {
       res.writeHead(405);
@@ -304,32 +461,41 @@ function startWebhookServer({ repoUrl, branch, verifyCmd, port = 7331 }) {
       return;
     }
 
-    let body = '';
+    // Collect raw body for signature verification.
+    const chunks = [];
     for await (const chunk of req) {
-      body += chunk.toString();
+      chunks.push(chunk);
+    }
+    const rawBody = Buffer.concat(chunks).toString('utf8');
+
+    // Verify HMAC-SHA256 signature before parsing payload.
+    const signatureHeader = req.headers['x-hub-signature-256'];
+    if (!verifyWebhookSignature(webhookSecret, rawBody, signatureHeader)) {
+      log('Webhook rejected: invalid signature');
+      res.writeHead(401);
+      res.end('unauthorized');
+      return;
     }
 
     try {
-      const payload = JSON.parse(body);
+      const payload = JSON.parse(rawBody);
       if (payload.workflow_run?.conclusion === 'failure') {
-        await handleFailingRun({
-          repoUrl,
-          branch,
-          sha: payload.workflow_run.head_sha,
-          runId: payload.workflow_run.id,
-          verifyCmd,
-        });
+        // Validate and normalise sha/runId before any use.
+        const { sha, runId } = assertWebhookRunPayload(payload);
+        await handleFailingRun({ repoUrl, branch, sha, runId, verifyCmd });
       }
       res.writeHead(200);
       res.end('ok');
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: Intentionally surfacing webhook errors for observability.
+      console.error(`Webhook error: ${error.message}`);
       res.writeHead(400);
       res.end(`invalid payload: ${error.message}`);
     }
   });
 
-  server.listen(port, () => {
-    log(`Webhook server listening on port ${port}`);
+  server.listen(port, host, () => {
+    log(`Webhook server listening on ${host}:${port}`);
   });
 }
 
@@ -366,14 +532,31 @@ async function main() {
 
   if (mode === 'webhook') {
     const port = Number.parseInt(args.get('port') || process.env.REPAIR_WEBHOOK_PORT || '7331', 10);
-    startWebhookServer({ repoUrl, branch, verifyCmd, port });
+    const host = args.get('host') || process.env.REPAIR_WEBHOOK_HOST || DEFAULT_WEBHOOK_HOST;
+    startWebhookServer({ repoUrl, branch, verifyCmd, port, host });
     return;
   }
 
   throw new Error(`Unknown mode: ${mode}`);
 }
 
-main().catch((error) => {
-  log(`Fatal: ${error.message}`);
-  process.exit(1);
-});
+// ES module guard — only run main() when executed directly.
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  main().catch((error) => {
+    log(`Fatal: ${error.message}`);
+    process.exit(1);
+  });
+}
+
+export {
+  runCommand,
+  runShellCommand,
+  isValidSha,
+  isValidRunId,
+  isValidGitRef,
+  normalizeRunId,
+  computeWebhookSignature,
+  verifyWebhookSignature,
+  assertWebhookRunPayload,
+};

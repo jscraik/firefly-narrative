@@ -223,6 +223,42 @@ describe("getTraceRangesForCommitFile normalization", () => {
 		});
 	});
 
+	it("clamps oversized or invalid trace ranges before returning them to the UI", async () => {
+		mockInvoke.mockResolvedValue([
+			{
+				start_line: 0,
+				end_line: 50000,
+				contributor: { contributor_type: "ai", model_id: null },
+			},
+			{
+				startLine: 25,
+				endLine: 20,
+				contributor: { contributorType: "human", modelId: null },
+			},
+		]);
+
+		const result = await getTraceRangesForCommitFile(
+			1,
+			"guarded",
+			"src/guarded.ts",
+		);
+
+		expect(result).toEqual([
+			{
+				startLine: 1,
+				endLine: 10000,
+				contentHash: undefined,
+				contributor: { type: "ai", modelId: undefined },
+			},
+			{
+				startLine: 25,
+				endLine: 25,
+				contentHash: undefined,
+				contributor: { type: "human", modelId: undefined },
+			},
+		]);
+	});
+
 	it("handles missing optional modelId gracefully", async () => {
 		const rangesWithoutModelId = [
 			{

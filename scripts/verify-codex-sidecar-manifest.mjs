@@ -4,6 +4,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const MANIFEST_SIGNATURE_SALT = 'narrative-codex-sidecar-signature-v1';
+// SHA-256 of the canonical manifest file. Baked into the verifier so that
+// --require-signature cannot be satisfied by a tampered + re-signed manifest.
+// Update this constant (and the matching Rust constant) whenever the manifest
+// file changes as part of a sidecar release.
+const MANIFEST_FILE_SHA256 = '8ec2075e5807a875cdf4979d8621f03090178997af55f7f87f955db3777b017a';
 const MANIFEST_SCHEMA_VERSION = 1;
 const MANIFEST_MIN_VERSION_FLOOR = 2026022501;
 const MINIMUM_SIDECAR_VERSION_FLOOR = '0.97.0';
@@ -158,6 +163,7 @@ function main() {
   const manifestDir = path.dirname(manifestPath);
 
   const raw = fs.readFileSync(manifestPath, 'utf8');
+  const manifestFileHash = sha256Hex(raw);
   const manifest = JSON.parse(raw);
 
   validateManifestShape(manifest);
@@ -182,6 +188,10 @@ function main() {
   );
 
   if (args.requireSignature) {
+    assert(
+      manifestFileHash === MANIFEST_FILE_SHA256,
+      `manifest file digest mismatch: expected ${MANIFEST_FILE_SHA256} got ${manifestFileHash}`,
+    );
     assert(TRUSTED_SIGNERS.has(manifest.activeSigner), `activeSigner is not trusted: ${manifest.activeSigner}`);
     assert(!REVOKED_SIGNERS.has(manifest.activeSigner), `activeSigner is revoked: ${manifest.activeSigner}`);
 

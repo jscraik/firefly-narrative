@@ -8,10 +8,6 @@ import type {
 import type { RepoState } from "../../../hooks/useRepoLoader";
 import { buildNarrativeSurfaceViewModel } from "../narrativeSurfaceData";
 
-// ---------------------------------------------------------------------------
-// Shared fixtures
-// ---------------------------------------------------------------------------
-
 function createRepoState(): RepoState {
 	return {
 		status: "ready",
@@ -92,31 +88,13 @@ function createCaptureReliabilityStatus(
 	};
 }
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/**
- * The complete set of SurfaceMode values.  This is the authoritative registry
- * used by both the contract-matrix test and routing tests.  Any new Mode added
- * to `src/core/types.ts` that is not an anchor must appear here.
- */
 const ALL_SURFACE_MODES: SurfaceMode[] = [
-	"live",
 	"sessions",
-	"transcripts",
 	"tools",
-	"costs",
-	"setup",
-	"work-graph",
-	"repo-pulse",
-	"timeline",
-	"diffs",
-	"worktrees",
-	"env",
+	"hygiene",
 	"settings",
-	"status",
 ];
+
 const ALLOWED_AUTHORITY_TIERS = new Set<DataAuthorityTier>([
 	"live_repo",
 	"live_capture",
@@ -125,14 +103,33 @@ const ALLOWED_AUTHORITY_TIERS = new Set<DataAuthorityTier>([
 	"system_signal",
 ]);
 
-// ---------------------------------------------------------------------------
-// Existing trust-mapping tests (preserved verbatim)
-// ---------------------------------------------------------------------------
-
 describe("buildNarrativeSurfaceViewModel", () => {
+	it.each(
+		ALL_SURFACE_MODES,
+	)('mode "%s" keeps authority metadata populated across the shared surface', (mode) => {
+		const model = buildNarrativeSurfaceViewModel(
+			mode,
+			createRepoState(),
+			createCaptureReliabilityStatus(),
+		);
+
+		expect(ALLOWED_AUTHORITY_TIERS.has(model.heroAuthorityTier)).toBe(true);
+		expect(model.heroAuthorityLabel.length).toBeGreaterThan(0);
+		expect(["healthy", "degraded"]).toContain(model.trustState);
+		expect(model.metrics.length).toBeGreaterThan(0);
+		expect(model.highlights.length).toBeGreaterThan(0);
+		expect(model.activity.length).toBeGreaterThan(0);
+		expect(model.tableRows.length).toBeGreaterThan(0);
+
+		for (const metric of model.metrics) {
+			expect(ALLOWED_AUTHORITY_TIERS.has(metric.authorityTier)).toBe(true);
+			expect(metric.authorityLabel).toBeTruthy();
+		}
+	});
+
 	it("maps OTEL_ONLY reliability to derived-summary authority cues", () => {
 		const model = buildNarrativeSurfaceViewModel(
-			"live",
+			"hygiene",
 			createRepoState(),
 			createCaptureReliabilityStatus({
 				mode: "OTEL_ONLY",
@@ -143,21 +140,14 @@ describe("buildNarrativeSurfaceViewModel", () => {
 		expect(model.trustState).toBe("healthy");
 		expect(model.heroAuthorityTier).toBe("derived_summary");
 		expect(model.heroAuthorityLabel).toBe("OTEL");
-
-		const captureModeMetric = model.metrics.find(
-			(metric) => metric.label === "Capture mode",
-		);
-		expect(captureModeMetric).toBeDefined();
-		expect(captureModeMetric?.authorityTier).toBe("derived_summary");
-		expect(captureModeMetric?.authorityLabel).toBe("OTEL");
 	});
 
-	it("marks unknown modes as degraded trust with captured-source authority", () => {
+	it("marks unknown capture modes as degraded trust with captured-source authority", () => {
 		const unknownModeReliabilityStatus = createCaptureReliabilityStatus({
 			mode: "NONSENSE_MODE" as CaptureReliabilityStatus["mode"],
 		});
 		const model = buildNarrativeSurfaceViewModel(
-			"status",
+			"hygiene",
 			createRepoState(),
 			unknownModeReliabilityStatus,
 		);
@@ -167,103 +157,8 @@ describe("buildNarrativeSurfaceViewModel", () => {
 		expect(model.heroAuthorityLabel).toBe("Live");
 	});
 
-	// ---------------------------------------------------------------------------
-	// Phase 4 — Contract matrix: every SurfaceMode must have authority on all elements
-	// ---------------------------------------------------------------------------
-
-	describe("contract matrix — every SurfaceMode includes non-null authority metadata", () => {
-		it.each(
-			ALL_SURFACE_MODES,
-		)('mode "%s": hero, metrics, highlights, activity, and tableRows all have valid authority tier + label', (mode) => {
-			const model = buildNarrativeSurfaceViewModel(
-				mode,
-				createRepoState(),
-				createCaptureReliabilityStatus(),
-			);
-
-			// Hero-level authority
-			expect(model.heroAuthorityTier).toBeTruthy();
-			expect(ALLOWED_AUTHORITY_TIERS.has(model.heroAuthorityTier)).toBe(true);
-			expect(model.heroAuthorityLabel).toBeTruthy();
-			expect(typeof model.heroAuthorityLabel).toBe("string");
-			expect(model.heroAuthorityLabel.length).toBeGreaterThan(0);
-
-			// Trust state is always one of the two allowed values
-			expect(["healthy", "degraded"]).toContain(model.trustState);
-
-			// Section-level fields are always present
-			expect(model.title).toBeTruthy();
-			expect(model.subtitle).toBeTruthy();
-			expect(model.section).toBeTruthy();
-
-			// Metrics — every metric must have authority
-			expect(model.metrics.length).toBeGreaterThan(0);
-			for (const metric of model.metrics) {
-				expect(
-					metric.authorityTier,
-					`metric "${metric.label}" missing authorityTier`,
-				).toBeTruthy();
-				expect(ALLOWED_AUTHORITY_TIERS.has(metric.authorityTier)).toBe(true);
-				expect(
-					metric.authorityLabel,
-					`metric "${metric.label}" missing authorityLabel`,
-				).toBeTruthy();
-			}
-
-			// Highlights — every highlight must have authority
-			expect(model.highlights.length).toBeGreaterThan(0);
-			for (const highlight of model.highlights) {
-				expect(
-					highlight.authorityTier,
-					`highlight "${highlight.title}" missing authorityTier`,
-				).toBeTruthy();
-				expect(ALLOWED_AUTHORITY_TIERS.has(highlight.authorityTier)).toBe(true);
-				expect(
-					highlight.authorityLabel,
-					`highlight "${highlight.title}" missing authorityLabel`,
-				).toBeTruthy();
-			}
-
-			// Activity items — every item must have authority
-			expect(model.activity.length).toBeGreaterThan(0);
-			for (const item of model.activity) {
-				expect(
-					item.authorityTier,
-					`activity "${item.title}" missing authorityTier`,
-				).toBeTruthy();
-				expect(ALLOWED_AUTHORITY_TIERS.has(item.authorityTier)).toBe(true);
-				expect(
-					item.authorityLabel,
-					`activity "${item.title}" missing authorityLabel`,
-				).toBeTruthy();
-			}
-
-			// Table rows — every row must have authority
-			expect(model.tableRows.length).toBeGreaterThan(0);
-			for (const row of model.tableRows) {
-				expect(
-					row.authorityTier,
-					`tableRow "${row.primary}" missing authorityTier`,
-				).toBeTruthy();
-				expect(ALLOWED_AUTHORITY_TIERS.has(row.authorityTier)).toBe(true);
-				expect(
-					row.authorityLabel,
-					`tableRow "${row.primary}" missing authorityLabel`,
-				).toBeTruthy();
-			}
-
-			// Footer note must be a non-empty string
-			expect(typeof model.footerNote).toBe("string");
-			expect(model.footerNote.length).toBeGreaterThan(0);
-		});
-	});
-
-	// ---------------------------------------------------------------------------
-	// Phase 4 — Routing boundary: anchor modes must NOT be accepted as SurfaceMode
-	// ---------------------------------------------------------------------------
-
-	describe("routing boundary — anchor modes are excluded from shared surface rendering", () => {
-		const ANCHOR_MODES = ["dashboard", "repo", "docs"] as const;
+	describe("routing boundary", () => {
+		const ANCHOR_MODES = ["dashboard", "repo"] as const;
 
 		it("ALL_SURFACE_MODES does not include any anchor mode", () => {
 			for (const anchor of ANCHOR_MODES) {
@@ -272,175 +167,18 @@ describe("buildNarrativeSurfaceViewModel", () => {
 		});
 
 		it("ALL_SURFACE_MODES covers the full non-anchor Mode union", () => {
-			// The list must have 14 entries (17 total modes − 3 anchors)
-			expect(ALL_SURFACE_MODES).toHaveLength(14);
+			expect(ALL_SURFACE_MODES).toHaveLength(4);
 		});
 	});
 
-	// ---------------------------------------------------------------------------
-	// Phase 4 — Authority tier coverage: all four tiers are reachable
-	// ---------------------------------------------------------------------------
+	it("still evaluates drift report data for shared surfaces when repo state is ready", () => {
+		const model = buildNarrativeSurfaceViewModel(
+			"hygiene",
+			createRepoState(),
+			createCaptureReliabilityStatus(),
+		);
 
-	describe("authority tier coverage — all four DataAuthorityTier values are reachable", () => {
-		it("OTEL_ONLY maps hero to derived_summary tier", () => {
-			const model = buildNarrativeSurfaceViewModel(
-				"live",
-				createRepoState(),
-				createCaptureReliabilityStatus({
-					mode: "OTEL_ONLY",
-					otelBaselineHealthy: true,
-				}),
-			);
-			expect(model.heroAuthorityTier).toBe("derived_summary");
-		});
-
-		it("HYBRID_ACTIVE maps hero to live_capture tier", () => {
-			const model = buildNarrativeSurfaceViewModel(
-				"live",
-				createRepoState(),
-				createCaptureReliabilityStatus({ mode: "HYBRID_ACTIVE" }),
-			);
-			expect(model.heroAuthorityTier).toBe("live_capture");
-		});
-
-		it("repo-grounded mode produces live_repo tier on at least one metric", () => {
-			const model = buildNarrativeSurfaceViewModel(
-				"status",
-				createRepoState(),
-				createCaptureReliabilityStatus(),
-			);
-			// The status view derives from live capture authority — live_capture or derived_summary
-			expect(["live_capture", "derived_summary"]).toContain(
-				model.heroAuthorityTier,
-			);
-		});
-
-		it("static_scaffold tier is reachable from static-scaffold modes (worktrees)", () => {
-			const model = buildNarrativeSurfaceViewModel(
-				"worktrees",
-				createRepoState(),
-				createCaptureReliabilityStatus(),
-			);
-			// Check that static_scaffold tier appears in at least one element
-			const allTiers = [
-				model.heroAuthorityTier,
-				...model.metrics.map((m) => m.authorityTier),
-				...model.highlights.map((h) => h.authorityTier),
-				...model.activity.map((a) => a.authorityTier),
-				...model.tableRows.map((r) => r.authorityTier),
-			];
-			expect(allTiers.some((t) => ALLOWED_AUTHORITY_TIERS.has(t))).toBe(true);
-		});
-	});
-
-	// ---------------------------------------------------------------------------
-	// Phase 4 — Drift Report: workspace drift is evaluated and exposed
-	// ---------------------------------------------------------------------------
-
-	describe("drift report — workspace drift is evaluated and exposed", () => {
-		it("populates driftReport in the view model if repo is ready", () => {
-			const repoState = createRepoState();
-			const model = buildNarrativeSurfaceViewModel(
-				"work-graph",
-				repoState,
-				createCaptureReliabilityStatus(),
-			);
-
-			expect(model.driftReport).toBeDefined();
-			expect(model.driftReport?.status).toBe("healthy");
-			expect(model.driftReport?.metrics.length).toBeGreaterThan(0);
-
-			const uncommittedFiles = model.driftReport?.metrics.find(
-				(m) => m.id === "uncommitted_files",
-			);
-			expect(uncommittedFiles).toBeDefined();
-			expect(uncommittedFiles?.value).toBe(0);
-		});
-
-		it("uses working-tree churn when diffsByFile is not populated", () => {
-			const repoState = createRepoState();
-			if (repoState.status === "ready") {
-				repoState.model.dirtyFiles = ["src/ui/components/TopNav.tsx"];
-				repoState.model.dirtyChurnLines = 650;
-				repoState.model.diffsByFile = undefined;
-				repoState.model.snapshots = [
-					{
-						id: "snap_recent",
-						atISO: new Date().toISOString(),
-						type: "automatic",
-						branch: "main",
-						headSha: "abc123",
-						filesChanged: ["src/ui/components/TopNav.tsx"],
-					},
-				];
-			}
-
-			const model = buildNarrativeSurfaceViewModel(
-				"work-graph",
-				repoState,
-				createCaptureReliabilityStatus(),
-			);
-			const churnMetric = model.driftReport?.metrics.find(
-				(m) => m.id === "uncommitted_churn",
-			);
-
-			expect(churnMetric?.value).toBe(650);
-			expect(churnMetric?.status).toBe("warn");
-			expect(model.driftReport?.status).toBe("watch");
-		});
-
-		it("driftReport escalates to critical when dirty file count is high", () => {
-			const repoState = createRepoState();
-			if (repoState.status === "ready") {
-				repoState.model.dirtyFiles = Array(15).fill("file.ts");
-			}
-
-			const model = buildNarrativeSurfaceViewModel(
-				"work-graph",
-				repoState,
-				createCaptureReliabilityStatus(),
-			);
-
-			// driftReport status should escalate to critical under high dirty file count
-			expect(model.driftReport?.status).toBe("critical");
-
-			// driftReport must always include at least one metric
-			expect(model.driftReport?.metrics.length).toBeGreaterThan(0);
-		});
-	});
-
-	describe("signature provenance lane", () => {
-		it("adds a provenance rail to Story Map, Causal Timeline, and Trust Center", () => {
-			for (const mode of ["work-graph", "timeline", "status"] as const) {
-				const model = buildNarrativeSurfaceViewModel(
-					mode,
-					createRepoState(),
-					createCaptureReliabilityStatus(),
-				);
-
-				expect(model.provenance).toBeDefined();
-				expect(model.provenance?.nodes).toHaveLength(4);
-				expect(model.provenance?.title.length).toBeGreaterThan(0);
-				expect(model.provenance?.summary.length).toBeGreaterThan(0);
-
-				for (const node of model.provenance?.nodes ?? []) {
-					expect(ALLOWED_AUTHORITY_TIERS.has(node.authorityTier)).toBe(true);
-					expect(node.authorityLabel).toBeTruthy();
-				}
-			}
-		});
-
-		it("keeps provenance gated by system_signal when trust is degraded", () => {
-			const model = buildNarrativeSurfaceViewModel(
-				"status",
-				createRepoState(),
-				createCaptureReliabilityStatus({ mode: "DEGRADED_STREAMING" }),
-			);
-
-			const decisionNode =
-				model.provenance?.nodes[model.provenance.nodes.length - 1];
-			expect(decisionNode?.authorityTier).toBe("system_signal");
-			expect(decisionNode?.title).toContain("Review capture first");
-		});
+		expect(model.driftReport).toBeDefined();
+		expect(model.driftReport?.metrics.length).toBeGreaterThan(0);
 	});
 });

@@ -1,12 +1,14 @@
 import clsx from "clsx";
 import { Cpu, FolderGit2, Key, Monitor } from "lucide-react";
 import type { Mode } from "../../core/types";
+import { DocsOverviewPanel } from "../components/DocsOverviewPanel";
 import { SectionHeader } from "../components/SectionHeader";
 
 interface SettingsViewProps {
 	onModeChange: (mode: Mode) => void;
 	onOpenRepo: () => void;
 	onImportSession?: () => void;
+	repoRoot: string;
 }
 
 function SettingsSection({
@@ -110,7 +112,9 @@ function InputRow({
 	);
 }
 
-export function SettingsView(_props: SettingsViewProps) {
+export function SettingsView(props: SettingsViewProps) {
+	const { repoRoot } = props;
+
 	return (
 		<div className="flex h-full min-h-0 flex-col bg-bg-secondary">
 			<main className="flex-1 overflow-y-auto px-6 py-10 shadow-inner">
@@ -119,6 +123,18 @@ export function SettingsView(_props: SettingsViewProps) {
 						title={<>Settings</>}
 						description="Configure how Trace captures and indexes context."
 					/>
+
+					<SettingsSection
+						icon={FolderGit2}
+						title="Docs"
+						description="Repository guides and generated narrative docs now live directly inside Settings."
+					>
+						<div className="rounded-2xl border border-border-subtle bg-bg-primary p-3">
+							<div className="h-[28rem] min-h-[20rem]">
+								<DocsOverviewPanel repoRoot={repoRoot} />
+							</div>
+						</div>
+					</SettingsSection>
 
 					<SettingsSection
 						icon={FolderGit2}

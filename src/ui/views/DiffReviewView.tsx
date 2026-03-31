@@ -205,7 +205,7 @@ export function DiffReviewView({
 				<div className="mx-auto flex max-w-6xl flex-col gap-6">
 					<SectionHeader
 						title={viewModel.title}
-						description="{viewModel.subtitle}"
+						description={viewModel.subtitle}
 						badge={<DashboardTrustBadge trustState={viewModel.trustState} />}
 					/>
 

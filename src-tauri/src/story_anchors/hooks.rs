@@ -132,11 +132,11 @@ mkdir -p "$repo_root/.narrative/meta" 2>/dev/null
 log="$repo_root/.narrative/meta/hooks.log"
 
 cmd="$1"
-tmp="${{TMPDIR:-/tmp}}/narrative-post-rewrite-$$.txt"
+tmp="$(mktemp "${{TMPDIR:-/tmp}}/narrative-post-rewrite.XXXXXX")" || exit 0
+trap 'rm -f "$tmp" 2>/dev/null || true' EXIT HUP INT TERM
 cat > "$tmp"
 
 perl -e 'alarm shift; exec @ARGV' 8 "$NARRATIVE_CLI_PATH" hook post-rewrite --repo "$repo_root" --command "$cmd" --rewritten "$tmp" 2>>"$log" || true
-rm -f "$tmp" 2>/dev/null || true
 exit 0
 "#
     )
@@ -208,4 +208,20 @@ pub async fn get_repo_hooks_status(
         hooks_dir: dir,
         installed,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_post_rewrite_hook;
+
+    #[test]
+    fn post_rewrite_hook_uses_mktemp_and_trap_cleanup() {
+        let hook = build_post_rewrite_hook("/tmp/db.sqlite", "/usr/local/bin/narrative-cli");
+        assert!(hook.contains(
+            r#"tmp="$(mktemp "${TMPDIR:-/tmp}/narrative-post-rewrite.XXXXXX")" || exit 0"#
+        ), "hook must use mktemp with unpredictable suffix");
+        assert!(hook.contains(r#"trap 'rm -f "$tmp" 2>/dev/null || true' EXIT HUP INT TERM"#));
+        // Must not use a PID-predictable filename.
+        assert!(!hook.contains("narrative-post-rewrite-$$.txt"));
+    }
 }
