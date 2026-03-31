@@ -143,8 +143,12 @@ export function useDashboardViewState({
 					if (ttiMeasure && ttiMeasure.duration > 1500) {
 						/* slow TTI threshold exceeded — metrics available via performance API */
 					}
-				} catch (_error) {
-					/* noop */
+				} catch (err) {
+					// biome-ignore lint/suspicious/noConsole: Performance measurement failures are non-fatal but must remain observable.
+					console.warn(
+						"[useDashboardViewState] Failed to measure performance:",
+						err,
+					);
 				}
 			});
 		}
@@ -167,8 +171,12 @@ export function useDashboardViewState({
 					if (measure && measure.duration > 250) {
 						/* slow interaction threshold exceeded — metrics available via performance API */
 					}
-				} catch (_error) {
-					/* noop */
+				} catch (err) {
+					// biome-ignore lint/suspicious/noConsole: Performance measurement failures are non-fatal but must remain observable.
+					console.warn(
+						"[useDashboardViewState] Failed to measure performance:",
+						err,
+					);
 				}
 				performance.clearMarks("dashboard_filter_start");
 				performance.clearMarks("dashboard_filter_end");

@@ -21,8 +21,9 @@ async function applyDbPragmas(db: Database): Promise<void> {
 	for (const pragma of pragmas) {
 		try {
 			await db.execute(pragma);
-		} catch (_error) {
-			const _msg = String(_error);
+		} catch (err) {
+			// biome-ignore lint/suspicious/noConsole: Best-effort pragma failures must remain observable.
+			console.warn("[db] Failed to apply pragma:", pragma, err);
 		}
 	}
 

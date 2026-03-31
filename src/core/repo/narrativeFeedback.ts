@@ -234,8 +234,9 @@ async function appendNarrativeAuditEvent(args: {
       ) VALUES ($1, $2, $3, $4)`,
 			[args.repoId, args.eventType, args.idempotencyKey ?? null, payloadJson],
 		);
-	} catch (_error) {
-		/* best-effort event record — non-fatal */
+	} catch (err) {
+		// biome-ignore lint/suspicious/noConsole: Best-effort audit event logging is non-fatal but must remain observable.
+		console.warn("[narrativeFeedback] Failed to append audit event:", err);
 	}
 }
 
