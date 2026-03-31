@@ -116,9 +116,9 @@ export function DocsOverviewPanel({
 			if (!isMountedRef.current) return;
 			setDocs(docList);
 			setError("");
-		} catch (_err) {
+		} catch (err) {
 			// biome-ignore lint/suspicious/noConsole: Best-effort doc loading failures are intentionally surfaced.
-			console.warn("[DocsOverviewPanel] Failed to load docs:", _err);
+			console.warn("[DocsOverviewPanel] Failed to load docs:", err);
 			if (docsRequestVersionRef.current !== requestVersion) return;
 			if (!isMountedRef.current) return;
 			// Don't show error for empty/no directory - just empty list
@@ -323,11 +323,11 @@ export function DocsOverviewPanel({
 											].join("\n");
 											await writeNarrativeFile(repoRoot, rel, starter);
 											await refreshDocs();
-										} catch (_e) {
+										} catch (e) {
 											// biome-ignore lint/suspicious/noConsole: Best-effort doc creation failures are intentionally surfaced.
 											console.warn(
 												"[DocsOverviewPanel] Failed to create starter doc:",
-												_e,
+												e,
 											);
 										}
 									}}
