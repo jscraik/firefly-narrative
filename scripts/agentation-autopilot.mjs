@@ -40,7 +40,7 @@ function safeJsonParse(text) {
     return { ok: true, value: JSON.parse(text) };
   } catch (err) {
     // biome-ignore lint/suspicious/noConsole: Parse failures are intentionally surfaced for debugging.
-    console.warn('[agentation-autopilot] JSON parse failed:', err);
+    console.error('[agentation-autopilot] JSON parse failed:', err);
     return { ok: false, error: err };
   }
 }

@@ -118,7 +118,7 @@ export function DocsOverviewPanel({
 			setError("");
 		} catch (err) {
 			// biome-ignore lint/suspicious/noConsole: Best-effort doc loading failures are intentionally surfaced.
-			console.warn("[DocsOverviewPanel] Failed to load docs:", err);
+			console.error("[DocsOverviewPanel] Failed to load docs:", err);
 			if (docsRequestVersionRef.current !== requestVersion) return;
 			if (!isMountedRef.current) return;
 			// Don't show error for empty/no directory - just empty list
@@ -325,7 +325,7 @@ export function DocsOverviewPanel({
 											await refreshDocs();
 										} catch (e) {
 											// biome-ignore lint/suspicious/noConsole: Best-effort doc creation failures are intentionally surfaced.
-											console.warn(
+											console.error(
 												"[DocsOverviewPanel] Failed to create starter doc:",
 												e,
 											);

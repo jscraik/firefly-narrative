@@ -79,7 +79,7 @@ export async function getTraceSettings(): Promise<TraceSettings> {
 			return { enabled };
 		} catch (err) {
 			// biome-ignore lint/suspicious/noConsole: Settings read failures must be observable for debugging.
-			console.warn(
+			console.error(
 				"[settings] Failed to get trace settings from localStorage:",
 				err,
 			);

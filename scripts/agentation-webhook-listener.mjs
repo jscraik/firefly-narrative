@@ -96,7 +96,7 @@ const server = createServer((req, res) => {
       sendJson(res, 200, { ok: true });
     } catch (err) {
       // biome-ignore lint/suspicious/noConsole: Webhook processing failures are intentionally surfaced.
-      console.warn('[agentation-webhook-listener] Request processing failed:', err);
+      console.error('[agentation-webhook-listener] Request processing failed:', err);
       sendJson(res, 400, {
         ok: false,
         error: `Invalid JSON: ${err instanceof Error ? err.message : String(err)}`

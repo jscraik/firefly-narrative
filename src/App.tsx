@@ -87,7 +87,7 @@ export function App() {
 			})
 			.catch((err) => {
 				// biome-ignore lint/suspicious/noConsole: Module load failures must remain observable for debugging.
-				console.warn("[App] Agentation module unavailable:", err);
+				console.error("[App] Agentation module unavailable:", err);
 			});
 
 		return () => {

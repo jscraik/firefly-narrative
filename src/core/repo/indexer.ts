@@ -179,23 +179,23 @@ export async function indexRepo(
 			.then((rows) => Object.fromEntries(rows.map((r) => [r.commitSha, r])))
 			.catch((error) => {
 				// biome-ignore lint/suspicious/noConsole: Hydration failures are non-fatal but intentionally surfaced.
-				console.warn("[Indexer] Story anchor status hydration failed:", error);
+				console.error("[Indexer] Story anchor status hydration failed:", error);
 				return {};
 			}) as Promise<Record<string, StoryAnchorCommitStatus>>,
 		loadSessionExcerpts(root, repoId, 1).catch((err) => {
 			// biome-ignore lint/suspicious/noConsole: Best-effort loading failures must remain observable.
-			console.warn("[Indexer] Session excerpts load failed:", err);
+			console.error("[Indexer] Session excerpts load failed:", err);
 			return [];
 		}),
 		loadTraceConfig(root),
 		getDirtyFiles(root).catch((err) => {
 			// biome-ignore lint/suspicious/noConsole: Best-effort loading failures must remain observable.
-			console.warn("[Indexer] Dirty files load failed:", err);
+			console.error("[Indexer] Dirty files load failed:", err);
 			return [];
 		}),
 		getWorkingTreeChurn(root).catch((err) => {
 			// biome-ignore lint/suspicious/noConsole: Best-effort loading failures must remain observable.
-			console.warn("[Indexer] Working tree churn load failed:", err);
+			console.error("[Indexer] Working tree churn load failed:", err);
 			return 0;
 		}),
 		listSnapshots(root).catch(() => []),
@@ -204,7 +204,7 @@ export async function indexRepo(
 			commits.map((c) => c.sha),
 		).catch((err) => {
 			// biome-ignore lint/suspicious/noConsole: Best-effort loading failures must remain observable.
-			console.warn("[Indexer] Test run summary load failed:", err);
+			console.error("[Indexer] Test run summary load failed:", err);
 			return {};
 		}),
 	] as const);
@@ -354,7 +354,7 @@ export async function indexRepo(
 		}
 	} catch (error) {
 		// biome-ignore lint/suspicious/noConsole: Metadata snapshot failures should be visible without aborting load.
-		console.warn(
+		console.error(
 			"[Indexer] Metadata write failed (repo may be read-only):",
 			error,
 		);
@@ -401,7 +401,7 @@ export async function getOrLoadCommitFiles(repo: RepoIndex, sha: string) {
 		await writeCommitFilesMeta(repo.root, sha, details.fileChanges);
 	} catch (error) {
 		// biome-ignore lint/suspicious/noConsole: Commit file snapshot failures should be visible without aborting load.
-		console.warn("[Indexer] Commit files metadata write failed:", error);
+		console.error("[Indexer] Commit files metadata write failed:", error);
 	}
 
 	return details.fileChanges;

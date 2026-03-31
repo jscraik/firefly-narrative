@@ -145,7 +145,7 @@ export function useDashboardViewState({
 					}
 				} catch (err) {
 					// biome-ignore lint/suspicious/noConsole: Performance measurement failures are non-fatal but must remain observable.
-					console.warn(
+					console.error(
 						"[useDashboardViewState] Failed to measure performance:",
 						err,
 					);
@@ -173,7 +173,7 @@ export function useDashboardViewState({
 					}
 				} catch (err) {
 					// biome-ignore lint/suspicious/noConsole: Performance measurement failures are non-fatal but must remain observable.
-					console.warn(
+					console.error(
 						"[useDashboardViewState] Failed to measure performance:",
 						err,
 					);

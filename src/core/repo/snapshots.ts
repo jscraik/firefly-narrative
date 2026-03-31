@@ -62,7 +62,7 @@ export async function listSnapshots(repoRoot: string): Promise<Snapshot[]> {
 				snapshots.push(JSON.parse(content));
 			} catch (err) {
 				// biome-ignore lint/suspicious/noConsole: Best-effort snapshot parse failures must remain observable.
-				console.warn("[snapshots] Failed to parse snapshot:", file, err);
+				console.error("[snapshots] Failed to parse snapshot:", file, err);
 			}
 		}
 
@@ -72,7 +72,7 @@ export async function listSnapshots(repoRoot: string): Promise<Snapshot[]> {
 		);
 	} catch (err) {
 		// biome-ignore lint/suspicious/noConsole: Best-effort snapshot listing failures must remain observable.
-		console.warn("[snapshots] Failed to list snapshots:", err);
+		console.error("[snapshots] Failed to list snapshots:", err);
 		return [];
 	}
 }
