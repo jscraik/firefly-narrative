@@ -1,8 +1,10 @@
+---
 schema_version: 1
+---
 
 # AGENTS.md — Narrative Repository Guide
 
-Narrative is a Tauri + React desktop app for AI session narratives on git history.
+Narrative is a tauri + React desktop app for AI session narratives on git history.
 
 ## Table of Contents
 - [Mandatory workflow snippet](#mandatory-workflow-snippet)
@@ -16,7 +18,7 @@ Narrative is a Tauri + React desktop app for AI session narratives on git histor
 
 ## Mandatory workflow snippet
 1. Explore the project first, then invoke the right skill.
-2. Prefer retrieval-led reasoning for React, Tauri, Apps-SDK-ui, Tailwind, Vite, Storybook, and Chat Widget tasks.
+2. Prefer retrieval-led reasoning for React, tauri, Apps-SDK-ui, Tailwind, Vite, Storybook, and Chat Widget tasks.
 
 ## Required essentials
 - Package manager: `pnpm`.
@@ -28,7 +30,7 @@ Narrative is a Tauri + React desktop app for AI session narratives on git histor
 
 ## Instruction routing
 - Global path: `/Users/jamiecraik/.codex/AGENTS.md`.
-- Repo root: this `AGENTS.md` (closest scope takes precedence).
+- repo root: this `AGENTS.md` (closest scope takes precedence).
 - Domain details: `docs/agents/*`.
 - Resolve any conflicting rules in favor of this repo-local file.
 
@@ -52,7 +54,7 @@ Narrative is a Tauri + React desktop app for AI session narratives on git histor
 - For external integrations, run a 1Password+env preflight before API calls:
   - `op account list`
   - `op item list --categories=API_CREDENTIAL --format json | jq -r '.[] | .title + \"\\t\" + .id'`
-  - `ENV_FILES=("$HOME/.codex.env" "$HOME/dev/config/.env" "$HOME/dev/config/codex/.env" "$HOME/.env" "$HOME/.codex/.env"); for k in CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN; do echo "$k"; for f in "${ENV_FILES[@]}"; do [ -f "$f" ] || continue; awk -F'=' -v key=\"$k\" 'BEGIN{OFS=\"\\t\"} $0 !~ /^[[:space:]]*#/ {sub(/^[[:space:]]*export[[:space:]]+/, \"\"); if ($1==key) {print FILENAME, \"found\"; exit}}' \"$f\"; done; done`
+  - `ENV_FILES=("$HOME/.codex.env" "$HOME/dev/configs/.env" "$HOME/dev/configs/codex/.env" "$HOME/.env" "$HOME/.codex/.env"); for k in CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN; do echo "$k"; for f in "${ENV_FILES[@]}"; do [ -f "$f" ] || continue; awk -F'=' -v key=\"$k\" 'BEGIN{OFS=\"\\t\"} $0 !~ /^[[:space:]]*#/ {sub(/^[[:space:]]*export[[:space:]]+/, \"\"); if ($1==key) {print FILENAME, \"found\"; exit}}' \"$f\"; done; done`
 - If a key is missing from files and environment, stop and refresh the 1Password-backed export path before retrying.
 
 ## Task route map
@@ -63,7 +65,7 @@ Narrative is a Tauri + React desktop app for AI session narratives on git histor
 - landing-page workflows: `docs/agents/landing-page-separation.md`, `docs/agents/frontend-website-rules.md`
 - agentation payload and webhook workflows: `docs/agents/agentation-schema.md`
 - repair and operations playbooks: `docs/agents/repair-agent.md`
-- rollout and hybrid-capture runbooks: `docs/agents/hybrid-capture-rollout-runbook.md`
+- Rollout and hybrid-capture runbooks: `docs/agents/hybrid-capture-rollout-runbook.md`
 - instruction cleanup and contradictions: `docs/agents/instruction-governance.md`
 
 ## Contradictions

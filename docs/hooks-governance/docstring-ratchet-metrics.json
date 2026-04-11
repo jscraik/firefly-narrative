@@ -1,0 +1,9 @@
+{
+  "minimum_coverage_ratio": 0.7,
+  "repos": {
+    "trace-narrative": {
+      "coverage_ratio": 1.0,
+      "notes": "Seed metrics; replace with measured ratios from your docstring collector."
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "evaluated_at": "2026-04-11T21:00:42.987236+00:00",
+  "inventory": "/Users/jamiecraik/dev/trace-narrative/docs/hooks-governance/repo-profile-matrix.json",
+  "recovery_slo_hours": 24,
+  "required_gates": [
+    "inventory",
+    "classification",
+    "docstring-ratchet"
+  ],
+  "repo_count": 1,
+  "stale_repos": [],
+  "status": "pass"
+}

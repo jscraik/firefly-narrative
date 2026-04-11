@@ -1,0 +1,9 @@
+{
+  "evaluated_at": "2026-04-11T21:00:43.036869+00:00",
+  "classification": "/Users/jamiecraik/dev/trace-narrative/docs/hooks-governance/public-api-classification.json",
+  "metrics": "/Users/jamiecraik/dev/trace-narrative/docs/hooks-governance/docstring-ratchet-metrics.json",
+  "window_days": 14,
+  "minimum_coverage_ratio": 0.7,
+  "failed_repos": [],
+  "status": "pass"
+}

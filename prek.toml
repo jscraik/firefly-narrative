@@ -1,12 +1,27 @@
-# Prek configuration (Rust-based pre-commit replacement)
-# Install prek: mise install cargo-prek || cargo install prek
-# Run: prek install && prek run --all-files
+default_install_hook_types = ["pre-commit", "pre-push", "commit-msg"]
 
-[hooks]
-pre-commit = ["make hooks-pre-commit"]
-pre-push = ["make hooks-pre-push"]
+[[repos]]
+repo = "local"
 
-[tools]
-biome = "1.9.4"
-typescript = "5.7"
-vitest = "3.2"
+[[repos.hooks]]
+id = "pre-commit"
+name = "Pre-commit quality gate"
+entry = "make hooks-pre-commit"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "pre-push"
+name = "Pre-push governance gate"
+entry = "make hooks-pre-push"
+language = "system"
+pass_filenames = false
+stages = ["pre-push"]
+
+[[repos.hooks]]
+id = "commit-msg"
+name = "Commit message validation"
+entry = "node scripts/validate-commit-msg.js"
+language = "system"
+pass_filenames = true
+stages = ["commit-msg"]

@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-04-11T21:00:42.834274+00:00",
+  "manifest": "/Users/jamiecraik/dev/trace-narrative/docs/hooks-governance/repo-scope.manifest.json",
+  "workspace_root": "/Users/jamiecraik/dev",
+  "status": "pass",
+  "stale_repos": [],
+  "repos": [
+    {
+      "repo": "trace-narrative",
+      "path": "/Users/jamiecraik/dev/trace-narrative",
+      "exists": true,
+      "freshness_status": "fresh",
+      "reason": null
+    }
+  ]
+}
