@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-04-11T21:00:42.924574+00:00",
+  "inventory": "/Users/jamiecraik/dev/trace-narrative/docs/hooks-governance/repo-profile-matrix.json",
+  "status": "pass",
+  "failed_repos": [],
+  "repos": [
+    {
+      "repo": "trace-narrative",
+      "freshness_status": "fresh",
+      "public_api_surface": "unknown",
+      "classification_status": "ok"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "workspace_root": "/Users/jamiecraik/dev",
+  "repos": {
+    "in_scope": [
+      "trace-narrative"
+    ],
+    "excluded": []
+  }
+}

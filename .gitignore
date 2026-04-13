@@ -108,3 +108,4 @@ environment.toml
 app-screenshot.png
 insights-report.png
 .harness/memory/
+/.codex/hook-conformance.json

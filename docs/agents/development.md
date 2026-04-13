@@ -65,8 +65,8 @@ set -euo pipefail
 export HOME="${HOME}"
 ENV_FILES=(
   "$HOME/.codex.env"
-  "$HOME/dev/config/.env"
-  "$HOME/dev/config/codex/.env"
+  "$HOME/dev/configs/.env"
+  "$HOME/dev/configs/codex/.env"
   "$HOME/.env"
   "$HOME/.codex/.env"
 )

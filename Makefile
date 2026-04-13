@@ -1,7 +1,7 @@
 # Harness Development Makefile
 # Run `make help` to see available commands
 
-.PHONY: help install setup preflight hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams tooling-doc env-check
 
 # Default target
 help: ## Show this help message
@@ -40,6 +40,19 @@ hooks-pre-push: ## Run local pre-push governance gates before pushing
 	pnpm test
 	pnpm build
 	pnpm audit
+
+hooks-commit-msg: ## Validate commit message governance
+	@tmp_file="$$(mktemp)"; \
+	trap 'rm -f "$$tmp_file"' EXIT; \
+	if [ -n "$${HOOK_COMMIT_MSG:-}" ]; then \
+		printf '%s\n' "$${HOOK_COMMIT_MSG}" > "$$tmp_file"; \
+	elif [ -n "$${HOOK_COMMIT_MSG_FILE:-}" ]; then \
+		cat "$${HOOK_COMMIT_MSG_FILE}" > "$$tmp_file"; \
+	else \
+		echo "Usage: HOOK_COMMIT_MSG='feat: test' make hooks-commit-msg or HOOK_COMMIT_MSG_FILE=/path/to/commit-msg make hooks-commit-msg" >&2; \
+		exit 2; \
+	fi; \
+	node scripts/validate-commit-msg.js "$$tmp_file"
 
 secrets-staged: ## Scan staged content for secrets before committing
 	pnpm run secrets:staged
@@ -112,6 +125,9 @@ ci: ## Run CI-equivalent local checks
 
 diagrams: ## Generate architecture diagrams
 	@bash ./scripts/refresh-diagram-context.sh --force
+
+tooling-doc: ## Regenerate docs/agents/tooling.md from harness.contract.json
+	@bash ./scripts/generate-tooling-doc.sh
 
 # === Environment ===
 

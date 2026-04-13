@@ -5,6 +5,7 @@
 - [Typecheck](#typecheck)
 - [Checks and tests](#checks-and-tests)
 - [Test artifacts](#test-artifacts)
+- [Hook governance](#hook-governance)
 - [Quality expectations](#quality-expectations)
 
 ## Typecheck
@@ -41,6 +42,12 @@ Optional targeted artifact modes:
 - `pnpm test:artifacts:unit`
 - `pnpm test:artifacts:integration`
 - `pnpm test:artifacts:e2e`
+
+## Hook governance
+
+- `bash scripts/verify-work.sh --fast` runs project-local governance checks by default.
+- `bash scripts/verify-work.sh --fast --workspace-governance` enables explicit cross-repo checks from `docs/hooks-governance/repo-scope.manifest.json`.
+- `docs/hooks-governance/scope-defaults.md` is the source-of-truth policy for scope defaults and standalone script invocation.
 
 ## Quality expectations
 
